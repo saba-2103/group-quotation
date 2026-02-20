@@ -1,0 +1,126 @@
+{
+    "id": "claims-list-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-6"
+    },
+    "children": [
+        {
+            "id": "claims-header",
+            "type": "page-header",
+            "props": {
+                "title": "Claims",
+                "description": "Manage and process auto insurance claims",
+                "breadcrumbs": [
+                    {
+                        "label": "Home",
+                        "href": "/"
+                    },
+                    {
+                        "label": "Claims"
+                    }
+                ],
+                "actions": [
+                    {
+                        "id": "create-claim",
+                        "label": "New Claim",
+                        "variant": "default",
+                        "type": "navigate",
+                        "target": "/claims/new"
+                    },
+                    {
+                        "id": "export",
+                        "label": "Export",
+                        "variant": "outline",
+                        "type": "api-mutation",
+                        "api": {
+                            "endpoint": "/api/claims/export",
+                            "method": "GET"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": "claims-filters",
+            "type": "filter-bar",
+            "props": {
+                "filters": [
+                    {
+                        "id": "lane",
+                        "label": "Lane",
+                        "type": "select",
+                        "options": [
+                            {
+                                "value": "GREEN",
+                                "label": "Green"
+                            },
+                            {
+                                "value": "AMBER",
+                                "label": "Amber"
+                            },
+                            {
+                                "value": "RED",
+                                "label": "Red"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "priority",
+                        "label": "Priority",
+                        "type": "select",
+                        "options": [
+                            {
+                                "value": "LOW",
+                                "label": "Low"
+                            },
+                            {
+                                "value": "MEDIUM",
+                                "label": "Medium"
+                            },
+                            {
+                                "value": "HIGH",
+                                "label": "High"
+                            },
+                            {
+                                "value": "CRITICAL",
+                                "label": "Critical"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "claims-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "https://dummyjson.com/users",
+                    "method": "GET"
+                },
+                "valueKey": "users"
+            },
+            "props": {
+                "columns": [
+                    {
+                        "header": "Name",
+                        "accessorKey": "firstName"
+                    },
+                    {
+                        "header": "Age",
+                        "accessorKey": "age"
+                    },
+                    {
+                        "header": "Email",
+                        "accessorKey": "email"
+                    }
+                ],
+                "rowAction": {
+                    "type": "navigate",
+                    "target": "/claims/:id"
+                }
+            }
+        }
+    ]
+}

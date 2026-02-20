@@ -1,0 +1,297 @@
+{
+    "id": "dashboard-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-8"
+    },
+    "children": [
+        {
+            "id": "dashboard-header",
+            "type": "page-header",
+            "props": {
+                "title": "Dashboard",
+                "description": "Group Insurance Overview"
+            }
+        },
+        {
+            "id": "metrics-section",
+            "type": "section-group",
+            "props": {
+                "title": "Key Metrics",
+                "columns": 4
+            },
+            "children": [
+                {
+                    "id": "metric-pending-quotations",
+                    "type": "metric-card",
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/dashboard/metrics/pending-quotations",
+                            "method": "GET"
+                        }
+                    },
+                    "props": {
+                        "label": "Pending Quotations",
+                        "icon": "FileText",
+                        "format": "number",
+                        "priority": 1
+                    }
+                },
+                {
+                    "id": "metric-new-business",
+                    "type": "metric-card",
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/dashboard/metrics/new-business",
+                            "method": "GET"
+                        }
+                    },
+                    "props": {
+                        "label": "New Business",
+                        "icon": "PlusCircle",
+                        "format": "number",
+                        "priority": 1
+                    }
+                },
+                {
+                    "id": "metric-pending-alterations",
+                    "type": "metric-card",
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/dashboard/metrics/pending-alterations",
+                            "method": "GET"
+                        }
+                    },
+                    "props": {
+                        "label": "Pending Alterations",
+                        "icon": "Edit",
+                        "format": "number",
+                        "priority": 1
+                    }
+                },
+                {
+                    "id": "metric-renewals-due",
+                    "type": "metric-card",
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/dashboard/metrics/renewals-due",
+                            "method": "GET"
+                        }
+                    },
+                    "props": {
+                        "label": "Renewals Due",
+                        "icon": "RefreshCw",
+                        "format": "number",
+                        "priority": 1
+                    }
+                }
+            ]
+        },
+        {
+            "id": "business-processes-section",
+            "type": "section-group",
+            "props": {
+                "title": "Business Processes",
+                "columns": 3
+            },
+            "children": [
+                {
+                    "id": "business-process-cards",
+                    "type": "quick-links-widget",
+                    "layout": {
+                        "colSpan": 3
+                    },
+                    "props": {
+                        "layout": "grid",
+                        "links": [
+                            {
+                                "id": "group-quotation-card",
+                                "label": "Group Quotation",
+                                "type": "card",
+                                "icon": "FileText",
+                                "description": "Manage group insurance quotations",
+                                "action": {
+                                    "type": "navigate",
+                                    "target": "/quotations?status=pending"
+                                }
+                            },
+                            {
+                                "id": "group-new-business-card",
+                                "label": "Group New Business",
+                                "type": "card",
+                                "icon": "PlusCircle",
+                                "description": "Process new policy applications",
+                                "action": {
+                                    "type": "navigate",
+                                    "target": "/quotations?status=new-business"
+                                }
+                            },
+                            {
+                                "id": "group-major-alteration-card",
+                                "label": "Group Major Alteration",
+                                "type": "card",
+                                "icon": "Edit",
+                                "description": "Handle major policy changes",
+                                "action": {
+                                    "type": "navigate",
+                                    "target": "/alterations?type=major"
+                                }
+                            },
+                            {
+                                "id": "group-minor-alteration-card",
+                                "label": "Group Minor Alteration",
+                                "type": "card",
+                                "icon": "Edit",
+                                "description": "Process minor modifications",
+                                "action": {
+                                    "type": "navigate",
+                                    "target": "/alterations?type=minor"
+                                }
+                            },
+                            {
+                                "id": "group-renewals-card",
+                                "label": "Group Renewals",
+                                "type": "card",
+                                "icon": "RefreshCw",
+                                "description": "Manage policy renewals",
+                                "action": {
+                                    "type": "navigate",
+                                    "target": "/renewals"
+                                }
+                            },
+                            {
+                                "id": "short-term-extension-card",
+                                "label": "Short-term Extension",
+                                "type": "card",
+                                "icon": "Clock",
+                                "description": "Process short-term extensions",
+                                "action": {
+                                    "type": "navigate",
+                                    "target": "/extensions"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "id": "ai-insights-section",
+            "type": "section-group",
+            "props": {
+                "title": "AI-Powered Insights & Predictions",
+                "columns": 2
+            },
+            "children": [
+                {
+                    "id": "premium-revenue-forecast",
+                    "type": "chart-widget",
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/dashboard/ai/revenue-forecast",
+                            "method": "GET"
+                        }
+                    },
+                    "props": {
+                        "title": "Premium Revenue Forecast",
+                        "chartType": "area"
+                    }
+                },
+                {
+                    "id": "portfolio-risk-analysis",
+                    "type": "chart-widget",
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/dashboard/ai/risk-analysis",
+                            "method": "GET"
+                        }
+                    },
+                    "props": {
+                        "title": "Portfolio Risk Analysis",
+                        "chartType": "donut"
+                    }
+                },
+                {
+                    "id": "conversion-funnel-analysis",
+                    "type": "chart-widget",
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/dashboard/ai/conversion-funnel",
+                            "method": "GET"
+                        }
+                    },
+                    "props": {
+                        "title": "Conversion Funnel Analysis",
+                        "chartType": "bar"
+                    }
+                },
+                {
+                    "id": "claims-prediction-model",
+                    "type": "chart-widget",
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/dashboard/ai/claims-prediction",
+                            "method": "GET"
+                        }
+                    },
+                    "props": {
+                        "title": "Claims Prediction Model",
+                        "chartType": "line"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "quick-actions-section",
+            "type": "section-group",
+            "props": {
+                "title": "Quick Actions",
+                "columns": 3
+            },
+            "children": [
+                {
+                    "id": "quick-action-buttons",
+                    "type": "quick-links-widget",
+                    "layout": {
+                        "colSpan": 3
+                    },
+                    "props": {
+                        "layout": "grid",
+                        "links": [
+                            {
+                                "id": "new-quotation-action",
+                                "label": "New Quotation",
+                                "type": "link",
+                                "icon": "Plus",
+                                "action": {
+                                    "type": "open-modal",
+                                    "target": "create-quotation-form"
+                                }
+                            },
+                            {
+                                "id": "process-renewals-action",
+                                "label": "Process Renewals",
+                                "type": "link",
+                                "icon": "RefreshCw",
+                                "action": {
+                                    "type": "navigate",
+                                    "target": "/renewals/process"
+                                }
+                            },
+                            {
+                                "id": "new-business-action",
+                                "label": "New Business",
+                                "type": "link",
+                                "icon": "FileText",
+                                "action": {
+                                    "type": "open-modal",
+                                    "target": "new-business-form"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

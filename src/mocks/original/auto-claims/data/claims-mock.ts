@@ -1,0 +1,123 @@
+import type { RowData } from "@shared/types";
+
+export const claimsListMock: RowData[] = [
+  {
+    id: "CLM-001",
+    claimNumber: "CLM-2024-001234",
+    customer: "John Smith",
+    lane: "GREEN",
+    amount: 45000,
+    priority: "MEDIUM",
+    fraudScore: 12,
+    sla: "2 days left",
+    state: "S4_SURVEY",
+  },
+  {
+    id: "CLM-002",
+    claimNumber: "CLM-2024-001235",
+    customer: "Sarah Johnson",
+    lane: "AMBER",
+    amount: 125000,
+    priority: "HIGH",
+    fraudScore: 45,
+    sla: "1 day left",
+    state: "S5_ESTIMATE",
+  },
+  {
+    id: "CLM-003",
+    claimNumber: "CLM-2024-001236",
+    customer: "Michael Brown",
+    lane: "RED",
+    amount: 250000,
+    priority: "CRITICAL",
+    fraudScore: 78,
+    sla: "Overdue",
+    state: "S6_FINAL_ADMISSIBILITY",
+  },
+  {
+    id: "CLM-004",
+    claimNumber: "CLM-2024-001237",
+    customer: "Emily Davis",
+    lane: "GREEN",
+    amount: 18500,
+    priority: "LOW",
+    fraudScore: 5,
+    sla: "5 days left",
+    state: "S2_TRIAGE",
+  },
+  {
+    id: "CLM-005",
+    claimNumber: "CLM-2024-001238",
+    customer: "Robert Wilson",
+    lane: "AMBER",
+    amount: 89000,
+    priority: "MEDIUM",
+    fraudScore: 32,
+    sla: "3 days left",
+    state: "S4_SURVEY",
+  },
+  {
+    id: "CLM-006",
+    claimNumber: "CLM-2024-001239",
+    customer: "Jennifer Taylor",
+    lane: "GREEN",
+    amount: 32000,
+    priority: "LOW",
+    fraudScore: 8,
+    sla: "7 days left",
+    state: "S3_ASSIGNMENT",
+  },
+  {
+    id: "CLM-007",
+    claimNumber: "CLM-2024-001240",
+    customer: "David Martinez",
+    lane: "RED",
+    amount: 175000,
+    priority: "HIGH",
+    fraudScore: 65,
+    sla: "Overdue",
+    state: "S7_DECISION",
+  },
+  {
+    id: "CLM-008",
+    claimNumber: "CLM-2024-001241",
+    customer: "Lisa Anderson",
+    lane: "AMBER",
+    amount: 55000,
+    priority: "MEDIUM",
+    fraudScore: 28,
+    sla: "2 days left",
+    state: "S5_ESTIMATE",
+  },
+  {
+    id: "CLM-009",
+    claimNumber: "CLM-2024-001242",
+    customer: "James Thomas",
+    lane: "GREEN",
+    amount: 22000,
+    priority: "LOW",
+    fraudScore: 3,
+    sla: "10 days left",
+    state: "S1_PRE_ADMISSIBILITY",
+  },
+  {
+    id: "CLM-010",
+    claimNumber: "CLM-2024-001243",
+    customer: "Amanda Garcia",
+    lane: "RED",
+    amount: 320000,
+    priority: "CRITICAL",
+    fraudScore: 82,
+    sla: "Overdue",
+    state: "S8_REPAIR",
+  },
+];
+
+/**
+ * Mock API function to fetch claims list
+ */
+export async function getClaimsListMock(): Promise<RowData[]> {
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  return claimsListMock;
+}
