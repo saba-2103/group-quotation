@@ -539,11 +539,3 @@ We maintain striation between environment configurations to ensure safe promotio
     *   **Main:** Sync to `PROD_SCHEMAS` KV.
 
 ---
-
-## 11. Implementation Plan
-
-1.  **Project Init:** Initialize `apps/production-app`.
-2.  **Core:** Build `WidgetRegistry` and recursive `WidgetRenderer`.
-3.  **Pipeline:** Create `.github/workflows/deploy-schemas.yml` for KV sync.
-4.  **Widgets:** Port `MetricWidget` and create `GridWidget`.
-5.  **Proof of Concept:** Render a Dashboard driven by local JSON (simulating KV).
