@@ -1,128 +1,371 @@
-import React from 'react';
+"use client";
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { WidgetConfig } from '@/types/widget';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from '@/lib/utils';
 import { useActionHandler } from '@/hooks/useActionHandler';
-import { ArrowRight } from "lucide-react";
+import { CellRenderer } from './CellRenderer';
+import { ActionRenderer } from '../controls/ActionRenderer';
+import { ArrowRight, ChevronDown, MoreHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface DataTableProps {
     config: WidgetConfig;
 }
 
-// Emulating the CellRenderer from the old project
-const CellRenderer = ({ col, value, onClick }: { col: any, value: any, onClick: () => void }) => {
-    if (col.type === "link") {
-        return <span className="text-primary hover:underline cursor-pointer" onClick={onClick}>{value}</span>;
-    }
-
-    if (col.type === "currency") {
-        const formatted = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value || 0);
-        return <span>{formatted}</span>;
-    }
-
-    if (col.type === "badge") {
-        const mapping = col.valueMapping?.find((m: any) => m.value === value) || { label: value, color: "default" };
-        const colorClasses: Record<string, string> = {
-            success: "bg-green-100 text-green-800 border-green-200",
-            warning: "bg-amber-100 text-amber-800 border-amber-200",
-            error: "bg-red-100 text-red-800 border-red-200",
-            default: "bg-gray-100 text-gray-800 border-gray-200",
-        };
-        const bgClass = colorClasses[mapping.color] || colorClasses.default;
-
-        return (
-            <span className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", bgClass)}>
-                {mapping.label}
-            </span>
-        );
-    }
-
-    return <span>{value}</span>;
-};
+const SCROLLABLE_COLUMN_THRESHOLD = 7;
+const MAX_INLINE_ACTIONS = 2;
 
 export const DataTable: React.FC<DataTableProps> = ({ config }) => {
-    const { title, columns, showViewAll, viewAllRoute, emptyState, className, isLoading, error } = config.props || {};
-    const data = config.props?.data || [];
     const handleAction = useActionHandler();
+
+    // Config parsing
+    const {
+        title,
+        columns,
+        rowActions,
+        bulkActions,
+        pagination,
+        selectable,
+        showViewAll,
+        viewAllRoute,
+        emptyState,
+        className,
+        isLoading,
+        error
+    } = config.props || {};
+
+    const initialData = config.props?.data || [];
+
+    // State
+    const [tableData, setTableData] = useState<any[]>(initialData);
+    const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Sync incoming data changes
+    useEffect(() => {
+        setTableData(initialData);
+        setSelectedRows(new Set());
+        setCurrentPage(1);
+    }, [initialData]);
+
+    // Pagination Logic
+    const pageSize = pagination?.pageSize ?? 20;
+    const isPaginationEnabled = pagination?.enabled ?? false;
+    const totalPages = Math.ceil(tableData.length / pageSize);
+
+    const paginatedData = useMemo(() => {
+        if (!isPaginationEnabled) return tableData;
+        const startIndex = (currentPage - 1) * pageSize;
+        return tableData.slice(startIndex, startIndex + pageSize);
+    }, [tableData, currentPage, pageSize, isPaginationEnabled]);
+
+    // Derived flags
+    const isScrollable = (columns?.length || 0) > SCROLLABLE_COLUMN_THRESHOLD;
+    const hasRowActions = rowActions && rowActions.length > 0;
+
+    // Selection state
+    const currentPageIds = useMemo(() => paginatedData.map((r) => String(r.id || r.quotationNumber)), [paginatedData]);
+    const isAllSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedRows.has(id));
+    const isSomeSelected = currentPageIds.some((id) => selectedRows.has(id)) && !isAllSelected;
 
     if (error) return <div className="p-4 text-red-500 rounded-lg border bg-card">Error loading data</div>;
 
+    // Handlers
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const checked = e.target.checked;
+        if (checked) {
+            setSelectedRows(prev => {
+                const next = new Set(prev);
+                currentPageIds.forEach(id => next.add(id));
+                return next;
+            });
+        } else {
+            setSelectedRows(prev => {
+                const next = new Set(prev);
+                currentPageIds.forEach(id => next.delete(id));
+                return next;
+            });
+        }
+    };
+
+    const handleSelectRow = (rowId: string, checked: boolean) => {
+        setSelectedRows(prev => {
+            const next = new Set(prev);
+            if (checked) next.add(rowId);
+            else next.delete(rowId);
+            return next;
+        });
+    };
+
+    const handleClearSelection = () => setSelectedRows(new Set());
+
+    // Row Actions
     const handleRowClick = (row: any) => {
         if (config.props?.onRowClick) {
             handleAction(config.props.onRowClick);
-        } else if (config.props?.rowAction) {
-            const action = { ...config.props.rowAction };
-            if (action.target) {
-                action.target = action.target.replace(':id', row.id || row.key);
-            }
-            handleAction(action);
         }
     };
 
-    const handleViewAll = () => {
-        if (viewAllRoute) {
-            handleAction({ type: "navigate", target: viewAllRoute });
-        }
+    const resolveLinkAndNavigate = (route: string, rowId: string) => {
+        const resolvedRoute = route.replace(":id", rowId);
+        handleAction({ type: "navigate", target: resolvedRoute });
     };
+
+    const executeRowAction = async (action: any, row: any) => {
+        const enhancedAction = { ...action };
+        if (enhancedAction.actionProps?.route && row.id) {
+            enhancedAction.actionProps.route = enhancedAction.actionProps.route.replace(":id", row.id || row.quotationNumber);
+        }
+        if (enhancedAction.actionProps?.api?.endpoint && row.id) {
+            enhancedAction.actionProps.api.endpoint = enhancedAction.actionProps.api.endpoint.replace(":id", row.id || row.quotationNumber);
+        }
+
+        // Let ActionRenderer trigger the generic Action handler, we just pass down
+    };
+
+    // Styling helpers
+    const getFrozenColumnClasses = (frozen: "left" | "right" | undefined, isHeader: boolean, leftOffset?: string) => {
+        if (!isScrollable || !frozen) return "";
+        const zIndex = isHeader ? "z-20" : "z-10";
+        if (frozen === "left") {
+            const shadow = "shadow-[2px_0_4px_-1px_rgba(0,0,0,0.1)]";
+            return `sticky ${leftOffset ?? "left-0"} ${zIndex} bg-card ${shadow}`;
+        }
+        if (frozen === "right") {
+            return `sticky right-0 ${zIndex} bg-card shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.1)]`;
+        }
+        return "";
+    };
+
+    const getActionsColumnClasses = (isHeader: boolean) => {
+        if (!isScrollable) return "";
+        const zIndex = isHeader ? "z-20" : "z-10";
+        return `sticky right-0 ${zIndex} bg-card shadow-[-2px_0_4px_-1px_rgba(0,0,0,0.1)]`;
+    };
+
+    const getCheckboxColumnClasses = (isHeader: boolean) => {
+        if (!isScrollable) return "";
+        const zIndex = isHeader ? "z-20" : "z-10";
+        return `sticky left-0 ${zIndex} bg-card`;
+    };
+
+    // Render Blocks
+    const renderRowActions = (row: any) => {
+        if (!hasRowActions) return null;
+
+        // Pass sanitized row to the ActionRenderer if we wanted to dynamically map URLs.
+        // We'll map them inline for now.
+        const mappedActions = rowActions.map((act: any) => {
+            const rowId = row.id || row.quotationNumber;
+            const a = { ...act };
+            if (a.actionProps?.route) a.actionProps = { ...a.actionProps, route: a.actionProps.route.replace(":id", rowId) };
+            if (a.actionProps?.api?.endpoint) a.actionProps = { ...a.actionProps, api: { ...a.actionProps.api, endpoint: a.actionProps.api.endpoint.replace(":id", rowId) } };
+            return a;
+        });
+
+        if (mappedActions.length <= MAX_INLINE_ACTIONS) {
+            return (
+                <div className="flex items-center justify-end gap-1">
+                    {mappedActions.map((action: any) => (
+                        <ActionRenderer key={action.id} action={{ ...action, display: "icon" }} />
+                    ))}
+                </div>
+            );
+        }
+
+        return (
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal size={16} />
+                        <span className="sr-only">Open menu</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    {mappedActions.map((action: any) => (
+                        <ActionRenderer key={action.id} action={{ ...action, display: "menu-item" }} />
+                    ))}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        );
+    };
+
+    const colSpan = (columns?.length || 0) + (selectable ? 1 : 0) + (hasRowActions ? 1 : 0);
 
     return (
-        <div className={cn("flex flex-col gap-3 rounded-lg border bg-card p-4", className)}>
-            {(title || showViewAll) && (
-                <div className="flex items-center justify-between mb-2">
-                    {title && <h3 className="text-sm font-semibold text-foreground">{title}</h3>}
-                    {showViewAll && viewAllRoute && (
-                        <button
-                            onClick={handleViewAll}
-                            className="flex items-center gap-1 text-sm text-primary hover:underline"
-                        >
-                            View all <ArrowRight className="h-4 w-4" />
-                        </button>
-                    )}
+        <div className="flex flex-col gap-4 h-full">
+            {/* Bulk Actions Bar */}
+            {selectable && selectedRows.size > 0 && bulkActions && bulkActions.length > 0 && (
+                <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2">
+                    <span className="text-sm font-medium">
+                        {selectedRows.size} {selectedRows.size === 1 ? "item" : "items"} selected
+                    </span>
+                    <div className="h-4 w-px bg-border" />
+                    <div className="flex items-center gap-2">
+                        {bulkActions.slice(0, 4).map((action: any) => (
+                            <ActionRenderer
+                                key={action.id}
+                                action={{ ...action, variant: action.variant ?? "outline" }}
+                                disabled={selectedRows.size === 0}
+                            />
+                        ))}
+                    </div>
+                    <div className="flex-1" />
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={handleClearSelection}>
+                            Clear selection
+                        </Button>
+                    </div>
                 </div>
             )}
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        {columns?.map((col: any) => (
-                            <TableHead key={col.accessorKey || col.header} className={col.align === "right" ? "text-right" : ""}>
-                                {col.header}
-                            </TableHead>
-                        ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {isLoading ? (
+
+            {/* Table Container */}
+            <div
+                className={cn(
+                    "flex flex-col rounded-lg border bg-card flex-1",
+                    isScrollable ? "overflow-auto overflow-x-auto" : "overflow-hidden"
+                )}
+            >
+                <Table className={cn("relative", isScrollable && "w-max min-w-full")}>
+                    <TableHeader>
                         <TableRow>
-                            <TableCell colSpan={columns?.length} className="h-24 text-center">
-                                Loading data...
-                            </TableCell>
+                            {selectable && (
+                                <TableHead className={cn("w-[40px]", getCheckboxColumnClasses(true))}>
+                                    <input
+                                        type="checkbox"
+                                        className="rounded border-gray-300 pointer-events-auto cursor-pointer"
+                                        checked={isAllSelected}
+                                        ref={input => { if (input) input.indeterminate = isSomeSelected; }}
+                                        onChange={handleSelectAll}
+                                        aria-label="Select all"
+                                    />
+                                </TableHead>
+                            )}
+                            {columns?.map((col: any) => {
+                                const leftOffset = col.frozen === "left" && selectable ? "left-[40px]" : undefined;
+                                return (
+                                    <TableHead
+                                        key={col.accessorKey || col.header}
+                                        style={{ width: col.width, minWidth: col.width }}
+                                        className={cn(col.align === "right" ? "text-right" : "", getFrozenColumnClasses(col.frozen, true, leftOffset))}
+                                    >
+                                        {col.header}
+                                    </TableHead>
+                                );
+                            })}
+                            {hasRowActions && (
+                                <TableHead className={cn("w-[80px] text-right", getActionsColumnClasses(true))}>Actions</TableHead>
+                            )}
                         </TableRow>
-                    ) : data.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={columns?.length} className="h-24 text-center">
-                                {emptyState?.message || "No results."}
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        data.map((row: any, i: number) => (
-                            <TableRow
-                                key={row.id || i}
-                                className={cn(config.props?.rowAction && "cursor-pointer")}
-                            >
-                                {columns?.map((col: any) => (
-                                    <TableCell key={`${row.id || i}-${col.accessorKey}`} className={col.align === "right" ? "text-right" : ""}>
-                                        <CellRenderer
-                                            col={col}
-                                            value={row[col.accessorKey]}
-                                            onClick={() => handleRowClick(row)}
-                                        />
-                                    </TableCell>
-                                ))}
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={colSpan} className="h-48 text-center">
+                                    <div className="text-muted-foreground">Loading...</div>
+                                </TableCell>
                             </TableRow>
-                        ))
-                    )}
-                </TableBody>
-            </Table>
+                        ) : tableData.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={colSpan} className="h-48 text-center">
+                                    <div className="flex flex-col items-center justify-center gap-2">
+                                        <p className="text-lg font-medium text-foreground">{emptyState?.title ?? "No data found"}</p>
+                                        <p className="text-muted-foreground">{emptyState?.description ?? "There are no records to display."}</p>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            paginatedData.map((row: any, i: number) => {
+                                const rowId = String(row.id || row.quotationNumber || i);
+                                const isSelected = selectedRows.has(rowId);
+
+                                return (
+                                    <TableRow
+                                        key={rowId}
+                                        data-state={isSelected ? "selected" : undefined}
+                                        className={isSelected ? "bg-muted/50" : ""}
+                                        onClick={() => handleRowClick(row)}
+                                    >
+                                        {selectable && (
+                                            <TableCell className={cn("w-[40px]", getCheckboxColumnClasses(false))}>
+                                                <input
+                                                    type="checkbox"
+                                                    className="rounded border-gray-300 pointer-events-auto cursor-pointer"
+                                                    checked={isSelected}
+                                                    onChange={(e) => handleSelectRow(rowId, e.target.checked)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            </TableCell>
+                                        )}
+                                        {columns?.map((col: any) => {
+                                            const leftOffset = col.frozen === "left" && selectable ? "left-[40px]" : undefined;
+                                            return (
+                                                <TableCell
+                                                    key={`${rowId}-${col.accessorKey}`}
+                                                    className={cn(col.align === "right" ? "text-right" : "", getFrozenColumnClasses(col.frozen, false, leftOffset))}
+                                                >
+                                                    <CellRenderer
+                                                        column={col}
+                                                        value={row[col.accessorKey]}
+                                                        rowId={rowId}
+                                                        onLinkClick={resolveLinkAndNavigate}
+                                                    />
+                                                </TableCell>
+                                            );
+                                        })}
+                                        {hasRowActions && (
+                                            <TableCell className={cn("w-[80px] text-right", getActionsColumnClasses(false))}>
+                                                {renderRowActions(row)}
+                                            </TableCell>
+                                        )}
+                                    </TableRow>
+                                );
+                            })
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Pagination */}
+            {isPaginationEnabled && totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-2 border-t">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">
+                            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, tableData.length)} of{" "}
+                            {tableData.length} results
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            Previous
+                        </Button>
+                        <span className="text-sm">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

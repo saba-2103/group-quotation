@@ -24,15 +24,24 @@ export interface DataSourceConfig {
 }
 
 export interface ActionConfig {
-    type: "navigate" | "api-mutation" | "open-modal" | "trigger-event";
-    target?: string; // URL, Modal ID, or Event Name
+    id?: string;
+    label?: string;
+    icon?: string;
+    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+    intent?: string;
+    display?: "button" | "icon" | "menu-item";
+    actionProps?: Record<string, any>;
+
+    // Original keystone-ui fields
+    type?: "navigate" | "api-mutation" | "open-modal" | "trigger-event";
+    target?: string;
     api?: {
         endpoint: string;
-        method: "POST" | "PUT" | "DELETE";
+        method: "GET" | "POST" | "PUT" | "DELETE";
         body?: any;
     };
-    refreshKey?: string; // Query key to invalidate after success
-    props?: Record<string, any>; // Extra props for the action (e.g. modal props)
+    refreshKey?: string;
+    props?: Record<string, any>;
     confirm?: {
         title: string;
         message: string;

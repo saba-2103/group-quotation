@@ -41,6 +41,20 @@ export default function Home() {
 							</Link>
 						</CardContent>
 					</Card>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Quotations List</CardTitle>
+							<CardDescription>
+								Group Insurance Quotations mapping.
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<Link href="/quotations">
+								<Button variant="outline">View Quotations</Button>
+							</Link>
+						</CardContent>
+					</Card>
 				</div>
 			</main>
 		</div>
