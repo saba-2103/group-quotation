@@ -7,12 +7,10 @@
     },
     "children": [
         {
-            "id": "under-construction-stub",
+            "id": "plan-product-credit-life-container",
             "type": "form-container",
             "props": {
-                "title": "Under Construction",
-                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
-                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                "$ref": "schemas/forms/plan-product-credit-life-form.json"
             }
         }
     ]

@@ -7,12 +7,17 @@
     },
     "children": [
         {
-            "id": "under-construction-stub",
+            "id": "premium-method-05-header-container",
             "type": "form-container",
             "props": {
-                "title": "Under Construction",
-                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
-                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                "$ref": "schemas/forms/premium-method-05-header-form.json"
+            }
+        },
+        {
+            "id": "premium-method-05-rating-basis-container",
+            "type": "form-container",
+            "props": {
+                "$ref": "schemas/forms/premium-method-05-rating-basis-form.json"
             }
         }
     ]

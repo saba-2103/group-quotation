@@ -1,0 +1,74 @@
+{
+  "id": "premium-method-06-header-form",
+  "title": "Method Header & Governance",
+  "layout": "grid",
+  "fields": [
+    {
+      "id": "premiumMethodCode",
+      "name": "premiumMethodCode",
+      "label": "Premium Method Code",
+      "type": "text",
+      "placeholder": "Enter method code",
+      "disabled": true,
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "premiumMethodName",
+      "name": "premiumMethodName",
+      "label": "Premium Method Name",
+      "type": "text",
+      "placeholder": "Enter method name",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "policyType",
+      "name": "policyType",
+      "label": "Policy Type",
+      "type": "select",
+      "placeholder": "Select policy type",
+      "options": [
+        {
+          "value": "GTL",
+          "label": "Group Term Life"
+        },
+        {
+          "value": "GCL",
+          "label": "Group Credit Life"
+        },
+        {
+          "value": "LOAN-GTL",
+          "label": "Loan-linked GTL"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "save",
+      "label": "Save",
+      "type": "api-mutation",
+      "method": "POST",
+      "api": {
+        "endpoint": "/api/policy/premium-method-06-header",
+        "method": "POST"
+      },
+      "variant": "default"
+    }
+  ]
+}

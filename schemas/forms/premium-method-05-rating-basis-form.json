@@ -1,0 +1,69 @@
+{
+  "id": "premium-method-05-rating-basis-form",
+  "title": "Rating Basis Definition",
+  "layout": "grid",
+  "fields": [
+    {
+      "id": "ratingBasis",
+      "name": "ratingBasis",
+      "label": "Rating Basis",
+      "type": "select",
+      "placeholder": "Select rating basis",
+      "options": [
+        {
+          "value": "per-1000-sa",
+          "label": "₹ per 1,000 Sum Assured"
+        },
+        {
+          "value": "per-1-sa",
+          "label": "₹ per 1 Sum Assured"
+        },
+        {
+          "value": "flat-per-member",
+          "label": "Flat Premium per Member"
+        },
+        {
+          "value": "percent-sa",
+          "label": "% of Sum Assured"
+        }
+      ],
+      "helperText": "Defines how premium is calculated",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "premiumFrequency",
+      "name": "premiumFrequency",
+      "label": "Premium Frequency Supported",
+      "type": "select",
+      "placeholder": "Select frequencies",
+      "options": [
+        {
+          "value": "monthly",
+          "label": "Monthly"
+        },
+        {
+          "value": "quarterly",
+          "label": "Quarterly"
+        },
+        {
+          "value": "half-yearly",
+          "label": "Half-yearly"
+        },
+        {
+          "value": "yearly",
+          "label": "Yearly"
+        },
+        {
+          "value": "single",
+          "label": "Single Premium"
+        }
+      ]
+    }
+  ],
+  "actions": []
+}

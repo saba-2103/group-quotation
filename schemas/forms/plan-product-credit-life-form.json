@@ -1,0 +1,218 @@
+{
+  "id": "plan-product-credit-life-form",
+  "title": "Plan / Product - Additional Data-1 for Credit Life",
+  "layout": "grid",
+  "fields": [
+    {
+      "id": "rcdDateRule",
+      "name": "rcdDateRule",
+      "label": "RCD Date Rule",
+      "type": "select",
+      "placeholder": "Select RCD Date Rule",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "loanStartDate",
+      "name": "loanStartDate",
+      "label": "Loan Start Date",
+      "type": "date",
+      "placeholder": "Select date",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "loanEndDate",
+      "name": "loanEndDate",
+      "label": "Loan End Date",
+      "type": "date",
+      "placeholder": "Select date",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "loanTermMonths",
+      "name": "loanTermMonths",
+      "label": "Loan Term (Months)",
+      "type": "number",
+      "placeholder": "Enter Loan Term in Months",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        },
+        {
+          "rule": "min",
+          "value": 1,
+          "message": "Minimum value is 1"
+        },
+        {
+          "rule": "max",
+          "value": 360,
+          "message": "Maximum value is 360"
+        }
+      ]
+    },
+    {
+      "id": "loanDecreasingFrequency",
+      "name": "loanDecreasingFrequency",
+      "label": "Loan Decreasing Frequency",
+      "type": "select",
+      "placeholder": "Select Loan Decreasing Frequency"
+    },
+    {
+      "id": "insuranceStartMiddleLoan",
+      "name": "insuranceStartMiddleLoan",
+      "label": "Does Insurance Start in Middle of Loan?",
+      "type": "radio",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "isTopUpLoan",
+      "name": "isTopUpLoan",
+      "label": "Is it Top-up Loan?",
+      "type": "radio",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "loanTakenBefore",
+      "name": "loanTakenBefore",
+      "label": "Loan Taken Before?",
+      "type": "radio",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "loanInterestRate",
+      "name": "loanInterestRate",
+      "label": "Loan Interest Rate",
+      "type": "text",
+      "placeholder": "Enter Interest Rate",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "loanType",
+      "name": "loanType",
+      "label": "Loan Type",
+      "type": "select",
+      "placeholder": "Select Loan Type"
+    },
+    {
+      "id": "loanNature",
+      "name": "loanNature",
+      "label": "Loan Nature",
+      "type": "select",
+      "placeholder": "Select Loan Nature"
+    },
+    {
+      "id": "moratoriumMonths",
+      "name": "moratoriumMonths",
+      "label": "Moratorium in Months",
+      "type": "number",
+      "placeholder": "Enter Moratorium in Months"
+    },
+    {
+      "id": "interestPayableDuringMoratorium",
+      "name": "interestPayableDuringMoratorium",
+      "label": "Is Interest Payable During Moratorium?",
+      "type": "radio",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "loanMix",
+      "name": "loanMix",
+      "label": "Loan Mix",
+      "type": "select",
+      "placeholder": "Select Loan Mix"
+    }
+  ],
+  "actions": [
+    {
+      "id": "save",
+      "label": "Save",
+      "type": "api-mutation",
+      "method": "POST",
+      "api": {
+        "endpoint": "/api/policy/plan-product-credit-life",
+        "method": "POST"
+      },
+      "variant": "default"
+    }
+  ]
+}

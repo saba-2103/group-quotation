@@ -1,0 +1,168 @@
+{
+  "id": "benefit-investment-form",
+  "title": "Plan / Product / Benefit Maintenance (Investment Products)",
+  "layout": "grid",
+  "fields": [
+    {
+      "id": "benefitCode",
+      "name": "benefitCode",
+      "label": "Benefit Code",
+      "type": "select",
+      "placeholder": "Select Benefit Code",
+      "options": [
+        {
+          "value": "DTH02",
+          "label": "DTH02 - Death Benefit"
+        },
+        {
+          "value": "CI001",
+          "label": "CI001 - Critical Illness"
+        },
+        {
+          "value": "DIS01",
+          "label": "DIS01 - Disability Benefit"
+        },
+        {
+          "value": "MAT01",
+          "label": "MAT01 - Maturity Benefit"
+        },
+        {
+          "value": "SUR01",
+          "label": "SUR01 - Surrender Benefit"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "exitFromPolicy",
+      "name": "exitFromPolicy",
+      "label": "Exit from Policy",
+      "type": "radio",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "formulaBenefitAmountPayable",
+      "name": "formulaBenefitAmountPayable",
+      "label": "Formula for Benefit Amount Payable",
+      "type": "select",
+      "placeholder": "Select Formula for Benefit Amount Payable",
+      "options": [
+        {
+          "value": "sum-assured",
+          "label": "Sum Assured"
+        },
+        {
+          "value": "fund-value",
+          "label": "Fund Value"
+        },
+        {
+          "value": "higher-of-both",
+          "label": "Higher of Sum Assured and Fund Value"
+        },
+        {
+          "value": "lower-of-both",
+          "label": "Lower of Sum Assured and Fund Value"
+        },
+        {
+          "value": "percentage-fund",
+          "label": "Percentage of Fund Value"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "benefitPaymentSettlementMode",
+      "name": "benefitPaymentSettlementMode",
+      "label": "Benefit Payment Settlement Mode",
+      "type": "select",
+      "placeholder": "Select Benefit Payment Settlement Mode",
+      "options": [
+        {
+          "value": "lump-sum",
+          "label": "Lump Sum"
+        },
+        {
+          "value": "installments",
+          "label": "Installments"
+        },
+        {
+          "value": "annuity",
+          "label": "Annuity"
+        },
+        {
+          "value": "partial-withdrawal",
+          "label": "Partial Withdrawal"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "vestingRule",
+      "name": "vestingRule",
+      "label": "Vesting Rule",
+      "type": "select",
+      "placeholder": "Select Vesting Rule",
+      "options": [
+        {
+          "value": "immediate",
+          "label": "Immediate Vesting"
+        },
+        {
+          "value": "graded",
+          "label": "Graded Vesting"
+        },
+        {
+          "value": "cliff",
+          "label": "Cliff Vesting"
+        },
+        {
+          "value": "none",
+          "label": "No Vesting"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "save",
+      "label": "Save",
+      "type": "api-mutation",
+      "method": "POST",
+      "api": {
+        "endpoint": "/api/policy/benefit-investment",
+        "method": "POST"
+      },
+      "variant": "default"
+    }
+  ]
+}

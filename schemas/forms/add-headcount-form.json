@@ -1,0 +1,68 @@
+{
+  "id": "add-headcount-form",
+  "title": "Add Headcount",
+  "layout": "grid",
+  "fields": [
+    {
+      "id": "planNumber",
+      "name": "planNumber",
+      "label": "Plan Number",
+      "type": "text",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "productCode",
+      "name": "productCode",
+      "label": "Product Code",
+      "type": "text",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "memberCount",
+      "name": "memberCount",
+      "label": "Member Count",
+      "type": "number",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "totalSumInsured",
+      "name": "totalSumInsured",
+      "label": "Total Sum Insured",
+      "type": "number",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "save",
+      "label": "Save",
+      "type": "api-mutation",
+      "method": "POST",
+      "api": {
+        "endpoint": "/api/policy/headcount",
+        "method": "POST"
+      },
+      "variant": "default"
+    }
+  ]
+}
