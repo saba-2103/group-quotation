@@ -1,0 +1,1918 @@
+{
+    "id": "quotation-details-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-6"
+    },
+    "children": [
+        {
+            "id": "quotation-header",
+            "type": "page-header",
+            "props": {
+                "title": "Quotation Details",
+                "description": "Manage specific quotation info",
+                "breadcrumbs": [
+                    {
+                        "label": "Home",
+                        "href": "/"
+                    },
+                    {
+                        "label": "Quotations",
+                        "href": "/quotations"
+                    },
+                    {
+                        "label": "Details"
+                    }
+                ],
+                "actions": [
+                    {
+                        "id": "convert-to-policy",
+                        "label": "Convert to Policy",
+                        "icon": "FileCheck",
+                        "variant": "secondary",
+                        "type": "open-modal",
+                        "target": "convert-to-policy-form"
+                    },
+                    {
+                        "id": "export-pdf",
+                        "label": "Export PDF",
+                        "icon": "Download",
+                        "variant": "outline",
+                        "type": "api-download",
+                        "api": {
+                            "endpoint": "/api/downloads/quotation",
+                            "method": "GET"
+                        },
+                        "filename": "quotation-export.pdf"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "quotation-summary-grid",
+            "type": "key-value-grid",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/quotations/{{id}}/summary",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "fields": [
+                    {
+                        "id": "policy-number",
+                        "label": "Policy Number",
+                        "accessorKey": "policyNumber",
+                        "icon": "FileText",
+                        "type": "text"
+                    },
+                    {
+                        "id": "master-policy-number",
+                        "label": "Master Policy Number",
+                        "accessorKey": "masterPolicyNumber",
+                        "icon": "FileCheck",
+                        "type": "text"
+                    },
+                    {
+                        "id": "is-master-policy",
+                        "label": "Is it Master Policy?",
+                        "accessorKey": "isMasterPolicy",
+                        "icon": "Shield",
+                        "type": "badge"
+                    },
+                    {
+                        "id": "tranno",
+                        "label": "Tranno",
+                        "accessorKey": "tranno",
+                        "icon": "Hash",
+                        "type": "text"
+                    },
+                    {
+                        "id": "branch",
+                        "label": "Branch",
+                        "accessorKey": "branch",
+                        "icon": "Building",
+                        "type": "text"
+                    },
+                    {
+                        "id": "policy-classification",
+                        "label": "Policy Classification",
+                        "accessorKey": "policyClassification",
+                        "icon": "Tag",
+                        "type": "text"
+                    },
+                    {
+                        "id": "product-mix",
+                        "label": "Product Mix",
+                        "accessorKey": "productMix",
+                        "icon": "Package",
+                        "type": "text"
+                    },
+                    {
+                        "id": "risk-term-classification",
+                        "label": "Risk Term Classification",
+                        "accessorKey": "riskTermClassification",
+                        "icon": "TrendingUp",
+                        "type": "text"
+                    },
+                    {
+                        "id": "effective-date",
+                        "label": "Effective Date",
+                        "accessorKey": "effectiveDate",
+                        "icon": "Calendar",
+                        "type": "date"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "quotation-tabs",
+            "type": "tabs-container",
+            "children": [
+                {
+                    "id": "common-header",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Common Header",
+                        "icon": "FileText"
+                    },
+                    "children": [
+                        {
+                            "id": "common-header-tabs",
+                            "type": "tabs-container",
+                            "children": [
+                                {
+                                    "id": "key-data",
+                                    "type": "tab-panel",
+                                    "props": {
+                                        "label": "Key Data"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "key-data-form",
+                                            "type": "form-container",
+                                            "props": {
+                                                "title": "Key Data Information",
+                                                "description": "Form loaded via schema definition.",
+                                                "schemaPath": "/schemas/forms/key-data-form.json"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "policy-configuration",
+                                    "type": "tab-panel",
+                                    "props": {
+                                        "label": "Policy Configuration"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "policy-configuration-form",
+                                            "type": "form-container",
+                                            "props": {
+                                                "title": "Policy Configuration Settings",
+                                                "description": "Form loaded via schema definition.",
+                                                "schemaPath": "/schemas/forms/policy-configuration-form.json"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "policy-details",
+                                    "type": "tab-panel",
+                                    "props": {
+                                        "label": "Policy Details"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "policy-details-form",
+                                            "type": "form-container",
+                                            "props": {
+                                                "title": "Policy Details Form",
+                                                "description": "Form loaded via schema definition.",
+                                                "schemaPath": "/schemas/forms/policy-details-form.json"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "policy-flags-governance",
+                                    "type": "tab-panel",
+                                    "props": {
+                                        "label": "Policy Flags & Governance"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "policy-flags-governance-form",
+                                            "type": "form-container",
+                                            "props": {
+                                                "title": "Policy Flags & Governance Settings",
+                                                "description": "Form loaded via schema definition.",
+                                                "schemaPath": "/schemas/forms/policy-flags-governance-form.json"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "policy-profile",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Policy Profile",
+                        "icon": "User"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "documents",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Documents",
+                        "icon": "FileText"
+                    },
+                    "children": [
+                        {
+                            "id": "documents-stack",
+                            "type": "stack-layout",
+                            "props": {
+                                "spacing": "6"
+                            },
+                            "children": [
+                                {
+                                    "id": "docs-progress",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Document Requirements & Progress"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "docs-progress-links",
+                                            "type": "quick-links-widget",
+                                            "props": {
+                                                "layout": "grid",
+                                                "links": [
+                                                    {
+                                                        "id": "req-docs",
+                                                        "label": "Required Documents",
+                                                        "type": "card",
+                                                        "icon": "FileText",
+                                                        "description": "8 documents based on scheme type & UW method"
+                                                    },
+                                                    {
+                                                        "id": "submitted-docs",
+                                                        "label": "Submitted",
+                                                        "type": "card",
+                                                        "icon": "Upload",
+                                                        "description": "5 documents uploaded"
+                                                    },
+                                                    {
+                                                        "id": "missing-docs",
+                                                        "label": "Missing",
+                                                        "type": "card",
+                                                        "icon": "CircleAlert",
+                                                        "description": "3 documents - Requires immediate attention"
+                                                    },
+                                                    {
+                                                        "id": "verified-docs",
+                                                        "label": "Verified",
+                                                        "type": "card",
+                                                        "icon": "CircleCheck",
+                                                        "description": "3 documents approved for UW"
+                                                    },
+                                                    {
+                                                        "id": "expired-docs",
+                                                        "label": "Expired",
+                                                        "type": "card",
+                                                        "icon": "Clock",
+                                                        "description": "1 document needs resubmission"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "docs-alerts",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Document Intelligence & Blockers"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "docs-alerts-links",
+                                            "type": "quick-links-widget",
+                                            "props": {
+                                                "layout": "grid",
+                                                "links": [
+                                                    {
+                                                        "id": "alert-medical",
+                                                        "label": "BLOCKER: Medical Data Missing",
+                                                        "type": "card",
+                                                        "icon": "ShieldAlert",
+                                                        "description": "Medical examination reports required for members above 45 years.",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "request-document-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "alert-kyc",
+                                                        "label": "KYC Documents Expired",
+                                                        "type": "card",
+                                                        "icon": "TriangleAlert",
+                                                        "description": "KYC documents expired on 2025-01-01.",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "request-document-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "alert-fin",
+                                                        "label": "Financial Details Pending Verification",
+                                                        "type": "card",
+                                                        "icon": "Clock",
+                                                        "description": "Financial statements uploaded but awaiting underwriter verification.",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "verify-document-form"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "docs-table-section",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Document Registry",
+                                        "actions": [
+                                            {
+                                                "id": "add-doc",
+                                                "label": "Add Document",
+                                                "icon": "Plus",
+                                                "variant": "default",
+                                                "action": {
+                                                    "type": "open-sheet",
+                                                    "target": "add-document-form"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "documents-table",
+                                            "type": "data-table",
+                                            "dataSource": {
+                                                "type": "api",
+                                                "api": {
+                                                    "endpoint": "/api/quotations/{{id}}/documents",
+                                                    "method": "GET"
+                                                }
+                                            },
+                                            "props": {
+                                                "columns": [
+                                                    {
+                                                        "id": "docType",
+                                                        "header": "Document Type",
+                                                        "accessorKey": "documentType",
+                                                        "type": "text",
+                                                        "width": "200px"
+                                                    },
+                                                    {
+                                                        "id": "docSource",
+                                                        "header": "Source",
+                                                        "accessorKey": "documentSource",
+                                                        "type": "badge",
+                                                        "width": "120px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "client",
+                                                                "label": "Client",
+                                                                "color": "default"
+                                                            },
+                                                            {
+                                                                "value": "broker",
+                                                                "label": "Broker",
+                                                                "color": "info"
+                                                            },
+                                                            {
+                                                                "value": "lender",
+                                                                "label": "Lender",
+                                                                "color": "warning"
+                                                            },
+                                                            {
+                                                                "value": "insurer",
+                                                                "label": "Insurer",
+                                                                "color": "success"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "linkedEntity",
+                                                        "header": "Linked To",
+                                                        "accessorKey": "linkedEntity",
+                                                        "type": "text",
+                                                        "width": "180px"
+                                                    },
+                                                    {
+                                                        "id": "effDate",
+                                                        "header": "Effective Date",
+                                                        "accessorKey": "effectiveDate",
+                                                        "type": "date",
+                                                        "width": "140px"
+                                                    },
+                                                    {
+                                                        "id": "expDate",
+                                                        "header": "Expiry Date",
+                                                        "accessorKey": "expiryDate",
+                                                        "type": "date",
+                                                        "width": "140px"
+                                                    },
+                                                    {
+                                                        "id": "uploadedBy",
+                                                        "header": "Uploaded By",
+                                                        "accessorKey": "uploadedBy",
+                                                        "type": "text",
+                                                        "width": "150px"
+                                                    },
+                                                    {
+                                                        "id": "verStatus",
+                                                        "header": "Verification",
+                                                        "accessorKey": "verificationStatus",
+                                                        "type": "status",
+                                                        "width": "140px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "pending",
+                                                                "label": "Pending",
+                                                                "color": "warning"
+                                                            },
+                                                            {
+                                                                "value": "verified",
+                                                                "label": "Verified",
+                                                                "color": "success"
+                                                            },
+                                                            {
+                                                                "value": "rejected",
+                                                                "label": "Rejected",
+                                                                "color": "error"
+                                                            },
+                                                            {
+                                                                "value": "expired",
+                                                                "label": "Expired",
+                                                                "color": "error"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "docStatus",
+                                                        "header": "Status",
+                                                        "accessorKey": "documentStatus",
+                                                        "type": "status",
+                                                        "width": "130px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "pending",
+                                                                "label": "Pending",
+                                                                "color": "warning"
+                                                            },
+                                                            {
+                                                                "value": "approved",
+                                                                "label": "Approved",
+                                                                "color": "success"
+                                                            },
+                                                            {
+                                                                "value": "rejected",
+                                                                "label": "Rejected",
+                                                                "color": "error"
+                                                            },
+                                                            {
+                                                                "value": "expired",
+                                                                "label": "Expired",
+                                                                "color": "error"
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "rowActions": [
+                                                    {
+                                                        "id": "view-doc",
+                                                        "label": "View",
+                                                        "icon": "Eye",
+                                                        "action": {
+                                                            "type": "open-modal",
+                                                            "target": "view-document"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "download-doc",
+                                                        "label": "Download",
+                                                        "icon": "Download",
+                                                        "action": {
+                                                            "type": "api",
+                                                            "target": "download-doc-api"
+                                                        }
+                                                    }
+                                                ],
+                                                "pagination": {
+                                                    "enabled": true,
+                                                    "pageSize": 10
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "policy-exclusion",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Policy Exclusion",
+                        "icon": "XCircle"
+                    },
+                    "children": [
+                        {
+                            "id": "policy-exclusion-stack",
+                            "type": "stack-layout",
+                            "props": {
+                                "spacing": "6"
+                            },
+                            "children": [
+                                {
+                                    "id": "clause-pack-section",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Clause Pack & Wording Governance"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "clause-pack-links",
+                                            "type": "quick-links-widget",
+                                            "props": {
+                                                "title": "Active Clause Pack: GTL Standard v2.1",
+                                                "layout": "grid",
+                                                "links": [
+                                                    {
+                                                        "id": "clause-pack-template",
+                                                        "label": "Clause Pack Template",
+                                                        "type": "card",
+                                                        "icon": "FileText",
+                                                        "description": "GTL Standard - Group Term Life Insurance"
+                                                    },
+                                                    {
+                                                        "id": "clause-pack-version",
+                                                        "label": "Version 2.1",
+                                                        "type": "card",
+                                                        "icon": "GitBranch",
+                                                        "description": "Current active version - Last updated: 2025-01-01"
+                                                    },
+                                                    {
+                                                        "id": "scheme-type",
+                                                        "label": "Scheme Type",
+                                                        "type": "card",
+                                                        "icon": "Layers",
+                                                        "description": "GTL (Group Term Life) - Standard Coverage"
+                                                    },
+                                                    {
+                                                        "id": "effective-dating",
+                                                        "label": "Effective Dating Rule",
+                                                        "type": "card",
+                                                        "icon": "Calendar",
+                                                        "description": "Policy term aligned - Supports endorsements"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "exclusion-intelligence-section",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Clause Intelligence & Compliance"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "exclusion-intelligence-links",
+                                            "type": "quick-links-widget",
+                                            "props": {
+                                                "title": "Wording Governance & Compliance Status",
+                                                "layout": "grid",
+                                                "links": [
+                                                    {
+                                                        "id": "conflict-detector",
+                                                        "label": "Conflicting Clauses Detected",
+                                                        "type": "card",
+                                                        "icon": "TriangleAlert",
+                                                        "description": "2 potential conflicts found - EXC001 and EXC007 may overlap",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "resolve-conflict-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "mandatory-checklist",
+                                                        "label": "Mandatory Exclusions",
+                                                        "type": "card",
+                                                        "icon": "ListChecks",
+                                                        "description": "8 of 10 mandatory exclusions applied - 2 pending"
+                                                    },
+                                                    {
+                                                        "id": "compliance-status",
+                                                        "label": "Product Filing Compliance",
+                                                        "type": "card",
+                                                        "icon": "ShieldCheck",
+                                                        "description": "Compliant with IRDAI filing requirements"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "policy-exclusion-table-section",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Policy Exclusions & Clause Registry",
+                                        "actions": [
+                                            {
+                                                "id": "add-exclusion",
+                                                "label": "Add Exclusion",
+                                                "icon": "Plus",
+                                                "variant": "default",
+                                                "action": {
+                                                    "type": "open-sheet",
+                                                    "target": "add-exclusion-form"
+                                                }
+                                            },
+                                            {
+                                                "id": "manage-clause-pack",
+                                                "label": "Manage Clause Pack",
+                                                "icon": "Package",
+                                                "variant": "outline",
+                                                "action": {
+                                                    "type": "open-sheet",
+                                                    "target": "manage-clause-pack-form"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "policy-exclusion-table",
+                                            "type": "data-table",
+                                            "dataSource": {
+                                                "type": "api",
+                                                "api": {
+                                                    "endpoint": "/api/quotations/{{id}}/exclusions",
+                                                    "method": "GET"
+                                                }
+                                            },
+                                            "props": {
+                                                "columns": [
+                                                    {
+                                                        "id": "exclusionCode",
+                                                        "header": "Exclusion Code",
+                                                        "accessorKey": "exclusionCode",
+                                                        "type": "text",
+                                                        "width": "140px"
+                                                    },
+                                                    {
+                                                        "id": "exclusionDesc",
+                                                        "header": "Exclusion Description",
+                                                        "accessorKey": "exclusionDescription",
+                                                        "type": "text",
+                                                        "width": "250px"
+                                                    },
+                                                    {
+                                                        "id": "scope",
+                                                        "header": "Scope",
+                                                        "accessorKey": "scope",
+                                                        "type": "badge",
+                                                        "width": "120px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "policy",
+                                                                "label": "Policy",
+                                                                "color": "default"
+                                                            },
+                                                            {
+                                                                "value": "plan",
+                                                                "label": "Plan",
+                                                                "color": "info"
+                                                            },
+                                                            {
+                                                                "value": "member",
+                                                                "label": "Member",
+                                                                "color": "warning"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "category",
+                                                        "header": "Category",
+                                                        "accessorKey": "category",
+                                                        "type": "badge",
+                                                        "width": "130px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "mandatory",
+                                                                "label": "Mandatory",
+                                                                "color": "error"
+                                                            },
+                                                            {
+                                                                "value": "optional",
+                                                                "label": "Optional",
+                                                                "color": "default"
+                                                            },
+                                                            {
+                                                                "value": "conditional",
+                                                                "label": "Conditional",
+                                                                "color": "warning"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "version",
+                                                        "header": "Version",
+                                                        "accessorKey": "version",
+                                                        "type": "text",
+                                                        "width": "100px"
+                                                    },
+                                                    {
+                                                        "id": "effDate",
+                                                        "header": "Effective Date",
+                                                        "accessorKey": "effectiveDate",
+                                                        "type": "date",
+                                                        "width": "140px"
+                                                    },
+                                                    {
+                                                        "id": "status",
+                                                        "header": "Status",
+                                                        "accessorKey": "status",
+                                                        "type": "status",
+                                                        "width": "120px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "active",
+                                                                "label": "Active",
+                                                                "color": "success"
+                                                            },
+                                                            {
+                                                                "value": "superseded",
+                                                                "label": "Superseded",
+                                                                "color": "warning"
+                                                            },
+                                                            {
+                                                                "value": "archived",
+                                                                "label": "Archived",
+                                                                "color": "default"
+                                                            },
+                                                            {
+                                                                "value": "draft",
+                                                                "label": "Draft",
+                                                                "color": "info"
+                                                            }
+                                                        ]
+                                                    }
+                                                ],
+                                                "rowActions": [
+                                                    {
+                                                        "id": "view",
+                                                        "label": "View",
+                                                        "icon": "Eye",
+                                                        "action": {
+                                                            "type": "open-modal",
+                                                            "target": "view-exclusion"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "edit",
+                                                        "label": "Edit",
+                                                        "icon": "Pencil",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "edit-exclusion-form"
+                                                        }
+                                                    }
+                                                ],
+                                                "pagination": {
+                                                    "enabled": true,
+                                                    "pageSize": 10
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "subsidiaries",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Subsidiaries",
+                        "icon": "Building"
+                    },
+                    "children": [
+                        {
+                            "id": "subsidiaries-table-section",
+                            "type": "section-group",
+                            "props": {
+                                "title": "Subsidiaries Listing",
+                                "actions": [
+                                    {
+                                        "id": "add-subsidiary",
+                                        "label": "Add Subsidiary",
+                                        "icon": "Plus",
+                                        "variant": "default",
+                                        "action": {
+                                            "type": "open-sheet",
+                                            "target": "add-subsidiary-form"
+                                        }
+                                    }
+                                ]
+                            },
+                            "children": [
+                                {
+                                    "id": "subsidiaries-table",
+                                    "type": "data-table",
+                                    "dataSource": {
+                                        "type": "api",
+                                        "api": {
+                                            "endpoint": "/api/quotations/{{id}}/subsidiaries",
+                                            "method": "GET"
+                                        }
+                                    },
+                                    "props": {
+                                        "selectable": true,
+                                        "columns": [
+                                            {
+                                                "id": "subsidiaryCode",
+                                                "header": "Subsidiary Code",
+                                                "accessorKey": "subsidiaryCode",
+                                                "type": "text",
+                                                "width": "150px"
+                                            },
+                                            {
+                                                "id": "subsidiaryName",
+                                                "header": "Subsidiary Name",
+                                                "accessorKey": "subsidiaryName",
+                                                "type": "text",
+                                                "width": "200px"
+                                            },
+                                            {
+                                                "id": "locationBranch",
+                                                "header": "Location/Branch",
+                                                "accessorKey": "locationBranch",
+                                                "type": "text",
+                                                "width": "150px"
+                                            },
+                                            {
+                                                "id": "billingSplitRule",
+                                                "header": "Billing Split Rule",
+                                                "accessorKey": "billingSplitRule",
+                                                "type": "badge",
+                                                "width": "130px",
+                                                "valueMapping": [
+                                                    {
+                                                        "value": "headcount",
+                                                        "label": "Headcount",
+                                                        "color": "default"
+                                                    },
+                                                    {
+                                                        "value": "si",
+                                                        "label": "Sum Insured",
+                                                        "color": "info"
+                                                    },
+                                                    {
+                                                        "value": "premium",
+                                                        "label": "Premium",
+                                                        "color": "success"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "startDate",
+                                                "header": "Start Date",
+                                                "accessorKey": "startDate",
+                                                "type": "date",
+                                                "width": "120px"
+                                            },
+                                            {
+                                                "id": "endDate",
+                                                "header": "End Date",
+                                                "accessorKey": "endDate",
+                                                "type": "date",
+                                                "width": "120px"
+                                            },
+                                            {
+                                                "id": "status",
+                                                "header": "Status",
+                                                "accessorKey": "status",
+                                                "type": "badge",
+                                                "width": "100px",
+                                                "valueMapping": [
+                                                    {
+                                                        "value": "active",
+                                                        "label": "Active",
+                                                        "color": "success"
+                                                    },
+                                                    {
+                                                        "value": "terminated",
+                                                        "label": "Terminated",
+                                                        "color": "error"
+                                                    },
+                                                    {
+                                                        "value": "lapsed",
+                                                        "label": "Lapsed",
+                                                        "color": "warning"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "rowActions": [
+                                            {
+                                                "id": "edit",
+                                                "label": "Edit",
+                                                "icon": "Pencil",
+                                                "action": {
+                                                    "type": "open-sheet",
+                                                    "target": "edit-subsidiary-form"
+                                                }
+                                            },
+                                            {
+                                                "id": "lapse",
+                                                "label": "Lapse",
+                                                "icon": "Clock",
+                                                "action": {
+                                                    "type": "open-modal",
+                                                    "target": "confirm-lapse"
+                                                }
+                                            },
+                                            {
+                                                "id": "terminate",
+                                                "label": "Terminate",
+                                                "icon": "XCircle",
+                                                "action": {
+                                                    "type": "open-modal",
+                                                    "target": "confirm-terminate"
+                                                }
+                                            },
+                                            {
+                                                "id": "delete",
+                                                "label": "Delete",
+                                                "icon": "Trash2",
+                                                "action": {
+                                                    "type": "api",
+                                                    "target": "delete-subsidiary-api"
+                                                }
+                                            }
+                                        ],
+                                        "bulkActions": [
+                                            {
+                                                "id": "bulk-terminate",
+                                                "label": "Terminate",
+                                                "icon": "XCircle",
+                                                "action": {
+                                                    "type": "open-modal",
+                                                    "target": "confirm-bulk-terminate"
+                                                }
+                                            },
+                                            {
+                                                "id": "bulk-lapse",
+                                                "label": "Lapse",
+                                                "icon": "Clock",
+                                                "action": {
+                                                    "type": "open-modal",
+                                                    "target": "confirm-bulk-lapse"
+                                                }
+                                            }
+                                        ],
+                                        "pagination": {
+                                            "enabled": true,
+                                            "pageSize": 10
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "plans",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Plans",
+                        "icon": "Layers"
+                    },
+                    "children": [
+                        {
+                            "id": "plans-stack",
+                            "type": "stack-layout",
+                            "props": {
+                                "spacing": "6"
+                            },
+                            "children": [
+                                {
+                                    "id": "plans-portfolio",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Plan Portfolio Overview"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "plans-portfolio-links",
+                                            "type": "quick-links-widget",
+                                            "props": {
+                                                "title": "Plan Portfolio Summary - 4 Active Plans",
+                                                "layout": "grid",
+                                                "links": [
+                                                    {
+                                                        "id": "total-plans",
+                                                        "label": "Total Plans",
+                                                        "type": "card",
+                                                        "icon": "Layers",
+                                                        "description": "4 active plans configured"
+                                                    },
+                                                    {
+                                                        "id": "total-members",
+                                                        "label": "Total Members",
+                                                        "type": "card",
+                                                        "icon": "Users",
+                                                        "description": "1,250 members across all plans"
+                                                    },
+                                                    {
+                                                        "id": "total-si",
+                                                        "label": "Total Sum Insured",
+                                                        "type": "card",
+                                                        "icon": "DollarSign",
+                                                        "description": "₹12.5 Cr total coverage"
+                                                    },
+                                                    {
+                                                        "id": "plan-completeness",
+                                                        "label": "Plan Completeness",
+                                                        "type": "card",
+                                                        "icon": "CheckCircle2",
+                                                        "description": "3 of 4 plans fully configured"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "plans-table-section",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Plans Listing",
+                                        "actions": [
+                                            {
+                                                "id": "add-plan",
+                                                "label": "Add Plan",
+                                                "icon": "Plus",
+                                                "variant": "default",
+                                                "action": {
+                                                    "type": "open-sheet",
+                                                    "target": "add-plan-form"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "plans-table",
+                                            "type": "data-table",
+                                            "dataSource": {
+                                                "type": "api",
+                                                "api": {
+                                                    "endpoint": "/api/quotations/{{id}}/plans",
+                                                    "method": "GET"
+                                                }
+                                            },
+                                            "props": {
+                                                "selectable": true,
+                                                "columns": [
+                                                    {
+                                                        "id": "planNum",
+                                                        "header": "Plan Number",
+                                                        "accessorKey": "planNumber",
+                                                        "type": "text",
+                                                        "width": "120px"
+                                                    },
+                                                    {
+                                                        "id": "planDesc",
+                                                        "header": "Plan Description",
+                                                        "accessorKey": "planDescription",
+                                                        "type": "text",
+                                                        "width": "220px"
+                                                    },
+                                                    {
+                                                        "id": "planType",
+                                                        "header": "Plan Type",
+                                                        "accessorKey": "planType",
+                                                        "type": "badge",
+                                                        "width": "140px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "level-term",
+                                                                "label": "Level Term",
+                                                                "color": "default"
+                                                            },
+                                                            {
+                                                                "value": "reducing-term",
+                                                                "label": "Reducing Term",
+                                                                "color": "info"
+                                                            },
+                                                            {
+                                                                "value": "decreasing-term",
+                                                                "label": "Decreasing Term",
+                                                                "color": "warning"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "saBasis",
+                                                        "header": "SA Basis",
+                                                        "accessorKey": "sumAssuredBasis",
+                                                        "type": "badge",
+                                                        "width": "150px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "flat",
+                                                                "label": "Flat",
+                                                                "color": "default"
+                                                            },
+                                                            {
+                                                                "value": "salary-multiple",
+                                                                "label": "Salary Multiple",
+                                                                "color": "info"
+                                                            },
+                                                            {
+                                                                "value": "grade-slab",
+                                                                "label": "Grade Slab",
+                                                                "color": "warning"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "enrollType",
+                                                        "header": "Enrollment",
+                                                        "accessorKey": "enrollmentType",
+                                                        "type": "badge",
+                                                        "width": "130px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "auto",
+                                                                "label": "Auto",
+                                                                "color": "success"
+                                                            },
+                                                            {
+                                                                "value": "opt-in",
+                                                                "label": "Opt-in",
+                                                                "color": "info"
+                                                            },
+                                                            {
+                                                                "value": "evidence-based",
+                                                                "label": "Evidence",
+                                                                "color": "warning"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "livesCovered",
+                                                        "header": "Lives Covered",
+                                                        "accessorKey": "livesCovered",
+                                                        "type": "text",
+                                                        "width": "140px"
+                                                    },
+                                                    {
+                                                        "id": "memCount",
+                                                        "header": "Members",
+                                                        "accessorKey": "memberCount",
+                                                        "type": "number",
+                                                        "width": "100px",
+                                                        "align": "right"
+                                                    },
+                                                    {
+                                                        "id": "totSI",
+                                                        "header": "Total SI",
+                                                        "accessorKey": "totalSumInsured",
+                                                        "type": "currency",
+                                                        "width": "140px",
+                                                        "align": "right"
+                                                    },
+                                                    {
+                                                        "id": "compliance",
+                                                        "header": "Completeness",
+                                                        "accessorKey": "completenessScore",
+                                                        "type": "badge",
+                                                        "width": "130px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "100",
+                                                                "label": "100%",
+                                                                "color": "success"
+                                                            },
+                                                            {
+                                                                "value": "75",
+                                                                "label": "75%",
+                                                                "color": "warning"
+                                                            },
+                                                            {
+                                                                "value": "50",
+                                                                "label": "50%",
+                                                                "color": "error"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "status",
+                                                        "header": "Status",
+                                                        "accessorKey": "status",
+                                                        "type": "status",
+                                                        "width": "110px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "active",
+                                                                "label": "Active",
+                                                                "color": "success"
+                                                            },
+                                                            {
+                                                                "value": "inactive",
+                                                                "label": "Inactive",
+                                                                "color": "default"
+                                                            },
+                                                            {
+                                                                "value": "terminated",
+                                                                "label": "Terminated",
+                                                                "color": "error"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "effDate",
+                                                        "header": "Start Date",
+                                                        "accessorKey": "startDate",
+                                                        "type": "date",
+                                                        "width": "130px"
+                                                    }
+                                                ],
+                                                "rowActions": [
+                                                    {
+                                                        "id": "view",
+                                                        "label": "View Details",
+                                                        "icon": "Eye",
+                                                        "action": {
+                                                            "type": "open-modal",
+                                                            "target": "view-plan"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "view-members",
+                                                        "label": "View Members",
+                                                        "icon": "Users",
+                                                        "action": {
+                                                            "type": "route",
+                                                            "target": "/quotations/{{id}}#members"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "config-rules",
+                                                        "label": "Configure Rules",
+                                                        "icon": "Settings",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "configure-plan-rules-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "edit",
+                                                        "label": "Edit",
+                                                        "icon": "Pencil",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "add-plan-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "delete",
+                                                        "label": "Delete",
+                                                        "icon": "Trash2",
+                                                        "action": {
+                                                            "type": "api",
+                                                            "target": "delete-plan-api"
+                                                        }
+                                                    }
+                                                ],
+                                                "bulkActions": [
+                                                    {
+                                                        "id": "terminate",
+                                                        "label": "Terminate",
+                                                        "icon": "XCircle",
+                                                        "action": {
+                                                            "type": "open-modal",
+                                                            "target": "confirm-bulk-terminate"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "lapse",
+                                                        "label": "Lapse",
+                                                        "icon": "Clock",
+                                                        "action": {
+                                                            "type": "open-modal",
+                                                            "target": "confirm-bulk-lapse"
+                                                        }
+                                                    }
+                                                ],
+                                                "pagination": {
+                                                    "enabled": true,
+                                                    "pageSize": 10
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-products",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Plan / Products",
+                        "icon": "Package"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-product-health",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Plan / Product Health",
+                        "icon": "Heart"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-product-term-life",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Plan / Product Term Life",
+                        "icon": "Heart"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-product-credit-life",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Plan / Product Credit Life",
+                        "icon": "CreditCard"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-product-investment",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Plan / Product Investment",
+                        "icon": "TrendingUp"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-product-benefits",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Plan / Product Benefits",
+                        "icon": "Gift"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plan-product-benefits-health",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Plan / Product Benefits Health",
+                        "icon": "Heart"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "benefit-investment",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Benefit Investment",
+                        "icon": "PiggyBank"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "premium-method-05",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Premium Method 05",
+                        "icon": "Calculator"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "premium-method-06",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Premium Method 06",
+                        "icon": "Calculator"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "premium-method-07",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Premium Method 07",
+                        "icon": "Calculator"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "premium-method-08",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Premium Method 08",
+                        "icon": "Calculator"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "headcount",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Headcount",
+                        "icon": "Users"
+                    },
+                    "children": [
+                        {
+                            "id": "under-construction-stub",
+                            "type": "form-container",
+                            "props": {
+                                "title": "Under Construction",
+                                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                                "schemaPath": "/schemas/forms/dummy-member-form.json"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "members",
+                    "type": "tab-panel",
+                    "props": {
+                        "label": "Members",
+                        "icon": "Users"
+                    },
+                    "children": [
+                        {
+                            "id": "members-stack",
+                            "type": "stack-layout",
+                            "props": {
+                                "spacing": "6"
+                            },
+                            "children": [
+                                {
+                                    "id": "member-filter",
+                                    "type": "filter-bar",
+                                    "props": {
+                                        "placeholder": "Search members...",
+                                        "filters": [
+                                            {
+                                                "id": "fclStatus",
+                                                "label": "FCL Status",
+                                                "type": "select",
+                                                "options": [
+                                                    {
+                                                        "value": "within",
+                                                        "label": "Within"
+                                                    },
+                                                    {
+                                                        "value": "above",
+                                                        "label": "Above"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "pricingStatus",
+                                                "label": "Pricing Status",
+                                                "type": "select",
+                                                "options": [
+                                                    {
+                                                        "value": "rated",
+                                                        "label": "Rated"
+                                                    },
+                                                    {
+                                                        "value": "unrated",
+                                                        "label": "Unrated"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                },
+                                {
+                                    "id": "member-actions-section",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Single Member Operations"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "member-actions",
+                                            "type": "quick-links-widget",
+                                            "props": {
+                                                "layout": "inline",
+                                                "links": [
+                                                    {
+                                                        "id": "cancel",
+                                                        "label": "Cancel from Inception",
+                                                        "icon": "XCircle",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "cancel-member-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "surrender",
+                                                        "label": "Surrender",
+                                                        "icon": "HandCoins",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "surrender-member-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "pre-existing",
+                                                        "label": "Pre-existing Conditions",
+                                                        "icon": "HeartPulse",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "pre-existing-conditions-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "exclusions",
+                                                        "label": "Member Exclusions",
+                                                        "icon": "ShieldOff",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "member-exclusions-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "add-dependent",
+                                                        "label": "Add Dependent",
+                                                        "icon": "UserPlus",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "add-dependent-form"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "members-table-section",
+                                    "type": "section-group",
+                                    "props": {
+                                        "title": "Member Listing",
+                                        "actions": [
+                                            {
+                                                "id": "upload-members",
+                                                "label": "Member Upload",
+                                                "icon": "Upload",
+                                                "variant": "default",
+                                                "action": {
+                                                    "type": "open-sheet",
+                                                    "target": "upload-members-form"
+                                                }
+                                            },
+                                            {
+                                                "id": "export-roster",
+                                                "label": "Export Roster",
+                                                "icon": "Download",
+                                                "variant": "outline",
+                                                "action": {
+                                                    "type": "api",
+                                                    "target": "/api/policy/members/export"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "members-table",
+                                            "type": "data-table",
+                                            "dataSource": {
+                                                "type": "api",
+                                                "api": {
+                                                    "endpoint": "API_ENDPOINT_PLACEHOLDER_MEMBERS",
+                                                    "method": "GET"
+                                                }
+                                            },
+                                            "props": {
+                                                "columns": [
+                                                    {
+                                                        "id": "memberNumber",
+                                                        "header": "Member Number",
+                                                        "accessorKey": "id",
+                                                        "type": "text",
+                                                        "width": "120px"
+                                                    },
+                                                    {
+                                                        "id": "memberName",
+                                                        "header": "Member Name",
+                                                        "accessorKey": "memberName",
+                                                        "type": "link",
+                                                        "linkRoute": "/members/:id/master",
+                                                        "width": "150px"
+                                                    },
+                                                    {
+                                                        "id": "planNumber",
+                                                        "header": "Plan No.",
+                                                        "accessorKey": "planNumber",
+                                                        "type": "text",
+                                                        "width": "100px"
+                                                    },
+                                                    {
+                                                        "id": "currentCoverageSI",
+                                                        "header": "Coverage SI",
+                                                        "accessorKey": "currentCoverageSI",
+                                                        "type": "currency",
+                                                        "width": "130px",
+                                                        "align": "right"
+                                                    },
+                                                    {
+                                                        "id": "fclStatus",
+                                                        "header": "FCL Status",
+                                                        "accessorKey": "fclStatus",
+                                                        "type": "badge",
+                                                        "width": "110px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "within",
+                                                                "label": "Within",
+                                                                "color": "success"
+                                                            },
+                                                            {
+                                                                "value": "above",
+                                                                "label": "Above",
+                                                                "color": "error"
+                                                            },
+                                                            {
+                                                                "value": "not-computed",
+                                                                "label": "N/A",
+                                                                "color": "default"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "excessSI",
+                                                        "header": "Excess SI",
+                                                        "accessorKey": "excessSI",
+                                                        "type": "currency",
+                                                        "width": "120px",
+                                                        "align": "right"
+                                                    },
+                                                    {
+                                                        "id": "pricingStatus",
+                                                        "header": "Pricing Status",
+                                                        "accessorKey": "pricingStatus",
+                                                        "type": "badge",
+                                                        "width": "130px",
+                                                        "valueMapping": [
+                                                            {
+                                                                "value": "rated",
+                                                                "label": "Rated",
+                                                                "color": "success"
+                                                            },
+                                                            {
+                                                                "value": "unrated",
+                                                                "label": "Unrated",
+                                                                "color": "error"
+                                                            },
+                                                            {
+                                                                "value": "override-pending",
+                                                                "label": "Override Pending",
+                                                                "color": "warning"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "premium",
+                                                        "header": "Premium",
+                                                        "accessorKey": "premium",
+                                                        "type": "currency",
+                                                        "width": "120px",
+                                                        "align": "right"
+                                                    }
+                                                ],
+                                                "rowActions": [
+                                                    {
+                                                        "id": "edit",
+                                                        "label": "Edit",
+                                                        "icon": "Pencil",
+                                                        "action": {
+                                                            "type": "open-sheet",
+                                                            "target": "edit-member-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "delete",
+                                                        "label": "Delete",
+                                                        "icon": "Trash2",
+                                                        "variant": "destructive",
+                                                        "action": {
+                                                            "type": "api",
+                                                            "target": "delete-member-api"
+                                                        }
+                                                    }
+                                                ],
+                                                "bulkActions": [
+                                                    {
+                                                        "id": "bulk-verify",
+                                                        "label": "Verify Selected",
+                                                        "icon": "CircleCheck",
+                                                        "variant": "outline",
+                                                        "action": {
+                                                            "type": "open-modal",
+                                                            "target": "bulk-verify-form"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "bulk-download",
+                                                        "label": "Download Selected",
+                                                        "icon": "Download",
+                                                        "variant": "outline",
+                                                        "action": {
+                                                            "type": "api",
+                                                            "target": "bulk-download-api"
+                                                        }
+                                                    }
+                                                ],
+                                                "pagination": {
+                                                    "enabled": true,
+                                                    "pageSize": 10
+                                                },
+                                                "selectable": true
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

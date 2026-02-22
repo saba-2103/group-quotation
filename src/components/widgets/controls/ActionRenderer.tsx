@@ -11,11 +11,15 @@ interface ActionRendererProps {
 export const ActionRenderer: React.FC<ActionRendererProps> = ({ action, disabled }) => {
     const handleAction = useActionHandler();
 
+    // The schema sometimes nests interaction payloads inside the `action` property.
+    // We flatten it here so `useActionHandler` can read `type` and `target` natively.
+    const resolvedAction = (action as any).action ? { ...action, ...(action as any).action } : action;
+
     const handleClick = async () => {
-        await handleAction(action);
+        await handleAction(resolvedAction);
     };
 
     return (
-        <ActionButton action={action} onClick={handleClick} disabled={disabled} />
+        <ActionButton action={resolvedAction} onClick={handleClick} disabled={disabled} />
     );
 };

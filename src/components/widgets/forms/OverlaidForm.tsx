@@ -7,24 +7,13 @@ interface OverlaidFormProps {
     formId: string;
 }
 
-// Temporary Mock fetcher until the real schema fetcher is implemented.
+// Dynamic fetcher that hits our Next.js API route to load physical JSON schemas
 const fetchFormConfig = async (formId: string): Promise<WidgetConfig> => {
-    // In production, this hits the Cloudflare KV store holding form schemas
-    // For now, we simulate network latency
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    return {
-        id: formId,
-        type: "stack-layout",
-        props: { className: "p-4" },
-        children: [
-            {
-                id: `${formId}-header`,
-                type: "page-header",
-                props: { title: `Loaded Form: ${formId}` }
-            }
-        ]
-    };
+    const res = await fetch(`/api/forms/${formId}`);
+    if (!res.ok) {
+        throw new Error(`Failed to fetch schema for ${formId}`);
+    }
+    return res.json();
 };
 
 export const OverlaidForm: React.FC<OverlaidFormProps> = ({ formId }) => {

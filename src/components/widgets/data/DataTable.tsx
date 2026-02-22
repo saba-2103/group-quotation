@@ -41,19 +41,19 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
         error
     } = config.props || {};
 
-    const initialData = config.props?.data || [];
+    const initialDataProp = config.props?.data;
 
     // State
-    const [tableData, setTableData] = useState<any[]>(initialData);
+    const [tableData, setTableData] = useState<any[]>(initialDataProp || []);
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
     const [currentPage, setCurrentPage] = useState(1);
 
     // Sync incoming data changes
     useEffect(() => {
-        setTableData(initialData);
+        setTableData(initialDataProp || []);
         setSelectedRows(new Set());
         setCurrentPage(1);
-    }, [initialData]);
+    }, [initialDataProp]);
 
     // Pagination Logic
     const pageSize = pagination?.pageSize ?? 20;

@@ -10,6 +10,7 @@ import { DataTable } from '../widgets/data/DataTable';
 import { FilterBar } from '../widgets/controls/FilterBar';
 import { TabsContainer } from '../widgets/container/TabsContainer';
 import { FormContainer } from '../widgets/forms/FormContainer';
+import { KeyValueGrid } from '../widgets/data/KeyValueGrid';
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
     'stack-layout': StackLayout,
@@ -23,6 +24,7 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
     'filter-bar': FilterBar,
     'tabs-container': TabsContainer,
     'form-container': FormContainer,
+    'key-value-grid': KeyValueGrid,
 };
 
 export const getWidgetComponent = (type: string) => {

@@ -55,6 +55,15 @@ export type ActionConfig = BaseActionConfig & (
         };
     }
     | {
+        type: "api-download";
+        api: {
+            endpoint: string;
+            method: "GET" | "POST";
+            body?: any;
+        };
+        filename?: string;
+    }
+    | {
         type: "trigger-event";
         target: string;
     }

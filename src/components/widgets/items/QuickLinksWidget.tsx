@@ -51,12 +51,12 @@ const QuickLinkCard = ({ link }: { link: any }) => {
                 {link.icon && (
                     <LucideIcon name={link.icon} className="h-6 w-6 text-primary mb-1" />
                 )}
-                <div className="flex flex-col gap-1">
+                <span className="flex flex-col gap-1">
                     <span className="text-base font-semibold text-foreground">{link.label}</span>
                     {link.description && (
-                        <p className="text-sm text-muted-foreground">{link.description}</p>
+                        <span className="text-sm text-muted-foreground">{link.description}</span>
                     )}
-                </div>
+                </span>
             </button>
         );
     }

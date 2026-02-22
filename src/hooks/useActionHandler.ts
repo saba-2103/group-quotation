@@ -55,6 +55,31 @@ export const useActionHandler = () => {
             case 'open-sheet':
                 if (action.target) open(action.target, "sheet");
                 break;
+            case 'api-download':
+                if (action.api) {
+                    try {
+                        const res = await fetch(action.api.endpoint, {
+                            method: action.api.method,
+                            body: action.api.method !== 'GET' ? JSON.stringify(action.api.body) : undefined,
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (!res.ok) throw new Error(`Download failed: ${res.statusText}`);
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = action.filename || 'download';
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                    } catch (error) {
+                        console.error('Download error:', error);
+                    }
+                }
+                break;
             case 'trigger-event':
                 console.log('Trigger Event:', action.target);
                 break;
