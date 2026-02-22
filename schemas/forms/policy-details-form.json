@@ -1,23 +1,412 @@
 {
-    "type": "form-container",
-    "props": {
-        "title": "Module Under Construction",
-        "description": "This operation is part of the legacy GTL schema and is currently being ported to the new Keystone-UI architecture.",
-        "fields": [
-            {
-                "name": "acknowledgement",
-                "label": "Acknowledge Porting Status",
-                "type": "checkbox"
-            }
-        ],
-        "actions": [
-            {
-                "id": "close",
-                "label": "Close",
-                "actionType": "action",
-                "variant": "outline",
-                "submitAction": false
-            }
-        ]
+  "id": "policy-details-form",
+  "title": "Policy Details",
+  "layout": {
+    "type": "grid",
+    "columns": 3,
+    "gap": "md"
+  },
+  "fields": [
+    {
+      "id": "businessType",
+      "name": "businessType",
+      "label": "Business Type",
+      "type": "select",
+      "order": 1,
+      "size": "sm",
+      "defaultValue": "New Business",
+      "options": [
+        {
+          "value": "New Business",
+          "label": "New Business"
+        },
+        {
+          "value": "Renewal",
+          "label": "Renewal"
+        },
+        {
+          "value": "Roll-over",
+          "label": "Roll-over"
+        },
+        {
+          "value": "Takeover",
+          "label": "Takeover"
+        },
+        {
+          "value": "Topup",
+          "label": "Topup"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "isItTakeover",
+      "name": "isItTakeover",
+      "label": "Is it a Takeover?",
+      "type": "radio",
+      "order": 2,
+      "size": "sm",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "defaultValue": "no",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "takeoverFrom",
+      "name": "takeoverFrom",
+      "label": "Takeover From",
+      "type": "select",
+      "order": 3,
+      "size": "sm",
+      "options": [
+        {
+          "value": "Company A",
+          "label": "Company A"
+        },
+        {
+          "value": "Company B",
+          "label": "Company B"
+        },
+        {
+          "value": "Company C",
+          "label": "Company C"
+        }
+      ],
+      "visibleWhen": {
+        "field": "isItTakeover",
+        "operator": "eq",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "takeoverPolicyReceived",
+      "name": "takeoverPolicyReceived",
+      "label": "Takeover Policy Copy Received?",
+      "type": "radio",
+      "order": 4,
+      "size": "sm",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "defaultValue": "no",
+      "visibleWhen": {
+        "field": "isItTakeover",
+        "operator": "eq",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "natureOfBusiness",
+      "name": "natureOfBusiness",
+      "label": "Nature of Business",
+      "type": "select",
+      "order": 5,
+      "size": "sm",
+      "defaultValue": "IT Services",
+      "options": [
+        {
+          "value": "IT Services",
+          "label": "IT Services"
+        },
+        {
+          "value": "Manufacturing",
+          "label": "Manufacturing"
+        },
+        {
+          "value": "Healthcare",
+          "label": "Healthcare"
+        },
+        {
+          "value": "Finance",
+          "label": "Finance"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "natureOfBusinessDesc",
+      "name": "natureOfBusinessDesc",
+      "label": "Nature of Business Description",
+      "type": "text",
+      "order": 6,
+      "size": "sm",
+      "span": 2,
+      "placeholder": "Describe the nature of business"
+    },
+    {
+      "id": "sicCode",
+      "name": "sicCode",
+      "label": "SIC Code",
+      "type": "text",
+      "order": 7,
+      "size": "sm",
+      "placeholder": "Enter SIC Code"
+    },
+    {
+      "id": "geographicalCoverage",
+      "name": "geographicalCoverage",
+      "label": "Geographical Coverage",
+      "type": "select",
+      "order": 8,
+      "size": "sm",
+      "defaultValue": "India",
+      "options": [
+        {
+          "value": "India",
+          "label": "India"
+        },
+        {
+          "value": "Asia Pacific",
+          "label": "Asia Pacific"
+        },
+        {
+          "value": "Global",
+          "label": "Global"
+        },
+        {
+          "value": "Specific Regions",
+          "label": "Specific Regions"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "employeeCount",
+      "name": "employeeCount",
+      "label": "Employee Count",
+      "type": "number",
+      "order": 9,
+      "size": "sm",
+      "defaultValue": 1000,
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        },
+        {
+          "rule": "min",
+          "value": 1,
+          "message": "Minimum value is 1"
+        }
+      ]
+    },
+    {
+      "id": "annualTurnover",
+      "name": "annualTurnover",
+      "label": "Annual Turnover",
+      "type": "number",
+      "order": 10,
+      "size": "sm",
+      "validations": [
+        {
+          "rule": "min",
+          "value": 0,
+          "message": "Minimum value is 0"
+        }
+      ]
+    },
+    {
+      "id": "riskRating",
+      "name": "riskRating",
+      "label": "Risk Rating",
+      "type": "select",
+      "order": 11,
+      "size": "sm",
+      "defaultValue": "Medium",
+      "options": [
+        {
+          "value": "Low",
+          "label": "Low"
+        },
+        {
+          "value": "Medium",
+          "label": "Medium"
+        },
+        {
+          "value": "High",
+          "label": "High"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "isCoInsurance",
+      "name": "isCoInsurance",
+      "label": "Is Co-Insurance Applicable?",
+      "type": "radio",
+      "order": 12,
+      "size": "sm",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "defaultValue": "no",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "coInsuranceShare",
+      "name": "coInsuranceShare",
+      "label": "Co-Insurance Share (%)",
+      "type": "number",
+      "order": 13,
+      "size": "sm",
+      "validations": [
+        {
+          "rule": "min",
+          "value": 0,
+          "message": "Minimum value is 0"
+        },
+        {
+          "rule": "max",
+          "value": 100,
+          "message": "Maximum value is 100"
+        }
+      ],
+      "visibleWhen": {
+        "field": "isCoInsurance",
+        "operator": "eq",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "isRIApplicable",
+      "name": "isRIApplicable",
+      "label": "Is RI Applicable?",
+      "type": "radio",
+      "order": 14,
+      "size": "sm",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "defaultValue": "no",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "riShare",
+      "name": "riShare",
+      "label": "RI Share (%)",
+      "type": "number",
+      "order": 15,
+      "size": "sm",
+      "validations": [
+        {
+          "rule": "min",
+          "value": 0,
+          "message": "Minimum value is 0"
+        },
+        {
+          "rule": "max",
+          "value": 100,
+          "message": "Maximum value is 100"
+        }
+      ],
+      "visibleWhen": {
+        "field": "isRIApplicable",
+        "operator": "eq",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "underwritingAuthority",
+      "name": "underwritingAuthority",
+      "label": "Underwriting Authority",
+      "type": "select",
+      "order": 16,
+      "size": "sm",
+      "defaultValue": "Branch Manager",
+      "options": [
+        {
+          "value": "Branch Manager",
+          "label": "Branch Manager"
+        },
+        {
+          "value": "Regional UW",
+          "label": "Regional UW"
+        },
+        {
+          "value": "Head Office UW",
+          "label": "Head Office UW"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "specialConditions",
+      "name": "specialConditions",
+      "label": "Special Conditions",
+      "type": "text",
+      "order": 17,
+      "size": "sm",
+      "span": 3,
+      "placeholder": "Enter any special conditions"
     }
+  ]
 }

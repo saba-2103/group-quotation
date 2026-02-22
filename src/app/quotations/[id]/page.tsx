@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+export const dynamic = 'force-dynamic';
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 import quotationsDetailSchema from '../../../../schemas/quotations-detail.json';
 import { WidgetConfig } from '@/types/widget';

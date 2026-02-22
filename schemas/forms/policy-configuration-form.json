@@ -1,23 +1,981 @@
 {
-    "type": "form-container",
-    "props": {
-        "title": "Module Under Construction",
-        "description": "This operation is part of the legacy GTL schema and is currently being ported to the new Keystone-UI architecture.",
-        "fields": [
-            {
-                "name": "acknowledgement",
-                "label": "Acknowledge Porting Status",
-                "type": "checkbox"
-            }
-        ],
-        "actions": [
-            {
-                "id": "close",
-                "label": "Close",
-                "actionType": "action",
-                "variant": "outline",
-                "submitAction": false
-            }
-        ]
+  "id": "policy-configuration-form",
+  "title": "Policy Configuration",
+  "layout": {
+    "type": "grid",
+    "columns": 3,
+    "gap": "md"
+  },
+  "fields": [
+    {
+      "id": "unit",
+      "name": "unit",
+      "label": "Unit",
+      "type": "text",
+      "order": 1,
+      "size": "sm",
+      "placeholder": "Enter unit"
+    },
+    {
+      "id": "policyYearStartDate",
+      "name": "policyYearStartDate",
+      "label": "Policy Year - Start Date",
+      "type": "date",
+      "order": 2,
+      "size": "sm",
+      "defaultValue": "01/12/2025",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "policyYearEndDate",
+      "name": "policyYearEndDate",
+      "label": "Policy Year - End Date",
+      "type": "date",
+      "order": 3,
+      "size": "sm",
+      "defaultValue": "30/11/2026",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "originalCommencementDate",
+      "name": "originalCommencementDate",
+      "label": "Original Commencement Date",
+      "type": "date",
+      "order": 4,
+      "size": "sm",
+      "helperText": "For renewals/takeovers"
+    },
+    {
+      "id": "timezoneCalendarMapping",
+      "name": "timezoneCalendarMapping",
+      "label": "Timezone / Business Calendar",
+      "type": "select",
+      "order": 5,
+      "size": "sm",
+      "defaultValue": "IST",
+      "options": [
+        {
+          "value": "IST",
+          "label": "IST (India Standard Time)"
+        },
+        {
+          "value": "UTC",
+          "label": "UTC (Coordinated Universal Time)"
+        },
+        {
+          "value": "SGT",
+          "label": "SGT (Singapore Time)"
+        },
+        {
+          "value": "GST",
+          "label": "GST (Gulf Standard Time)"
+        }
+      ],
+      "helperText": "For cutoffs"
+    },
+    {
+      "id": "channel",
+      "name": "channel",
+      "label": "Channel",
+      "type": "select",
+      "order": 4,
+      "size": "sm",
+      "defaultValue": "Broker",
+      "options": [
+        {
+          "value": "Broker",
+          "label": "Broker"
+        },
+        {
+          "value": "Agent",
+          "label": "Agent"
+        },
+        {
+          "value": "Direct",
+          "label": "Direct"
+        },
+        {
+          "value": "Online",
+          "label": "Online"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "hierarchy",
+      "name": "hierarchy",
+      "label": "Hierarchy",
+      "type": "select",
+      "order": 5,
+      "size": "sm",
+      "defaultValue": "Direct",
+      "options": [
+        {
+          "value": "Direct",
+          "label": "Direct"
+        },
+        {
+          "value": "Indirect",
+          "label": "Indirect"
+        },
+        {
+          "value": "Branch",
+          "label": "Branch"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "servicingCorporateAgent",
+      "name": "servicingCorporateAgent",
+      "label": "Servicing Corporate Agent",
+      "type": "text",
+      "order": 6,
+      "size": "sm",
+      "placeholder": "Search agent",
+      "icon": "Search"
+    },
+    {
+      "id": "servicingPersonalAgent",
+      "name": "servicingPersonalAgent",
+      "label": "Servicing Personal Agent",
+      "type": "text",
+      "order": 7,
+      "size": "sm",
+      "placeholder": "Search agent",
+      "icon": "Search"
+    },
+    {
+      "id": "servicingStaff",
+      "name": "servicingStaff",
+      "label": "Servicing Staff",
+      "type": "select",
+      "order": 8,
+      "size": "sm",
+      "defaultValue": "Staff001",
+      "options": [
+        {
+          "value": "Staff001",
+          "label": "Staff001"
+        },
+        {
+          "value": "Staff002",
+          "label": "Staff002"
+        },
+        {
+          "value": "Staff003",
+          "label": "Staff003"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "marketingStaff",
+      "name": "marketingStaff",
+      "label": "Marketing Staff",
+      "type": "select",
+      "order": 9,
+      "size": "sm",
+      "defaultValue": "Marketing001",
+      "options": [
+        {
+          "value": "Marketing001",
+          "label": "Marketing001"
+        },
+        {
+          "value": "Marketing002",
+          "label": "Marketing002"
+        },
+        {
+          "value": "Marketing003",
+          "label": "Marketing003"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "billingFrequency",
+      "name": "billingFrequency",
+      "label": "Billing Frequency",
+      "type": "select",
+      "order": 10,
+      "size": "sm",
+      "defaultValue": "Annual",
+      "options": [
+        {
+          "value": "Annual",
+          "label": "Annual"
+        },
+        {
+          "value": "Semi-Annual",
+          "label": "Semi-Annual"
+        },
+        {
+          "value": "Quarterly",
+          "label": "Quarterly"
+        },
+        {
+          "value": "Monthly",
+          "label": "Monthly"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "adjustmentFrequency",
+      "name": "adjustmentFrequency",
+      "label": "Adjustment Frequency",
+      "type": "select",
+      "order": 11,
+      "size": "sm",
+      "defaultValue": "Quarterly",
+      "options": [
+        {
+          "value": "Monthly",
+          "label": "Monthly"
+        },
+        {
+          "value": "Quarterly",
+          "label": "Quarterly"
+        },
+        {
+          "value": "Semi-Annual",
+          "label": "Semi-Annual"
+        },
+        {
+          "value": "Annual",
+          "label": "Annual"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "collectionFrequency",
+      "name": "collectionFrequency",
+      "label": "Collection Frequency",
+      "type": "select",
+      "order": 12,
+      "size": "sm",
+      "defaultValue": "Monthly",
+      "options": [
+        {
+          "value": "Monthly",
+          "label": "Monthly"
+        },
+        {
+          "value": "Quarterly",
+          "label": "Quarterly"
+        },
+        {
+          "value": "Semi-Annual",
+          "label": "Semi-Annual"
+        },
+        {
+          "value": "Annual",
+          "label": "Annual"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "premiumPaymentMethod",
+      "name": "premiumPaymentMethod",
+      "label": "Premium Payment Method",
+      "type": "select",
+      "order": 15,
+      "size": "sm",
+      "defaultValue": "NEFT",
+      "options": [
+        {
+          "value": "NEFT",
+          "label": "NEFT"
+        },
+        {
+          "value": "NACH",
+          "label": "NACH"
+        },
+        {
+          "value": "Cheque",
+          "label": "Cheque"
+        },
+        {
+          "value": "Cash",
+          "label": "Cash"
+        },
+        {
+          "value": "Portal",
+          "label": "Portal"
+        },
+        {
+          "value": "Others",
+          "label": "Others"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "claimPaymentMethod",
+      "name": "claimPaymentMethod",
+      "label": "Claim Payment Method",
+      "type": "select",
+      "order": 14,
+      "size": "sm",
+      "defaultValue": "Direct Credit",
+      "options": [
+        {
+          "value": "Direct Credit",
+          "label": "Direct Credit"
+        },
+        {
+          "value": "Check",
+          "label": "Check"
+        },
+        {
+          "value": "Bank Transfer",
+          "label": "Bank Transfer"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "defaultClaimPayeeMode",
+      "name": "defaultClaimPayeeMode",
+      "label": "Default Claim Payee Mode",
+      "type": "select",
+      "order": 17,
+      "size": "sm",
+      "defaultValue": "Nominee",
+      "options": [
+        {
+          "value": "Nominee",
+          "label": "Nominee"
+        },
+        {
+          "value": "Employer",
+          "label": "Employer"
+        },
+        {
+          "value": "Policyholder",
+          "label": "Policyholder"
+        },
+        {
+          "value": "Lender",
+          "label": "Lender"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "gracePeriodDays",
+      "name": "gracePeriodDays",
+      "label": "Grace Period (Days)",
+      "type": "number",
+      "order": 16,
+      "size": "sm",
+      "defaultValue": 30,
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        },
+        {
+          "rule": "min",
+          "value": 0,
+          "message": "Minimum value is 0"
+        },
+        {
+          "rule": "max",
+          "value": 365,
+          "message": "Maximum value is 365"
+        }
+      ]
+    },
+    {
+      "id": "gracePeriodStartRule",
+      "name": "gracePeriodStartRule",
+      "label": "Grace Period Start Rule",
+      "type": "select",
+      "order": 19,
+      "size": "sm",
+      "defaultValue": "Due date",
+      "options": [
+        {
+          "value": "Due date",
+          "label": "Due date"
+        },
+        {
+          "value": "Invoice date",
+          "label": "Invoice date"
+        },
+        {
+          "value": "Posting date",
+          "label": "Posting date"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "autoLapseRule",
+      "name": "autoLapseRule",
+      "label": "Auto Lapse Rule",
+      "type": "radio",
+      "order": 20,
+      "size": "sm",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "defaultValue": "no",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "lapseThresholdDays",
+      "name": "lapseThresholdDays",
+      "label": "Lapse Threshold (Days)",
+      "type": "number",
+      "order": 21,
+      "size": "sm",
+      "defaultValue": 90,
+      "validations": [
+        {
+          "rule": "min",
+          "value": 1,
+          "message": "Minimum value is 1"
+        },
+        {
+          "rule": "max",
+          "value": 365,
+          "message": "Maximum value is 365"
+        }
+      ],
+      "visibleWhen": {
+        "field": "autoLapseRule",
+        "operator": "eq",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "stopBillingGovernance",
+      "name": "stopBillingGovernance",
+      "label": "Stop-Billing / Resume-Billing Governance",
+      "type": "select",
+      "order": 22,
+      "size": "sm",
+      "defaultValue": "Manual",
+      "options": [
+        {
+          "value": "Manual",
+          "label": "Manual"
+        },
+        {
+          "value": "Auto on lapse",
+          "label": "Auto on lapse"
+        },
+        {
+          "value": "Auto on grace expiry",
+          "label": "Auto on grace expiry"
+        },
+        {
+          "value": "Disabled",
+          "label": "Disabled"
+        }
+      ]
+    },
+    {
+      "id": "compliance64VBMode",
+      "name": "compliance64VBMode",
+      "label": "64VB Compliance Mode",
+      "type": "select",
+      "order": 23,
+      "size": "sm",
+      "defaultValue": "Hard stop",
+      "options": [
+        {
+          "value": "Hard stop",
+          "label": "Hard stop"
+        },
+        {
+          "value": "Soft stop",
+          "label": "Soft stop"
+        },
+        {
+          "value": "Offline flag",
+          "label": "Offline flag"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "subsidiariesEnabled",
+      "name": "subsidiariesEnabled",
+      "label": "Subsidiaries Enabled",
+      "type": "radio",
+      "order": 24,
+      "size": "sm",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "defaultValue": "yes",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "separateBillPerSubsidiary",
+      "name": "separateBillPerSubsidiary",
+      "label": "Separate Bill for Each Subsidiary",
+      "type": "radio",
+      "order": 25,
+      "size": "sm",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "defaultValue": "no",
+      "visibleWhen": {
+        "field": "subsidiariesEnabled",
+        "operator": "eq",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "subsidiaryAllocationRules",
+      "name": "subsidiaryAllocationRules",
+      "label": "Subsidiary Allocation Rules",
+      "type": "select",
+      "order": 26,
+      "size": "sm",
+      "defaultValue": "Headcount",
+      "options": [
+        {
+          "value": "Headcount",
+          "label": "Subsidiary-wise Headcount"
+        },
+        {
+          "value": "SI",
+          "label": "Subsidiary-wise SI"
+        },
+        {
+          "value": "Premium split",
+          "label": "Premium Split"
+        },
+        {
+          "value": "Custom",
+          "label": "Custom Allocation"
+        }
+      ],
+      "visibleWhen": {
+        "field": "subsidiariesEnabled",
+        "operator": "eq",
+        "value": "yes"
+      }
+    },
+    {
+      "id": "renewalProvisionalBill",
+      "name": "renewalProvisionalBill",
+      "label": "Renewal Provisional Bill",
+      "type": "radio",
+      "order": 19,
+      "size": "sm",
+      "options": [
+        {
+          "value": "yes",
+          "label": "Yes"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "defaultValue": "yes",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "whenToSendNormalBill",
+      "name": "whenToSendNormalBill",
+      "label": "When to Send Normal Bill?",
+      "type": "select",
+      "order": 20,
+      "size": "sm",
+      "defaultValue": "30 days before renewal",
+      "options": [
+        {
+          "value": "15 days before renewal",
+          "label": "15 days before renewal"
+        },
+        {
+          "value": "30 days before renewal",
+          "label": "30 days before renewal"
+        },
+        {
+          "value": "45 days before renewal",
+          "label": "45 days before renewal"
+        },
+        {
+          "value": "60 days before renewal",
+          "label": "60 days before renewal"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "valueOfXDays",
+      "name": "valueOfXDays",
+      "label": "Value of x (Days)",
+      "type": "number",
+      "order": 21,
+      "size": "sm",
+      "defaultValue": 30,
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        },
+        {
+          "rule": "min",
+          "value": 1,
+          "message": "Minimum value is 1"
+        },
+        {
+          "rule": "max",
+          "value": 365,
+          "message": "Maximum value is 365"
+        }
+      ]
+    },
+    {
+      "id": "whenToSendAdjustmentBill",
+      "name": "whenToSendAdjustmentBill",
+      "label": "When to Send Adjustment Bill?",
+      "type": "select",
+      "order": 22,
+      "size": "sm",
+      "defaultValue": "15 days after adjustment",
+      "options": [
+        {
+          "value": "15 days after adjustment",
+          "label": "15 days after adjustment"
+        },
+        {
+          "value": "30 days after adjustment",
+          "label": "30 days after adjustment"
+        },
+        {
+          "value": "45 days after adjustment",
+          "label": "45 days after adjustment"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "valueOfXDaysAdjustment",
+      "name": "valueOfXDaysAdjustment",
+      "label": "Value of x (Days)",
+      "type": "number",
+      "order": 23,
+      "size": "sm",
+      "defaultValue": 15,
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        },
+        {
+          "rule": "min",
+          "value": 1,
+          "message": "Minimum value is 1"
+        },
+        {
+          "rule": "max",
+          "value": 365,
+          "message": "Maximum value is 365"
+        }
+      ]
+    },
+    {
+      "id": "premiumRefundFormula",
+      "name": "premiumRefundFormula",
+      "label": "Premium Refund Formula",
+      "type": "select",
+      "order": 24,
+      "size": "sm",
+      "defaultValue": "Pro-rata",
+      "options": [
+        {
+          "value": "Pro-rata",
+          "label": "Pro-rata"
+        },
+        {
+          "value": "Short rate",
+          "label": "Short rate"
+        },
+        {
+          "value": "Custom formula",
+          "label": "Custom formula"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "premiumRefundPaymentMethod",
+      "name": "premiumRefundPaymentMethod",
+      "label": "Premium Refund Payment Method",
+      "type": "select",
+      "order": 25,
+      "size": "sm",
+      "defaultValue": "Bank Transfer",
+      "options": [
+        {
+          "value": "Bank Transfer",
+          "label": "Bank Transfer"
+        },
+        {
+          "value": "Check",
+          "label": "Check"
+        },
+        {
+          "value": "Credit to account",
+          "label": "Credit to account"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "renewalNoticeDueDateDays",
+      "name": "renewalNoticeDueDateDays",
+      "label": "Renewal Notice Due Date (x days before Renewal)",
+      "type": "number",
+      "order": 26,
+      "size": "sm",
+      "defaultValue": 60,
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        },
+        {
+          "rule": "min",
+          "value": 1,
+          "message": "Minimum value is 1"
+        },
+        {
+          "rule": "max",
+          "value": 365,
+          "message": "Maximum value is 365"
+        }
+      ]
+    },
+    {
+      "id": "correspondenceAddressRule",
+      "name": "correspondenceAddressRule",
+      "label": "Correspondence Address Rule",
+      "type": "select",
+      "order": 33,
+      "size": "sm",
+      "defaultValue": "Both",
+      "options": [
+        {
+          "value": "Corporate",
+          "label": "Corporate"
+        },
+        {
+          "value": "Personal",
+          "label": "Personal"
+        },
+        {
+          "value": "Both",
+          "label": "Both"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "correspondenceAddressPersonal",
+      "name": "correspondenceAddressPersonal",
+      "label": "Correspondence Address - Personal Client",
+      "type": "text",
+      "order": 34,
+      "size": "sm",
+      "span": 2,
+      "placeholder": "Search address",
+      "icon": "Search",
+      "visibleWhen": {
+        "field": "correspondenceAddressRule",
+        "operator": "eq",
+        "value": "Personal"
+      }
+    },
+    {
+      "id": "correspondenceAddressCorporate",
+      "name": "correspondenceAddressCorporate",
+      "label": "Correspondence Address - Corporate Client",
+      "type": "text",
+      "order": 35,
+      "size": "sm",
+      "span": 2,
+      "placeholder": "Search address",
+      "icon": "Search",
+      "visibleWhen": {
+        "field": "correspondenceAddressRule",
+        "operator": "eq",
+        "value": "Corporate"
+      }
+    },
+    {
+      "id": "documentDeliveryMode",
+      "name": "documentDeliveryMode",
+      "label": "Document Delivery Mode",
+      "type": "select",
+      "order": 36,
+      "size": "sm",
+      "defaultValue": "Email",
+      "options": [
+        {
+          "value": "Email",
+          "label": "Email"
+        },
+        {
+          "value": "Portal",
+          "label": "Portal"
+        },
+        {
+          "value": "Physical",
+          "label": "Physical"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
     }
+  ]
 }

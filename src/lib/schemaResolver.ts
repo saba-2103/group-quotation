@@ -1,3 +1,5 @@
+import { forms_registry } from '../../schemas/forms';
+
 /**
  * Recursively resolves `$ref` properties in a JSON schema/config object.
  * @param node The current object node
@@ -25,6 +27,16 @@ export async function resolveSchemaRefs(node: any, baseDir: string = ''): Promis
                 // Using dynamic import allows the JSON to be bundled in the Cloudflare Worker
                 const imported = await import(`../../schemas/tabs/${filename}`);
                 parsed = imported.default || imported;
+            } else if (node.$ref.startsWith('schemas/forms/')) {
+                const formId = node.$ref.replace('schemas/forms/', '').replace('.json', '');
+                const registryEntry = forms_registry[formId];
+                if (registryEntry) {
+                    parsed = registryEntry.type === 'form-container' && registryEntry.props
+                        ? registryEntry.props
+                        : registryEntry;
+                } else {
+                    throw new Error(`Form ${formId} not found in registry`);
+                }
             } else {
                 throw new Error(`Unsupported $ref path: ${node.$ref}`);
             }
@@ -40,10 +52,13 @@ export async function resolveSchemaRefs(node: any, baseDir: string = ''): Promis
                 ...resolvedRef,
                 ...resolvedRest
             };
-        } catch (error) {
+        } catch (error: any) {
             console.error(`Failed to resolve $ref: ${node.$ref} from ${baseDir}`, error);
-            // Fallback to returning the original node if it fails
-            return node;
+            // Fallback to returning the original node if it fails, but attach the error for debugging Next.js
+            return {
+                ...node,
+                __error: error.message || String(error)
+            };
         }
     }
 

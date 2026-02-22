@@ -21,9 +21,7 @@
                             "id": "key-data-form",
                             "type": "form-container",
                             "props": {
-                                "title": "Key Data Information",
-                                "description": "Form loaded via schema definition.",
-                                "schemaPath": "/schemas/forms/key-data-form.json"
+                                "$ref": "schemas/forms/key-data-form.json"
                             }
                         }
                     ]
@@ -39,9 +37,7 @@
                             "id": "policy-configuration-form",
                             "type": "form-container",
                             "props": {
-                                "title": "Policy Configuration Settings",
-                                "description": "Form loaded via schema definition.",
-                                "schemaPath": "/schemas/forms/policy-configuration-form.json"
+                                "$ref": "schemas/forms/policy-configuration-form.json"
                             }
                         }
                     ]
@@ -57,9 +53,7 @@
                             "id": "policy-details-form",
                             "type": "form-container",
                             "props": {
-                                "title": "Policy Details Form",
-                                "description": "Form loaded via schema definition.",
-                                "schemaPath": "/schemas/forms/policy-details-form.json"
+                                "$ref": "schemas/forms/policy-details-form.json"
                             }
                         }
                     ]
@@ -75,9 +69,7 @@
                             "id": "policy-flags-governance-form",
                             "type": "form-container",
                             "props": {
-                                "title": "Policy Flags & Governance Settings",
-                                "description": "Form loaded via schema definition.",
-                                "schemaPath": "/schemas/forms/policy-flags-governance-form.json"
+                                "$ref": "schemas/forms/policy-flags-governance-form.json"
                             }
                         }
                     ]

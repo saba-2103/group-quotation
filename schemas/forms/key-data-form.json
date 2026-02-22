@@ -1,23 +1,236 @@
 {
-    "type": "form-container",
-    "props": {
-        "title": "Module Under Construction",
-        "description": "This operation is part of the legacy GTL schema and is currently being ported to the new Keystone-UI architecture.",
-        "fields": [
-            {
-                "name": "acknowledgement",
-                "label": "Acknowledge Porting Status",
-                "type": "checkbox"
-            }
-        ],
-        "actions": [
-            {
-                "id": "close",
-                "label": "Close",
-                "actionType": "action",
-                "variant": "outline",
-                "submitAction": false
-            }
-        ]
+  "id": "key-data-form",
+  "title": "Key Data - GPOL-SCR-001 (Common Header-1)",
+  "layout": {
+    "type": "grid",
+    "columns": 3,
+    "gap": "md"
+  },
+  "fields": [
+    {
+      "id": "quotationOrPolicy",
+      "name": "quotationOrPolicy",
+      "label": "Quotation or Policy",
+      "type": "radio",
+      "order": 1,
+      "size": "sm",
+      "options": [
+        {
+          "value": "quotation",
+          "label": "Quotation"
+        },
+        {
+          "value": "policy",
+          "label": "Policy"
+        }
+      ],
+      "defaultValue": "policy",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "policyType",
+      "name": "policyType",
+      "label": "Policy Type",
+      "type": "select",
+      "order": 2,
+      "size": "sm",
+      "placeholder": "Select policy type",
+      "defaultValue": "Group Credit Life",
+      "options": [
+        {
+          "value": "Group Credit Life",
+          "label": "Group Credit Life"
+        },
+        {
+          "value": "Group Term Life",
+          "label": "Group Term Life"
+        },
+        {
+          "value": "Group Health",
+          "label": "Group Health"
+        },
+        {
+          "value": "Group Personal Accident",
+          "label": "Group Personal Accident"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "branch",
+      "name": "branch",
+      "label": "Branch",
+      "type": "select",
+      "order": 3,
+      "size": "sm",
+      "placeholder": "Select branch",
+      "options": [
+        {
+          "value": "mumbai",
+          "label": "Mumbai"
+        },
+        {
+          "value": "delhi",
+          "label": "Delhi"
+        },
+        {
+          "value": "bangalore",
+          "label": "Bangalore"
+        },
+        {
+          "value": "chennai",
+          "label": "Chennai"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "policyClassification",
+      "name": "policyClassification",
+      "label": "Policy Classification",
+      "type": "select",
+      "order": 4,
+      "size": "sm",
+      "placeholder": "Select policy classification",
+      "defaultValue": "Grouped retail (affinity group)",
+      "options": [
+        {
+          "value": "Grouped retail (affinity group)",
+          "label": "Grouped retail (affinity group)"
+        },
+        {
+          "value": "Group Corporate",
+          "label": "Group Corporate"
+        },
+        {
+          "value": "Individual",
+          "label": "Individual"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "riskTermClassification",
+      "name": "riskTermClassification",
+      "label": "Risk Term Classification",
+      "type": "select",
+      "order": 5,
+      "size": "sm",
+      "placeholder": "Select risk term classification",
+      "defaultValue": "Long term with no renewals",
+      "options": [
+        {
+          "value": "Long term with no renewals",
+          "label": "Long term with no renewals"
+        },
+        {
+          "value": "Short term with renewals",
+          "label": "Short term with renewals"
+        },
+        {
+          "value": "Annual renewable",
+          "label": "Annual renewable"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "productMix",
+      "name": "productMix",
+      "label": "Product Mix",
+      "type": "select",
+      "order": 6,
+      "size": "sm",
+      "placeholder": "Select product mix",
+      "options": [
+        {
+          "value": "single",
+          "label": "Single Product"
+        },
+        {
+          "value": "multiple",
+          "label": "Multiple Products"
+        },
+        {
+          "value": "bundled",
+          "label": "Bundled Products"
+        }
+      ],
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
+    },
+    {
+      "id": "masterPolicyNumber",
+      "name": "masterPolicyNumber",
+      "label": "Master Policy Number",
+      "type": "text",
+      "order": 7,
+      "size": "sm",
+      "placeholder": "Search or enter master policy number",
+      "icon": "Search"
+    },
+    {
+      "id": "effectiveDate",
+      "name": "effectiveDate",
+      "label": "Effective Date",
+      "type": "date",
+      "order": 8,
+      "size": "sm",
+      "defaultValue": "01/12/2025",
+      "validations": [
+        {
+          "rule": "required",
+          "message": "This field is required"
+        }
+      ]
     }
+  ],
+  "actions": [
+    {
+      "id": "save-key-data",
+      "label": "Save Key Data",
+      "variant": "default",
+      "actionType": "action",
+      "submitAction": {
+        "endpoint": "/api/quotations/key-data",
+        "method": "POST",
+        "onSuccessMessage": "Key data saved successfully"
+      }
+    },
+    {
+      "id": "reset",
+      "label": "Reset",
+      "variant": "outline",
+      "actionType": "interactive"
+    }
+  ]
 }
