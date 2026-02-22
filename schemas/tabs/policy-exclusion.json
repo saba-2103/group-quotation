@@ -1,0 +1,285 @@
+{
+    "id": "policy-exclusion",
+    "type": "tab-panel",
+    "props": {
+        "label": "Policy Exclusion",
+        "icon": "XCircle"
+    },
+    "children": [
+        {
+            "id": "policy-exclusion-stack",
+            "type": "stack-layout",
+            "props": {
+                "spacing": "6"
+            },
+            "children": [
+                {
+                    "id": "clause-pack-section",
+                    "type": "section-group",
+                    "props": {
+                        "title": "Clause Pack & Wording Governance"
+                    },
+                    "children": [
+                        {
+                            "id": "clause-pack-links",
+                            "type": "quick-links-widget",
+                            "props": {
+                                "title": "Active Clause Pack: GTL Standard v2.1",
+                                "layout": "grid",
+                                "links": [
+                                    {
+                                        "id": "clause-pack-template",
+                                        "label": "Clause Pack Template",
+                                        "type": "card",
+                                        "icon": "FileText",
+                                        "description": "GTL Standard - Group Term Life Insurance"
+                                    },
+                                    {
+                                        "id": "clause-pack-version",
+                                        "label": "Version 2.1",
+                                        "type": "card",
+                                        "icon": "GitBranch",
+                                        "description": "Current active version - Last updated: 2025-01-01"
+                                    },
+                                    {
+                                        "id": "scheme-type",
+                                        "label": "Scheme Type",
+                                        "type": "card",
+                                        "icon": "Layers",
+                                        "description": "GTL (Group Term Life) - Standard Coverage"
+                                    },
+                                    {
+                                        "id": "effective-dating",
+                                        "label": "Effective Dating Rule",
+                                        "type": "card",
+                                        "icon": "Calendar",
+                                        "description": "Policy term aligned - Supports endorsements"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "exclusion-intelligence-section",
+                    "type": "section-group",
+                    "props": {
+                        "title": "Clause Intelligence & Compliance"
+                    },
+                    "children": [
+                        {
+                            "id": "exclusion-intelligence-links",
+                            "type": "quick-links-widget",
+                            "props": {
+                                "title": "Wording Governance & Compliance Status",
+                                "layout": "grid",
+                                "links": [
+                                    {
+                                        "id": "conflict-detector",
+                                        "label": "Conflicting Clauses Detected",
+                                        "type": "card",
+                                        "icon": "TriangleAlert",
+                                        "description": "2 potential conflicts found - EXC001 and EXC007 may overlap",
+                                        "action": {
+                                            "type": "open-sheet",
+                                            "target": "resolve-conflict-form"
+                                        }
+                                    },
+                                    {
+                                        "id": "mandatory-checklist",
+                                        "label": "Mandatory Exclusions",
+                                        "type": "card",
+                                        "icon": "ListChecks",
+                                        "description": "8 of 10 mandatory exclusions applied - 2 pending"
+                                    },
+                                    {
+                                        "id": "compliance-status",
+                                        "label": "Product Filing Compliance",
+                                        "type": "card",
+                                        "icon": "ShieldCheck",
+                                        "description": "Compliant with IRDAI filing requirements"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "policy-exclusion-table-section",
+                    "type": "section-group",
+                    "props": {
+                        "title": "Policy Exclusions & Clause Registry",
+                        "actions": [
+                            {
+                                "id": "add-exclusion",
+                                "label": "Add Exclusion",
+                                "icon": "Plus",
+                                "variant": "default",
+                                "action": {
+                                    "type": "open-sheet",
+                                    "target": "add-exclusion-form"
+                                }
+                            },
+                            {
+                                "id": "manage-clause-pack",
+                                "label": "Manage Clause Pack",
+                                "icon": "Package",
+                                "variant": "outline",
+                                "action": {
+                                    "type": "open-sheet",
+                                    "target": "manage-clause-pack-form"
+                                }
+                            }
+                        ]
+                    },
+                    "children": [
+                        {
+                            "id": "policy-exclusion-table",
+                            "type": "data-table",
+                            "dataSource": {
+                                "type": "api",
+                                "api": {
+                                    "endpoint": "/api/quotations/{{id}}/exclusions",
+                                    "method": "GET"
+                                }
+                            },
+                            "props": {
+                                "columns": [
+                                    {
+                                        "id": "exclusionCode",
+                                        "header": "Exclusion Code",
+                                        "accessorKey": "exclusionCode",
+                                        "type": "text",
+                                        "width": "140px"
+                                    },
+                                    {
+                                        "id": "exclusionDesc",
+                                        "header": "Exclusion Description",
+                                        "accessorKey": "exclusionDescription",
+                                        "type": "text",
+                                        "width": "250px"
+                                    },
+                                    {
+                                        "id": "scope",
+                                        "header": "Scope",
+                                        "accessorKey": "scope",
+                                        "type": "badge",
+                                        "width": "120px",
+                                        "valueMapping": [
+                                            {
+                                                "value": "policy",
+                                                "label": "Policy",
+                                                "color": "default"
+                                            },
+                                            {
+                                                "value": "plan",
+                                                "label": "Plan",
+                                                "color": "info"
+                                            },
+                                            {
+                                                "value": "member",
+                                                "label": "Member",
+                                                "color": "warning"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "category",
+                                        "header": "Category",
+                                        "accessorKey": "category",
+                                        "type": "badge",
+                                        "width": "130px",
+                                        "valueMapping": [
+                                            {
+                                                "value": "mandatory",
+                                                "label": "Mandatory",
+                                                "color": "error"
+                                            },
+                                            {
+                                                "value": "optional",
+                                                "label": "Optional",
+                                                "color": "default"
+                                            },
+                                            {
+                                                "value": "conditional",
+                                                "label": "Conditional",
+                                                "color": "warning"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "version",
+                                        "header": "Version",
+                                        "accessorKey": "version",
+                                        "type": "text",
+                                        "width": "100px"
+                                    },
+                                    {
+                                        "id": "effDate",
+                                        "header": "Effective Date",
+                                        "accessorKey": "effectiveDate",
+                                        "type": "date",
+                                        "width": "140px"
+                                    },
+                                    {
+                                        "id": "status",
+                                        "header": "Status",
+                                        "accessorKey": "status",
+                                        "type": "status",
+                                        "width": "120px",
+                                        "valueMapping": [
+                                            {
+                                                "value": "active",
+                                                "label": "Active",
+                                                "color": "success"
+                                            },
+                                            {
+                                                "value": "superseded",
+                                                "label": "Superseded",
+                                                "color": "warning"
+                                            },
+                                            {
+                                                "value": "archived",
+                                                "label": "Archived",
+                                                "color": "default"
+                                            },
+                                            {
+                                                "value": "draft",
+                                                "label": "Draft",
+                                                "color": "info"
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "rowActions": [
+                                    {
+                                        "id": "view",
+                                        "label": "View",
+                                        "icon": "Eye",
+                                        "action": {
+                                            "type": "open-modal",
+                                            "target": "view-exclusion"
+                                        }
+                                    },
+                                    {
+                                        "id": "edit",
+                                        "label": "Edit",
+                                        "icon": "Pencil",
+                                        "action": {
+                                            "type": "open-sheet",
+                                            "target": "edit-exclusion-form"
+                                        }
+                                    }
+                                ],
+                                "pagination": {
+                                    "enabled": true,
+                                    "pageSize": 10
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

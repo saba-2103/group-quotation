@@ -1,0 +1,19 @@
+{
+    "id": "premium-method-05",
+    "type": "tab-panel",
+    "props": {
+        "label": "Premium Method 05",
+        "icon": "Calculator"
+    },
+    "children": [
+        {
+            "id": "under-construction-stub",
+            "type": "form-container",
+            "props": {
+                "title": "Under Construction",
+                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                "schemaPath": "/schemas/forms/dummy-member-form.json"
+            }
+        }
+    ]
+}

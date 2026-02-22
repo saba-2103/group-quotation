@@ -1,0 +1,338 @@
+{
+    "id": "plans",
+    "type": "tab-panel",
+    "props": {
+        "label": "Plans",
+        "icon": "Layers"
+    },
+    "children": [
+        {
+            "id": "plans-stack",
+            "type": "stack-layout",
+            "props": {
+                "spacing": "6"
+            },
+            "children": [
+                {
+                    "id": "plans-portfolio",
+                    "type": "section-group",
+                    "props": {
+                        "title": "Plan Portfolio Overview"
+                    },
+                    "children": [
+                        {
+                            "id": "plans-portfolio-links",
+                            "type": "quick-links-widget",
+                            "props": {
+                                "title": "Plan Portfolio Summary - 4 Active Plans",
+                                "layout": "grid",
+                                "links": [
+                                    {
+                                        "id": "total-plans",
+                                        "label": "Total Plans",
+                                        "type": "card",
+                                        "icon": "Layers",
+                                        "description": "4 active plans configured"
+                                    },
+                                    {
+                                        "id": "total-members",
+                                        "label": "Total Members",
+                                        "type": "card",
+                                        "icon": "Users",
+                                        "description": "1,250 members across all plans"
+                                    },
+                                    {
+                                        "id": "total-si",
+                                        "label": "Total Sum Insured",
+                                        "type": "card",
+                                        "icon": "DollarSign",
+                                        "description": "₹12.5 Cr total coverage"
+                                    },
+                                    {
+                                        "id": "plan-completeness",
+                                        "label": "Plan Completeness",
+                                        "type": "card",
+                                        "icon": "CheckCircle2",
+                                        "description": "3 of 4 plans fully configured"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "plans-table-section",
+                    "type": "section-group",
+                    "props": {
+                        "title": "Plans Listing",
+                        "actions": [
+                            {
+                                "id": "add-plan",
+                                "label": "Add Plan",
+                                "icon": "Plus",
+                                "variant": "default",
+                                "action": {
+                                    "type": "open-sheet",
+                                    "target": "add-plan-form"
+                                }
+                            }
+                        ]
+                    },
+                    "children": [
+                        {
+                            "id": "plans-table",
+                            "type": "data-table",
+                            "dataSource": {
+                                "type": "api",
+                                "api": {
+                                    "endpoint": "/api/quotations/{{id}}/plans",
+                                    "method": "GET"
+                                }
+                            },
+                            "props": {
+                                "selectable": true,
+                                "columns": [
+                                    {
+                                        "id": "planNum",
+                                        "header": "Plan Number",
+                                        "accessorKey": "planNumber",
+                                        "type": "text",
+                                        "width": "120px"
+                                    },
+                                    {
+                                        "id": "planDesc",
+                                        "header": "Plan Description",
+                                        "accessorKey": "planDescription",
+                                        "type": "text",
+                                        "width": "220px"
+                                    },
+                                    {
+                                        "id": "planType",
+                                        "header": "Plan Type",
+                                        "accessorKey": "planType",
+                                        "type": "badge",
+                                        "width": "140px",
+                                        "valueMapping": [
+                                            {
+                                                "value": "level-term",
+                                                "label": "Level Term",
+                                                "color": "default"
+                                            },
+                                            {
+                                                "value": "reducing-term",
+                                                "label": "Reducing Term",
+                                                "color": "info"
+                                            },
+                                            {
+                                                "value": "decreasing-term",
+                                                "label": "Decreasing Term",
+                                                "color": "warning"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "saBasis",
+                                        "header": "SA Basis",
+                                        "accessorKey": "sumAssuredBasis",
+                                        "type": "badge",
+                                        "width": "150px",
+                                        "valueMapping": [
+                                            {
+                                                "value": "flat",
+                                                "label": "Flat",
+                                                "color": "default"
+                                            },
+                                            {
+                                                "value": "salary-multiple",
+                                                "label": "Salary Multiple",
+                                                "color": "info"
+                                            },
+                                            {
+                                                "value": "grade-slab",
+                                                "label": "Grade Slab",
+                                                "color": "warning"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "enrollType",
+                                        "header": "Enrollment",
+                                        "accessorKey": "enrollmentType",
+                                        "type": "badge",
+                                        "width": "130px",
+                                        "valueMapping": [
+                                            {
+                                                "value": "auto",
+                                                "label": "Auto",
+                                                "color": "success"
+                                            },
+                                            {
+                                                "value": "opt-in",
+                                                "label": "Opt-in",
+                                                "color": "info"
+                                            },
+                                            {
+                                                "value": "evidence-based",
+                                                "label": "Evidence",
+                                                "color": "warning"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "livesCovered",
+                                        "header": "Lives Covered",
+                                        "accessorKey": "livesCovered",
+                                        "type": "text",
+                                        "width": "140px"
+                                    },
+                                    {
+                                        "id": "memCount",
+                                        "header": "Members",
+                                        "accessorKey": "memberCount",
+                                        "type": "number",
+                                        "width": "100px",
+                                        "align": "right"
+                                    },
+                                    {
+                                        "id": "totSI",
+                                        "header": "Total SI",
+                                        "accessorKey": "totalSumInsured",
+                                        "type": "currency",
+                                        "width": "140px",
+                                        "align": "right"
+                                    },
+                                    {
+                                        "id": "compliance",
+                                        "header": "Completeness",
+                                        "accessorKey": "completenessScore",
+                                        "type": "badge",
+                                        "width": "130px",
+                                        "valueMapping": [
+                                            {
+                                                "value": "100",
+                                                "label": "100%",
+                                                "color": "success"
+                                            },
+                                            {
+                                                "value": "75",
+                                                "label": "75%",
+                                                "color": "warning"
+                                            },
+                                            {
+                                                "value": "50",
+                                                "label": "50%",
+                                                "color": "error"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "status",
+                                        "header": "Status",
+                                        "accessorKey": "status",
+                                        "type": "status",
+                                        "width": "110px",
+                                        "valueMapping": [
+                                            {
+                                                "value": "active",
+                                                "label": "Active",
+                                                "color": "success"
+                                            },
+                                            {
+                                                "value": "inactive",
+                                                "label": "Inactive",
+                                                "color": "default"
+                                            },
+                                            {
+                                                "value": "terminated",
+                                                "label": "Terminated",
+                                                "color": "error"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "effDate",
+                                        "header": "Start Date",
+                                        "accessorKey": "startDate",
+                                        "type": "date",
+                                        "width": "130px"
+                                    }
+                                ],
+                                "rowActions": [
+                                    {
+                                        "id": "view",
+                                        "label": "View Details",
+                                        "icon": "Eye",
+                                        "action": {
+                                            "type": "open-modal",
+                                            "target": "view-plan"
+                                        }
+                                    },
+                                    {
+                                        "id": "view-members",
+                                        "label": "View Members",
+                                        "icon": "Users",
+                                        "action": {
+                                            "type": "route",
+                                            "target": "/quotations/{{id}}#members"
+                                        }
+                                    },
+                                    {
+                                        "id": "config-rules",
+                                        "label": "Configure Rules",
+                                        "icon": "Settings",
+                                        "action": {
+                                            "type": "open-sheet",
+                                            "target": "configure-plan-rules-form"
+                                        }
+                                    },
+                                    {
+                                        "id": "edit",
+                                        "label": "Edit",
+                                        "icon": "Pencil",
+                                        "action": {
+                                            "type": "open-sheet",
+                                            "target": "add-plan-form"
+                                        }
+                                    },
+                                    {
+                                        "id": "delete",
+                                        "label": "Delete",
+                                        "icon": "Trash2",
+                                        "action": {
+                                            "type": "api",
+                                            "target": "delete-plan-api"
+                                        }
+                                    }
+                                ],
+                                "bulkActions": [
+                                    {
+                                        "id": "terminate",
+                                        "label": "Terminate",
+                                        "icon": "XCircle",
+                                        "action": {
+                                            "type": "open-modal",
+                                            "target": "confirm-bulk-terminate"
+                                        }
+                                    },
+                                    {
+                                        "id": "lapse",
+                                        "label": "Lapse",
+                                        "icon": "Clock",
+                                        "action": {
+                                            "type": "open-modal",
+                                            "target": "confirm-bulk-lapse"
+                                        }
+                                    }
+                                ],
+                                "pagination": {
+                                    "enabled": true,
+                                    "pageSize": 10
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

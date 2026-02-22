@@ -2,13 +2,15 @@ import { Suspense } from 'react';
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 import quotationsDetailSchema from '../../../../schemas/quotations-detail.json';
 import { WidgetConfig } from '@/types/widget';
+import { resolveSchemaRefs } from '@/lib/schemaResolver';
 
 export default async function QuotationDetailPage(props: { params: Promise<{ id: string }> }) {
     const params = await props.params;
     const { id } = params;
 
     // Deep clone the schema so we don't mutate the imported JSON globally
-    const config = JSON.parse(JSON.stringify(quotationsDetailSchema)) as WidgetConfig;
+    const resolvedRawSchema = await resolveSchemaRefs(quotationsDetailSchema, process.cwd());
+    const config = JSON.parse(JSON.stringify(resolvedRawSchema)) as WidgetConfig;
 
     // Streamlined intercept logic: replace {{id}} in any endpoint
     const updateEndpoints = (node: WidgetConfig) => {

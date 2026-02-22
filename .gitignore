@@ -50,3 +50,6 @@ next-env.d.ts
 
 
 !.dev.vars.example
+
+# Generated Schemas Registry
+schemas/forms/index.ts

@@ -1,0 +1,19 @@
+{
+    "id": "plan-product-term-life",
+    "type": "tab-panel",
+    "props": {
+        "label": "Plan / Product Term Life",
+        "icon": "Heart"
+    },
+    "children": [
+        {
+            "id": "under-construction-stub",
+            "type": "form-container",
+            "props": {
+                "title": "Under Construction",
+                "description": "This tab has not been ported to the schema-driven Keystone UI architecture yet.",
+                "schemaPath": "/schemas/forms/dummy-member-form.json"
+            }
+        }
+    ]
+}
