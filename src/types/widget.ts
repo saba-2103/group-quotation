@@ -23,27 +23,39 @@ export interface DataSourceConfig {
     valueKey?: string; // Key to extract from response or context
 }
 
-export interface ActionConfig {
+export interface BaseActionConfig {
     id?: string;
     label?: string;
     icon?: string;
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-    intent?: string;
-    display?: "button" | "icon" | "menu-item";
-    actionProps?: Record<string, any>;
-
-    // Original keystone-ui fields
-    type?: "navigate" | "api-mutation" | "open-modal" | "trigger-event";
-    target?: string;
-    api?: {
-        endpoint: string;
-        method: "GET" | "POST" | "PUT" | "DELETE";
-        body?: any;
-    };
     refreshKey?: string;
     props?: Record<string, any>;
-    confirm?: {
-        title: string;
-        message: string;
-    };
 }
+
+export type ActionConfig = BaseActionConfig & (
+    | {
+        type: "navigate";
+        target: string;
+    }
+    | {
+        type: "open-modal" | "open-sheet";
+        target: string;
+    }
+    | {
+        type: "api-mutation";
+        api: {
+            endpoint: string;
+            method: "GET" | "POST" | "PUT" | "DELETE";
+            body?: any;
+        };
+        successMessage?: string;
+        confirm?: {
+            title: string;
+            message: string;
+        };
+    }
+    | {
+        type: "trigger-event";
+        target: string;
+    }
+);

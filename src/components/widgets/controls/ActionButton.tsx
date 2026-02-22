@@ -8,10 +8,11 @@ type ActionButtonProps = {
     action: ActionConfig;
     onClick: () => void;
     disabled?: boolean;
+    displayAs?: "button" | "icon" | "menu-item";
 };
 
-export const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled }) => {
-    const display = action.display ?? "button";
+export const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled, displayAs = "button" }) => {
+    const display = displayAs;
 
     // Dynamically resolve icon if provided
     const IconComponent = action.icon ? (LucideIcons as any)[action.icon] : null;

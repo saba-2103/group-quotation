@@ -25,40 +25,32 @@
                         "id": "create-quotation",
                         "label": "Create New Quotation",
                         "variant": "default",
-                        "intent": "create",
-                        "actionProps": {
-                            "formId": "create-quotation-form"
-                        }
+                        "type": "open-sheet",
+                        "target": "create-quotation-form"
                     },
                     {
                         "id": "import-from-prior",
                         "label": "Import from Prior",
                         "variant": "outline",
-                        "intent": "custom",
+                        "type": "open-modal",
                         "icon": "Upload",
-                        "actionProps": {
-                            "formId": "import-quotation-form"
-                        }
+                        "target": "import-quotation-form"
                     },
                     {
                         "id": "version-quote",
                         "label": "Version Quote",
                         "variant": "outline",
-                        "intent": "custom",
+                        "type": "open-modal",
                         "icon": "GitBranch",
-                        "actionProps": {
-                            "formId": "version-quotation-form"
-                        }
+                        "target": "version-quotation-form"
                     },
                     {
                         "id": "assign-owner",
                         "label": "Assign Owner",
                         "variant": "outline",
-                        "intent": "assign",
+                        "type": "open-sheet",
                         "icon": "UserPlus",
-                        "actionProps": {
-                            "formId": "assign-owner-form"
-                        }
+                        "target": "assign-owner-form"
                     }
                 ]
             }
@@ -582,52 +574,46 @@
                         "id": "open",
                         "label": "Open",
                         "icon": "ExternalLink",
-                        "intent": "view",
-                        "actionProps": {
-                            "route": "/quotations/:id"
-                        }
+                        "type": "navigate",
+                        "target": "/quotations/:id"
                     },
                     {
                         "id": "clone",
                         "label": "Clone",
                         "icon": "Copy",
-                        "intent": "custom",
-                        "actionProps": {
-                            "api": {
-                                "endpoint": "/api/quotations/:id/clone",
-                                "method": "POST"
-                            },
-                            "successMessage": "Quotation cloned successfully"
-                        }
+                        "type": "api-mutation",
+                        "api": {
+                            "endpoint": "/api/quotations/:id/clone",
+                            "method": "POST"
+                        },
+                        "successMessage": "Quotation cloned successfully"
                     },
                     {
                         "id": "version",
                         "label": "Version",
                         "icon": "GitBranch",
-                        "intent": "custom",
-                        "actionProps": {
-                            "api": {
-                                "endpoint": "/api/quotations/:id/version",
-                                "method": "POST"
-                            },
-                            "successMessage": "New version created successfully"
-                        }
+                        "type": "api-mutation",
+                        "api": {
+                            "endpoint": "/api/quotations/:id/version",
+                            "method": "POST"
+                        },
+                        "successMessage": "New version created successfully"
                     },
                     {
                         "id": "withdraw",
                         "label": "Withdraw",
                         "icon": "XCircle",
                         "variant": "destructive",
-                        "intent": "custom",
-                        "actionProps": {
-                            "confirmationRequired": true,
-                            "confirmationMessage": "Are you sure you want to withdraw this quotation?",
-                            "api": {
-                                "endpoint": "/api/quotations/:id/withdraw",
-                                "method": "POST"
-                            },
-                            "successMessage": "Quotation withdrawn successfully"
-                        }
+                        "type": "api-mutation",
+                        "api": {
+                            "endpoint": "/api/quotations/:id/withdraw",
+                            "method": "POST"
+                        },
+                        "confirm": {
+                            "title": "Withdraw Action",
+                            "message": "Are you sure you want to withdraw this quotation?"
+                        },
+                        "successMessage": "Quotation withdrawn successfully"
                     }
                 ],
                 "defaultSort": {
