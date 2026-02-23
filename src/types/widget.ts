@@ -21,6 +21,7 @@ export interface DataSourceConfig {
     };
     refreshInterval?: number;
     valueKey?: string; // Key to extract from response or context
+    stateDependencies?: string[]; // Keys in useWidgetState that trigger re-fetch
 }
 
 export interface BaseActionConfig {
@@ -66,5 +67,13 @@ export type ActionConfig = BaseActionConfig & (
     | {
         type: "trigger-event";
         target: string;
+    }
+    | {
+        type: "update-widget-state";
+        props: {
+            key: string;
+            operation: "set" | "patch" | "toggle";
+            value?: any;
+        };
     }
 );

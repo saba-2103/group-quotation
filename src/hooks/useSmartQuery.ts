@@ -1,17 +1,51 @@
 import { useQuery } from '@tanstack/react-query';
 import { DataSourceConfig } from '@/types/widget';
+import { useWidgetState } from './useWidgetState';
 
 export function useSmartQuery(dataSource?: DataSourceConfig) {
-    const { api, valueKey, refreshInterval } = dataSource || {};
+    const { api, valueKey, refreshInterval, stateDependencies } = dataSource || {};
+    const { values } = useWidgetState();
+
+    // Extract relevant state for dependencies
+    const dependentState = stateDependencies?.reduce((acc, key) => {
+        acc[key] = values[key];
+        return acc;
+    }, {} as Record<string, any>) || {};
 
     return useQuery({
-        queryKey: api ? [api.endpoint, api.method, api.params] : ['no-api'],
+        queryKey: api ? [api.endpoint, api.method, api.params, dependentState] : ['no-api'],
         queryFn: async () => {
             if (!api) return null;
-            // In a real app, use a configured fetch client or axios
-            const res = await fetch(api.endpoint, {
+
+            // Build URL with state parameters if it's a GET request
+            let url = api.endpoint;
+            const allParams = { ...api.params, ...dependentState };
+
+            if (api.method === 'GET' && Object.keys(allParams).length > 0) {
+                const searchParams = new URLSearchParams();
+                Object.entries(allParams).forEach(([key, val]) => {
+                    if (val !== undefined && val !== null && val !== '') {
+                        if (typeof val === 'object') {
+                            // If it's an object (like filters), spread it
+                            Object.entries(val).forEach(([innerKey, innerVal]) => {
+                                if (innerVal !== undefined && innerVal !== null && innerVal !== '') {
+                                    searchParams.append(innerKey, String(innerVal));
+                                }
+                            });
+                        } else {
+                            searchParams.append(key, String(val));
+                        }
+                    }
+                });
+                const queryString = searchParams.toString();
+                if (queryString) {
+                    url += (url.includes('?') ? '&' : '?') + queryString;
+                }
+            }
+
+            const res = await fetch(url, {
                 method: api.method,
-                body: api.method !== 'GET' ? JSON.stringify(api.params) : undefined,
+                body: api.method !== 'GET' ? JSON.stringify(allParams) : undefined,
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -23,6 +57,5 @@ export function useSmartQuery(dataSource?: DataSourceConfig) {
         },
         refetchInterval: refreshInterval,
         enabled: !!api,
-        // initialData: valueKey ? getContextData(valueKey) : undefined // TODO: Implement Context Data retrieval
     });
 }
