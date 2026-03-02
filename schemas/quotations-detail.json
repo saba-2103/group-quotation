@@ -155,6 +155,39 @@
         },
         {
           "$ref": "schemas/tabs/plan-product-term-life.json"
+        },
+        {
+          "$ref": "schemas/tabs/plan-product-credit-life.json"
+        },
+        {
+          "$ref": "schemas/tabs/plan-product-investment.json"
+        },
+        {
+          "$ref": "schemas/tabs/plan-product-benefits.json"
+        },
+        {
+          "$ref": "schemas/tabs/plan-product-benefits-health.json"
+        },
+        {
+          "$ref": "schemas/tabs/benefit-investment.json"
+        },
+        {
+          "$ref": "schemas/tabs/premium-method-05.json"
+        },
+        {
+          "$ref": "schemas/tabs/premium-method-06.json"
+        },
+        {
+          "$ref": "schemas/tabs/premium-method-07.json"
+        },
+        {
+          "$ref": "schemas/tabs/premium-method-08.json"
+        },
+        {
+          "$ref": "schemas/tabs/headcount.json"
+        },
+        {
+          "$ref": "schemas/tabs/members.json"
         }
       ]
     }
