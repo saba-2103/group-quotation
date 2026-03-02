@@ -1,195 +1,162 @@
 {
-    "id": "quotation-details-page",
-    "type": "stack-layout",
-    "props": {
-        "className": "p-6 gap-6"
-    },
-    "children": [
-        {
-            "id": "quotation-header",
-            "type": "page-header",
-            "props": {
-                "title": "Quotation Details",
-                "description": "Manage specific quotation info",
-                "breadcrumbs": [
-                    {
-                        "label": "Home",
-                        "href": "/"
-                    },
-                    {
-                        "label": "Quotations",
-                        "href": "/quotations"
-                    },
-                    {
-                        "label": "Details"
-                    }
-                ],
-                "actions": [
-                    {
-                        "id": "convert-to-policy",
-                        "label": "Convert to Policy",
-                        "icon": "FileCheck",
-                        "variant": "secondary",
-                        "type": "open-modal",
-                        "target": "convert-to-policy-form"
-                    },
-                    {
-                        "id": "export-pdf",
-                        "label": "Export PDF",
-                        "icon": "Download",
-                        "variant": "outline",
-                        "type": "api-download",
-                        "api": {
-                            "endpoint": "/api/downloads/quotation",
-                            "method": "GET"
-                        },
-                        "filename": "quotation-export.pdf"
-                    }
-                ]
-            }
-        },
-        {
-            "id": "quotation-summary-grid",
-            "type": "key-value-grid",
-            "dataSource": {
-                "api": {
-                    "endpoint": "/api/quotations/{{id}}/summary",
-                    "method": "GET"
-                }
+  "id": "quotation-details-page",
+  "type": "stack-layout",
+  "props": {
+    "className": "p-6 gap-6"
+  },
+  "children": [
+    {
+      "id": "quotation-header",
+      "type": "page-header",
+      "props": {
+        "title": "Quotation Details",
+        "description": "Manage specific quotation info",
+        "breadcrumbs": [
+          {
+            "label": "Home",
+            "href": "/"
+          },
+          {
+            "label": "Quotations",
+            "href": "/quotations"
+          },
+          {
+            "label": "Details"
+          }
+        ],
+        "actions": [
+          {
+            "id": "convert-to-policy",
+            "label": "Convert to Policy",
+            "icon": "FileCheck",
+            "variant": "secondary",
+            "type": "open-modal",
+            "target": "convert-to-policy-form"
+          },
+          {
+            "id": "export-pdf",
+            "label": "Export PDF",
+            "icon": "Download",
+            "variant": "outline",
+            "type": "api-download",
+            "api": {
+              "endpoint": "/api/downloads/quotation",
+              "method": "GET"
             },
-            "props": {
-                "fields": [
-                    {
-                        "id": "policy-number",
-                        "label": "Policy Number",
-                        "accessorKey": "policyNumber",
-                        "icon": "FileText",
-                        "type": "text"
-                    },
-                    {
-                        "id": "master-policy-number",
-                        "label": "Master Policy Number",
-                        "accessorKey": "masterPolicyNumber",
-                        "icon": "FileCheck",
-                        "type": "text"
-                    },
-                    {
-                        "id": "is-master-policy",
-                        "label": "Is it Master Policy?",
-                        "accessorKey": "isMasterPolicy",
-                        "icon": "Shield",
-                        "type": "badge"
-                    },
-                    {
-                        "id": "tranno",
-                        "label": "Tranno",
-                        "accessorKey": "tranno",
-                        "icon": "Hash",
-                        "type": "text"
-                    },
-                    {
-                        "id": "branch",
-                        "label": "Branch",
-                        "accessorKey": "branch",
-                        "icon": "Building",
-                        "type": "text"
-                    },
-                    {
-                        "id": "policy-classification",
-                        "label": "Policy Classification",
-                        "accessorKey": "policyClassification",
-                        "icon": "Tag",
-                        "type": "text"
-                    },
-                    {
-                        "id": "product-mix",
-                        "label": "Product Mix",
-                        "accessorKey": "productMix",
-                        "icon": "Package",
-                        "type": "text"
-                    },
-                    {
-                        "id": "risk-term-classification",
-                        "label": "Risk Term Classification",
-                        "accessorKey": "riskTermClassification",
-                        "icon": "TrendingUp",
-                        "type": "text"
-                    },
-                    {
-                        "id": "effective-date",
-                        "label": "Effective Date",
-                        "accessorKey": "effectiveDate",
-                        "icon": "Calendar",
-                        "type": "date"
-                    }
-                ]
-            }
+            "filename": "quotation-export.pdf"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quotation-summary-grid",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/quotations/{{id}}/summary",
+          "method": "GET"
+        }
+      },
+      "props": {
+        "fields": [
+          {
+            "id": "policy-number",
+            "label": "Policy Number",
+            "accessorKey": "policyNumber",
+            "icon": "FileText",
+            "type": "text"
+          },
+          {
+            "id": "master-policy-number",
+            "label": "Master Policy Number",
+            "accessorKey": "masterPolicyNumber",
+            "icon": "FileCheck",
+            "type": "text"
+          },
+          {
+            "id": "is-master-policy",
+            "label": "Is it Master Policy?",
+            "accessorKey": "isMasterPolicy",
+            "icon": "Shield",
+            "type": "badge"
+          },
+          {
+            "id": "tranno",
+            "label": "Tranno",
+            "accessorKey": "tranno",
+            "icon": "Hash",
+            "type": "text"
+          },
+          {
+            "id": "branch",
+            "label": "Branch",
+            "accessorKey": "branch",
+            "icon": "Building",
+            "type": "text"
+          },
+          {
+            "id": "policy-classification",
+            "label": "Policy Classification",
+            "accessorKey": "policyClassification",
+            "icon": "Tag",
+            "type": "text"
+          },
+          {
+            "id": "product-mix",
+            "label": "Product Mix",
+            "accessorKey": "productMix",
+            "icon": "Package",
+            "type": "text"
+          },
+          {
+            "id": "risk-term-classification",
+            "label": "Risk Term Classification",
+            "accessorKey": "riskTermClassification",
+            "icon": "TrendingUp",
+            "type": "text"
+          },
+          {
+            "id": "effective-date",
+            "label": "Effective Date",
+            "accessorKey": "effectiveDate",
+            "icon": "Calendar",
+            "type": "date"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quotation-tabs",
+      "type": "tabs-container",
+      "children": [
+        {
+          "$ref": "schemas/tabs/common-header.json"
         },
         {
-            "id": "quotation-tabs",
-            "type": "tabs-container",
-            "children": [
-                {
-                    "$ref": "schemas/tabs/common-header.json"
-                },
-                {
-                    "$ref": "schemas/tabs/policy-profile.json"
-                },
-                {
-                    "$ref": "schemas/tabs/documents.json"
-                },
-                {
-                    "$ref": "schemas/tabs/policy-exclusion.json"
-                },
-                {
-                    "$ref": "schemas/tabs/subsidiaries.json"
-                },
-                {
-                    "$ref": "schemas/tabs/plans.json"
-                },
-                {
-                    "$ref": "schemas/tabs/plan-products.json"
-                },
-                {
-                    "$ref": "schemas/tabs/plan-product-health.json"
-                },
-                {
-                    "$ref": "schemas/tabs/plan-product-term-life.json"
-                },
-                {
-                    "$ref": "schemas/tabs/plan-product-credit-life.json"
-                },
-                {
-                    "$ref": "schemas/tabs/plan-product-investment.json"
-                },
-                {
-                    "$ref": "schemas/tabs/plan-product-benefits.json"
-                },
-                {
-                    "$ref": "schemas/tabs/plan-product-benefits-health.json"
-                },
-                {
-                    "$ref": "schemas/tabs/benefit-investment.json"
-                },
-                {
-                    "$ref": "schemas/tabs/premium-method-05.json"
-                },
-                {
-                    "$ref": "schemas/tabs/premium-method-06.json"
-                },
-                {
-                    "$ref": "schemas/tabs/premium-method-07.json"
-                },
-                {
-                    "$ref": "schemas/tabs/premium-method-08.json"
-                },
-                {
-                    "$ref": "schemas/tabs/headcount.json"
-                },
-                {
-                    "$ref": "schemas/tabs/members.json"
-                }
-            ]
+          "$ref": "schemas/tabs/policy-profile.json"
+        },
+        {
+          "$ref": "schemas/tabs/documents.json"
+        },
+        {
+          "$ref": "schemas/tabs/policy-exclusion.json"
+        },
+        {
+          "$ref": "schemas/tabs/subsidiaries.json"
+        },
+        {
+          "$ref": "schemas/tabs/plans.json"
+        },
+        {
+          "$ref": "schemas/tabs/plan-products.json"
+        },
+        {
+          "$ref": "schemas/tabs/plan-product-health.json"
+        },
+        {
+          "$ref": "schemas/tabs/plan-product-term-life.json"
         }
-    ]
+      ]
+    }
+  ]
 }

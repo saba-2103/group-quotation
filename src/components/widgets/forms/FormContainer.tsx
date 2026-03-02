@@ -83,7 +83,7 @@ const evaluateCondition = (condition: any, formValues: any) => {
 };
 
 export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) => {
-    const { fields, actions } = config.props || {};
+    const { fields, actions, columns } = config.props || {};
     const handleAction = useActionHandler();
 
     // Dynamically build Zod schema from the schema validations
@@ -188,7 +188,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
         <div className="p-6 border rounded-md bg-card w-full">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className={`grid grid-cols-1 gap-6 ${columns === 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
                         {fields?.map((field: any) => {
                             // Verify visibility
                             const isVisible = evaluateCondition(field.visibleWhen, formValues);
