@@ -1,0 +1,104 @@
+{
+    "id": "events-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "events",
+        "label": "Accounting Events",
+        "icon": "Activity"
+    },
+    "children": [
+        {
+            "id": "events-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/events/list?page=0&size=50",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Accounting Events",
+                "headerActions": [
+                    {
+                        "id": "create-event-btn",
+                        "label": "Create Event",
+                        "type": "open-modal",
+                        "target": "create-event-form",
+                        "variant": "primary"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "businessKey",
+                        "accessorKey": "businessKey",
+                        "label": "Business Key",
+                        "type": "text"
+                    },
+                    {
+                        "id": "component",
+                        "accessorKey": "component",
+                        "label": "Component",
+                        "type": "text"
+                    },
+                    {
+                        "id": "lob",
+                        "accessorKey": "lob",
+                        "label": "LOB",
+                        "type": "text"
+                    },
+                    {
+                        "id": "businessProcessCode",
+                        "accessorKey": "businessProcessCode",
+                        "label": "Process Code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "eventDate",
+                        "accessorKey": "eventDate",
+                        "label": "Event Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "state",
+                        "accessorKey": "state",
+                        "label": "State",
+                        "type": "badge"
+                    },
+                    {
+                        "id": "detailCount",
+                        "accessorKey": "detailCount",
+                        "label": "Details",
+                        "type": "number"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "post-event-btn",
+                        "label": "Post Event",
+                        "type": "api-mutation",
+                        "visible": {
+                            "field": "state",
+                            "operator": "eq",
+                            "value": "PENDING"
+                        },
+                        "api": {
+                            "endpoint": "/api/accounting/events/:id/post",
+                            "method": "POST"
+                        }
+                    },
+                    {
+                        "id": "reverse-event-btn",
+                        "label": "Reverse",
+                        "type": "open-modal",
+                        "target": "reverse-event-form",
+                        "visible": {
+                            "field": "state",
+                            "operator": "eq",
+                            "value": "POSTED"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

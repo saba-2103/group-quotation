@@ -1,0 +1,106 @@
+{
+    "id": "periods-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "periods",
+        "label": "Accounting Periods",
+        "icon": "Calendar"
+    },
+    "children": [
+        {
+            "id": "periods-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/periods/list?page=0&size=50",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Periods",
+                "headerActions": [
+                    {
+                        "id": "create-period-btn",
+                        "label": "Create Period",
+                        "type": "open-modal",
+                        "target": "create-period-form",
+                        "variant": "primary"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "displayId",
+                        "accessorKey": "displayId",
+                        "label": "Display ID",
+                        "type": "text"
+                    },
+                    {
+                        "id": "startDate",
+                        "accessorKey": "startDate",
+                        "label": "Start Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "endDate",
+                        "accessorKey": "endDate",
+                        "label": "End Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "state",
+                        "accessorKey": "state",
+                        "label": "State",
+                        "type": "badge"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "open-period-btn",
+                        "label": "Open",
+                        "type": "api-mutation",
+                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
+                        "visible": {
+                            "field": "state",
+                            "operator": "eq",
+                            "value": "NOT_STARTED"
+                        },
+                        "api": {
+                            "endpoint": "/api/accounting/periods/:id/open",
+                            "method": "POST"
+                        }
+                    },
+                    {
+                        "id": "close-period-btn",
+                        "label": "Close",
+                        "type": "api-mutation",
+                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
+                        "visible": {
+                            "field": "state",
+                            "operator": "eq",
+                            "value": "OPEN"
+                        },
+                        "api": {
+                            "endpoint": "/api/accounting/periods/:id/close",
+                            "method": "POST"
+                        }
+                    },
+                    {
+                        "id": "reopen-period-btn",
+                        "label": "Reopen",
+                        "type": "api-mutation",
+                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
+                        "visible": {
+                            "field": "state",
+                            "operator": "eq",
+                            "value": "CLOSED"
+                        },
+                        "api": {
+                            "endpoint": "/api/accounting/periods/:id/reopen",
+                            "method": "POST"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

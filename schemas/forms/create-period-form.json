@@ -1,0 +1,45 @@
+{
+    "id": "create-period-form",
+    "type": "form-container",
+    "props": {
+        "title": "Create Accounting Period",
+        "fields": [
+            {
+                "id": "startDate",
+                "name": "startDate",
+                "label": "Start Date",
+                "type": "date",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Start date is required"
+                    }
+                ]
+            },
+            {
+                "id": "endDate",
+                "name": "endDate",
+                "label": "End Date",
+                "type": "date",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "End date is required"
+                    }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-period",
+                "label": "Create Period",
+                "submitAction": true,
+                "variant": "primary",
+                "api": {
+                    "endpoint": "/api/accounting/periods",
+                    "method": "POST"
+                }
+            }
+        ]
+    }
+}

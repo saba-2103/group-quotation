@@ -25,7 +25,9 @@ export const useActionHandler = () => {
             if (!res.ok) {
                 throw new Error(`Action failed: ${res.statusText}`);
             }
-            return res.json();
+            if (res.status === 204) return null;
+            const text = await res.text();
+            return text ? JSON.parse(text) : null;
         }
     });
 
@@ -47,6 +49,7 @@ export const useActionHandler = () => {
                         console.log("Success Toast:", action.successMessage); // Placeholder for toast
                     }
                     if (action.refreshKey) {
+                        // Allow for partial matching of the query key (e.g. invalidate all queries starting with the endpoint)
                         queryClient.invalidateQueries({ queryKey: [action.refreshKey] });
                     }
                 }

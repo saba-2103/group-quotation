@@ -174,6 +174,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
         if (submitAction) {
             handleAction({
                 ...submitAction,
+                type: submitAction.api ? 'api-mutation' : (submitAction.type === 'submit' ? 'api-mutation' : submitAction.type),
                 api: {
                     ...submitAction.api,
                     body: visibleData

@@ -88,6 +88,12 @@ export const groupInsuranceAppConfig: AppConfig = {
         icon: "Settings",
         subMenuItems: [
           {
+            id: "accounting",
+            label: "Accounting",
+            url: "/accounting",
+            icon: "Calculator"
+          },
+          {
             id: "client-maintenance",
             label: "Client Maintenance",
             url: "/client-maintenance"

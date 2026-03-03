@@ -1,0 +1,89 @@
+{
+    "id": "posting-rules-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "posting-rules",
+        "label": "Posting Rules",
+        "icon": "FileCode2"
+    },
+    "children": [
+        {
+            "id": "posting-rules-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/posting-rules/list?page=0&size=50",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Posting Rules",
+                "headerActions": [
+                    {
+                        "id": "create-posting-rule-btn",
+                        "label": "Create Posting Rule",
+                        "type": "open-modal",
+                        "target": "create-posting-rule-form",
+                        "variant": "primary"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "ruleId",
+                        "accessorKey": "ruleId",
+                        "label": "Rule ID",
+                        "type": "text"
+                    },
+                    {
+                        "id": "lob",
+                        "accessorKey": "lob",
+                        "label": "LOB",
+                        "type": "text"
+                    },
+                    {
+                        "id": "businessProcessCode",
+                        "accessorKey": "businessProcessCode",
+                        "label": "Process Code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accountGroup",
+                        "accessorKey": "accountGroup",
+                        "label": "Account Group",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accountSubgroup",
+                        "accessorKey": "accountSubgroup",
+                        "label": "Account Subgroup",
+                        "type": "text"
+                    },
+                    {
+                        "id": "debitCreditIndicator",
+                        "accessorKey": "debitCreditIndicator",
+                        "label": "D/C Indicator",
+                        "type": "text"
+                    },
+                    {
+                        "id": "glPseudoName",
+                        "accessorKey": "glPseudoName",
+                        "label": "GL Pseudo Name",
+                        "type": "text"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "delete-posting-rule-btn",
+                        "label": "Delete",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "api": {
+                            "endpoint": "/api/accounting/posting-rules/:ruleId?reason=Deleted+from+UI",
+                            "method": "DELETE"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

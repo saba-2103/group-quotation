@@ -1,0 +1,107 @@
+{
+    "id": "create-posting-rule-form",
+    "type": "form-container",
+    "props": {
+        "title": "Create Posting Rule",
+        "fields": [
+            {
+                "id": "lob",
+                "name": "lob",
+                "label": "Line of Business",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "businessProcessCode",
+                "name": "businessProcessCode",
+                "label": "Business Process Code",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "accountGroup",
+                "name": "accountGroup",
+                "label": "Account Group",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "accountSubgroup",
+                "name": "accountSubgroup",
+                "label": "Account Subgroup",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "debitCreditIndicator",
+                "name": "debitCreditIndicator",
+                "label": "Debit/Credit Indicator",
+                "type": "select",
+                "options": [
+                    {
+                        "label": "Debit",
+                        "value": "DEBIT"
+                    },
+                    {
+                        "label": "Credit",
+                        "value": "CREDIT"
+                    },
+                    {
+                        "label": "Both",
+                        "value": "BOTH"
+                    }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "glPseudoName",
+                "name": "glPseudoName",
+                "label": "GL Pseudo Name",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-posting-rule",
+                "label": "Create Rule",
+                "submitAction": true,
+                "variant": "primary",
+                "api": {
+                    "endpoint": "/api/accounting/posting-rules",
+                    "method": "POST"
+                }
+            }
+        ]
+    }
+}

@@ -53,3 +53,21 @@ next-env.d.ts
 
 # Generated Schemas Registry
 schemas/forms/index.ts
+fix_forms.js
+fix_schemas.js
+scripts/port_all_forms.mjs
+scripts/port_all_forms.ts
+scripts/run_transform.mjs
+src/mocks/original/README.md
+test_policy_profile.ts
+PORTING_SUMMARY.md
+UX_ISSUES.md
+FORMS_PORTING_SUMMARY.md
+FORMS_SCHEMA_ISSUES.md
+FORMS_UX_ISSUES.md
+FORM_PORTING_JOURNEY.md
+FORM_SCHEMA_GUIDE.md
+FORM_UX_GUIDE.md
+FUTURE_PORTING_GUIDE.md
+UI_PORTING_GUIDE.md
+keystone-ui.code-workspace
