@@ -10,7 +10,7 @@ interface StackLayoutProps {
 }
 
 export const StackLayout: React.FC<StackLayoutProps> = ({ config }) => {
-    const { direction = 'column', gap = 4, align = 'start', justify = 'start', className } = config.props || {};
+    const { direction = 'column', gap = 4, align = 'stretch', justify = 'start', className } = config.props || {};
 
     return (
         <div
