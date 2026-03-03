@@ -24,7 +24,7 @@
                         "label": "Create Posting Rule",
                         "type": "open-modal",
                         "target": "create-posting-rule-form",
-                        "variant": "primary"
+                        "variant": "default"
                     }
                 ],
                 "columns": [

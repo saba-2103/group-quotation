@@ -14,6 +14,7 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { evaluateCondition } from '@/lib/conditions';
 
 interface DataTableProps {
     config: WidgetConfig;
@@ -162,7 +163,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
 
         // Filter actions by visibility and map parameters
         const mappedActions = rowActions
-            .filter((act: any) => checkVisibility(act.visible, row))
+            .filter((act: any) => evaluateCondition(act.visible, row))
             .map((act: any) => {
                 const a = { ...act };
                 const rowId = row.id || row.quotationNumber;
@@ -210,12 +211,6 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     };
 
     const colSpan = (columns?.length || 0) + (selectable ? 1 : 0) + (hasRowActions ? 1 : 0);
-
-    const checkVisibility = (visible: any, row: any) => {
-        if (!visible) return true;
-        const { field, value } = visible;
-        return row[field] === value;
-    };
 
     return (
         <div className="flex flex-col gap-4 h-full">

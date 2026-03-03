@@ -76,8 +76,12 @@
                         "refreshKey": "/api/accounting/periods/list?page=0&size=50",
                         "visible": {
                             "field": "state",
-                            "operator": "eq",
-                            "value": "OPEN"
+                            "operator": "in",
+                            "value": [
+                                "OPEN",
+                                "REOPEN",
+                                "REOPENED"
+                            ]
                         },
                         "api": {
                             "endpoint": "/api/accounting/periods/:id/close",

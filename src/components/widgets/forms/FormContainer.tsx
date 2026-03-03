@@ -14,6 +14,7 @@ import { useOverlayStore } from '@/hooks/useOverlayStore';
 import { CalendarIcon } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { evaluateCondition } from '@/lib/conditions';
 
 // Helper to determine display value for view mode
 const ViewField = ({ field, value }: { field: any, value: any }) => {
@@ -62,25 +63,6 @@ const ViewField = ({ field, value }: { field: any, value: any }) => {
     }
 
     return <p className="font-medium break-words">{displayValue}</p>;
-};
-
-// Helper to evaluate visibleWhen rules dynamically
-const evaluateCondition = (condition: any, formValues: any) => {
-    if (!condition) return true;
-    const { field, operator, value } = condition;
-    const fieldValue = formValues[field];
-
-    switch (operator) {
-        case 'eq': return fieldValue === value;
-        case 'neq': return fieldValue !== value;
-        case 'gt': return Number(fieldValue) > Number(value);
-        case 'lt': return Number(fieldValue) < Number(value);
-        case 'gte': return Number(fieldValue) >= Number(value);
-        case 'lte': return Number(fieldValue) <= Number(value);
-        case 'in': return Array.isArray(value) && value.includes(fieldValue);
-        case 'notIn': return Array.isArray(value) && !value.includes(fieldValue);
-        default: return true; // unsupported operators pass by default
-    }
 };
 
 export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) => {

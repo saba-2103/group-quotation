@@ -25,7 +25,7 @@
                         "label": "Create Direct Journal",
                         "type": "open-modal",
                         "target": "create-journal-form",
-                        "variant": "primary"
+                        "variant": "default"
                     }
                 ],
                 "columns": [
