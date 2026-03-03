@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { WidgetConfig } from '@/types/widget';
 import { useForm, useWatch } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useActionHandler } from '@/hooks/useActionHandler';
+import { useOverlayStore } from '@/hooks/useOverlayStore';
 import { CalendarIcon } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -85,6 +86,8 @@ const evaluateCondition = (condition: any, formValues: any) => {
 export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { fields, actions } = config.props || {};
     const handleAction = useActionHandler();
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
     // Dynamically build Zod schema from the schema validations
     const formSchema = useMemo(() => {
@@ -161,7 +164,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
 
     const formValues = useWatch({ control: form.control });
 
-    const onSubmit = (data: any) => {
+    const onSubmit = async (data: any) => {
         // Filter out fields that are hidden by visibleWhen before submitting
         const visibleData = { ...data };
         fields?.forEach((field: any) => {
@@ -172,14 +175,24 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
 
         const submitAction = actions?.find((a: any) => a.type === 'submit' || a.submitAction);
         if (submitAction) {
-            handleAction({
-                ...submitAction,
-                type: submitAction.api ? 'api-mutation' : (submitAction.type === 'submit' ? 'api-mutation' : submitAction.type),
-                api: {
-                    ...submitAction.api,
-                    body: visibleData
-                }
-            });
+            setSubmitError(null);
+            setSubmitSuccess(null);
+            try {
+                await handleAction({
+                    ...submitAction,
+                    type: submitAction.api ? 'api-mutation' : (submitAction.type === 'submit' ? 'api-mutation' : submitAction.type),
+                    api: {
+                        ...submitAction.api,
+                        body: visibleData
+                    }
+                });
+                setSubmitSuccess(submitAction.successMessage || "Operation successful");
+                setTimeout(() => {
+                    useOverlayStore.getState().close(config.id);
+                }, 1500);
+            } catch (err: any) {
+                setSubmitError(err.message || "An error occurred");
+            }
         } else {
             console.log('Form Submitted (No Endpoint configured):', visibleData);
         }
@@ -189,6 +202,16 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
         <div className="p-6 border rounded-md bg-card w-full">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    {submitError && (
+                        <div className="p-3 text-sm text-red-500 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-md">
+                            {submitError}
+                        </div>
+                    )}
+                    {submitSuccess && (
+                        <div className="p-3 text-sm text-green-600 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-md">
+                            {submitSuccess}
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {fields?.map((field: any) => {
                             // Verify visibility

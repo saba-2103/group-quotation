@@ -23,7 +23,21 @@ export const useActionHandler = () => {
                 }
             });
             if (!res.ok) {
-                throw new Error(`Action failed: ${res.statusText}`);
+                let errorMessage = `Action failed: ${res.statusText}`;
+                try {
+                    const text = await res.text();
+                    if (text) {
+                        const errorData = JSON.parse(text);
+                        if (errorData.message) {
+                            errorMessage = errorData.message;
+                        } else if (errorData.error) {
+                            errorMessage = errorData.error;
+                        }
+                    }
+                } catch (e) {
+                    // Ignore JSON parsing errors for error responses
+                }
+                throw new Error(errorMessage);
             }
             if (res.status === 204) return null;
             const text = await res.text();

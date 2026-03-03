@@ -34,7 +34,8 @@
                 "id": "submit-period",
                 "label": "Create Period",
                 "submitAction": true,
-                "variant": "primary",
+                "variant": "default",
+                "refreshKey": "/api/accounting/periods/list?page=0&size=50",
                 "api": {
                     "endpoint": "/api/accounting/periods",
                     "method": "POST"

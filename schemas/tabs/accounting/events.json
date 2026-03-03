@@ -24,7 +24,7 @@
                         "label": "Create Event",
                         "type": "open-modal",
                         "target": "create-event-form",
-                        "variant": "primary"
+                        "variant": "default"
                     }
                 ],
                 "columns": [

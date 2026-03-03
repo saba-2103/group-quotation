@@ -24,7 +24,7 @@
                         "label": "Create Period",
                         "type": "open-modal",
                         "target": "create-period-form",
-                        "variant": "primary"
+                        "variant": "default"
                     }
                 ],
                 "columns": [
