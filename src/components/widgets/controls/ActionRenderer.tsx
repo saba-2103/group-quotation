@@ -4,7 +4,7 @@ import { ActionButton } from './ActionButton';
 import { useActionHandler } from '@/hooks/useActionHandler';
 
 interface ActionRendererProps {
-    action: ActionConfig;
+    action: ActionConfig & { display?: "button" | "icon" | "menu-item" };
     disabled?: boolean;
 }
 
@@ -20,6 +20,6 @@ export const ActionRenderer: React.FC<ActionRendererProps> = ({ action, disabled
     };
 
     return (
-        <ActionButton action={resolvedAction} onClick={handleClick} disabled={disabled} />
+        <ActionButton action={resolvedAction} onClick={handleClick} disabled={disabled} displayAs={action.display} />
     );
 };

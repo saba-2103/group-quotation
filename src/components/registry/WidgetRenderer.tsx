@@ -42,7 +42,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ config }) => {
     const colSpanClass = config.layout?.colSpan ? colSpanClasses[config.layout.colSpan] : "";
 
     return (
-        <div className={cn("widget-wrapper", colSpanClass)}>
+        <div className={cn("widget-wrapper min-w-0 w-full", colSpanClass)}>
             <Component {...enhancedProps} />
         </div>
     );
