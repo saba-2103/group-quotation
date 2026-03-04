@@ -36,7 +36,7 @@ export default function RootLayout({
 					<AppContextProvider>
 						<SidebarProvider defaultOpen={true}>
 							<AppSidebar />
-							<main className="w-full min-w-0 flex-1 overflow-x-auto p-6 relative">
+              				<main className="w-full min-w-0 flex-1 overflow-x-hidden p-6 relative">
 								<SidebarTrigger className="absolute top-6 left-6 z-50 md:hidden" />
 								{children}
 							</main>
