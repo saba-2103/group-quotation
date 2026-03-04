@@ -1,15 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
 import { DataSourceConfig } from '@/types/widget';
 
 export function useSmartQuery(dataSource?: DataSourceConfig) {
     const { api, valueKey, refreshInterval } = dataSource || {};
+    const searchParams = useSearchParams();
+    const searchParamsString = searchParams.toString();
+
+    const url = api
+        ? api.method === 'GET' && searchParamsString
+            ? `${api.endpoint}?${searchParamsString}`
+            : api.endpoint
+        : null;
 
     return useQuery({
-        queryKey: api ? [api.endpoint, api.method, api.params] : ['no-api'],
+        queryKey: api ? [api.endpoint, api.method, api.params, searchParamsString] : ['no-api'],
         queryFn: async () => {
-            if (!api) return null;
-            // In a real app, use a configured fetch client or axios
-            const res = await fetch(api.endpoint, {
+            if (!api || !url) return null;
+            const res = await fetch(url, {
                 method: api.method,
                 body: api.method !== 'GET' ? JSON.stringify(api.params) : undefined,
                 headers: {
