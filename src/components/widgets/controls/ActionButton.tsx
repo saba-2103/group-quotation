@@ -8,16 +8,14 @@ type ActionButtonProps = {
     action: ActionConfig;
     onClick: () => void;
     disabled?: boolean;
-    displayAs?: "button" | "icon" | "menu-item";
 };
 
-export const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled, displayAs = "button" }) => {
-    const display = displayAs;
+export const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, disabled }) => {
 
     // Dynamically resolve icon if provided
     const IconComponent = action.icon ? (LucideIcons as any)[action.icon] : null;
 
-    if (display === "icon") {
+    if (action.display === "icon") {
         const hasIcon = !!action.icon;
         const isDestructive = action.variant === "destructive";
 
@@ -41,7 +39,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, dis
         );
     }
 
-    if (display === "menu-item") {
+    if (action.display === "menu-item") {
         const handleSelect = (e: Event) => {
             e.preventDefault();
             onClick();
