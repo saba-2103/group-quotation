@@ -4,7 +4,7 @@ export const tabsListVariants = cva("flex items-center text-muted-foreground", {
     variants: {
         variant: {
             default: "h-10 rounded-md bg-muted p-1 justify-start",
-            case: "min-w-full flex-nowrap overflow-x-auto overflow-y-hidden border-b border-border [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40",
+            case: "flex-nowrap border-b-0",
         },
     },
     defaultVariants: {
