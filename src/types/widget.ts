@@ -29,6 +29,7 @@ export interface BaseActionConfig {
     label?: string;
     icon?: string;
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+    display?: "button" | "icon" | "menu-item";
     refreshKey?: string;
     props?: Record<string, any>;
 }

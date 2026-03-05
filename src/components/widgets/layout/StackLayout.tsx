@@ -15,7 +15,7 @@ export const StackLayout: React.FC<StackLayoutProps> = ({ config }) => {
     return (
         <div
             className={cn(
-                'flex',
+                'flex min-w-0',
                 direction === 'row' ? 'flex-row' : 'flex-col',
                 align === 'center' && 'items-center',
                 align === 'start' && 'items-start',

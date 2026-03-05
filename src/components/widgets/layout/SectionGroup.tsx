@@ -8,7 +8,7 @@ import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 
 export const SectionGroup: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { title, columns } = config.props || {};
-    const gridCols = columns === 2 ? "md:grid-cols-2" : columns === 3 ? "md:grid-cols-3" : "md:grid-cols-4";
+    const gridCols = columns === 2 ? "md:grid-cols-2" : columns === 3 ? "md:grid-cols-3" : columns === 4 ? "md:grid-cols-4" : "grid-cols-1";
 
     return (
         <section className="flex flex-col gap-5">
