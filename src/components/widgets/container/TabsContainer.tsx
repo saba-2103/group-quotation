@@ -52,7 +52,7 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
             {children.map((tab) => (
               <DropdownMenuItem
                 key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
+                onSelect={() => handleTabChange(tab.id)}
                 className={activeTab === tab.id ? "bg-accent" : ""}
               >
                 <span>{tab.props?.label || tab.id}</span>
