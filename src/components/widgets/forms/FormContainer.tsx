@@ -206,7 +206,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                     control={form.control}
                                     name={field.name}
                                     render={({ field: fieldProps }) => (
-                                        <FormItem className={field.span ? `col-span-${field.span}` : ''}>
+                                        <FormItem className={`flex flex-col justify-end ${field.span ? `col-span-${field.span}` : ''}`}>
                                             <FormLabel className="text-sm font-semibold text-muted-foreground tracking-wide">{field.label}</FormLabel>
                                             <FormControl>
                                                 {config.props?.mode === 'view' ? (

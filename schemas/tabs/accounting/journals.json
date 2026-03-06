@@ -12,7 +12,7 @@
             "type": "data-table",
             "dataSource": {
                 "api": {
-                    "endpoint": "/api/accounting/journals/list?page=0&size=50",
+                    "endpoint": "/api/accounting/journals/search?page=0&size=50",
                     "method": "GET"
                 },
                 "fallbackData": []
@@ -73,7 +73,8 @@
                         "api": {
                             "endpoint": "/api/accounting/journals/:journalNumber/post",
                             "method": "POST"
-                        }
+                        },
+                        "refreshKey": "/api/accounting/journals/search?page=0&size=50"
                     },
                     {
                         "id": "reverse-journal-btn",

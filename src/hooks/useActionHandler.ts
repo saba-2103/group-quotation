@@ -63,8 +63,14 @@ export const useActionHandler = () => {
                         console.log("Success Toast:", action.successMessage); // Placeholder for toast
                     }
                     if (action.refreshKey) {
-                        // Allow for partial matching of the query key (e.g. invalidate all queries starting with the endpoint)
-                        queryClient.invalidateQueries({ queryKey: [action.refreshKey] });
+                        // Invalidate any query whose first queryKey element starts with the action.refreshKey
+                        const refreshKeyStr = action.refreshKey;
+                        queryClient.invalidateQueries({
+                            predicate: (query) => {
+                                const key = query.queryKey[0];
+                                return typeof key === 'string' && key.startsWith(refreshKeyStr);
+                            }
+                        });
                     }
                 }
                 break;

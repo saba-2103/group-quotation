@@ -174,9 +174,15 @@ export const groupInsuranceAppConfig: AppConfig = {
             url: "/business-process-maintenance"
           },
           {
-            id: "input-output-permission-maintenance",
-            label: "Input Output Permission Maintenance",
-            url: "/input-output-permission-maintenance"
+            "id": "input-output-permission-maintenance",
+            "label": "Input Output Permission Maintenance",
+            "url": "/input-output-permission-maintenance"
+          },
+          {
+            "id": "payout",
+            "label": "Payouts",
+            "url": "/payout",
+            "icon": "Banknote"
           }
         ]
       },

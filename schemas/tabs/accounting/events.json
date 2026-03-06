@@ -81,6 +81,7 @@
                             "operator": "eq",
                             "value": "PENDING"
                         },
+                        "refreshKey": "/api/accounting/events/list?page=0&size=50",
                         "api": {
                             "endpoint": "/api/accounting/events/:id/post",
                             "method": "POST"

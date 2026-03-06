@@ -80,7 +80,8 @@
                         "api": {
                             "endpoint": "/api/accounting/posting-rules/:ruleId?reason=Deleted+from+UI",
                             "method": "DELETE"
-                        }
+                        },
+                        "refreshKey": "/api/accounting/posting-rules/list?page=0&size=50"
                     }
                 ]
             }
