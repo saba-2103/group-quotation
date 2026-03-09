@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Badge } from '../../components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 
 const meta: Meta<typeof Badge> = {
     title: 'UI/Badge',
@@ -15,36 +15,6 @@ const meta: Meta<typeof Badge> = {
 
 export default meta;
 type Story = StoryObj<typeof Badge>;
-
-// --- Variants ---
-
-export const Default: Story = {
-    args: { children: 'Default', variant: 'default' },
-};
-
-export const Secondary: Story = {
-    args: { children: 'Secondary', variant: 'secondary' },
-};
-
-export const Destructive: Story = {
-    args: { children: 'Rejected', variant: 'destructive' },
-};
-
-export const Outline: Story = {
-    args: { children: 'Outline', variant: 'outline' },
-};
-
-export const Success: Story = {
-    args: { children: 'Approved', variant: 'success' },
-};
-
-export const Warning: Story = {
-    args: { children: 'Pending', variant: 'warning' },
-};
-
-export const Info: Story = {
-    args: { children: 'In Progress', variant: 'info' },
-};
 
 // --- All Variants Side by Side ---
 export const AllVariants: Story = {
@@ -80,4 +50,34 @@ export const StatusBadges: Story = {
             </div>
         </div>
     ),
+};
+
+// --- Variants ---
+
+export const Default: Story = {
+    args: { children: 'Default', variant: 'default' },
+};
+
+export const Secondary: Story = {
+    args: { children: 'Secondary', variant: 'secondary' },
+};
+
+export const Destructive: Story = {
+    args: { children: 'Rejected', variant: 'destructive' },
+};
+
+export const Outline: Story = {
+    args: { children: 'Outline', variant: 'outline' },
+};
+
+export const Success: Story = {
+    args: { children: 'Approved', variant: 'success' },
+};
+
+export const Warning: Story = {
+    args: { children: 'Pending', variant: 'warning' },
+};
+
+export const Info: Story = {
+    args: { children: 'In Progress', variant: 'info' },
 };

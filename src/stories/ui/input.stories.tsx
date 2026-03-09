@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Input } from '../../components/ui/input';
+import { Input } from '@/components/ui/input';
 
 const meta: Meta<typeof Input> = {
     title: 'UI/Input',
@@ -16,6 +16,17 @@ const meta: Meta<typeof Input> = {
 
 export default meta;
 type Story = StoryObj<typeof Input>;
+
+export const AllVariants: Story = {
+    render: () => (
+        <div className="flex flex-col gap-3 max-w-sm">
+            <Input type="text" placeholder="Default input" />
+            <Input type="text" defaultValue="With pre-filled value" />
+            <Input type="text" placeholder="Disabled input" disabled />
+            <Input type="text" placeholder="Error state" aria-invalid={true} />
+        </div>
+    ),
+};
 
 // --- States ---
 
@@ -55,16 +66,4 @@ export const NumberInput: Story = {
 
 export const PasswordInput: Story = {
     args: { type: 'password', placeholder: 'Enter password' },
-};
-
-// --- All States Side by Side ---
-export const AllStates: Story = {
-    render: () => (
-        <div className="flex flex-col gap-3 max-w-sm">
-            <Input type="text" placeholder="Default input" />
-            <Input type="text" defaultValue="With pre-filled value" />
-            <Input type="text" placeholder="Disabled input" disabled />
-            <Input type="text" placeholder="Error state" aria-invalid={true} />
-        </div>
-    ),
 };

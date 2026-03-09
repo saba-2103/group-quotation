@@ -6,9 +6,9 @@ import {
     CardDescription,
     CardContent,
     CardFooter,
-} from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const meta: Meta<typeof Card> = {
     title: 'UI/Card',
@@ -18,6 +18,28 @@ const meta: Meta<typeof Card> = {
 
 export default meta;
 type Story = StoryObj<typeof Card>;
+
+// --- Grid of Cards (All Variants style) ---
+export const AllVariants: Story = {
+    render: () => (
+        <div className="grid grid-cols-3 gap-4 border p-4 bg-muted/20 rounded-xl">
+            {['Total Claims', 'Pending Quotations', 'Active Policies'].map((title, i) => (
+                <Card key={title}>
+                    <CardHeader className="pb-2">
+                        <CardDescription>{title}</CardDescription>
+                        <CardTitle className="text-3xl font-bold">{(i + 1) * 40}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Badge variant={i === 1 ? 'warning' : 'success'}>
+                            {i === 1 ? 'Pending' : 'Active'}
+                        </Badge>
+                    </CardContent>
+                </Card>
+            ))}
+        </div>
+    ),
+};
+
 
 // --- Basic Card ---
 
@@ -66,26 +88,5 @@ export const MetricCard: Story = {
                 <Badge variant="success">+12% this month</Badge>
             </CardContent>
         </Card>
-    ),
-};
-
-// --- Grid of Cards ---
-export const CardGrid: Story = {
-    render: () => (
-        <div className="grid grid-cols-3 gap-4">
-            {['Total Claims', 'Pending Quotations', 'Active Policies'].map((title, i) => (
-                <Card key={title}>
-                    <CardHeader className="pb-2">
-                        <CardDescription>{title}</CardDescription>
-                        <CardTitle className="text-3xl font-bold">{(i + 1) * 40}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Badge variant={i === 1 ? 'warning' : 'success'}>
-                            {i === 1 ? 'Pending' : 'Active'}
-                        </Badge>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
     ),
 };

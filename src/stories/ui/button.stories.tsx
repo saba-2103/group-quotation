@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Plus } from 'lucide-react';
-import { Button } from '../../components/ui/button';
+import { Button } from '@/components/ui/button';
 
 const meta: Meta<typeof Button> = {
     title: 'UI/Button',
@@ -20,6 +20,35 @@ const meta: Meta<typeof Button> = {
 
 export default meta;
 type Story = StoryObj<typeof Button>;
+
+export const AllVariants: Story = {
+    render: () => (
+        <div className="flex flex-wrap gap-3 items-center">
+            <Button variant="default">Default</Button>
+            <Button variant="secondary">Secondary</Button>
+            <Button variant="destructive">Destructive</Button>
+            <Button variant="outline">Outline</Button>
+            <Button variant="ghost">Ghost</Button>
+            <Button variant="link">Link</Button>
+        </div>
+    ),
+};
+
+// --- All Sizes Side by Side ---
+export const AllSizes: Story = {
+    render: () => (
+        <div className="flex flex-wrap gap-3 items-center">
+            <Button size="xs">XS</Button>
+            <Button size="sm">SM</Button>
+            <Button size="default">Default</Button>
+            <Button size="lg">LG</Button>
+            <Button size="icon"><Plus /></Button>
+            <Button size="icon-xs"><Plus /></Button>
+            <Button size="icon-sm"><Plus /></Button>
+            <Button size="icon-lg"><Plus /></Button>
+        </div>
+    ),
+};
 
 // --- Variants ---
 
@@ -83,34 +112,4 @@ export const IconLG: Story = {
 
 export const Disabled: Story = {
     args: { children: 'Disabled', variant: 'default', disabled: true },
-};
-
-// --- All Variants Side by Side ---
-export const AllVariants: Story = {
-    render: () => (
-        <div className="flex flex-wrap gap-3 items-center">
-            <Button variant="default">Default</Button>
-            <Button variant="secondary">Secondary</Button>
-            <Button variant="destructive">Destructive</Button>
-            <Button variant="outline">Outline</Button>
-            <Button variant="ghost">Ghost</Button>
-            <Button variant="link">Link</Button>
-        </div>
-    ),
-};
-
-// --- All Sizes Side by Side ---
-export const AllSizes: Story = {
-    render: () => (
-        <div className="flex flex-wrap gap-3 items-center">
-            <Button size="xs">XS</Button>
-            <Button size="sm">SM</Button>
-            <Button size="default">Default</Button>
-            <Button size="lg">LG</Button>
-            <Button size="icon"><Plus /></Button>
-            <Button size="icon-xs"><Plus /></Button>
-            <Button size="icon-sm"><Plus /></Button>
-            <Button size="icon-lg"><Plus /></Button>
-        </div>
-    ),
 };

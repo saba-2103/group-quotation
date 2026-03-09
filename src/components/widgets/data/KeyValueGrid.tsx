@@ -6,21 +6,25 @@ import * as Icons from 'lucide-react';
 
 export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { props = {}, dataSource } = config;
-    const { fields = [] } = props;
+    const { fields = [], data: propsData, isLoading: propsLoading, error: propsError } = props as any;
 
     // Fetch data implicitly if dataSource is provided
-    const { data, isLoading, error } = useSmartQuery(dataSource);
+    const { data: queryData, isLoading: queryIsLoading, error: queryError } = useSmartQuery(dataSource);
+
+    const isLoading = propsLoading || queryIsLoading;
+    const error = propsError || queryError;
 
     if (isLoading) {
-        return <div className="p-6 text-sm text-muted-foreground animate-pulse">Loading summary...</div>;
+        return <div className="p-6 text-sm text-muted-foreground animate-pulse border rounded-lg bg-card">Loading summary...</div>;
     }
 
     if (error) {
-        return <div className="p-6 text-sm text-destructive">Failed to load data</div>;
+        return <div className="p-6 text-sm text-destructive border rounded-lg bg-red-50/50">Failed to load data</div>;
     }
 
-    // Resolve data root using valueKey if provided
-    const sourceData = dataSource?.valueKey && data ? (data as any)[dataSource.valueKey] : data;
+    // Resolve data root using valueKey if provided, prioritizing static data
+    const rawData = propsData || queryData;
+    const sourceData = dataSource?.valueKey && rawData ? (rawData as any)[dataSource.valueKey] : rawData;
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-card rounded-lg border shadow-sm">
