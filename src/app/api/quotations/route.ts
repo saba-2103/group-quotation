@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const pendingQuotationsMockData = [
+const pendingQuotationsMockData: any[] = [
     {
         id: "1",
         quotationNumber: "QBAG00000000001",
@@ -107,4 +107,19 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json(filteredData);
+}
+
+export async function POST(request: Request) {
+    const body = await request.json() as Record<string, any>;
+    const newQuotation = {
+        ...body,
+        id: String(pendingQuotationsMockData.length + 1),
+        quotationNumber: `QBAG${Date.now()}`,
+        quoteVersion: "V1.0",
+        mainStatus: "Pending",
+        secondaryStatus: "Draft",
+        transactionStatus: "Active",
+    };
+    pendingQuotationsMockData.push(newQuotation);
+    return NextResponse.json(newQuotation, { status: 201 });
 }

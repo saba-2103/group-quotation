@@ -1,0 +1,207 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Create New Quotation",
+        "description": "Enter quotation details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "quotationNumber",
+                "name": "quotationNumber",
+                "label": "Quotation Number",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "policyNumber",
+                "name": "policyNumber",
+                "label": "Policy Number",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "placeholder": "Enter policy number"
+            },
+            {
+                "id": "clientName",
+                "name": "clientName",
+                "label": "Client Name",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "span": 2,
+                "placeholder": "Enter client name",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Client name is required"
+                    }
+                ]
+            },
+            {
+                "id": "isMasterPolicy",
+                "name": "isMasterPolicy",
+                "label": "Is it Master Policy?",
+                "type": "select",
+                "order": 4,
+                "size": "sm",
+                "defaultValue": "no",
+                "options": [
+                    { "value": "yes", "label": "Yes" },
+                    { "value": "no", "label": "No" }
+                ]
+            },
+            {
+                "id": "masterPolicyNumber",
+                "name": "masterPolicyNumber",
+                "label": "Master Policy Number",
+                "type": "text",
+                "order": 5,
+                "size": "sm",
+                "placeholder": "Enter master policy number",
+                "visibleWhen": {
+                    "field": "isMasterPolicy",
+                    "operator": "eq",
+                    "value": "yes"
+                }
+            },
+            {
+                "id": "tranno",
+                "name": "tranno",
+                "label": "Tranno",
+                "type": "text",
+                "order": 6,
+                "size": "sm",
+                "placeholder": "Enter transaction number"
+            },
+            {
+                "id": "policyType",
+                "name": "policyType",
+                "label": "Policy Type",
+                "type": "select",
+                "order": 7,
+                "size": "sm",
+                "defaultValue": "group-term-life",
+                "options": [
+                    { "value": "group-term-life", "label": "Group Term Life" },
+                    { "value": "group-health", "label": "Group Health" },
+                    { "value": "group-accident", "label": "Group Accident" }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Policy type is required"
+                    }
+                ]
+            },
+            {
+                "id": "branch",
+                "name": "branch",
+                "label": "Branch",
+                "type": "select",
+                "order": 8,
+                "size": "sm",
+                "placeholder": "Select branch",
+                "options": [
+                    { "value": "mumbai", "label": "Mumbai" },
+                    { "value": "delhi", "label": "Delhi" },
+                    { "value": "bangalore", "label": "Bangalore" },
+                    { "value": "chennai", "label": "Chennai" }
+                ]
+            },
+            {
+                "id": "policyClassification",
+                "name": "policyClassification",
+                "label": "Policy Classification",
+                "type": "select",
+                "order": 9,
+                "size": "sm",
+                "span": 2,
+                "defaultValue": "true-group",
+                "options": [
+                    { "value": "true-group", "label": "True Group" },
+                    { "value": "employer-employee", "label": "Employer Employee" },
+                    { "value": "non-employer-employee", "label": "Non Employer Employee" }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Policy classification is required"
+                    }
+                ]
+            },
+            {
+                "id": "riskTermClassification",
+                "name": "riskTermClassification",
+                "label": "Risk Term Classification",
+                "type": "select",
+                "order": 10,
+                "size": "sm",
+                "defaultValue": "yearly-renewable",
+                "options": [
+                    { "value": "yearly-renewable", "label": "Yearly Renewable" },
+                    { "value": "level-term", "label": "Level Term" },
+                    { "value": "decreasing-term", "label": "Decreasing Term" }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Risk term classification is required"
+                    }
+                ]
+            },
+            {
+                "id": "productMix",
+                "name": "productMix",
+                "label": "Product Mix",
+                "type": "select",
+                "order": 11,
+                "size": "sm",
+                "placeholder": "Select product mix",
+                "options": [
+                    { "value": "investment-products-only", "label": "Investment products only" },
+                    { "value": "protection-products-only", "label": "Protection products only" },
+                    { "value": "mixed", "label": "Mixed" }
+                ]
+            },
+            {
+                "id": "effectiveDate",
+                "name": "effectiveDate",
+                "label": "Effective Date",
+                "type": "date",
+                "order": 12,
+                "size": "sm",
+                "span": 2,
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Effective date is required"
+                    }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit",
+                "label": "Create Quotation",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "api": {
+                    "endpoint": "/api/quotations",
+                    "method": "POST"
+                },
+                "successMessage": "Quotation created successfully!"
+            },
+            {
+                "id": "cancel",
+                "label": "Cancel",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}
