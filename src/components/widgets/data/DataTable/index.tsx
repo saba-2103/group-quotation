@@ -36,7 +36,6 @@ import {
   FileText,
   FileSpreadsheet,
   FileDown,
-  ChevronDown,
 } from "lucide-react";
 
 import { FilterCell } from "./FilterCell";
@@ -81,14 +80,14 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     widgetId: config.id,
   });
 
-  const handleExport = (
+  const handleExport = async (
     scope: "selected" | "all",
     format: "csv" | "xlsx" | "pdf",
   ) => {
     const rows =
       scope === "selected"
         ? table.getSelectedRowModel().rows.map((r) => r.original)
-        : table.getPrePaginationRowModel().rows.map((r) => r.original);
+        : table.getSortedRowModel().rows.map((r) => r.original);
     exportData(rows, format);
   };
 
@@ -136,7 +135,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                   className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                 >
                   <Download size={13} />
-                  Export
+                  Export ({totalCount})
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -173,7 +172,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                   </>
                 )}
                 <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-                  Export all
+                  Export all ({totalCount})
                 </DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => handleExport("all", "csv")}>
                   <FileText size={13} className="mr-2 text-muted-foreground" />
