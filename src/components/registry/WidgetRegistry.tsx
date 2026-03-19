@@ -11,6 +11,7 @@ import { FilterBar } from '../widgets/controls/FilterBar';
 import { TabsContainer } from '../widgets/container/TabsContainer';
 import { FormContainer } from '../widgets/forms/FormContainer';
 import { KeyValueGrid } from '../widgets/data/KeyValueGrid';
+import { ConfirmationDialog } from '../widgets/forms/ConfirmationDialog';
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
     'stack-layout': StackLayout,
@@ -25,6 +26,7 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
     'tabs-container': TabsContainer,
     'form-container': FormContainer,
     'key-value-grid': KeyValueGrid,
+    'confirmation-dialog': ConfirmationDialog,
 };
 
 export const getWidgetComponent = (type: string) => {
