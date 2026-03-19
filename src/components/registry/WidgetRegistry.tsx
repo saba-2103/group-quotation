@@ -24,6 +24,7 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
     'quick-links-widget': QuickLinksWidget,
     'data-table': DataTable,
     'filter-bar': FilterBar,
+    'search-bar': FilterBar,
     'tabs-container': TabsContainer,
     'form-container': FormContainer,
     'key-value-grid': KeyValueGrid,

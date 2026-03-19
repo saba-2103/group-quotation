@@ -56,9 +56,20 @@
             }
         },
         {
-            "id": "quotations-filters",
-            "type": "filter-bar",
+            "id": "quotations-errors",
+            "type": "error-banner",
             "props": {
+                "errors": [
+                    { "error_code": "RF-ER-001", "error_desc": "One or more required fields are missing." },
+                    { "error_code": "DB-ER-002", "error_desc": "Record could not be saved due to a database conflict." }
+                ]
+            }
+        },
+        {
+            "id": "quotations-filters",
+            "type": "search-bar",
+            "props": {
+                "mode": "client",
                 "filters": [
                     {
                         "id": "effectiveDateFrom",
@@ -437,9 +448,18 @@
                         "id": "transactionStatus",
                         "header": "Transaction Status",
                         "accessorKey": "transactionStatus",
-                        "type": "text",
+                        "type": "badge",
                         "sortable": true,
-                        "width": "140px"
+                        "width": "160px",
+                        "valueMapping": [
+                            { "value": "DR", "label": "Draft",            "variant": "grey" },
+                            { "value": "CM", "label": "Completed",        "variant": "info" },
+                            { "value": "RV", "label": "Review",           "variant": "warning" },
+                            { "value": "RC", "label": "Review Completed", "variant": "teal" },
+                            { "value": "AC", "label": "Active",           "variant": "success" },
+                            { "value": "AD", "label": "Active Draft",     "variant": "amber" },
+                            { "value": "IA", "label": "In-Active",        "variant": "destructive" }
+                        ]
                     },
                     {
                         "id": "channel",
@@ -614,6 +634,24 @@
                             "message": "Are you sure you want to withdraw this quotation?"
                         },
                         "successMessage": "Quotation withdrawn successfully"
+                    }
+                ],
+                "bulkActions": [
+                    {
+                        "id": "bulk-archive",
+                        "label": "Archive Selected",
+                        "icon": "Archive",
+                        "variant": "outline",
+                        "type": "api-mutation",
+                        "api": {
+                            "endpoint": "/api/quotations/bulk-archive",
+                            "method": "POST"
+                        },
+                        "confirm": {
+                            "title": "Archive Selected Quotations",
+                            "message": "Are you sure you want to archive the selected quotations? This action cannot be undone."
+                        },
+                        "successMessage": "Selected quotations archived successfully"
                     }
                 ],
                 "defaultSort": {

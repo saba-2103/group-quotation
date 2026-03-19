@@ -40,8 +40,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
 
         case 'badge':
         case 'status': {
-            // Find mapping based on value, handling array of mappings
             const mapping = column.valueMapping?.find((m: any) => m.value === value);
+            // if mapping config contains matching variant of badge, render it.
+            if (mapping?.variant) {
+                return <Badge variant={mapping.variant}>{mapping.label || String(value)}</Badge>;
+            }
             const colorKey = mapping?.color || 'default';
             // Determine if a tailwind class mapping exists, otherwise fall back to 'default' or direct class
             const resolvedClass = colorClasses[colorKey] || colorClasses.default;
