@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useActionHandler } from '@/hooks/useActionHandler';
 import { CalendarIcon } from 'lucide-react';
+import { CalendarDatePicker } from '../controls/dateWidget/CalendarDatePicker';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
@@ -257,9 +258,16 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                                         value={fieldProps.value ?? ''}
                                                         disabled={field.disabled}
                                                     />
+                                                ) : field.type === 'date' ? (
+                                                    <CalendarDatePicker
+                                                        value={fieldProps.value ?? ''}
+                                                        onChange={fieldProps.onChange}
+                                                        disabled={field.disabled}
+                                                        placeholder={field.placeholder || 'Select date'}
+                                                    />
                                                 ) : (
                                                     <Input
-                                                        type={['date', 'number', 'email', 'password', 'tel', 'url'].includes(field.type) ? field.type : 'text'}
+                                                        type={['number', 'email', 'password', 'tel', 'url'].includes(field.type) ? field.type : 'text'}
                                                         placeholder={field.placeholder}
                                                         {...fieldProps}
                                                         value={fieldProps.value ?? ''}
