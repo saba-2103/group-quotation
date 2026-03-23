@@ -71,3 +71,6 @@ FORM_UX_GUIDE.md
 FUTURE_PORTING_GUIDE.md
 UI_PORTING_GUIDE.md
 keystone-ui.code-workspace
+
+*storybook.log
+storybook-static
