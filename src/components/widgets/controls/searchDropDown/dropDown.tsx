@@ -40,6 +40,8 @@ export function Dropdown({
   const isConfigMode = !isStatic && !!variableCode;
   const isTransactionalMode = !isStatic && !isConfigMode && !!endpoint;
 
+  // To get data based on the passed props.
+  //To get list of valid values & cache them.
   const configQuery = useQuery({
     queryKey: ["valid-values", variableCode, entityId, language],
     queryFn: () => fetchConfigOptions(variableCode!, entityId, language),
@@ -47,6 +49,7 @@ export function Dropdown({
     staleTime: 5 * 60 * 1000,
   });
 
+  // To get options from business data.
   const transactionalQuery = useQuery({
     queryKey: ["transactional-options", endpoint],
     queryFn: () => fetchTransactionalOptions(endpoint!),
