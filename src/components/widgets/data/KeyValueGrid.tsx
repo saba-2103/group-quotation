@@ -3,6 +3,8 @@ import { WidgetConfig } from '@/types/widget';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
 import { Badge } from '@/components/ui/badge';
 import * as Icons from 'lucide-react';
+import { DateDisplay } from '@/components/widgets/controls/dateWidget/DateDisplay';
+import { TransactionStatusBadge } from '@/components/widgets/items/TransactionStatusBadge';
 
 export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { props = {}, dataSource } = config;
@@ -37,6 +39,10 @@ export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => 
                         <div className="text-sm font-semibold text-foreground">
                             {field.type === 'badge' ? (
                                 <Badge variant={value === 'Yes' ? 'default' : 'secondary'}>{value || '-'}</Badge>
+                            ) : field.type === 'date' ? (
+                                <DateDisplay value={value ? String(value) : ''} />
+                            ) : field.type === 'transaction-status' ? (
+                                <TransactionStatusBadge code={String(value)} />
                             ) : (
                                 <span>{value || '-'}</span>
                             )}

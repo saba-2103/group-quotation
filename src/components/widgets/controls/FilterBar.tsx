@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Search, ListFilter, X, RotateCcw } from 'lucide-react';
+import { CalendarDatePicker } from './dateWidget/CalendarDatePicker';
 
 export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const router = useRouter();
@@ -36,7 +37,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const mode: 'client' | 'server' = config.props?.mode ?? 'client';
 
     // Server mode: buffer criteria locally until Search is clicked
-    const [serverCriteria, setServerCriteria] = useState<Record<string, string>>({});
+    const [serverCriteria, setServerCriteria] = useState<Record<string, string>>(config.props?.initialCriteria ?? {});
 
     // ── Client mode helpers ────────────────────────────────────────────────
 
@@ -119,11 +120,10 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                         .map((filter: any) => (
                             <div key={filter.id} className="flex flex-col gap-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">{filter.label}</label>
-                                <Input
-                                    type="date"
+                                <CalendarDatePicker
                                     value={serverCriteria[filter.id] || ''}
-                                    onChange={(e) => handleServerCriteriaChange(filter.id, e.target.value)}
-                                    className="h-9 text-sm"
+                                    onChange={(iso) => handleServerCriteriaChange(filter.id, iso)}
+                                    placeholder={filter.placeholder || 'Select date'}
                                 />
                             </div>
                         ))

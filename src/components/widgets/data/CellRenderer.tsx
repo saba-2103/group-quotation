@@ -1,5 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
+import { DateDisplay } from '@/components/widgets/controls/dateWidget/DateDisplay';
+import { TransactionStatusBadge } from '@/components/widgets/items/TransactionStatusBadge';
 
 interface CellRendererProps {
     column: any;
@@ -64,6 +66,12 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
 
         case 'number':
             return <span>{Number(value)}</span>;
+
+        case 'date':
+            return <DateDisplay value={String(value)} />;
+
+        case 'transaction-status':
+            return <TransactionStatusBadge code={String(value)} />;
 
         default:
             return <span>{String(value)}</span>;
