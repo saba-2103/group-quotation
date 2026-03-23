@@ -1,7 +1,7 @@
 import React from 'react';
 import { StackLayout } from '../widgets/layout/StackLayout';
 import { GridLayout } from '../widgets/layout/GridLayout';
-import { PageHeader } from '../widgets/layout/PageHeader';
+import { PageHeader } from '../widgets/layout/PageHeader/PageHeader';
 import { SectionGroup } from '../widgets/layout/SectionGroup';
 import { MetricCard } from '../widgets/items/MetricCard';
 import { ChartWidget } from '../widgets/items/ChartWidget';
@@ -15,6 +15,7 @@ import { ConfirmationDialog } from '../widgets/forms/ConfirmationDialog';
 import { ErrorBanner } from '../widgets/items/ErrorBanner';
 import { DateWidget } from '../widgets/controls/dateWidget/index';
 import { SearchableDropdownWidget } from '../widgets/controls/searchDropDown/index';
+import { ContextHelpTooltipWidget } from '../widgets/items/ContextHelpTooltip';
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
     'stack-layout': StackLayout,
@@ -34,6 +35,7 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
     'error-banner': ErrorBanner,
     'date-widget': DateWidget,
     'searchable-dropdown': SearchableDropdownWidget,
+    'context-help-tooltip': ContextHelpTooltipWidget,
 };
 
 export const getWidgetComponent = (type: string) => {
