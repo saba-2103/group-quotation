@@ -18,6 +18,7 @@ import {
   FetchParams,
   TableRow,
 } from "../components/widgets/data/DataTable/types";
+import { useSmartQuery } from "./useSmartQuery";
 
 interface UseDataTableOptions {
   props: WidgetConfig["props"];
@@ -33,9 +34,20 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     volumeMode = "low",
     totalRows,
     onFetchData,
+    dataSource,
   } = props || {};
 
-  const rawData = useMemo<TableRow[]>(() => props?.data ?? [], [props?.data]);
+  // Fetch from dataSource when inline data is not provided
+  const {
+    data: fetchedData,
+    isLoading: isQueryLoading,
+    error: queryError,
+  } = useSmartQuery(props?.data == null ? dataSource : undefined);
+
+  const rawData = useMemo<TableRow[]>(
+    () => props?.data ?? (Array.isArray(fetchedData) ? fetchedData : []),
+    [props?.data, fetchedData],
+  );
 
   const isServerSide = volumeMode === "high";
 
@@ -174,5 +186,8 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     // state setters for UI actions
     setRowSelection,
     setColumnFilters,
+    // async fetch state
+    isQueryLoading,
+    queryError,
   };
 };

@@ -73,6 +73,8 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     selectedCount,
     setRowSelection,
     setColumnFilters,
+    isQueryLoading,
+    queryError,
   } = useDataTable({ props: config.props });
 
   const { exportData } = useTableExport({
@@ -91,7 +93,9 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     exportData(rows, format);
   };
 
-  const { emptyState, isLoading, error } = config.props || {};
+  const { emptyState, isLoading: propLoading, error: propError } = config.props || {};
+  const isLoading = propLoading || isQueryLoading;
+  const error = propError || queryError;
 
   const resolveLinkAndNavigate = (route: string, rowId: string) => {
     handleAction({ type: "navigate", target: route.replace(":id", rowId) });
