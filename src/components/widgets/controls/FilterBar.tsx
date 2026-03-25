@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { WidgetConfig } from '@/types/widget';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useActionHandler } from '@/hooks/useActionHandler';
+import { useWidgetState } from '@/hooks/useWidgetState';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,40 +22,55 @@ import {
 import { Search, ListFilter, X } from 'lucide-react';
 
 export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
-    const router = useRouter();
-    const searchParams = useSearchParams();
+    const handleAction = useActionHandler();
+    const { getValue } = useWidgetState();
 
-    // We expect filters in config.props.filters
     const filters = config.props?.filters || [];
+    const stateKey = config.props?.stateKey || "page:filters";
+
+    const currentValues = getValue(stateKey, {});
 
     const handleFilterChange = (key: string, value: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (value) {
-            params.set(key, value);
-        } else {
-            params.delete(key);
-        }
-        router.push(`?${params.toString()}`);
+        handleAction({
+            type: "update-widget-state",
+            props: {
+                key: stateKey,
+                operation: "patch",
+                value: { [key]: value }
+            }
+        });
     };
 
     const handleRemoveFilter = (key: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete(key);
-        router.push(`?${params.toString()}`);
+        handleAction({
+            type: "update-widget-state",
+            props: {
+                key: stateKey,
+                operation: "patch",
+                value: { [key]: "" }
+            }
+        });
     };
 
     const resetFilters = () => {
-        router.push('?');
+        handleAction({
+            type: "update-widget-state",
+            props: {
+                key: stateKey,
+                operation: "set",
+                value: {}
+            }
+        });
     };
 
     // Calculate applied filters for Badges
-    const appliedFilters = Array.from(searchParams.entries())
-        .filter(([key]) => key !== 'q' && key !== 'page') // exclude search and pagination from chips
+    const appliedFilters = Object.entries(currentValues)
         .map(([key, value]) => {
+            if (!value || key === 'q') return null;
             const filterDef = filters.find((f: any) => f.id === key);
             if (!filterDef) return null;
 
-            let displayValue = value;
+            let displayValue = value as string;
             if (filterDef.options) {
                 const opt = filterDef.options.find((o: any) => o.value === value || o === value);
                 displayValue = opt?.label || opt || value;
@@ -70,7 +86,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                 <div className="relative flex-1 min-w-[220px]">
                     <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        value={searchParams.get('q') || ''}
+                        value={currentValues.q || ''}
                         onChange={(e) => handleFilterChange('q', e.target.value)}
                         placeholder="Search..."
                         className="bg-card pl-8"
@@ -90,7 +106,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                             <DropdownMenuSeparator />
                             {filters.map((filter: any) => {
                                 if (filter.type !== 'select' || !filter.options) return null;
-                                const currentValue = searchParams.get(filter.id);
+                                const currentValue = currentValues[filter.id];
                                 return (
                                     <DropdownMenuSub key={filter.id}>
                                         <DropdownMenuSubTrigger>{filter.label}</DropdownMenuSubTrigger>

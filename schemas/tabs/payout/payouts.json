@@ -1,0 +1,144 @@
+{
+    "id": "payouts-tab",
+    "type": "tab-panel",
+    "props": {
+        "label": "Payouts",
+        "icon": "Banknotes"
+    },
+    "children": [
+        {
+            "id": "payouts-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/payouts/search?page=0&size=50",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Recent Payouts",
+                "headerActions": [
+                    {
+                        "id": "register-payout-btn",
+                        "label": "Register Payout",
+                        "type": "open-modal",
+                        "target": "register-payout-form",
+                        "variant": "primary"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "id",
+                        "label": "Payout ID",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payoutDate",
+                        "label": "Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "lob",
+                        "label": "LOB",
+                        "type": "badge"
+                    },
+                    {
+                        "id": "component",
+                        "label": "Component",
+                        "type": "text"
+                    },
+                    {
+                        "id": "reason",
+                        "label": "Reason",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entityType",
+                        "label": "Entity Type",
+                        "type": "badge"
+                    },
+                    {
+                        "id": "entityId",
+                        "label": "Entity ID",
+                        "type": "text"
+                    },
+                    {
+                        "id": "transactionAmount.amount",
+                        "label": "Tx Amount",
+                        "type": "number",
+                        "format": "currency"
+                    },
+                    {
+                        "id": "glAmount.amount",
+                        "label": "GL Amount",
+                        "type": "number",
+                        "format": "currency"
+                    },
+                    {
+                        "id": "payoutState",
+                        "label": "Status",
+                        "type": "badge"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "approve-payout",
+                        "label": "Approve",
+                        "type": "api-mutation",
+                        "visible": {
+                            "field": "payoutState",
+                            "operator": "eq",
+                            "value": "PENDING"
+                        },
+                        "api": {
+                            "endpoint": "/api/moneyout/payouts/:id/approve",
+                            "method": "POST"
+                        },
+                        "refreshKey": "/api/moneyout/payouts/search?page=0&size=50"
+                    },
+                    {
+                        "id": "reject-payout",
+                        "label": "Reject",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "visible": {
+                            "field": "payoutState",
+                            "operator": "eq",
+                            "value": "PENDING"
+                        },
+                        "api": {
+                            "endpoint": "/api/moneyout/payouts/:id/reject",
+                            "method": "POST"
+                        },
+                        "refreshKey": "/api/moneyout/payouts/search?page=0&size=50",
+                        "requireConfirmation": true,
+                        "confirmationMessage": "Are you sure you want to reject this payout?",
+                        "payload": {
+                            "reason": "Rejected via UI"
+                        }
+                    },
+                    {
+                        "id": "disburse-payout",
+                        "label": "Disburse",
+                        "type": "api-mutation",
+                        "refreshKey": "/api/moneyout/payouts/search?page=0&size=50",
+                        "visible": {
+                            "field": "payoutState",
+                            "operator": "in",
+                            "value": [
+                                "APPROVED",
+                                "DISBURSEMENT_REJECTED"
+                            ]
+                        },
+                        "api": {
+                            "endpoint": "/api/moneyout/payouts/:id/disburse",
+                            "method": "POST"
+                        },
+                        "requireConfirmation": true,
+                        "confirmationMessage": "This will disburse the payout and create accounting entries. Continue?"
+                    }
+                ]
+            }
+        }
+    ]
+}
