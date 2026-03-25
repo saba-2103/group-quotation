@@ -14,6 +14,7 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { evaluateCondition } from '@/lib/conditions';
 
 interface DataTableProps {
     config: WidgetConfig;
@@ -160,15 +161,27 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     const renderRowActions = (row: any) => {
         if (!hasRowActions) return null;
 
-        // Pass sanitized row to the ActionRenderer if we wanted to dynamically map URLs.
-        // We'll map them inline for now.
-        const mappedActions = rowActions.map((act: any) => {
-            const rowId = row.id || row.quotationNumber;
-            const a = { ...act };
-            if (a.actionProps?.route) a.actionProps = { ...a.actionProps, route: a.actionProps.route.replace(":id", rowId) };
-            if (a.actionProps?.api?.endpoint) a.actionProps = { ...a.actionProps, api: { ...a.actionProps.api, endpoint: a.actionProps.api.endpoint.replace(":id", rowId) } };
-            return a;
-        });
+        // Filter actions by visibility and map parameters
+        const mappedActions = rowActions
+            .filter((act: any) => evaluateCondition(act.visible, row))
+            .map((act: any) => {
+                const a = { ...act };
+                const rowId = row.id || row.quotationNumber;
+
+                const replaceParams = (str: string) => str.replace(/:([a-zA-Z0-9_]+)/g, (match, p1) => String(row[p1] || rowId || match));
+
+                // Handle root-level properties
+                if (a.route) a.route = replaceParams(a.route);
+                if (a.api?.endpoint) a.api = { ...a.api, endpoint: replaceParams(a.api.endpoint) };
+
+                // Handle legacy nested properties
+                if (a.actionProps?.route) a.actionProps = { ...a.actionProps, route: replaceParams(a.actionProps.route) };
+                if (a.actionProps?.api?.endpoint) a.actionProps = { ...a.actionProps, api: { ...a.actionProps.api, endpoint: replaceParams(a.actionProps.api.endpoint) } };
+
+                return a;
+            });
+
+        if (mappedActions.length === 0) return null;
 
         if (mappedActions.length <= MAX_INLINE_ACTIONS) {
             return (
@@ -201,6 +214,18 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
 
     return (
         <div className="flex flex-col gap-4 h-full">
+            {/* Header Section */}
+            {(title || (config.props?.headerActions && config.props.headerActions.length > 0)) && (
+                <div className="flex items-center justify-between gap-4">
+                    {title && <h3 className="text-lg font-semibold tracking-tight">{title}</h3>}
+                    <div className="flex items-center gap-2">
+                        {config.props?.headerActions?.map((action: any) => (
+                            <ActionRenderer key={action.id} action={action} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Bulk Actions Bar */}
             {selectable && selectedRows.size > 0 && bulkActions && bulkActions.length > 0 && (
                 <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2">
@@ -252,11 +277,11 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                                 const leftOffset = col.frozen === "left" && selectable ? "left-[40px]" : undefined;
                                 return (
                                     <TableHead
-                                        key={col.accessorKey || col.header}
+                                        key={col.accessorKey || col.id || col.header || col.label}
                                         style={{ width: col.width, minWidth: col.width }}
                                         className={cn(col.align === "right" ? "text-right" : "", getFrozenColumnClasses(col.frozen, true, leftOffset))}
                                     >
-                                        {col.header}
+                                        {col.header || col.label}
                                     </TableHead>
                                 );
                             })}
@@ -306,14 +331,15 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                                         )}
                                         {columns?.map((col: any) => {
                                             const leftOffset = col.frozen === "left" && selectable ? "left-[40px]" : undefined;
+                                            const cellKey = col.accessorKey || col.id;
                                             return (
                                                 <TableCell
-                                                    key={`${rowId}-${col.accessorKey}`}
+                                                    key={`${rowId}-${cellKey}`}
                                                     className={cn(col.align === "right" ? "text-right" : "", getFrozenColumnClasses(col.frozen, false, leftOffset))}
                                                 >
                                                     <CellRenderer
                                                         column={col}
-                                                        value={row[col.accessorKey]}
+                                                        value={row[cellKey]}
                                                         rowId={rowId}
                                                         onLinkClick={resolveLinkAndNavigate}
                                                     />

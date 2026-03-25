@@ -59,6 +59,7 @@
             "id": "quotations-filters",
             "type": "filter-bar",
             "props": {
+                "stateKey": "page:quotations:filters",
                 "filters": [
                     {
                         "id": "effectiveDateFrom",
@@ -341,7 +342,10 @@
                 "api": {
                     "endpoint": "/api/quotations",
                     "method": "GET"
-                }
+                },
+                "stateDependencies": [
+                    "page:quotations:filters"
+                ]
             },
             "props": {
                 "columns": [

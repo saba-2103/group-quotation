@@ -1,0 +1,38 @@
+{
+    "id": "accounting-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-8"
+    },
+    "children": [
+        {
+            "id": "accounting-header",
+            "type": "page-header",
+            "props": {
+                "title": "Accounting Module",
+                "description": "Manage accounting periods, posting rules, events, and journals"
+            }
+        },
+        {
+            "id": "accounting-tabs",
+            "type": "tabs-container",
+            "props": {
+                "defaultValue": "periods"
+            },
+            "children": [
+                {
+                    "$ref": "schemas/tabs/accounting/periods.json"
+                },
+                {
+                    "$ref": "schemas/tabs/accounting/posting-rules.json"
+                },
+                {
+                    "$ref": "schemas/tabs/accounting/events.json"
+                },
+                {
+                    "$ref": "schemas/tabs/accounting/journals.json"
+                }
+            ]
+        }
+    ]
+}
