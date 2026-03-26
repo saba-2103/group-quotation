@@ -1,7 +1,6 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { DateDisplay } from '@/components/widgets/controls/dateWidget/DateDisplay';
-import { TransactionStatusBadge } from '@/components/widgets/items/TransactionStatusBadge';
 
 interface CellRendererProps {
     column: any;
@@ -42,7 +41,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
 
         case 'badge':
         case 'status': {
-            const mapping = column.valueMapping?.find((m: any) => m.value === value);
+            const mapping = column.valueMapping?.find((m: any) => m.value === value) ?? value;
             // if mapping config contains matching variant of badge, render it.
             if (mapping?.variant) {
                 return <Badge variant={mapping.variant}>{mapping.label || String(value)}</Badge>;
@@ -69,9 +68,6 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
 
         case 'date':
             return <DateDisplay value={String(value)} />;
-
-        case 'transaction-status':
-            return <TransactionStatusBadge code={String(value)} />;
 
         default:
             return <span>{String(value)}</span>;

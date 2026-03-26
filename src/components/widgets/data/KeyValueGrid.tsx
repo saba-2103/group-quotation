@@ -2,15 +2,27 @@ import React from 'react';
 import { WidgetConfig } from '@/types/widget';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
 import { Badge } from '@/components/ui/badge';
-import * as Icons from 'lucide-react';
 import { DateDisplay } from '@/components/widgets/controls/dateWidget/DateDisplay';
-import { TransactionStatusBadge } from '@/components/widgets/items/TransactionStatusBadge';
+
+interface KeyValueField {
+    id: string;
+    label: string;
+    accessorKey: string;
+    type?: string;
+    icon?: string;
+}
+
+interface BadgeValue {
+    label: string;
+    variant?: string;
+}
+
+type FieldValue = string | number | boolean | BadgeValue | null | undefined;
 
 export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { props = {}, dataSource } = config;
-    const { fields = [] } = props;
+    const fields = (props.fields ?? []) as KeyValueField[];
 
-    // Fetch data implicitly if dataSource is provided
     const { data, isLoading, error } = useSmartQuery(dataSource);
 
     if (isLoading) {
@@ -21,30 +33,30 @@ export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => 
         return <div className="p-6 text-sm text-destructive">Failed to load data</div>;
     }
 
-    // Resolve data root using valueKey if provided
-    const sourceData = dataSource?.valueKey && data ? (data as any)[dataSource.valueKey] : data;
+    const sourceData = data as Record<string, FieldValue> | null;
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-card rounded-lg border shadow-sm">
-            {fields.map((field: any) => {
-                const IconComponent = field.icon ? (Icons as any)[field.icon] : null;
+            {fields.map((field) => {
                 const value = sourceData ? sourceData[field.accessorKey] : undefined;
 
                 return (
                     <div key={field.id} className="flex flex-col space-y-1.5">
                         <div className="flex items-center text-xs text-muted-foreground space-x-1.5 font-medium uppercase tracking-wider">
-                            {IconComponent && <IconComponent className="h-3.5 w-3.5" />}
                             <span>{field.label}</span>
                         </div>
                         <div className="text-sm font-semibold text-foreground">
-                            {field.type === 'badge' ? (
-                                <Badge variant={value === 'Yes' ? 'default' : 'secondary'}>{value || '-'}</Badge>
-                            ) : field.type === 'date' ? (
+                            {field.type === 'badge' ? (() => {
+                                const badgeVal = value as BadgeValue | null | undefined;
+                                return (
+                                    <Badge variant={badgeVal?.variant as Parameters<typeof Badge>[0]['variant']}>
+                                        {badgeVal?.label ?? '-'}
+                                    </Badge>
+                                );
+                            })() : field.type === 'date' ? (
                                 <DateDisplay value={value ? String(value) : ''} />
-                            ) : field.type === 'transaction-status' ? (
-                                <TransactionStatusBadge code={String(value)} />
                             ) : (
-                                <span>{value || '-'}</span>
+                                <span>{value ? String(value) : '-'}</span>
                             )}
                         </div>
                     </div>

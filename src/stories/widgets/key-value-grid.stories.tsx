@@ -25,7 +25,7 @@ const policyData = {
     clientName: 'Reliance Group',
     effectiveDate: '2026-01-01',
     expiryDate: '2026-12-31',
-    tranStatus: 'AC',
+    tranStatus: { label: 'Active', variant: 'success' },
     channel: 'Broker',
     sumInsured: '5,000,000',
     renewable: 'Yes',
@@ -59,7 +59,7 @@ export const Empty: Story = {
                     { id: 'policyNumber',  label: 'Policy Number',  accessorKey: 'policyNumber' },
                     { id: 'clientName',    label: 'Client Name',    accessorKey: 'clientName' },
                     { id: 'effectiveDate', label: 'Effective Date', accessorKey: 'effectiveDate', type: 'date' },
-                    { id: 'tranStatus',    label: 'Status',         accessorKey: 'tranStatus',    type: 'transaction-status' },
+                    { id: 'tranStatus',    label: 'Status',         accessorKey: 'tranStatus',    type: 'badge' },
                 ],
             },
         },
@@ -78,10 +78,10 @@ export const Basic: Story = {
             dataSource: mockDataSource,
             props: {
                 fields: [
-                    { id: 'policyNumber', label: 'Policy Number', accessorKey: 'policyNumber', icon: 'FileText' },
-                    { id: 'clientName',   label: 'Client Name',   accessorKey: 'clientName',   icon: 'Building2' },
-                    { id: 'channel',      label: 'Channel',       accessorKey: 'channel',      icon: 'Network' },
-                    { id: 'sumInsured',   label: 'Sum Insured',   accessorKey: 'sumInsured',   icon: 'Banknote' },
+                    { id: 'policyNumber', label: 'Policy Number', accessorKey: 'policyNumber' },
+                    { id: 'clientName',   label: 'Client Name',   accessorKey: 'clientName' },
+                    { id: 'channel',      label: 'Channel',       accessorKey: 'channel' },
+                    { id: 'sumInsured',   label: 'Sum Insured',   accessorKey: 'sumInsured' },
                 ],
             },
         },
@@ -108,8 +108,8 @@ export const WithDateFieldsDDMMYYYY: Story = {
             props: {
                 fields: [
                     { id: 'policyNumber',  label: 'Policy Number',  accessorKey: 'policyNumber' },
-                    { id: 'effectiveDate', label: 'Effective Date',  accessorKey: 'effectiveDate', type: 'date', icon: 'CalendarCheck' },
-                    { id: 'expiryDate',    label: 'Expiry Date',     accessorKey: 'expiryDate',    type: 'date', icon: 'CalendarX' },
+                    { id: 'effectiveDate', label: 'Effective Date',  accessorKey: 'effectiveDate', type: 'date' },
+                    { id: 'expiryDate',    label: 'Expiry Date',     accessorKey: 'expiryDate',    type: 'date' },
                     { id: 'channel',       label: 'Channel',         accessorKey: 'channel' },
                 ],
             },
@@ -137,8 +137,8 @@ export const WithDateFieldsMMDDYYYY: Story = {
             props: {
                 fields: [
                     { id: 'policyNumber',  label: 'Policy Number',  accessorKey: 'policyNumber' },
-                    { id: 'effectiveDate', label: 'Effective Date',  accessorKey: 'effectiveDate', type: 'date', icon: 'CalendarCheck' },
-                    { id: 'expiryDate',    label: 'Expiry Date',     accessorKey: 'expiryDate',    type: 'date', icon: 'CalendarX' },
+                    { id: 'effectiveDate', label: 'Effective Date',  accessorKey: 'effectiveDate', type: 'date' },
+                    { id: 'expiryDate',    label: 'Expiry Date',     accessorKey: 'expiryDate',    type: 'date' },
                     { id: 'channel',       label: 'Channel',         accessorKey: 'channel' },
                 ],
             },
@@ -160,7 +160,7 @@ export const WithTransactionStatus: Story = {
                 fields: [
                     { id: 'policyNumber', label: 'Policy Number', accessorKey: 'policyNumber' },
                     { id: 'clientName',   label: 'Client Name',   accessorKey: 'clientName' },
-                    { id: 'tranStatus',   label: 'Status',        accessorKey: 'tranStatus', type: 'transaction-status', icon: 'Activity' },
+                    { id: 'tranStatus',   label: 'Status',        accessorKey: 'tranStatus', type: 'badge' },
                     { id: 'channel',      label: 'Channel',       accessorKey: 'channel' },
                 ],
             },
@@ -170,26 +170,36 @@ export const WithTransactionStatus: Story = {
 
 // ── All 7 transaction status codes ───────────────────────────────────────────
 
+const STATUS_OBJECTS = [
+    { label: 'Draft',            variant: 'grey'        },
+    { label: 'Completed',        variant: 'info'        },
+    { label: 'Review',           variant: 'warning'     },
+    { label: 'Review Completed', variant: 'teal'        },
+    { label: 'Active',           variant: 'success'     },
+    { label: 'Active Draft',     variant: 'amber'       },
+    { label: 'In-Active',        variant: 'destructive' },
+] as const;
+
 export const AllTransactionStatuses: Story = {
     name: 'All Transaction Status Codes',
     render: () => (
         <div className="flex flex-col gap-4">
-            {(['DR', 'CM', 'RV', 'RC', 'AC', 'AD', 'IA'] as const).map((code) => {
+            {STATUS_OBJECTS.map((status) => {
                 const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
-                const endpoint = `/api/mock/policy-${code}`;
-                client.setQueryData([endpoint, 'GET', undefined], { ...policyData, tranStatus: code });
+                const endpoint = `/api/mock/policy-${status.label}`;
+                client.setQueryData([endpoint, 'GET', undefined], { ...policyData, tranStatus: status });
                 return (
-                    <QueryClientProvider key={code} client={client}>
+                    <QueryClientProvider key={status.label} client={client}>
                         <KeyValueGrid
                             config={{
-                                id: `kv-status-${code}`,
+                                id: `kv-status-${status.label}`,
                                 type: 'key-value-grid',
-                                dataSource: { api: { endpoint, method: 'GET' } },
+                                dataSource: { api: { endpoint, method: 'GET' as const } },
                                 props: {
                                     fields: [
                                         { id: 'policyNumber',  label: 'Policy Number',  accessorKey: 'policyNumber' },
                                         { id: 'clientName',    label: 'Client Name',    accessorKey: 'clientName' },
-                                        { id: 'tranStatus',    label: 'Status',         accessorKey: 'tranStatus', type: 'transaction-status', icon: 'Activity' },
+                                        { id: 'tranStatus',    label: 'Status',         accessorKey: 'tranStatus', type: 'badge' },
                                         { id: 'effectiveDate', label: 'Effective Date', accessorKey: 'effectiveDate', type: 'date' },
                                     ],
                                 },
@@ -221,14 +231,13 @@ export const AllFieldTypes: Story = {
             dataSource: mockDataSource,
             props: {
                 fields: [
-                    { id: 'policyNumber',  label: 'Policy Number',  accessorKey: 'policyNumber',  icon: 'FileText' },
-                    { id: 'clientName',    label: 'Client Name',    accessorKey: 'clientName',    icon: 'Building2' },
-                    { id: 'effectiveDate', label: 'Effective Date', accessorKey: 'effectiveDate', type: 'date',               icon: 'CalendarCheck' },
-                    { id: 'expiryDate',    label: 'Expiry Date',    accessorKey: 'expiryDate',    type: 'date',               icon: 'CalendarX' },
-                    { id: 'tranStatus',    label: 'Status',         accessorKey: 'tranStatus',    type: 'transaction-status', icon: 'Activity' },
-                    { id: 'renewable',     label: 'Renewable',      accessorKey: 'renewable',     type: 'badge',              icon: 'RefreshCw' },
-                    { id: 'channel',       label: 'Channel',        accessorKey: 'channel',       icon: 'Network' },
-                    { id: 'sumInsured',    label: 'Sum Insured',    accessorKey: 'sumInsured',    icon: 'Banknote' },
+                    { id: 'policyNumber',  label: 'Policy Number',  accessorKey: 'policyNumber' },
+                    { id: 'clientName',    label: 'Client Name',    accessorKey: 'clientName' },
+                    { id: 'effectiveDate', label: 'Effective Date', accessorKey: 'effectiveDate', type: 'date' },
+                    { id: 'expiryDate',    label: 'Expiry Date',    accessorKey: 'expiryDate',    type: 'date' },
+                    { id: 'tranStatus',    label: 'Status',         accessorKey: 'tranStatus',    type: 'badge' },
+                    { id: 'channel',       label: 'Channel',        accessorKey: 'channel' },
+                    { id: 'sumInsured',    label: 'Sum Insured',    accessorKey: 'sumInsured' },
                 ],
             },
         },

@@ -450,16 +450,7 @@
                         "accessorKey": "transactionStatus",
                         "type": "badge",
                         "sortable": true,
-                        "width": "160px",
-                        "valueMapping": [
-                            { "value": "DR", "label": "Draft",            "variant": "grey" },
-                            { "value": "CM", "label": "Completed",        "variant": "info" },
-                            { "value": "RV", "label": "Review",           "variant": "warning" },
-                            { "value": "RC", "label": "Review Completed", "variant": "teal" },
-                            { "value": "AC", "label": "Active",           "variant": "success" },
-                            { "value": "AD", "label": "Active Draft",     "variant": "amber" },
-                            { "value": "IA", "label": "In-Active",        "variant": "destructive" }
-                        ]
+                        "width": "160px"
                     },
                     {
                         "id": "channel",
