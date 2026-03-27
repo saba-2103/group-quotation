@@ -39,7 +39,11 @@ export const WithValidActions: Story = {
             type: 'page-header',
             props: {
                 title: 'Policy Header',
-                validActions: ['add', 'edit', 'enquire'],
+                validActions: [
+                    { code: 'add',     label: 'Add'     },
+                    { code: 'edit',    label: 'Edit'    },
+                    { code: 'enquire', label: 'Enquire' },
+                ],
             },
         },
     },
@@ -48,23 +52,26 @@ export const WithValidActions: Story = {
 // ── Valid buttons ─────────────────────────────────────────────────────────────
 
 export const WithValidButtons: Story = {
-    name: 'Valid Buttons — Save / Close / Delete',
+    name: 'Valid Buttons — Submit / Close',
     args: {
         config: {
             id: 'ph-valid-buttons',
             type: 'page-header',
             props: {
                 title: 'Policy Header',
-                validButtons: ['save', 'delete', 'close'],
+                validButtons: [
+                    { id: 'submit', label: 'Submit', variant: 'secondary', type: 'trigger-event', target: 'submit' },
+                    { id: 'close',  label: 'Close',  variant: 'ghost',     type: 'trigger-event', target: 'close'  },
+                ],
             },
         },
     },
 };
 
-// ── Workflow — Complete button + TransactionStatusBadge ───────────────────────
+// ── Workflow — TransactionStatus Badge ────────────────────────────────────────
 
 export const WithWorkflow: Story = {
-    name: 'Workflow — Complete + Status Badge',
+    name: 'Workflow — Status Badge',
     args: {
         config: {
             id: 'ph-workflow',
@@ -72,8 +79,11 @@ export const WithWorkflow: Story = {
             props: {
                 title: 'Policy Header',
                 hasWorkflow: true,
-                tranStatus: 'AC',
-                validButtons: ['save', 'prev', 'next', 'complete', 'close'],
+                tranStatus: { label: 'Active', variant: 'success' },
+                validButtons: [
+                    { id: 'submit', label: 'Submit', variant: 'secondary', type: 'trigger-event', target: 'submit' },
+                    { id: 'close',  label: 'Close',  variant: 'ghost',     type: 'trigger-event', target: 'close'  },
+                ],
             },
         },
     },
@@ -89,8 +99,9 @@ export const WithHelp: Story = {
             type: 'page-header',
             props: {
                 title: 'Policy Header',
-                screenCode: 'POL-HEADER-001',
-                helpText: 'This screen allows you to manage the policy header details.\n\nFill in all mandatory fields (marked with *) before saving.\n\nContact your administrator if you need access to additional actions.',
+                actions: [
+                    { id: 'screen-help', label: 'Screen Help', icon: 'HelpCircle', display: 'icon', variant: 'ghost', type: 'open-sheet', target: 'pol-header-001-help' },
+                ],
             },
         },
     },
@@ -126,12 +137,19 @@ export const AllFeatures: Story = {
             props: {
                 title: 'Policy Header',
                 description: 'Group Life — Acme Corporation',
-                validActions: ['add', 'edit', 'delete', 'enquire', 'review'],
-                validButtons: ['save', 'submit', 'prev', 'next', 'complete', 'close'],
+                validActions: [
+                    { code: 'add',     label: 'Add'     },
+                    { code: 'edit',    label: 'Edit'    },
+                    { code: 'delete',  label: 'Delete'  },
+                    { code: 'enquire', label: 'Enquire' },
+                    { code: 'review',  label: 'Review'  },
+                ],
+                validButtons: [
+                    { id: 'submit', label: 'Submit', variant: 'secondary', event: 'submit' },
+                    { id: 'close',  label: 'Close',  variant: 'ghost',     event: 'close'  },
+                ],
                 hasWorkflow: true,
-                tranStatus: 'RV',
-                screenCode: 'POL-HEADER-001',
-                helpText: 'This screen allows you to manage the policy header details.',
+                tranStatus: { label: 'Review', variant: 'warning' },
                 backendErrors: [
                     { error_code: 'ERR-021', error_desc: 'Sum insured exceeds the maximum limit for this product.' },
                 ],
