@@ -1,31 +1,14 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Check, Loader2 } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import { SearchableDropdownProps } from "./types";
-import {
-  fetchConfigOptions,
-  fetchTransactionalOptions,
-  resolveOptions,
-  filterOptions,
-} from "./helpers";
+import { filterOptions } from "./helpers";
 
 export function Dropdown({
-  variableCode,
-  entityId,
-  language,
-  endpoint,
-  mandatory = false,
-  options: staticOptions,
+  options = [],
   value,
   onChange,
   placeholder = "Select...",
@@ -34,142 +17,165 @@ export function Dropdown({
 }: SearchableDropdownProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const optionRefsMap = useRef<Map<string, Element>>(new Map());
 
-  const isStatic = !!staticOptions;
-  const isConfigMode = !isStatic && !!variableCode;
-  const isTransactionalMode = !isStatic && !isConfigMode && !!endpoint;
+  const filtered = useMemo(
+    () => filterOptions(options, search),
+    [options, search],
+  );
+  const displayValue = useMemo(
+    () =>
+      value
+        ? (options.find((opt) => opt.code === value)?.description ?? "")
+        : "",
+    [options, value],
+  );
 
-  // To get data based on the passed props.
-  //To get list of valid values & cache them.
-  const configQuery = useQuery({
-    queryKey: ["valid-values", variableCode, entityId, language],
-    queryFn: () => fetchConfigOptions(variableCode!, entityId, language),
-    enabled: isConfigMode,
-    staleTime: 5 * 60 * 1000,
-  });
+  const handleFocus = useCallback(() => {
+    setSearch("");
+    setHighlightedIndex(-1);
+    setOpen(true);
+  }, []);
 
-  // To get options from business data.
-  const transactionalQuery = useQuery({
-    queryKey: ["transactional-options", endpoint],
-    queryFn: () => fetchTransactionalOptions(endpoint!),
-    enabled: isTransactionalMode,
-    staleTime: 5 * 60 * 1000,
-  });
+  const handleBlur = useCallback(() => {
+    setOpen(false);
+    setSearch("");
+    setHighlightedIndex(-1);
+  }, []);
 
-  const rawOptions =
-    (isStatic && staticOptions) ||
-    (isConfigMode && configQuery.data) ||
-    (isTransactionalMode && transactionalQuery.data) ||
-    [];
-
-  const isLoading =
-    (isConfigMode && configQuery.isLoading) ||
-    (isTransactionalMode && transactionalQuery.isLoading);
-
-  const fetchError =
-    (isConfigMode && configQuery.error) ||
-    (isTransactionalMode && transactionalQuery.error);
-
-  const allOptions = resolveOptions(rawOptions, mandatory);
-  const filtered = filterOptions(allOptions, search);
-
-  const selectedOption = value
-    ? allOptions.find((opt) => opt.code === value)
-    : undefined;
-  const displayValue = selectedOption?.description ?? "";
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setSearch(e.target.value);
+      setHighlightedIndex(0);
+      setOpen(true);
+    },
+    [],
+  );
 
   const handleSelect = useCallback(
     (code: string) => {
-      onChange?.(code);
+      onChange(code);
       setSearch("");
       setOpen(false);
+      setHighlightedIndex(-1);
+      inputRef.current?.blur();
     },
     [onChange],
   );
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen);
-    if (nextOpen) {
-      setSearch("");
-      setTimeout(() => inputRef.current?.focus(), 0);
-    }
-  };
+  const scrollToIndex = useCallback(
+    (index: number) => {
+      optionRefsMap.current.get(filtered[index]?.code)?.scrollIntoView({ block: "nearest" });
+    },
+    [filtered],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      switch (e.key) {
+        case "ArrowDown": {
+          e.preventDefault();
+          if (!open) { setOpen(true); return; }
+          const next = Math.min(highlightedIndex + 1, filtered.length - 1);
+          scrollToIndex(next);
+          setHighlightedIndex(next);
+          break;
+        }
+        case "ArrowUp": {
+          e.preventDefault();
+          const prev = Math.max(highlightedIndex - 1, 0);
+          scrollToIndex(prev);
+          setHighlightedIndex(prev);
+          break;
+        }
+        case "Enter":
+          if (highlightedIndex >= 0 && filtered[highlightedIndex]) {
+            e.preventDefault();
+            handleSelect(filtered[highlightedIndex].code);
+          }
+          break;
+        case "Escape":
+          setOpen(false);
+          inputRef.current?.blur();
+          break;
+      }
+    },
+    [open, filtered, highlightedIndex, handleSelect, scrollToIndex],
+  );
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <span className={disabled ? "cursor-not-allowed" : undefined}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            disabled={disabled}
+    <div className="relative">
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          value={open ? search : displayValue}
+          onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={cn("w-full pr-8", className)}
+        />
+        <div
+          className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2"
+          aria-hidden={true}
+        >
+          <ChevronDown
             className={cn(
-              "w-full justify-between font-normal h-9 text-sm",
-              !displayValue && "text-muted-foreground",
-              className,
+              "h-4 w-4 text-muted-foreground transition-transform duration-150",
+              open && "rotate-180",
             )}
-          >
-            <span className="truncate">{displayValue || placeholder}</span>
-            {isLoading ? (
-              <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
-            )}
-          </Button>
-        </PopoverTrigger>
-      </span>
-      <PopoverContent
-        className="w-(--radix-popover-trigger-width) p-0"
-        align="start"
-        sideOffset={4}
-      >
-        <div className="flex items-center border-b px-3">
-          <Input
-            ref={inputRef}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Type to search..."
-            className="h-9 border-0 shadow-none focus-visible:ring-0 px-0 text-sm"
           />
         </div>
-        <div className="max-h-60 overflow-y-auto py-1">
-          {fetchError ? (
-            <div className="px-3 py-2 text-sm text-destructive">
-              Failed to load options
-            </div>
-          ) : isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              No results found
-            </div>
-          ) : (
-            filtered.map((option) => (
-              <Button
-                key={option.code}
-                variant="ghost"
-                className={cn(
-                  "flex w-full justify-start gap-2 px-3 py-2 h-auto font-normal text-sm rounded-none",
-                  option.code === value && "bg-accent/50",
-                )}
-                onClick={() => handleSelect(option.code)}
-              >
-                <Check
+      </div>
+
+      {open && (
+        <div
+          role="listbox"
+          className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md"
+        >
+          <div className="max-h-60 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                No results found
+              </div>
+            ) : (
+              filtered.map((option, index) => (
+                <div
+                  key={option.code}
+                  role="option"
+                  ref={(node) => {
+                    if (node) optionRefsMap.current.set(option.code, node);
+                    else optionRefsMap.current.delete(option.code);
+                  }}
                   className={cn(
-                    "h-4 w-4 shrink-0",
-                    option.code === value ? "opacity-100" : "opacity-0",
+                    "flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-sm",
+                    option.code === value && "bg-accent/50",
+                    highlightedIndex === index &&
+                      "bg-accent text-accent-foreground",
                   )}
-                />
-                {option.description}
-              </Button>
-            ))
-          )}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelect(option.code);
+                  }}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  <Check
+                    className={cn(
+                      "h-4 w-4 shrink-0",
+                      option.code === value ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  {option.description}
+                </div>
+              ))
+            )}
+          </div>
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+    </div>
   );
 }
