@@ -11,10 +11,7 @@ import { isRequiredField, isFieldDisabled } from './utils';
 import { useFormContainer } from './useFormContainer';
 import FieldRenderer from './FieldRenderer';
 import FieldErrors from './FieldErrors';
-import { LABEL_CLASS, REQUIRED_ASTERISK_CLASS, FORM_WRAPPER_CLASS, ACTIONS_BAR_CLASS, DEFAULT_GRID_CLASS, GRID_COLS_CLASS } from './constants';
-
-const getGridClass = (columns?: number): string =>
-    columns ? (GRID_COLS_CLASS[columns] ?? DEFAULT_GRID_CLASS) : DEFAULT_GRID_CLASS;
+import { LABEL_CLASS, REQUIRED_ASTERISK_CLASS, FORM_WRAPPER_CLASS, ACTIONS_BAR_CLASS } from './constants';
 
 export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const {
@@ -22,41 +19,43 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
         actions = [] as FormAction[],
         columns,
         mode,
-        action,
+        disabled,
         showReset,
         backendErrors = [] as BackendError[],
     } = config.props || {};
 
     const {
         form,
-        formDisabled,
-        screenAction,
         dateFormat,
         isFieldVisible,
         resetToEntry,
         onSubmit,
         isValid,
         isSubmitting,
+        handleAction,
     } = useFormContainer({
         fields: fields as FormFieldConfig[],
         actions: actions as FormAction[],
-        action,
         backendErrors: backendErrors as BackendError[],
     });
 
-    const isViewMode = mode === 'view';
-    const showActions = !isViewMode && !formDisabled && (actions as FormAction[]).length > 0;
+    const isViewMode = mode === 'view' || disabled === true;
+    const showActions = !isViewMode && (actions as FormAction[]).length > 0;
+    const gridColumns = typeof columns === 'number' && columns > 0 ? columns : 3;
 
     return (
         <div className={FORM_WRAPPER_CLASS}>
             <Form {...form}>
                 <form onSubmit={onSubmit} className="space-y-6">
-                    <div className={`grid grid-cols-1 gap-6 ${getGridClass(columns)}`}>
+                    <div
+                        className="grid grid-cols-1 gap-6"
+                        style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+                    >
                         {(fields as FormFieldConfig[]).map((field) => {
                             if (!isFieldVisible(field)) return null;
 
-                            const required = isRequiredField(field, screenAction);
-                            const disabled = isFieldDisabled(field, screenAction);
+                            const required = isRequiredField(field);
+                            const fieldDisabled = isViewMode || isFieldDisabled(field);
 
                             return (
                                 <FormField<FormValues, typeof field.name>
@@ -75,7 +74,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                                     <FieldRenderer
                                                         field={field}
                                                         fieldProps={fieldProps}
-                                                        isDisabled={disabled}
+                                                        isDisabled={fieldDisabled}
                                                         isRequired={required}
                                                         isViewMode={isViewMode}
                                                         dateFormat={dateFormat}
@@ -106,7 +105,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                     type={act.submitAction ? 'submit' : 'button'}
                                     variant={act.variant ?? 'default'}
                                     disabled={act.submitAction ? (!isValid || isSubmitting) : false}
-                                    onClick={!act.submitAction ? (e) => { e.preventDefault(); } : undefined}
+                                    onClick={!act.submitAction ? () => handleAction(act) : undefined}
                                 >
                                     {act.label}
                                 </Button>

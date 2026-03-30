@@ -20,7 +20,7 @@ interface FieldRendererProps {
 }
 
 const SelectField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => (
-    <Select onValueChange={fieldProps.onChange} defaultValue={fieldProps.value as string} disabled={isDisabled}>
+    <Select onValueChange={fieldProps.onChange} value={fieldProps.value as string} disabled={isDisabled}>
         <SelectTrigger>
             <SelectValue placeholder={field.placeholder ?? 'Select an option'} />
         </SelectTrigger>

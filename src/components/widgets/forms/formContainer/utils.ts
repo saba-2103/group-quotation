@@ -4,12 +4,11 @@ import {
   FieldValidation,
   FieldSchema,
   VisibleWhenCondition,
-  ScreenAction,
   FormValues,
   ConditionValue,
   FormFieldValue,
 } from "./types";
-import { DISABLED_FORM_ACTIONS, STRING_FIELD_TYPES } from "./constants";
+import { REQUIRED_RULE } from "./constants";
 
 type SchemaApplier = (
   schema: FieldSchema,
@@ -37,27 +36,10 @@ const VALIDATION_APPLIERS: Partial<
       : (schema as z.ZodString).max(Number(v.value), { message: v.message }),
 };
 
-export const isRequiredField = (
-  field: FormFieldConfig,
-  action?: ScreenAction,
-): boolean => {
-  const hasRequiredValidation =
-    field.validations?.some((v) => v.rule === "required") ?? false;
-  const isPKInAddMode = action === "add" && field.isPrimaryKey === true;
-  return hasRequiredValidation || isPKInAddMode;
-};
+export const isRequiredField = (field: FormFieldConfig): boolean =>
+  field.validations?.some((v) => v.rule === REQUIRED_RULE) ?? false;
 
-export const isFormDisabled = (action?: ScreenAction): boolean =>
-  DISABLED_FORM_ACTIONS.includes(
-    action as (typeof DISABLED_FORM_ACTIONS)[number],
-  );
-
-export const isFieldDisabled = (
-  field: FormFieldConfig,
-  action?: ScreenAction,
-): boolean =>
-  isFormDisabled(action) ||
-  (action === "edit" && field.isPrimaryKey === true) ||
+export const isFieldDisabled = (field: FormFieldConfig): boolean =>
   field.disabled === true;
 
 const compareValues = (
@@ -120,11 +102,7 @@ const buildFieldSchema = (
         : z.string();
 
   const isNumber = field.type === "number";
-  const isStringType =
-    !field.type ||
-    STRING_FIELD_TYPES.includes(
-      field.type as (typeof STRING_FIELD_TYPES)[number],
-    );
+  const isStringType = field.type !== 'number' && field.type !== 'checkbox';
 
   field.validations?.forEach((v) => {
     schema =
@@ -136,8 +114,7 @@ const buildFieldSchema = (
       ) ?? schema;
   });
 
-  // PK in add mode, required even without an explicit validation rule
-  const hasRequiredRule = field.validations?.some((v) => v.rule === "required");
+  const hasRequiredRule = field.validations?.some((v) => v.rule === REQUIRED_RULE);
   if (required && !hasRequiredRule && isStringType) {
     schema = (schema as z.ZodString).min(1, {
       message: `${field.label} is required`,
@@ -149,11 +126,10 @@ const buildFieldSchema = (
 
 export const buildFormSchema = (
   fields: FormFieldConfig[],
-  action?: ScreenAction,
 ): z.ZodObject<z.ZodRawShape> => {
   const shape: Record<string, z.ZodTypeAny> = {};
   fields.forEach((field) => {
-    shape[field.name] = buildFieldSchema(field, isRequiredField(field, action));
+    shape[field.name] = buildFieldSchema(field, isRequiredField(field));
   });
   return z.object(shape);
 };

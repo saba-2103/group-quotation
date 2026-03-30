@@ -8,7 +8,7 @@ import { useOverlayStore } from '@/hooks/useOverlayStore';
 export const useActionHandler = () => {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { open } = useOverlayStore();
+    const { open, close } = useOverlayStore();
 
     const { mutateAsync } = useMutation({
         mutationFn: async (action: ActionConfig) => {
@@ -81,7 +81,7 @@ export const useActionHandler = () => {
                 }
                 break;
             case 'trigger-event':
-                console.log('Trigger Event:', action.target);
+                close(action.target);
                 break;
         }
     };

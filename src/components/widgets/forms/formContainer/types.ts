@@ -1,7 +1,7 @@
 import * as z from 'zod';
 import { ActionConfig } from '@/types/widget';
 
-export type ScreenAction = 'add' | 'edit' | 'delete' | 'enquire' | 'review';
+export type ScreenAction = string;
 
 // Union of all possible values a form field can hold at runtime
 export type FormFieldValue = string | number | boolean;
@@ -15,14 +15,14 @@ export interface SelectOption {
 }
 
 export interface FieldValidation {
-    rule: 'required' | 'min' | 'max' | 'regex';
+    rule: string;
     value?: number | string;
     message?: string;
 }
 
 export interface VisibleWhenCondition {
     field: string;
-    operator: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'in' | 'notIn';
+    operator: string;
     value: ConditionValue;
 }
 
@@ -32,7 +32,8 @@ export interface FormFieldConfig {
     type?: string;
     placeholder?: string;
     disabled?: boolean;
-    isPrimaryKey?: boolean;
+    /** Controls view-mode presentation. Backend sets this explicitly — never inferred from field type or option values. */
+    displayStyle?: string;
     helpText?: string;
     helperText?: string;
     defaultValue?: FormFieldValue;

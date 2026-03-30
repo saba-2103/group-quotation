@@ -5,49 +5,42 @@ import { useForm, useWatch, UseFormReturn, SubmitHandler, Resolver } from 'react
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useActionHandler } from '@/hooks/useActionHandler';
 import { useTenantConfig, DateFormat } from '@/contexts/TenantConfigContext';
-import { FormFieldConfig, FormAction, BackendError, ScreenAction, FormValues } from './types';
-import { buildFormSchema, buildDefaultValues, evaluateCondition, isFormDisabled } from './utils';
+import { ActionConfig } from '@/types/widget';
+import { FormFieldConfig, FormAction, BackendError, FormValues } from './types';
+import { buildFormSchema, buildDefaultValues, evaluateCondition } from './utils';
 
 interface UseFormContainerOptions {
     fields: FormFieldConfig[];
     actions: FormAction[];
-    action?: ScreenAction;
     backendErrors?: BackendError[];
 }
 
 interface UseFormContainerReturn {
     form: UseFormReturn<FormValues>;
     formValues: FormValues;
-    formDisabled: boolean;
-    screenAction: ScreenAction | undefined;
     dateFormat: DateFormat;
     isFieldVisible: (field: FormFieldConfig) => boolean;
     resetToEntry: () => void;
     onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
     isValid: boolean;
     isSubmitting: boolean;
+    handleAction: (action: ActionConfig) => Promise<void>;
 }
 
 export const useFormContainer = ({
     fields,
     actions,
-    action,
     backendErrors = [],
 }: UseFormContainerOptions): UseFormContainerReturn => {
     const handleAction = useActionHandler();
     const { dateFormat } = useTenantConfig();
 
-    const screenAction = action as ScreenAction | undefined;
-    const formDisabled = isFormDisabled(screenAction);
-
-    const formSchema = useMemo(() => buildFormSchema(fields, screenAction), [fields, screenAction]);
+    const formSchema = useMemo(() => buildFormSchema(fields), [fields]);
     const defaultValues = useMemo(() => buildDefaultValues(fields), [fields]);
 
     const entrySnapshot = useRef<FormValues>(defaultValues);
 
     const form = useForm<FormValues>({
-        // zodResolver types its output as unknown for dynamically-built schemas;
-        // the cast is safe because our schema validates exactly FormFieldValue types.
         resolver: zodResolver(formSchema) as Resolver<FormValues>,
         defaultValues,
         mode: 'onChange',
@@ -87,13 +80,12 @@ export const useFormContainer = ({
     return {
         form,
         formValues,
-        formDisabled,
-        screenAction,
         dateFormat,
         isFieldVisible: (field) => evaluateCondition(field.visibleWhen, formValues),
         resetToEntry: () => form.reset(entrySnapshot.current),
         onSubmit: form.handleSubmit(handleSubmit),
         isValid: form.formState.isValid,
         isSubmitting: form.formState.isSubmitting,
+        handleAction,
     };
 };
