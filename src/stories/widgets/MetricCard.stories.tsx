@@ -3,11 +3,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MetricCard } from "@/components/widgets/items/MetricCard";
 import { metricCardMocks } from "@/stories/__mocks__";
 
+const metricApiSeedData: Record<string, { value: number; trend?: number }> = {
+    '/api/quotations/metrics/total': { value: 248, trend: 15 },
+    '/api/quotations/metrics/approved': { value: 142, trend: 22 },
+    '/api/quotations/metrics/pending': { value: 67, trend: -3 },
+    '/api/quotations/metrics/rejected': { value: 39, trend: -8 },
+};
+
 function buildSeededQueryClient(): QueryClient {
     const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     });
-    Object.entries(metricCardMocks.seedData).forEach(([endpoint, data]) => {
+    Object.entries(metricApiSeedData).forEach(([endpoint, data]) => {
         queryClient.setQueryData([endpoint, 'GET', undefined, {}], data);
     });
     return queryClient;

@@ -1,16 +1,10 @@
 import React from 'react';
 import { WidgetConfig } from '@/types/widget';
 import { cn } from '@/lib/utils';
-import * as Icons from 'lucide-react';
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useSmartQuery } from '@/hooks/useSmartQuery';
+import { LucideIcon } from '@/components/ui/lucide-icon';
 import { PRIORITY_STYLES } from './constants';
-
-const LucideIcon = ({ name, className }: { name: string; className?: string }) => {
-    const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name];
-    if (!IconComponent) return null;
-    return <IconComponent className={className} />;
-};
 
 interface MetricData {
     value: number;
