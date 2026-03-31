@@ -26,8 +26,8 @@ export const tabsMocks = {
     overview: "Overview content goes here.",
     policy: "Policy content goes here.",
     documents: "Documents content goes here.",
-    commonHeader: "Common Header tab content.",
-    policyProfile: "Policy Profile tab content.",
+    commonheader: "Common Header tab content.",
+    policyprofile: "Policy Profile tab content.",
     plans: "Plans tab content.",
   } as Record<string, string>,
 };
