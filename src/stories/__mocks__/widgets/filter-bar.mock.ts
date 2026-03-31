@@ -47,18 +47,18 @@ const policyTypeFilter: FilterConfig = {
 
 export const filterBarMocks = {
     // Pattern: claims-list.json — no stateKey, no field
-    claimsStyle: {
+    claims: {
         filters: [laneFilter, statusFilter],
     },
 
     // Pattern: members.json — custom placeholder, no stateKey
-    membersStyle: {
+    members: {
         placeholder: "Search members...",
         filters: [statusFilter, policyTypeFilter],
     },
 
     // Pattern: quotations.json — explicit stateKey, field on filters
-    quotationsStyle: {
+    quotations: {
         stateKey: "story:filter-bar:quotations",
         filters: [branchFilter, statusFilter, policyTypeFilter],
     },
