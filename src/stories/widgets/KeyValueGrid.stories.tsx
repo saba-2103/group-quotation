@@ -1,22 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { KeyValueGrid } from "@/components/widgets/data/KeyValueGrid";
 import { keyValueGridMocks } from "@/stories/__mocks__";
 
-const makeQueryClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
 const meta: Meta<typeof KeyValueGrid> = {
-  title: "Widgets/Data/KeyValueGrid",
+  title: "Widgets/KeyValueGrid",
   component: KeyValueGrid,
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <QueryClientProvider client={makeQueryClient()}>
-        <div className="p-4">
-          <Story />
-        </div>
-      </QueryClientProvider>
+      <div className="p-4">
+        <Story />
+      </div>
     ),
   ],
 };
@@ -31,32 +25,28 @@ export const AllVariants: Story = {
     <div className="flex flex-col gap-12 space-y-8">
       <div>
         <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
-          1. Populated Data Grid (Active)
+          1. Active Quotation Summary
         </h3>
         <KeyValueGrid
           config={{
-            id: "grid-1",
+            id: "grid-active",
             type: "key-value-grid",
-            props: {
-              fields: keyValueGridMocks.fields.policy,
-              data: keyValueGridMocks.data.active,
-            },
+            dataSource: keyValueGridMocks.dataSources.active,
+            props: keyValueGridMocks.configs.quotationSummary,
           }}
         />
       </div>
 
       <div>
         <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
-          2. Populated Data Grid (Expired)
+          2. Expired Quotation Summary
         </h3>
         <KeyValueGrid
           config={{
-            id: "grid-2",
+            id: "grid-expired",
             type: "key-value-grid",
-            props: {
-              fields: keyValueGridMocks.fields.policy,
-              data: keyValueGridMocks.data.expired,
-            },
+            dataSource: keyValueGridMocks.dataSources.expired,
+            props: keyValueGridMocks.configs.quotationSummary,
           }}
         />
       </div>
@@ -67,12 +57,9 @@ export const AllVariants: Story = {
         </h3>
         <KeyValueGrid
           config={{
-            id: "grid-3",
+            id: "grid-loading",
             type: "key-value-grid",
-            props: {
-              fields: keyValueGridMocks.fields.policy,
-              isLoading: true,
-            } as any,
+            props: { ...keyValueGridMocks.configs.quotationSummary, isLoading: true } as any,
           }}
         />
       </div>
@@ -83,12 +70,9 @@ export const AllVariants: Story = {
         </h3>
         <KeyValueGrid
           config={{
-            id: "grid-4",
+            id: "grid-error",
             type: "key-value-grid",
-            props: {
-              fields: keyValueGridMocks.fields.policy,
-              error: true,
-            } as any,
+            props: { ...keyValueGridMocks.configs.quotationSummary, error: true } as any,
           }}
         />
       </div>
@@ -98,15 +82,24 @@ export const AllVariants: Story = {
 
 // ─── Individual Stories ──────────────────────────────────────
 
-export const WithData: Story = {
+export const Active: Story = {
   args: {
     config: {
-      id: "kv-grid-with-data",
+      id: "kv-grid-active",
       type: "key-value-grid",
-      props: {
-        fields: keyValueGridMocks.fields.policy,
-        data: keyValueGridMocks.data.active,
-      },
+      dataSource: keyValueGridMocks.dataSources.active,
+      props: keyValueGridMocks.configs.quotationSummary,
+    },
+  },
+};
+
+export const Expired: Story = {
+  args: {
+    config: {
+      id: "kv-grid-expired",
+      type: "key-value-grid",
+      dataSource: keyValueGridMocks.dataSources.expired,
+      props: keyValueGridMocks.configs.quotationSummary,
     },
   },
 };
@@ -116,10 +109,7 @@ export const Loading: Story = {
     config: {
       id: "kv-grid-loading",
       type: "key-value-grid",
-      props: {
-        fields: keyValueGridMocks.fields.policy,
-        isLoading: true,
-      } as any,
+      props: { ...keyValueGridMocks.configs.quotationSummary, isLoading: true } as any,
     },
   },
 };
@@ -129,10 +119,7 @@ export const ErrorState: Story = {
     config: {
       id: "kv-grid-error",
       type: "key-value-grid",
-      props: {
-        fields: keyValueGridMocks.fields.policy,
-        error: true,
-      } as any,
+      props: { ...keyValueGridMocks.configs.quotationSummary, error: true } as any,
     },
   },
 };

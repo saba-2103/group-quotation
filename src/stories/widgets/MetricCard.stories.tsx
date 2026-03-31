@@ -1,16 +1,29 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MetricCard } from "@/components/widgets/items/MetricCard";
-import { metricCardMocks } from "@/stories/__mocks__";
+import { metricCardMocks, metricApiSeedData } from "@/stories/__mocks__";
+
+function buildSeededQueryClient(): QueryClient {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  Object.entries(metricApiSeedData).forEach(([endpoint, data]) => {
+    queryClient.setQueryData([endpoint, "GET", undefined, {}], data);
+  });
+  return queryClient;
+}
 
 const meta: Meta<typeof MetricCard> = {
-  title: "Widgets/Items/MetricCard",
+  title: "Widgets/MetricCard",
   component: MetricCard,
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <div className="p-4 max-w-sm">
-        <Story />
-      </div>
+      <QueryClientProvider client={buildSeededQueryClient()}>
+        <div className="p-4 max-w-sm">
+          <Story />
+        </div>
+      </QueryClientProvider>
     ),
   ],
 };
@@ -30,6 +43,7 @@ export const AllVariants: Story = {
             id: "v-revenue",
             type: "metric-card",
             props: metricCardMocks.configs.revenue,
+            dataSource: metricCardMocks.dataSources.revenue,
           }}
         />
       </div>
@@ -44,6 +58,7 @@ export const AllVariants: Story = {
               id: "v-policies",
               type: "metric-card",
               props: metricCardMocks.configs.policies,
+              dataSource: metricCardMocks.dataSources.policies,
             }}
           />
           <MetricCard
@@ -51,6 +66,7 @@ export const AllVariants: Story = {
               id: "v-claims",
               type: "metric-card",
               props: metricCardMocks.configs.claims,
+              dataSource: metricCardMocks.dataSources.claims,
             }}
           />
         </div>
@@ -65,6 +81,7 @@ export const AllVariants: Story = {
             id: "v-conversion",
             type: "metric-card",
             props: metricCardMocks.configs.conversion,
+            dataSource: metricCardMocks.dataSources.conversion,
           }}
         />
       </div>
@@ -91,6 +108,7 @@ export const Revenue: Story = {
       id: "metric-revenue",
       type: "metric-card",
       props: metricCardMocks.configs.revenue,
+      dataSource: metricCardMocks.dataSources.revenue,
     },
   },
 };
@@ -101,6 +119,7 @@ export const ActivePolicies: Story = {
       id: "metric-policies",
       type: "metric-card",
       props: metricCardMocks.configs.policies,
+      dataSource: metricCardMocks.dataSources.policies,
     },
   },
 };
@@ -111,6 +130,7 @@ export const PendingClaims: Story = {
       id: "metric-claims",
       type: "metric-card",
       props: metricCardMocks.configs.claims,
+      dataSource: metricCardMocks.dataSources.claims,
     },
   },
 };
@@ -121,6 +141,7 @@ export const ConversionRate: Story = {
       id: "metric-conversion",
       type: "metric-card",
       props: metricCardMocks.configs.conversion,
+      dataSource: metricCardMocks.dataSources.conversion,
     },
   },
 };

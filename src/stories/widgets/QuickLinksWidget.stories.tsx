@@ -1,22 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { QuickLinksWidget } from "@/components/widgets/items/QuickLinksWidget";
 import { quickLinksMocks } from "@/stories/__mocks__";
 
-const makeQueryClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
 const meta: Meta<typeof QuickLinksWidget> = {
-  title: "Widgets/Items/QuickLinksWidget",
+  title: "Widgets/QuickLinksWidget",
   component: QuickLinksWidget,
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <QueryClientProvider client={makeQueryClient()}>
-        <div className="p-4">
-          <Story />
-        </div>
-      </QueryClientProvider>
+      <div className="p-4">
+        <Story />
+      </div>
     ),
   ],
 };

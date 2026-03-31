@@ -1,16 +1,29 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ChartWidget } from "@/components/widgets/items/ChartWidget";
-import { chartWidgetMocks } from "@/stories/__mocks__";
+import { chartWidgetMocks, chartApiSeedData } from "@/stories/__mocks__";
+
+function buildSeededQueryClient(): QueryClient {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  Object.entries(chartApiSeedData).forEach(([endpoint, data]) => {
+    queryClient.setQueryData([endpoint, "GET", undefined, {}], data);
+  });
+  return queryClient;
+}
 
 const meta: Meta<typeof ChartWidget> = {
-  title: "Widgets/Items/ChartWidget",
+  title: "Widgets/ChartWidget",
   component: ChartWidget,
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <div className="p-4 w-full">
-        <Story />
-      </div>
+      <QueryClientProvider client={buildSeededQueryClient()}>
+        <div className="p-4 w-full">
+          <Story />
+        </div>
+      </QueryClientProvider>
     ),
   ],
 };
@@ -34,6 +47,7 @@ export const AllVariants: Story = {
             config={{
               id: "v-bar",
               type: "chart-widget",
+              dataSource: chartWidgetMocks.dataSources.revenue,
               props: chartWidgetMocks.configs.revenue,
             }}
           />
@@ -46,6 +60,7 @@ export const AllVariants: Story = {
             config={{
               id: "v-line",
               type: "chart-widget",
+              dataSource: chartWidgetMocks.dataSources.traffic,
               props: chartWidgetMocks.configs.traffic,
             }}
           />
@@ -58,6 +73,7 @@ export const AllVariants: Story = {
             config={{
               id: "v-pie",
               type: "chart-widget",
+              dataSource: chartWidgetMocks.dataSources.demographics,
               props: chartWidgetMocks.configs.demographics,
             }}
           />
@@ -74,6 +90,7 @@ export const BarChart: Story = {
     config: {
       id: "chart-bar",
       type: "chart-widget",
+      dataSource: chartWidgetMocks.dataSources.bar,
       props: chartWidgetMocks.configs.bar,
     },
   },
@@ -84,6 +101,7 @@ export const LineChart: Story = {
     config: {
       id: "chart-line",
       type: "chart-widget",
+      dataSource: chartWidgetMocks.dataSources.line,
       props: chartWidgetMocks.configs.line,
     },
   },
@@ -94,6 +112,7 @@ export const PieChart: Story = {
     config: {
       id: "chart-pie",
       type: "chart-widget",
+      dataSource: chartWidgetMocks.dataSources.pie,
       props: chartWidgetMocks.configs.pie,
     },
   },

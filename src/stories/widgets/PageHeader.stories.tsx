@@ -1,22 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PageHeader } from "@/components/widgets/layout/PageHeader";
 import { pageHeaderMocks } from "@/stories/__mocks__";
 
-const makeQueryClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
 const meta: Meta<typeof PageHeader> = {
-  title: "Widgets/Layout/PageHeader",
+  title: "Widgets/PageHeader",
   component: PageHeader,
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <QueryClientProvider client={makeQueryClient()}>
-        <div className="p-6 bg-background space-y-2">
-          <Story />
-        </div>
-      </QueryClientProvider>
+      <div className="p-6 bg-background space-y-2">
+        <Story />
+      </div>
     ),
   ],
 };

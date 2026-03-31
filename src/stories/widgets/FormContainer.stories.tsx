@@ -1,22 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FormContainer } from "@/components/widgets/forms/FormContainer";
 import { formContainerMocks } from "@/stories/__mocks__";
 
-const makeQueryClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
 const meta: Meta<typeof FormContainer> = {
-  title: "Widgets/Forms/FormContainer",
+  title: "Widgets/FormContainer",
   component: FormContainer,
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <QueryClientProvider client={makeQueryClient()}>
-        <div className="p-4 max-w-2xl">
-          <Story />
-        </div>
-      </QueryClientProvider>
+      <div className="p-4 max-w-2xl">
+        <Story />
+      </div>
     ),
   ],
 };

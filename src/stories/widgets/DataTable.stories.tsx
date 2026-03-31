@@ -1,22 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DataTable } from "@/components/widgets/data/DataTable";
 import { dataTableMocks } from "@/stories/__mocks__";
 
-const makeQueryClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } });
-
 const meta: Meta<typeof DataTable> = {
-  title: "Widgets/Data/DataTable",
+  title: "Widgets/DataTable",
   component: DataTable,
   tags: ["autodocs"],
   decorators: [
     (Story) => (
-      <QueryClientProvider client={makeQueryClient()}>
-        <div className="p-4" style={{ minHeight: "400px" }}>
-          <Story />
-        </div>
-      </QueryClientProvider>
+      <div className="p-4" style={{ minHeight: "400px" }}>
+        <Story />
+      </div>
     ),
   ],
 };

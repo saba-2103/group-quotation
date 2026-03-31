@@ -3,7 +3,7 @@ import { FilterBar } from "@/components/widgets/controls/FilterBar";
 import { filterBarMocks } from "@/stories/__mocks__";
 
 const meta: Meta<typeof FilterBar> = {
-  title: "Widgets/Controls/FilterBar",
+  title: "Widgets/FilterBar",
   component: FilterBar,
   tags: ["autodocs"],
   decorators: [
@@ -16,10 +16,7 @@ const meta: Meta<typeof FilterBar> = {
   parameters: {
     nextjs: {
       appDirectory: true,
-      navigation: {
-        pathname: "/test",
-        query: {},
-      },
+      navigation: { pathname: "/test", query: {} },
     },
   },
 };
@@ -27,35 +24,44 @@ const meta: Meta<typeof FilterBar> = {
 export default meta;
 type Story = StoryObj<typeof FilterBar>;
 
-export const AllVariants: Story = {
+export const Examples: Story = {
   render: () => (
     <div className="flex flex-col gap-12 space-y-8">
       <div>
         <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
-          Single Filter
+          Claims (no stateKey, no field)
         </h3>
         <FilterBar
           config={{
-            id: "v-single",
+            id: "v-claims",
             type: "filter-bar",
-            props: {
-              filters: filterBarMocks.filters.status,
-            },
+            props: filterBarMocks.claims,
           }}
         />
       </div>
 
       <div>
         <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
-          Multiple Filters
+          Members (custom placeholder, no stateKey)
         </h3>
         <FilterBar
           config={{
-            id: "v-multiple",
+            id: "v-members",
             type: "filter-bar",
-            props: {
-              filters: filterBarMocks.filters.multiple,
-            },
+            props: filterBarMocks.members,
+          }}
+        />
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
+          Quotations (explicit stateKey, field on filters)
+        </h3>
+        <FilterBar
+          config={{
+            id: "v-quotations",
+            type: "filter-bar",
+            props: filterBarMocks.quotations,
           }}
         />
       </div>
@@ -63,26 +69,32 @@ export const AllVariants: Story = {
   ),
 };
 
-export const SingleFilter: Story = {
+export const Claims: Story = {
   args: {
     config: {
-      id: "filter-bar-single",
+      id: "filter-claims",
       type: "filter-bar",
-      props: {
-        filters: filterBarMocks.filters.status,
-      },
+      props: filterBarMocks.claims,
     },
   },
 };
 
-export const MultipleFilters: Story = {
+export const Members: Story = {
   args: {
     config: {
-      id: "filter-bar-multiple",
+      id: "filter-members",
       type: "filter-bar",
-      props: {
-        filters: filterBarMocks.filters.multiple,
-      },
+      props: filterBarMocks.members,
+    },
+  },
+};
+
+export const Quotations: Story = {
+  args: {
+    config: {
+      id: "filter-quotations",
+      type: "filter-bar",
+      props: filterBarMocks.quotations,
     },
   },
 };
