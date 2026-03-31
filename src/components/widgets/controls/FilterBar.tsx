@@ -26,7 +26,7 @@ interface FilterOption {
     label: string;
 }
 
-interface FilterConfig {
+export interface FilterConfig {
     id: string;
     label: string;
     type: string;
@@ -45,10 +45,10 @@ interface ResolvedFilterBarConfig {
     clearAllLabel: string;
 }
 
-function resolveConfig(props: WidgetConfig['props'], id: string): ResolvedFilterBarConfig {
+function resolveConfig(props: WidgetConfig['props'], widgetId: string): ResolvedFilterBarConfig {
     return {
         filters: (props?.filters ?? []) as FilterConfig[],
-        stateKey: props?.stateKey ?? id,
+        stateKey: props?.stateKey ?? widgetId,
         searchKey: props?.searchKey ?? 'q',
         searchPlaceholder: props?.placeholder ?? "Search...",
         filterLabel: props?.filterLabel ?? "Filter",
@@ -64,19 +64,19 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { filters, stateKey, searchKey, searchPlaceholder, filterLabel, filterByLabel, clearAllLabel } =
         resolveConfig(config.props, config.id);
 
-    const currentValues = getValue(stateKey, {});
+    const activeFilterValues = getValue(stateKey, {});
 
-    const handleFilterChange = (key: string, value: string) => {
+    const handleFilterChange = (filterStateKey: string, filterStateValue: string) => {
         handleAction({
             type: "update-widget-state",
-            props: { key: stateKey, operation: "patch", value: { [key]: value } }
+            props: { key: stateKey, operation: "patch", value: { [filterStateKey]: filterStateValue } }
         });
     };
 
-    const handleRemoveFilter = (key: string) => {
+    const handleRemoveFilter = (filterStateKey: string) => {
         handleAction({
             type: "update-widget-state",
-            props: { key: stateKey, operation: "patch", value: { [key]: "" } }
+            props: { key: stateKey, operation: "patch", value: { [filterStateKey]: "" } }
         });
     };
 
@@ -87,78 +87,50 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
         });
     };
 
-    const appliedFilters = Object.entries(currentValues)
-        .map(([key, value]) => {
-            if (!value || key === searchKey) return null;
-            const filterDef = filters.find((f) => f.id === key);
+    const appliedFilterChips = Object.entries(activeFilterValues)
+        .map(([filterStateKey, filterStateValue]) => {
+            if (!filterStateValue || filterStateKey === searchKey) return null;
+            const filterDef = filters.find((filter) => filter.id === filterStateKey);
             if (!filterDef) return null;
-            let displayValue = value as string;
+            let chipDisplayLabel = filterStateValue as string;
             if (filterDef.options) {
-                const opt = filterDef.options.find((o) => o.value === value);
-                displayValue = opt?.label ?? String(value);
+                const matchedOption = filterDef.options.find((option) => option.value === filterStateValue);
+                chipDisplayLabel = matchedOption?.label ?? String(filterStateValue);
             }
-            return { key, label: `${filterDef.label}: ${displayValue}` };
+            return { key: filterStateKey, label: `${filterDef.label}: ${chipDisplayLabel}` };
         })
-        .filter((x): x is { key: string; label: string } => x !== null);
+        .filter((appliedChip): appliedChip is { key: string; label: string } => appliedChip !== null);
 
-    const renderFilter = (filter: FilterConfig) => {
-        const currentValue = currentValues[filter.id];
+    const selectFilters = filters.filter((filter) => filter.type === 'select');
 
-        if (filter.type === 'date') {
-            return (
-                <DropdownMenuSub key={filter.id}>
-                    <DropdownMenuSubTrigger>{filter.label}</DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                        <div className="p-2">
-                            <Input
-                                type="date"
-                                placeholder={filter.placeholder}
-                                value={currentValue || ''}
-                                onChange={(e) => handleFilterChange(filter.id, e.target.value)}
-                                className="h-8 text-sm"
-                            />
-                        </div>
-                        {currentValue && (
-                            <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => handleRemoveFilter(filter.id)}>
-                                    Clear {filter.label}
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                    </DropdownMenuSubContent>
-                </DropdownMenuSub>
-            );
-        }
+    const renderSelectFilter = (filter: FilterConfig) => {
+        const selectedOptionValue = activeFilterValues[filter.id];
+        if (!filter.options) return null;
 
-        if (filter.type === 'select' && filter.options) {
-            return (
-                <DropdownMenuSub key={filter.id}>
-                    <DropdownMenuSubTrigger>{filter.label}</DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                        {filter.options.map((opt) => (
-                            <DropdownMenuCheckboxItem
-                                key={opt.value}
-                                checked={currentValue === opt.value}
-                                onCheckedChange={(checked) => handleFilterChange(filter.id, checked ? opt.value : '')}
-                            >
-                                {opt.label}
-                            </DropdownMenuCheckboxItem>
-                        ))}
-                        {currentValue && (
-                            <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => handleRemoveFilter(filter.id)}>
-                                    Clear {filter.label}
-                                </DropdownMenuItem>
-                            </>
-                        )}
-                    </DropdownMenuSubContent>
-                </DropdownMenuSub>
-            );
-        }
-
-        return null;
+        return (
+            <DropdownMenuSub key={filter.id}>
+                <DropdownMenuSubTrigger>{filter.label}</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                    {filter.options.map((option) => (
+                        <DropdownMenuCheckboxItem
+                            key={option.value}
+                            checked={selectedOptionValue === option.value}
+                            onCheckedChange={(checked) => handleFilterChange(filter.id, checked ? option.value : '')}
+                        >
+                            {option.label}
+                        </DropdownMenuCheckboxItem>
+                    ))}
+                    {selectedOptionValue && (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => handleRemoveFilter(filter.id)}>
+                                Clear {filter.label}
+                            </DropdownMenuItem>
+                        </>
+                    )}
+                </DropdownMenuSubContent>
+            </DropdownMenuSub>
+        );
     };
 
     return (
@@ -167,14 +139,14 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                 <div className="relative flex-1 min-w-[220px]">
                     <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
-                        value={currentValues[searchKey] || ''}
+                        value={activeFilterValues[searchKey] || ''}
                         onChange={(e) => handleFilterChange(searchKey, e.target.value)}
                         placeholder={searchPlaceholder}
                         className="bg-card pl-8"
                     />
                 </div>
 
-                {filters.length > 0 && (
+{selectFilters.length > 0 && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="gap-1">
@@ -185,15 +157,15 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                         <DropdownMenuContent align="end" className="min-w-[220px]">
                             <DropdownMenuLabel>{filterByLabel}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            {filters.map(renderFilter)}
+                            {selectFilters.map(renderSelectFilter)}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )}
             </div>
 
-            {appliedFilters.length > 0 && (
+            {appliedFilterChips.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
-                    {appliedFilters.map((chip) => (
+                    {appliedFilterChips.map((chip) => (
                         <Badge key={chip.key} variant="secondary" className="gap-1 pr-1 py-1">
                             {chip.label}
                             <button
