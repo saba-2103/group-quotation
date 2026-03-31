@@ -12,30 +12,22 @@ const LucideIcon = ({ name, className }: { name: string; className?: string }) =
     return <IconComponent className={className} />;
 };
 
+interface MetricData {
+    value: number;
+    trend?: number;
+}
+
 interface MetricCardProps {
     config: WidgetConfig;
 }
 
 export const MetricCard: React.FC<MetricCardProps> = ({ config }) => {
-    const {
-        label, icon, format, showTrend, priority,
-        isLoading: propsIsLoading,
-        error: propsError,
-        data: propsData,
-        locale,
-        currency,
-        maximumFractionDigits,
-        trendUnit,
-        errorText,
-    } = config.props || {};
+    const { label, icon, showTrend, priority, trendUnit, errorText } = config.props || {};
 
-    const { data: queryData, isLoading: queryLoading, error: queryError } = useSmartQuery(config.dataSource);
+    const { data, isLoading, error } = useSmartQuery(config.dataSource);
+    const { value, trend } = (data as MetricData) ?? {};
 
-    const isLoading: boolean = config.dataSource ? queryLoading : (propsIsLoading ?? false);
-    const hasError: boolean = config.dataSource ? !!queryError : !!propsError;
-    const data = (config.dataSource ? queryData : propsData) ?? propsData ?? { value: 0 };
-
-    if (hasError) {
+    if (error) {
         return (
             <div className="p-4 border rounded text-destructive">
                 {errorText ?? "Error loading metric"}
@@ -44,18 +36,6 @@ export const MetricCard: React.FC<MetricCardProps> = ({ config }) => {
     }
 
     const styles = PRIORITY_STYLES[priority] ?? PRIORITY_STYLES.default;
-
-    const formattedValue = isLoading
-        ? "..."
-        : format === "currency"
-            ? new Intl.NumberFormat(locale ?? "en-US", {
-                style: "currency",
-                currency: currency ?? "USD",
-                maximumFractionDigits: maximumFractionDigits ?? 0,
-              }).format(data.value)
-            : format === "percentage"
-                ? `${data.value}%`
-                : data.value.toLocaleString();
 
     return (
         <div
@@ -70,17 +50,17 @@ export const MetricCard: React.FC<MetricCardProps> = ({ config }) => {
                 {icon && <LucideIcon name={icon} className="h-5 w-5 text-muted-foreground" />}
             </div>
             <div className="flex items-end justify-between">
-                <span className={cn("font-bold text-foreground", styles.value)}>{formattedValue}</span>
-                {showTrend && data.trend !== undefined && !isLoading && (
+                <span className={cn("font-bold text-foreground", styles.value)}>{isLoading ? "..." : value}</span>
+                {showTrend && trend !== undefined && !isLoading && (
                     <div className={cn(
                         "flex items-center gap-1 text-sm font-medium",
-                        data.trend >= 0 ? "text-green-600" : "text-red-600"
+                        trend >= 0 ? "text-green-600" : "text-red-600"
                     )}>
-                        {data.trend >= 0
+                        {trend >= 0
                             ? <TrendingUp className="h-4 w-4" />
                             : <TrendingDown className="h-4 w-4" />
                         }
-                        <span>{Math.abs(data.trend)}{trendUnit ?? '%'}</span>
+                        <span>{Math.abs(trend)}{trendUnit ?? '%'}</span>
                     </div>
                 )}
             </div>
