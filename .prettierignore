@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Next.js
+.next/
+out/
+
+# Production builds
+build/
+
+# Generated files
+coverage/
+cloudflare-env.d.ts
+next-env.d.ts
+
+# Package manager files
+package-lock.json
+
+# Environment files
+.env*
+
+# Logs
+*.log
+npm-debug.log*
+.pnpm-debug.log*
+
+# OS files
+.DS_Store
+*.pem
+
+# Storybook
+storybook-static/
+*storybook.log
+
+# Wrangler
+.wrangler/
+.dev.vars*
+
+# OpenNext
+.open-next/
+
+# TypeScript
+*.tsbuildinfo
