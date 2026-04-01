@@ -1,13 +1,5 @@
-# Keystone UI: Metadata-Driven Architecture — Final Design Reference
+# Keystone UI: Metadata-Driven Architecture
 
-**Status:** Accepted
-**Date:** 2026-04-01
-**Supersedes:** `ADR-001-metadata-driven-ui.md`, `METADATA_DRIVEN_UI_TECHNICAL_DESIGN.md`
-**Codebase context:** `CODEBASE_OVERVIEW.md`
-
-This is the single authoritative document for the Metadata-Driven UI architecture. It consolidates all decisions, refinements, and patterns from the full design process into one complete reference. Every significant choice — including rejected alternatives and why they were rejected — is captured here.
-
----
 
 ## Table of Contents
 
