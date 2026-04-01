@@ -1,277 +1,254 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { DataTable } from '../../components/widgets/data/DataTable';
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { DataTable } from "@/components/widgets/data/DataTable";
+import { dataTableMocks, dataTableApiSeedData } from "@/stories/__mocks__";
+
+function buildSeededQueryClient(): QueryClient {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  // Seed query cache — key shape matches useSmartQuery: [endpoint, method, params, dependentState]
+  Object.entries(dataTableApiSeedData).forEach(([endpoint, data]) => {
+    queryClient.setQueryData([endpoint, "GET", undefined, {}], data);
+  });
+  return queryClient;
+}
 
 const meta: Meta<typeof DataTable> = {
-    title: 'Widgets/DataTable',
-    component: DataTable,
-    tags: ['autodocs'],
-    parameters: {
-        nextjs: { appDirectory: true },
-    },
+  title: "Widgets/DataTable",
+  component: DataTable,
+  tags: ["autodocs"],
+  parameters: {
+    nextjs: { appDirectory: true },
+  },
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={buildSeededQueryClient()}>
+        <div className="p-6" style={{ minHeight: "400px" }}>
+          <Story />
+        </div>
+      </QueryClientProvider>
+    ),
+  ],
 };
 
 export default meta;
 type Story = StoryObj<typeof DataTable>;
 
-// ── Shared mock data ──────────────────────────────────────────────────────────
+// ── Basic — text + link + date columns, data from mock API ───────────────────
 
-const quotationRows = [
-    { id: '1', quotationNumber: 'QBAG00000000001', clientName: 'Reliance Group',            quotationType: 'New Business', mainStatus: 'Pending',  transactionStatus: 'DR', channel: 'Broker' },
-    { id: '2', quotationNumber: 'QBAG00000000002', clientName: 'Reliance Petrolium Ltd',    quotationType: 'New Business', mainStatus: 'Pending',  transactionStatus: 'CM', channel: 'Agent'  },
-    { id: '3', quotationNumber: 'QBAG00000000003', clientName: 'Bajaj Finance Ltd',         quotationType: 'Renewal',      mainStatus: 'Approved', transactionStatus: 'RV', channel: 'Direct' },
-    { id: '4', quotationNumber: 'QBAG00000000004', clientName: 'Motilal Oswal Home Finance',quotationType: 'New Business', mainStatus: 'Pending',  transactionStatus: 'RC', channel: 'Broker' },
-    { id: '5', quotationNumber: 'QBAG00000000005', clientName: 'Muthoot Finance',           quotationType: 'New Business', mainStatus: 'Rejected', transactionStatus: 'AC', channel: 'Agent'  },
-    { id: '6', quotationNumber: 'QBAG00000000006', clientName: 'HDFC Life Insurance',       quotationType: 'Renewal',      mainStatus: 'Pending',  transactionStatus: 'AD', channel: 'Broker' },
-    { id: '7', quotationNumber: 'QBAG00000000007', clientName: 'Tata Capital Ltd',          quotationType: 'New Business', mainStatus: 'Rejected', transactionStatus: 'IA', channel: 'Direct' },
-];
-
-const transactionStatusMapping = [
-    { value: 'DR', label: 'Draft',            variant: 'grey'        },
-    { value: 'CM', label: 'Completed',        variant: 'info'        },
-    { value: 'RV', label: 'Review',           variant: 'warning'     },
-    { value: 'RC', label: 'Review Completed', variant: 'teal'        },
-    { value: 'AC', label: 'Active',           variant: 'success'     },
-    { value: 'AD', label: 'Active Draft',     variant: 'amber'       },
-    { value: 'IA', label: 'In-Active',        variant: 'destructive' },
-];
-
-const mainStatusMapping = [
-    { value: 'Pending',  label: 'Pending',  variant: 'warning'     },
-    { value: 'Approved', label: 'Approved', variant: 'success'     },
-    { value: 'Rejected', label: 'Rejected', variant: 'destructive' },
-];
-
-// ── Stories ───────────────────────────────────────────────────────────────────
-
-// --- Basic table ---
 export const Basic: Story = {
-    args: {
-        config: {
-            id: 'data-table-basic',
-            type: 'data-table',
-            props: {
-                data: quotationRows,
-                columns: [
-                    { header: 'Quotation #',  accessorKey: 'quotationNumber', sortable: true },
-                    { header: 'Client Name',  accessorKey: 'clientName',      sortable: true },
-                    { header: 'Type',         accessorKey: 'quotationType',   sortable: true },
-                    { header: 'Channel',      accessorKey: 'channel',         sortable: true },
-                ],
-            },
-        },
+  args: {
+    config: {
+      id: "data-table-basic",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.base,
+      },
     },
+  },
 };
 
-// --- Badge columns (status + transaction status) ---
+// ── With Badges — status values rendered as Badge variants ────────────────────
+
 export const WithBadgeColumns: Story = {
-    args: {
-        config: {
-            id: 'data-table-badges',
-            type: 'data-table',
-            props: {
-                data: quotationRows,
-                columns: [
-                    { header: 'Quotation #',        accessorKey: 'quotationNumber',   sortable: true },
-                    { header: 'Client Name',         accessorKey: 'clientName',        sortable: true },
-                    {
-                        header: 'Main Status',
-                        accessorKey: 'mainStatus',
-                        type: 'badge',
-                        sortable: true,
-                        valueMapping: mainStatusMapping,
-                    },
-                    {
-                        header: 'Transaction Status',
-                        accessorKey: 'transactionStatus',
-                        type: 'badge',
-                        sortable: true,
-                        valueMapping: transactionStatusMapping,
-                    },
-                ],
-            },
-        },
+  args: {
+    config: {
+      id: "data-table-badges",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.withBadges,
+      },
     },
+  },
 };
 
-// --- With row actions including confirmation dialog ---
-export const WithRowActions: Story = {
-    args: {
-        config: {
-            id: 'data-table-row-actions',
-            type: 'data-table',
-            props: {
-                data: quotationRows,
-                columns: [
-                    { header: 'Quotation #',  accessorKey: 'quotationNumber', sortable: true },
-                    { header: 'Client Name',  accessorKey: 'clientName',      sortable: true },
-                    {
-                        header: 'Transaction Status',
-                        accessorKey: 'transactionStatus',
-                        type: 'badge',
-                        valueMapping: transactionStatusMapping,
-                    },
-                ],
-                rowActions: [
-                    {
-                        id: 'view',
-                        label: 'View',
-                        icon: 'Eye',
-                        type: 'navigate',
-                        target: '/quotations/:id',
-                    },
-                    {
-                        id: 'withdraw',
-                        label: 'Withdraw',
-                        icon: 'XCircle',
-                        variant: 'destructive',
-                        type: 'api-mutation',
-                        api: { endpoint: '/api/quotations/:id/withdraw', method: 'POST' },
-                        confirm: {
-                            title: 'Withdraw Quotation',
-                            message: 'Are you sure you want to withdraw this quotation?',
-                        },
-                        successMessage: 'Quotation withdrawn successfully',
-                    },
-                ],
-            },
-        },
+// ── Default sort — table opens pre-sorted by clientName ascending ─────────────
+
+export const WithDefaultSort: Story = {
+  args: {
+    config: {
+      id: "data-table-default-sort",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.base,
+        defaultSort: { field: "clientName", direction: "asc" },
+      },
     },
+  },
 };
 
-// --- With bulk actions ---
-export const WithBulkActions: Story = {
-    args: {
-        config: {
-            id: 'data-table-bulk',
-            type: 'data-table',
-            props: {
-                data: quotationRows,
-                selectable: true,
-                columns: [
-                    { header: 'Quotation #',  accessorKey: 'quotationNumber', sortable: true },
-                    { header: 'Client Name',  accessorKey: 'clientName',      sortable: true },
-                    {
-                        header: 'Transaction Status',
-                        accessorKey: 'transactionStatus',
-                        type: 'badge',
-                        valueMapping: transactionStatusMapping,
-                    },
-                ],
-                bulkActions: [
-                    {
-                        id: 'bulk-archive',
-                        label: 'Archive Selected',
-                        icon: 'Archive',
-                        variant: 'outline',
-                        type: 'api-mutation',
-                        api: { endpoint: '/api/quotations/bulk-archive', method: 'POST' },
-                        confirm: {
-                            title: 'Archive Selected',
-                            message: 'Are you sure you want to archive the selected quotations?',
-                        },
-                    },
-                ],
-            },
-        },
+// ── Column filters — text and select filters per column ───────────────────────
+
+export const WithFilters: Story = {
+  args: {
+    config: {
+      id: "data-table-filters",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.filterable,
+      },
     },
+  },
 };
 
-// --- With pagination ---
+// ── Global search — search input filters across all columns ───────────────────
+
+export const WithSearch: Story = {
+  args: {
+    config: {
+      id: "data-table-search",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.withBadges,
+        searchable: true,
+        searchPlaceholder: "Search by quotation number or client...",
+      },
+    },
+  },
+};
+
+// ── Pagination — with custom page size options from config ────────────────────
+
 export const WithPagination: Story = {
-    args: {
-        config: {
-            id: 'data-table-pagination',
-            type: 'data-table',
-            props: {
-                data: quotationRows,
-                columns: [
-                    { header: 'Quotation #',  accessorKey: 'quotationNumber', sortable: true },
-                    { header: 'Client Name',  accessorKey: 'clientName',      sortable: true },
-                    { header: 'Type',         accessorKey: 'quotationType',   sortable: true },
-                ],
-                pagination: { enabled: true, pageSize: 3, pageSizeOptions: [3, 5, 10] },
-            },
-        },
+  args: {
+    config: {
+      id: "data-table-pagination",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.base,
+        pagination: dataTableMocks.pagination.standard,
+      },
     },
+  },
 };
 
-// --- Full featured ---
-export const FullFeatured: Story = {
-    args: {
-        config: {
-            id: 'data-table-full',
-            type: 'data-table',
-            props: {
-                data: quotationRows,
-                selectable: true,
-                searchable: true,
-                searchPlaceholder: 'Search quotations...',
-                columns: [
-                    { header: 'Quotation #',        accessorKey: 'quotationNumber',   sortable: true, filterable: true },
-                    { header: 'Client Name',         accessorKey: 'clientName',        sortable: true, filterable: true },
-                    { header: 'Type',                accessorKey: 'quotationType',     sortable: true },
-                    { header: 'Channel',             accessorKey: 'channel',           sortable: true },
-                    {
-                        header: 'Main Status',
-                        accessorKey: 'mainStatus',
-                        type: 'badge',
-                        sortable: true,
-                        valueMapping: mainStatusMapping,
-                    },
-                    {
-                        header: 'Transaction Status',
-                        accessorKey: 'transactionStatus',
-                        type: 'badge',
-                        sortable: true,
-                        valueMapping: transactionStatusMapping,
-                    },
-                ],
-                rowActions: [
-                    { id: 'view', label: 'View', icon: 'Eye', type: 'navigate', target: '/quotations/:id' },
-                    {
-                        id: 'withdraw',
-                        label: 'Withdraw',
-                        icon: 'XCircle',
-                        variant: 'destructive',
-                        type: 'api-mutation',
-                        api: { endpoint: '/api/quotations/:id/withdraw', method: 'POST' },
-                        confirm: { title: 'Withdraw Quotation', message: 'Are you sure you want to withdraw this quotation?' },
-                    },
-                ],
-                bulkActions: [
-                    {
-                        id: 'bulk-archive',
-                        label: 'Archive Selected',
-                        icon: 'Archive',
-                        variant: 'outline',
-                        type: 'api-mutation',
-                        api: { endpoint: '/api/quotations/bulk-archive', method: 'POST' },
-                        confirm: { title: 'Archive Selected', message: 'Are you sure you want to archive the selected quotations?' },
-                    },
-                ],
-                pagination: { enabled: true, pageSize: 5, pageSizeOptions: [5, 10, 20] },
-            },
-        },
+// ── Row actions — open navigates, withdraw has confirm + visible condition ─────
+// withdraw only appears on rows where mainStatus === "Pending"
+
+export const WithRowActions: Story = {
+  args: {
+    config: {
+      id: "data-table-row-actions",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.withBadges,
+        rowActions: dataTableMocks.rowActions.withConfirm,
+        actionsLabel: "Actions",
+      },
     },
+  },
 };
 
-// --- Empty state ---
+// ── Bulk actions — selectable rows with bulk archive action ───────────────────
+
+export const WithBulkActions: Story = {
+  args: {
+    config: {
+      id: "data-table-bulk",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.withBadges,
+        selectable: true,
+        bulkActions: dataTableMocks.bulkActions.standard,
+      },
+    },
+  },
+};
+
+// ── Export — export button shown when exportable: true ────────────────────────
+
+export const WithExport: Story = {
+  args: {
+    config: {
+      id: "data-table-export",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.withBadges,
+        selectable: true,
+        exportable: true,
+      },
+    },
+  },
+};
+
+// ── Sticky column — first column frozen left, horizontal scroll on 8+ columns ─
+
+export const WithStickyColumn: Story = {
+  args: {
+    config: {
+      id: "data-table-sticky",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.sticky,
+        actionsLabel: "Actions",
+      },
+    },
+  },
+};
+
+// ── Empty state — with action button from config ──────────────────────────────
+
 export const EmptyState: Story = {
-    args: {
-        config: {
-            id: 'data-table-empty',
-            type: 'data-table',
-            props: {
-                data: [],
-                columns: [
-                    { header: 'Quotation #', accessorKey: 'quotationNumber' },
-                    { header: 'Client Name', accessorKey: 'clientName' },
-                ],
-                emptyState: {
-                    title: 'No quotations found',
-                    description: 'There are no quotations matching your criteria.',
-                },
-            },
-        },
+  args: {
+    config: {
+      id: "data-table-empty",
+      type: "data-table",
+      props: {
+        data: [],
+        columns: dataTableMocks.columns.base,
+        emptyState: dataTableMocks.emptyState.standard,
+      },
     },
+  },
+};
+
+// ── Loading state ─────────────────────────────────────────────────────────────
+
+export const LoadingState: Story = {
+  args: {
+    config: {
+      id: "data-table-loading",
+      type: "data-table",
+      props: {
+        columns: dataTableMocks.columns.base,
+        isLoading: true,
+      },
+    },
+  },
+};
+
+// ── Full featured — all capabilities enabled together ─────────────────────────
+
+export const FullFeatured: Story = {
+  args: {
+    config: {
+      id: "data-table-full",
+      type: "data-table",
+      props: {
+        dataSource: dataTableMocks.dataSources.quotations,
+        columns: dataTableMocks.columns.filterable,
+        selectable: true,
+        searchable: true,
+        exportable: true,
+        searchPlaceholder: "Search quotations...",
+        defaultSort: { field: "quotationNumber", direction: "asc" },
+        pagination: dataTableMocks.pagination.standard,
+        rowActions: dataTableMocks.rowActions.withConfirm,
+        bulkActions: dataTableMocks.bulkActions.standard,
+        actionsLabel: "Actions",
+        emptyState: dataTableMocks.emptyState.standard,
+      },
+    },
+  },
 };

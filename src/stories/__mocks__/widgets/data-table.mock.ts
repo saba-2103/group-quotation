@@ -1,180 +1,364 @@
+import { DataSourceConfig, ActionConfig } from "@/types/widget";
+import { ColumnConfig, RowActionConfig } from "@/components/widgets/data/DataTable/types";
+
+const buildDataSource = (endpoint: string): DataSourceConfig => ({
+  api: { endpoint, method: "GET" },
+});
+
+// ── Seed data for React Query cache ──────────────────────────────────────────
+// Key shape matches useSmartQuery: [endpoint, method, params, dependentState]
+export const dataTableApiSeedData: Record<string, unknown[]> = {
+  "/api/mock/quotations": [
+    {
+      id: "1",
+      quotationNumber: "Q-2024-001",
+      clientName: "Acme Corp",
+      quotationType: "New Business",
+      mainStatus: "Pending",
+      censusStatus: "Uploaded",
+      effectiveDate: "2024-01-15",
+      channel: "Broker",
+      membersCount: 450,
+    },
+    {
+      id: "2",
+      quotationNumber: "Q-2024-002",
+      clientName: "GlobalTech Ltd",
+      quotationType: "Renewal",
+      mainStatus: "Approved",
+      censusStatus: "Approved",
+      effectiveDate: "2024-02-01",
+      channel: "Agent",
+      membersCount: 120,
+    },
+    {
+      id: "3",
+      quotationNumber: "Q-2024-003",
+      clientName: "Sunrise Insurance",
+      quotationType: "New Business",
+      mainStatus: "Pending",
+      censusStatus: "Not started",
+      effectiveDate: "2024-03-10",
+      channel: "Direct",
+      membersCount: 75,
+    },
+    {
+      id: "4",
+      quotationNumber: "Q-2024-004",
+      clientName: "TechVentures Inc",
+      quotationType: "Renewal",
+      mainStatus: "Approved",
+      censusStatus: "Approved",
+      effectiveDate: "2024-03-22",
+      channel: "Broker",
+      membersCount: 320,
+    },
+    {
+      id: "5",
+      quotationNumber: "Q-2024-005",
+      clientName: "Metro Solutions",
+      quotationType: "New Business",
+      mainStatus: "Pending",
+      censusStatus: "Exceptions",
+      effectiveDate: "2024-04-05",
+      channel: "Agent",
+      membersCount: 200,
+    },
+  ],
+};
+
+// ── Column configurations ─────────────────────────────────────────────────────
+const baseColumns: ColumnConfig[] = [
+  {
+    id: "quotationNumber",
+    header: "Quotation Number",
+    accessorKey: "quotationNumber",
+    type: "link",
+    sortable: true,
+    width: "180px",
+    linkRoute: "/quotations/:id",
+  },
+  {
+    id: "clientName",
+    header: "Client Name",
+    accessorKey: "clientName",
+    type: "text",
+    sortable: true,
+    width: "200px",
+  },
+  {
+    id: "quotationType",
+    header: "Quotation Type",
+    accessorKey: "quotationType",
+    type: "text",
+    sortable: true,
+    width: "130px",
+  },
+  {
+    id: "effectiveDate",
+    header: "Effective Date",
+    accessorKey: "effectiveDate",
+    type: "date",
+    sortable: true,
+    width: "120px",
+  },
+  {
+    id: "channel",
+    header: "Channel",
+    accessorKey: "channel",
+    type: "text",
+    sortable: true,
+    width: "100px",
+  },
+];
+
+const withBadgesColumns: ColumnConfig[] = [
+  ...baseColumns,
+  {
+    id: "mainStatus",
+    header: "Main Status",
+    accessorKey: "mainStatus",
+    type: "badge",
+    sortable: true,
+    width: "120px",
+    valueMapping: [
+      { value: "Pending", label: "Pending", color: "warning" },
+      { value: "Approved", label: "Approved", color: "success" },
+      { value: "Rejected", label: "Rejected", color: "error" },
+    ],
+  },
+  {
+    id: "censusStatus",
+    header: "Census Status",
+    accessorKey: "censusStatus",
+    type: "badge",
+    sortable: true,
+    width: "140px",
+    valueMapping: [
+      { value: "Not started", label: "Not started", color: "default" },
+      { value: "Uploaded", label: "Uploaded", color: "info" },
+      { value: "Exceptions", label: "Exceptions", color: "warning" },
+      { value: "Approved", label: "Approved", color: "success" },
+    ],
+  },
+];
+
+const filterableColumns: ColumnConfig[] = [
+  {
+    id: "quotationNumber",
+    header: "Quotation Number",
+    accessorKey: "quotationNumber",
+    type: "text",
+    sortable: true,
+    filterable: true,
+    filterType: "text",
+    width: "180px",
+  },
+  {
+    id: "clientName",
+    header: "Client Name",
+    accessorKey: "clientName",
+    type: "text",
+    sortable: true,
+    filterable: true,
+    filterType: "text",
+    width: "200px",
+  },
+  {
+    id: "mainStatus",
+    header: "Main Status",
+    accessorKey: "mainStatus",
+    type: "badge",
+    sortable: true,
+    filterable: true,
+    filterType: "select",
+    width: "120px",
+    valueMapping: [
+      { value: "Pending", label: "Pending", color: "warning" },
+      { value: "Approved", label: "Approved", color: "success" },
+    ],
+  },
+  {
+    id: "channel",
+    header: "Channel",
+    accessorKey: "channel",
+    type: "text",
+    sortable: true,
+    filterable: true,
+    filterType: "select",
+    width: "100px",
+  },
+  {
+    id: "effectiveDate",
+    header: "Effective Date",
+    accessorKey: "effectiveDate",
+    type: "date",
+    sortable: true,
+    width: "120px",
+  },
+];
+
+// 8 columns — exceeds SCROLLABLE_COLUMN_THRESHOLD (7) so horizontal scroll kicks in,
+// making the frozen: "left" sticky behaviour visible.
+const stickyColumns: ColumnConfig[] = [
+  {
+    id: "quotationNumber",
+    header: "Quotation Number",
+    accessorKey: "quotationNumber",
+    type: "link",
+    sortable: true,
+    width: "180px",
+    linkRoute: "/quotations/:id",
+    frozen: "left",
+  },
+  {
+    id: "clientName",
+    header: "Client Name",
+    accessorKey: "clientName",
+    type: "text",
+    sortable: true,
+    width: "200px",
+  },
+  {
+    id: "quotationType",
+    header: "Quotation Type",
+    accessorKey: "quotationType",
+    type: "text",
+    sortable: true,
+    width: "150px",
+  },
+  {
+    id: "effectiveDate",
+    header: "Effective Date",
+    accessorKey: "effectiveDate",
+    type: "date",
+    sortable: true,
+    width: "140px",
+  },
+  {
+    id: "channel",
+    header: "Channel",
+    accessorKey: "channel",
+    type: "text",
+    sortable: true,
+    width: "120px",
+  },
+  {
+    id: "mainStatus",
+    header: "Main Status",
+    accessorKey: "mainStatus",
+    type: "badge",
+    sortable: true,
+    width: "130px",
+    valueMapping: [
+      { value: "Pending", label: "Pending", color: "warning" },
+      { value: "Approved", label: "Approved", color: "success" },
+    ],
+  },
+  {
+    id: "censusStatus",
+    header: "Census Status",
+    accessorKey: "censusStatus",
+    type: "badge",
+    sortable: true,
+    width: "150px",
+    valueMapping: [
+      { value: "Not started", label: "Not started", color: "default" },
+      { value: "Uploaded", label: "Uploaded", color: "info" },
+      { value: "Exceptions", label: "Exceptions", color: "warning" },
+      { value: "Approved", label: "Approved", color: "success" },
+    ],
+  },
+  {
+    id: "membersCount",
+    header: "Members Count",
+    accessorKey: "membersCount",
+    type: "number",
+    sortable: true,
+    width: "140px",
+  },
+];
+
+// ── Row actions ───────────────────────────────────────────────────────────────
+const openAction: RowActionConfig = {
+  id: "open",
+  label: "Open",
+  icon: "ExternalLink",
+  type: "navigate",
+  target: "/quotations/:id",
+};
+
+const withdrawAction: RowActionConfig = {
+  id: "withdraw",
+  label: "Withdraw",
+  icon: "XCircle",
+  variant: "destructive",
+  type: "api-mutation",
+  api: { endpoint: "/api/quotations/:id/withdraw", method: "POST" },
+  confirm: {
+    title: "Withdraw Quotation",
+    message: "Are you sure you want to withdraw this quotation?",
+  },
+  visible: { field: "mainStatus", operator: "eq", value: "Pending" },
+};
+
+const cloneAction: RowActionConfig = {
+  id: "clone",
+  label: "Clone",
+  icon: "Copy",
+  type: "api-mutation",
+  api: { endpoint: "/api/quotations/:id/clone", method: "POST" },
+};
+
+// ── Bulk actions ──────────────────────────────────────────────────────────────
+const bulkArchiveAction: ActionConfig = {
+  id: "bulk-archive",
+  label: "Archive Selected",
+  type: "trigger-event",
+  variant: "outline",
+  target: "archive",
+};
+
+// ── Empty state action ────────────────────────────────────────────────────────
+const createQuotationAction: ActionConfig = {
+  id: "create-quotation",
+  label: "Create New Quotation",
+  icon: "Plus",
+  type: "open-sheet",
+  variant: "default",
+  target: "create-quotation-form",
+};
+
+// ── Main mock export ──────────────────────────────────────────────────────────
 export const dataTableMocks = {
+  dataSources: {
+    quotations: buildDataSource("/api/mock/quotations"),
+  },
   columns: {
-    text: [
-      { header: "Client Name", accessorKey: "name", type: "text" },
-      { header: "Branch", accessorKey: "branch", type: "text" },
-      { header: "Email", accessorKey: "email", type: "text" },
-    ],
-
-    link: [
-      {
-        header: "Quotation No",
-        accessorKey: "quotationNumber",
-        type: "link",
-        linkRoute: "/quotations/:id",
-      },
-      { header: "Client", accessorKey: "client", type: "text" },
-    ],
-
-    badge: [
-      { header: "Quotation No", accessorKey: "quotationNumber", type: "text" },
-      {
-        header: "Status",
-        accessorKey: "status",
-        type: "badge",
-        valueMapping: [
-          { value: "Approved", label: "Approved", color: "success" },
-          { value: "Pending", label: "Pending", color: "warning" },
-          { value: "Rejected", label: "Rejected", color: "error" },
-        ],
-      },
-    ],
-
-    currency: [
-      { header: "Policy No", accessorKey: "policyNo", type: "text" },
-      { header: "Premium", accessorKey: "premium", type: "currency" },
-      { header: "Sum Insured", accessorKey: "sumInsured", type: "currency" },
-    ],
-
-    scroll: Array.from({ length: 12 }, (_, i) => ({
-      header: `Column ${i + 1}`,
-      accessorKey: `col${i + 1}`,
-      type: "text",
-      width: 150,
-    })),
-
-    allTypes: [
-      {
-        header: "Quotation",
-        accessorKey: "quotation",
-        type: "link",
-        linkRoute: "#",
-      },
-      { header: "Client", accessorKey: "client", type: "text" },
-      {
-        header: "Status",
-        accessorKey: "status",
-        type: "badge",
-        valueMapping: [
-          { value: "Approved", color: "success" },
-          { value: "Pending", color: "warning" },
-        ],
-      },
-      { header: "Premium", accessorKey: "premium", type: "currency" },
-      { header: "Lives", accessorKey: "lives", type: "number" },
-    ],
-
-    features: [
-      { header: "Quotation", accessorKey: "quotation", type: "text" },
-      {
-        header: "Status",
-        accessorKey: "status",
-        type: "badge",
-        valueMapping: [{ value: "Pending", color: "warning" }],
-      },
-    ],
+    base: baseColumns,
+    withBadges: withBadgesColumns,
+    filterable: filterableColumns,
+    sticky: stickyColumns,
   },
-
-  data: {
-    text: [
-      { id: "1", name: "Acme Corp", branch: "Dubai", email: "acme@corp.com" },
-      {
-        id: "2",
-        name: "GlobalTech",
-        branch: "Abu Dhabi",
-        email: "info@globaltech.com",
-      },
-    ],
-
-    link: [{ id: "1", quotationNumber: "Q-2024-001", client: "Acme Corp" }],
-
-    badge: [
-      { id: "1", quotationNumber: "Q-2024-001", status: "Approved" },
-      { id: "2", quotationNumber: "Q-2024-002", status: "Pending" },
-    ],
-
-    currency: [
-      { id: "1", policyNo: "POL-001", premium: 12500, sumInsured: 500000 },
-    ],
-
-    scroll: [
-      {
-        id: "1",
-        ...Object.fromEntries(
-          Array.from({ length: 12 }, (_, i) => [
-            `col${i + 1}`,
-            `Data 1-${i + 1}`,
-          ]),
-        ),
-      },
-      {
-        id: "2",
-        ...Object.fromEntries(
-          Array.from({ length: 12 }, (_, i) => [
-            `col${i + 1}`,
-            `Data 2-${i + 1}`,
-          ]),
-        ),
-      },
-    ],
-
-    pagination: Array.from({ length: 9 }, (_, i) => ({
-      id: String(i + 1),
-      name: `Client ${i + 1}`,
-      branch: "Dubai",
-      email: `client${i + 1}@corp.com`,
-    })),
-
-    withActions: [
-      { id: "1", quotationNumber: "Q-2024-001", status: "Pending" },
-      { id: "2", quotationNumber: "Q-2024-002", status: "Pending" },
-    ],
-
-    allTypes: [
-      {
-        id: "1",
-        quotation: "Q-001",
-        client: "Acme Corp",
-        status: "Approved",
-        premium: 12500,
-        lives: 450,
-      },
-      {
-        id: "2",
-        quotation: "Q-002",
-        client: "GlobalTech",
-        status: "Pending",
-        premium: 8400,
-        lives: 120,
-      },
-    ],
-
-    features: [
-      { id: "1", quotation: "Q-001", status: "Pending" },
-      { id: "2", quotation: "Q-002", status: "Pending" },
-      { id: "3", quotation: "Q-003", status: "Pending" },
-    ],
+  rowActions: {
+    standard: [openAction, cloneAction],
+    withConfirm: [openAction, withdrawAction, cloneAction],
   },
-
-  actions: {
-    bulk: [
-      {
-        id: "bulk-approve",
-        type: "trigger-event",
-        label: "Approve Selected",
-        variant: "default",
-        target: "approve",
-      },
-    ],
-
-    row: [
-      {
-        id: "view",
-        type: "trigger-event",
-        label: "View",
-        icon: "Eye",
-        target: "view",
-      },
-    ],
+  bulkActions: {
+    standard: [bulkArchiveAction],
+  },
+  emptyState: {
+    standard: {
+      title: "No quotations found",
+      description: "There are no quotations matching your criteria.",
+      action: createQuotationAction,
+    },
+  },
+  pagination: {
+    standard: {
+      enabled: true,
+      pageSize: 3,
+      pageSizeOptions: [3, 5, 10],
+    },
   },
 };

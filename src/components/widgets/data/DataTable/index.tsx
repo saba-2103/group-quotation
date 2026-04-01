@@ -1,23 +1,11 @@
 "use client";
 
-import React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import React, { useRef } from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { CellRenderer } from "../CellRenderer";
-import {
-  TooltipProvider,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -25,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
   ArrowUp,
@@ -35,7 +23,7 @@ import {
   Download,
   FileText,
   FileSpreadsheet,
-  FileDown,
+  FileDown
 } from "lucide-react";
 
 import { FilterCell } from "./FilterCell";
@@ -43,20 +31,20 @@ import { BulkActionsBar } from "./BulkActionsBar";
 import { TablePagination } from "./TablePagination";
 import { RowActions } from "./RowActions";
 import { useDataTable } from "@/hooks/useDataTable";
-import { useTableExport } from "../../../../hooks/useTableExport";
-import {
-  getFrozenColumnClasses,
-  getActionsColumnClasses,
-  getCheckboxColumnClasses,
-} from "./utils";
-import { DataTableProps, ColumnConfig } from "./types";
+import { useTableExport } from "@/hooks/useTableExport";
+import { getFrozenColumnClasses, getActionsColumnClasses, getCheckboxColumnClasses } from "./utils";
+import { DataTableProps, ColumnConfig, TableRow as DataRow } from "./types";
+import { ActionConfig } from "@/types/widget";
+import { ActionRenderer } from "../../controls/ActionRenderer";
+import { EXPORT_STYLE_CONFIG } from "./constants";
+import { ErrorState } from "@/components/ui/error-state";
 
 export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   const handleAction = useActionHandler();
+  const downloadRef = useRef<HTMLAnchorElement>(null);
 
   const {
     table,
-    columnFilters,
     selectFilterOptions,
     columns,
     rowActions,
@@ -71,21 +59,19 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     totalCount,
     colSpan,
     selectedCount,
-    setRowSelection,
-    setColumnFilters,
+    rowIdKey,
+    pagination,
     isQueryLoading,
-    queryError,
+    queryError
   } = useDataTable({ props: config.props });
 
   const { exportData } = useTableExport({
     columns: columns ?? [],
     widgetId: config.id,
+    downloadRef
   });
 
-  const handleExport = async (
-    scope: "selected" | "all",
-    format: "csv" | "xlsx" | "pdf",
-  ) => {
+  const handleExport = async (scope: "selected" | "all", format: "csv" | "xlsx" | "pdf") => {
     const rows =
       scope === "selected"
         ? table.getSelectedRowModel().rows.map((r) => r.original)
@@ -93,7 +79,8 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     exportData(rows, format);
   };
 
-  const { emptyState, isLoading: propLoading, error: propError } = config.props || {};
+  const { emptyState, isLoading: propLoading, error: propError, actionsLabel } = config.props || {};
+
   const isLoading = propLoading || isQueryLoading;
   const error = propError || queryError;
 
@@ -102,35 +89,32 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   };
 
   if (error) {
-    return (
-      <div className="p-4 text-red-500 rounded-lg border bg-card">
-        Error loading data
-      </div>
-    );
+    return <ErrorState message="Error loading data" />;
   }
 
   return (
     <TooltipProvider delayDuration={300}>
+      {/* Hidden anchor used by useTableExport for ref-based downloads */}
+      <a ref={downloadRef} className="hidden" aria-hidden="true" />
+
       <div className="flex flex-col gap-3 h-full">
-        {/* Bulk actions + filter indicator — only visible when needed */}
         <BulkActionsBar
           selectedCount={selectedCount}
           bulkActions={bulkActions ?? []}
           hasFilters={hasFilters}
-          activeFilterCount={columnFilters.length}
-          onClearSelection={() => setRowSelection({})}
-          onClearAllFilters={() => setColumnFilters([])}
+          activeFilterCount={table.getState().columnFilters.length}
+          onClearSelection={() => table.resetRowSelection()}
+          onClearAllFilters={() => table.resetColumnFilters()}
         />
 
-        {/* Table card */}
         <div
           className={cn(
             "flex flex-col rounded-lg border bg-card flex-1",
-            isScrollable ? "overflow-auto overflow-x-auto" : "overflow-hidden",
+            isScrollable ? "overflow-auto overflow-x-auto" : "overflow-hidden"
           )}
         >
-          {/* Toolbar: export dropdown */}
-          <div className="flex items-center justify-end px-3 py-2 border-b">
+          {/* Toolbar */}
+          <div className="flex items-center justify-end px-3 py-2 border-b gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -148,28 +132,16 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                     <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
                       Export {selectedCount} selected
                     </DropdownMenuLabel>
-                    <DropdownMenuItem
-                      onClick={() => handleExport("selected", "csv")}
-                    >
-                      <FileText
-                        size={13}
-                        className="mr-2 text-muted-foreground"
-                      />
+                    <DropdownMenuItem onClick={() => handleExport("selected", "csv")}>
+                      <FileText size={13} className="mr-2 text-muted-foreground" />
                       CSV
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleExport("selected", "xlsx")}
-                    >
-                      <FileSpreadsheet
-                        size={13}
-                        className="mr-2 text-green-600"
-                      />
+                    <DropdownMenuItem onClick={() => handleExport("selected", "xlsx")}>
+                      <FileSpreadsheet size={13} className={cn("mr-2", EXPORT_STYLE_CONFIG.icons.excel)} />
                       Excel (.xlsx)
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleExport("selected", "pdf")}
-                    >
-                      <FileDown size={13} className="mr-2 text-red-500" />
+                    <DropdownMenuItem onClick={() => handleExport("selected", "pdf")}>
+                      <FileDown size={13} className={cn("mr-2", EXPORT_STYLE_CONFIG.icons.pdf)} />
                       PDF
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -183,11 +155,11 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                   CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExport("all", "xlsx")}>
-                  <FileSpreadsheet size={13} className="mr-2 text-green-600" />
+                  <FileSpreadsheet size={13} className={cn("mr-2", EXPORT_STYLE_CONFIG.icons.excel)} />
                   Excel (.xlsx)
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExport("all", "pdf")}>
-                  <FileDown size={13} className="mr-2 text-red-500" />
+                  <FileDown size={13} className={cn("mr-2", EXPORT_STYLE_CONFIG.icons.pdf)} />
                   PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -199,34 +171,22 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
               {/* Column header row */}
               <TableRow>
                 {selectable && (
-                  <TableHead
-                    className={cn(
-                      "w-[40px]",
-                      getCheckboxColumnClasses(isScrollable, true),
-                    )}
-                  >
+                  <TableHead className={cn("w-[40px]", getCheckboxColumnClasses(isScrollable, true))}>
                     <input
                       type="checkbox"
                       className="rounded border-gray-300 pointer-events-auto cursor-pointer"
                       checked={table.getIsAllPageRowsSelected()}
                       ref={(input) => {
-                        if (input)
-                          input.indeterminate =
-                            table.getIsSomePageRowsSelected();
+                        if (input) input.indeterminate = table.getIsSomePageRowsSelected();
                       }}
-                      onChange={(e) =>
-                        table.toggleAllPageRowsSelected(e.target.checked)
-                      }
+                      onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
                       aria-label="Select all"
                     />
                   </TableHead>
                 )}
                 {table.getHeaderGroups()[0]?.headers.map((header) => {
                   const col = header.column.columnDef.meta as ColumnConfig;
-                  const leftOffset =
-                    col?.frozen === "left" && selectable
-                      ? "left-[40px]"
-                      : undefined;
+                  const leftOffset = col?.frozen === "left" && selectable ? "left-[40px]" : undefined;
                   const sorted = header.column.getIsSorted();
                   return (
                     <TableHead
@@ -234,33 +194,19 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                       style={{ width: col?.width, minWidth: col?.width }}
                       className={cn(
                         col?.align === "right" ? "text-right" : "",
-                        getFrozenColumnClasses(
-                          isScrollable,
-                          col?.frozen,
-                          true,
-                          leftOffset,
-                        ),
-                        header.column.getCanSort() &&
-                          "cursor-pointer select-none",
+                        getFrozenColumnClasses(isScrollable, col?.frozen, true, leftOffset),
+                        header.column.getCanSort() && "cursor-pointer select-none"
                       )}
                       onClick={header.column.getToggleSortingHandler()}
                     >
-                      <div
-                        className={cn(
-                          "flex items-center gap-1",
-                          col?.align === "right" && "justify-end",
-                        )}
-                      >
+                      <div className={cn("flex items-center gap-1", col?.align === "right" && "justify-end")}>
                         {col?.helpText ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span className="flex items-center gap-1.5">
-                                {col.header}
+                                {col.header ?? col.label}
                                 <span className="inline-flex items-center justify-center rounded-full w-4 h-4 bg-muted hover:bg-muted-foreground/20 transition-colors cursor-help">
-                                  <HelpCircle
-                                    size={11}
-                                    className="text-muted-foreground"
-                                  />
+                                  <HelpCircle size={11} className="text-muted-foreground" />
                                 </span>
                               </span>
                             </TooltipTrigger>
@@ -269,14 +215,12 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                               sideOffset={6}
                               className="max-w-[220px] text-xs leading-relaxed px-3 py-2.5"
                             >
-                              <p className="font-semibold mb-1">{col.header}</p>
-                              <p className="text-background/75 leading-relaxed">
-                                {col.helpText}
-                              </p>
+                              <p className="font-semibold mb-1">{col.header ?? col.label}</p>
+                              <p className="text-background/75 leading-relaxed">{col.helpText}</p>
                             </TooltipContent>
                           </Tooltip>
                         ) : (
-                          <span>{col?.header ?? header.id}</span>
+                          <span>{col?.header ?? col?.label ?? header.id}</span>
                         )}
                         {header.column.getCanSort() &&
                           (sorted === "asc" ? (
@@ -284,23 +228,15 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                           ) : sorted === "desc" ? (
                             <ArrowDown size={13} className="ml-1 shrink-0" />
                           ) : (
-                            <ArrowUpDown
-                              size={13}
-                              className="ml-1 shrink-0 opacity-40"
-                            />
+                            <ArrowUpDown size={13} className="ml-1 shrink-0 opacity-40" />
                           ))}
                       </div>
                     </TableHead>
                   );
                 })}
                 {hasRowActions && (
-                  <TableHead
-                    className={cn(
-                      "w-[80px] text-right",
-                      getActionsColumnClasses(isScrollable, true),
-                    )}
-                  >
-                    Actions
+                  <TableHead className={cn("w-[80px] text-right", getActionsColumnClasses(isScrollable, true))}>
+                    {actionsLabel ?? "Actions"}
                   </TableHead>
                 )}
               </TableRow>
@@ -308,50 +244,25 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
               {/* Filter row */}
               {hasFilters && (
                 <TableRow className="hover:bg-transparent border-b">
-                  {selectable && (
-                    <TableHead
-                      className={cn(
-                        "w-[40px]",
-                        getCheckboxColumnClasses(isScrollable, true),
-                      )}
-                    />
-                  )}
+                  {selectable && <TableHead className={cn("w-[40px]", getCheckboxColumnClasses(isScrollable, true))} />}
                   {table.getHeaderGroups()[0]?.headers.map((header) => {
                     const col = header.column.columnDef.meta as ColumnConfig;
-                    const leftOffset =
-                      col?.frozen === "left" && selectable
-                        ? "left-[40px]"
-                        : undefined;
+                    const leftOffset = col?.frozen === "left" && selectable ? "left-[40px]" : undefined;
                     return (
                       <TableHead
                         key={`filter-${header.id}`}
-                        className={cn(
-                          getFrozenColumnClasses(
-                            isScrollable,
-                            col?.frozen,
-                            true,
-                            leftOffset,
-                          ),
-                          "py-1",
-                        )}
+                        className={cn(getFrozenColumnClasses(isScrollable, col?.frozen, true, leftOffset), "py-1")}
                       >
                         <FilterCell
                           col={col}
                           tanCol={header.column}
-                          selectOptions={
-                            selectFilterOptions[col?.accessorKey] ?? []
-                          }
+                          selectOptions={selectFilterOptions[col?.accessorKey] ?? []}
                         />
                       </TableHead>
                     );
                   })}
                   {hasRowActions && (
-                    <TableHead
-                      className={cn(
-                        "w-[80px]",
-                        getActionsColumnClasses(isScrollable, true),
-                      )}
-                    />
+                    <TableHead className={cn("w-[80px]", getActionsColumnClasses(isScrollable, true))} />
                   )}
                 </TableRow>
               )}
@@ -368,19 +279,17 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                 <TableRow>
                   <TableCell colSpan={colSpan} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center gap-2">
-                      <p className="text-lg font-medium text-foreground">
-                        {emptyState?.title ?? "No data found"}
-                      </p>
+                      <p className="text-lg font-medium text-foreground">{emptyState?.title ?? "No data found"}</p>
                       <p className="text-muted-foreground">
-                        {emptyState?.description ??
-                          "There are no records to display."}
+                        {emptyState?.description ?? "There are no records to display."}
                       </p>
+                      {emptyState?.action && <ActionRenderer action={emptyState.action as ActionConfig} />}
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 table.getRowModel().rows.map((row) => {
-                  const rowData = row.original;
+                  const rowData: DataRow = row.original;
                   const rowId = row.id;
                   const isSelected = row.getIsSelected();
                   return (
@@ -388,18 +297,10 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                       key={rowId}
                       data-state={isSelected ? "selected" : undefined}
                       className={isSelected ? "bg-muted/50" : ""}
-                      onClick={() =>
-                        config.props?.onRowClick &&
-                        handleAction(config.props.onRowClick)
-                      }
+                      onClick={() => config.props?.onRowClick && handleAction(config.props.onRowClick)}
                     >
                       {selectable && (
-                        <TableCell
-                          className={cn(
-                            "w-[40px]",
-                            getCheckboxColumnClasses(isScrollable, false),
-                          )}
-                        >
+                        <TableCell className={cn("w-[40px]", getCheckboxColumnClasses(isScrollable, false))}>
                           <input
                             type="checkbox"
                             className="rounded border-gray-300 pointer-events-auto cursor-pointer"
@@ -410,21 +311,13 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                         </TableCell>
                       )}
                       {columns?.map((col) => {
-                        const leftOffset =
-                          col.frozen === "left" && selectable
-                            ? "left-[40px]"
-                            : undefined;
+                        const leftOffset = col.frozen === "left" && selectable ? "left-[40px]" : undefined;
                         return (
                           <TableCell
                             key={`${rowId}-${col.accessorKey}`}
                             className={cn(
                               col.align === "right" ? "text-right" : "",
-                              getFrozenColumnClasses(
-                                isScrollable,
-                                col.frozen,
-                                false,
-                                leftOffset,
-                              ),
+                              getFrozenColumnClasses(isScrollable, col.frozen, false, leftOffset)
                             )}
                           >
                             <CellRenderer
@@ -437,16 +330,11 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                         );
                       })}
                       {hasRowActions && (
-                        <TableCell
-                          className={cn(
-                            "w-[80px] text-right",
-                            getActionsColumnClasses(isScrollable, false),
-                          )}
-                        >
+                        <TableCell className={cn("w-[80px] text-right", getActionsColumnClasses(isScrollable, false))}>
                           <RowActions
                             row={rowData}
                             rowActions={rowActions}
-                            isScrollable={isScrollable}
+                            rowIdKey={rowIdKey}
                           />
                         </TableCell>
                       )}
@@ -464,6 +352,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
             totalCount={totalCount}
             pageIndex={pageIndex}
             pageSize={pageSize}
+            pageSizeOptions={pagination?.pageSizeOptions}
           />
         )}
       </div>
