@@ -8,7 +8,8 @@ import {
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { CHART_STYLE_CONFIG } from './constants';
-import { LoadingState, ErrorState } from '@/components/ui/state-display';
+import { LoadingState } from '@/components/ui/loading-state';
+import { ErrorState } from '@/components/ui/error-state';
 
 export const ChartWidget: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { title, chartType, dataKey, color, colors } = config.props || {};
