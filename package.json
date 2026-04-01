@@ -9,6 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "jest",
     "test:unit": "jest --selectProjects unit",
     "test:schemas": "jest --selectProjects schemas",
@@ -37,13 +39,14 @@
     "lucide-react": "^0.575.0",
     "next": "16.1.5",
     "pdfmake": "^0.3.6",
+    "xlsx": "^0.18.5",
     "radix-ui": "^1.4.3",
     "react": "19.1.5",
     "react-dom": "19.1.5",
     "react-hook-form": "^7.71.1",
+    "recharts": "^3.8.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
-    "xlsx": "^0.18.5",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },
@@ -72,6 +75,7 @@
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "playwright": "^1.58.2",
+    "prettier": "^3.8.1",
     "shadcn": "^3.8.5",
     "storybook": "^10.2.16",
     "tailwindcss": "^4",
@@ -81,6 +85,5 @@
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
     "wrangler": "^4.66.0"
-  },
-  "packageManager": "yarn@4.12.0+sha512.f45ab632439a67f8bc759bf32ead036a1f413287b9042726b7cc4818b7b49e14e9423ba49b18f9e06ea4941c1ad062385b1d8760a8d5091a1a31e5f6219afca8"
+  }
 }
