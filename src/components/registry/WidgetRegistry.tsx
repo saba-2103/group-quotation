@@ -12,6 +12,7 @@ import { TabsContainer } from '../widgets/container/TabsContainer';
 import { FormContainer } from '../widgets/forms/FormContainer';
 import { KeyValueGrid } from '../widgets/data/KeyValueGrid';
 import { ErrorBanner } from '../widgets/items/ErrorBanner';
+import { DateWidget } from '../widgets/controls/dateWidget/index';
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
     'stack-layout': StackLayout,
@@ -28,6 +29,7 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
     'form-container': FormContainer,
     'key-value-grid': KeyValueGrid,
     'error-banner': ErrorBanner,
+    'date-widget': DateWidget,
 };
 
 export const getWidgetComponent = (type: string) => {
