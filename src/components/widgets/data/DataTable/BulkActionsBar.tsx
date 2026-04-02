@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ActionRenderer } from "../../controls/ActionRenderer";
 import { BulkActionsBarProps } from "./types";
 import { ActionConfig } from "@/types/widget";
+import { MAX_BULK_ACTIONS } from "./constants";
 
 export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
   selectedCount,
@@ -28,7 +29,7 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           </span>
           <div className="h-4 w-px bg-border" />
           <div className="flex items-center gap-2">
-            {bulkActions.slice(0, 4).map((action) => (
+            {bulkActions.slice(0, MAX_BULK_ACTIONS).map((action) => (
               <ActionRenderer
                 key={action.id}
                 action={{ ...action, variant: action.variant ?? "outline" } as ActionConfig}

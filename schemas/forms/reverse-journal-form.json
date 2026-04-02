@@ -1,0 +1,45 @@
+{
+    "id": "reverse-journal-form",
+    "type": "form-container",
+    "props": {
+        "title": "Reverse Journal",
+        "fields": [
+            {
+                "id": "reversalDate",
+                "name": "reversalDate",
+                "label": "Reversal Date",
+                "type": "date",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Reversal date is required"
+                    }
+                ]
+            },
+            {
+                "id": "reasonCode",
+                "name": "reasonCode",
+                "label": "Reason Code",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Reason code is required"
+                    }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-reverse-journal",
+                "label": "Reverse",
+                "submitAction": true,
+                "variant": "destructive",
+                "api": {
+                    "endpoint": "/api/accounting/journals/:journalNumber/reverse",
+                    "method": "POST"
+                }
+            }
+        ]
+    }
+}

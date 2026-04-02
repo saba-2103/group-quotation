@@ -1,5 +1,6 @@
 import { Column, Table } from "@tanstack/react-table";
-import { WidgetConfig, BaseActionConfig, ActionConfig } from "@/types/widget";
+import { WidgetConfig, ActionConfig } from "@/types/widget";
+import { VisibilityCondition } from "@/lib/conditions";
 
 // ── Row data ──────────────────────────────────────────────────────────────────
 
@@ -11,11 +12,13 @@ export interface ValueMapping {
   value: string;
   label: string;
   color?: string;
+  variant?: string;
 }
 
 export interface ColumnConfig {
   id?: string;
-  header: string;
+  header?: string;
+  label?: string;
   accessorKey: string;
   type?: string;
   width?: string;
@@ -27,12 +30,9 @@ export interface ColumnConfig {
   align?: "left" | "right";
   cellType?: string;
   valueMapping?: ValueMapping[];
+  linkRoute?: string;
+  format?: string;
 }
-
-// ── Row / bulk action config ──────────────────────────────────────────────────
-// Extends the existing BaseActionConfig from widget.ts.
-// actionProps carries the :id-interpolated route/endpoint for row-level actions.
-
 export interface RowActionProps {
   route?: string;
   api?: {
@@ -41,21 +41,28 @@ export interface RowActionProps {
   };
 }
 
-export interface RowActionConfig extends BaseActionConfig {
-  action?: ActionConfig;
+export type RowActionConfig = ActionConfig & {
   actionProps?: RowActionProps;
-}
+  visible?: VisibilityCondition;
+};
 
 // ── Pagination / empty state ──────────────────────────────────────────────────
 
 export interface PaginationConfig {
   enabled: boolean;
   pageSize: number;
+  pageSizeOptions?: number[];
 }
 
 export interface EmptyStateConfig {
   title?: string;
   description?: string;
+  action?: ActionConfig;
+}
+
+export interface DefaultSortConfig {
+  field: string;
+  direction: "asc" | "desc";
 }
 
 // ── Server-side fetch params ──────────────────────────────────────────────────
@@ -93,10 +100,11 @@ export interface TablePaginationProps {
   totalCount: number;
   pageIndex: number;
   pageSize: number;
+  pageSizeOptions?: number[];
 }
 
 export interface RowActionsProps {
   row: TableRow;
   rowActions: RowActionConfig[];
-  isScrollable: boolean;
+  rowIdKey: string;
 }
