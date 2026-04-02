@@ -11,7 +11,6 @@ import { FilterBar } from '../widgets/controls/FilterBar';
 import { TabsContainer } from '../widgets/container/TabsContainer';
 import { FormContainer } from '../widgets/forms/FormContainer';
 import { KeyValueGrid } from '../widgets/data/KeyValueGrid';
-import { ConfirmationDialog } from '../widgets/forms/ConfirmationDialog';
 import { ErrorBanner } from '../widgets/items/ErrorBanner';
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
@@ -28,7 +27,6 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
     'tabs-container': TabsContainer,
     'form-container': FormContainer,
     'key-value-grid': KeyValueGrid,
-    'confirmation-dialog': ConfirmationDialog,
     'error-banner': ErrorBanner,
 };
 
