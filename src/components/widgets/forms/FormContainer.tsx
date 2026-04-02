@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { WidgetConfig } from '@/types/widget';
 import { useForm, useWatch } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
@@ -10,9 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useActionHandler } from '@/hooks/useActionHandler';
+import { useOverlayStore } from '@/hooks/useOverlayStore';
 import { CalendarIcon } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { evaluateCondition } from '@/lib/conditions';
 
 // Helper to determine display value for view mode
 const ViewField = ({ field, value }: { field: any, value: any }) => {
@@ -63,28 +65,11 @@ const ViewField = ({ field, value }: { field: any, value: any }) => {
     return <p className="font-medium break-words">{displayValue}</p>;
 };
 
-// Helper to evaluate visibleWhen rules dynamically
-const evaluateCondition = (condition: any, formValues: any) => {
-    if (!condition) return true;
-    const { field, operator, value } = condition;
-    const fieldValue = formValues[field];
-
-    switch (operator) {
-        case 'eq': return fieldValue === value;
-        case 'neq': return fieldValue !== value;
-        case 'gt': return Number(fieldValue) > Number(value);
-        case 'lt': return Number(fieldValue) < Number(value);
-        case 'gte': return Number(fieldValue) >= Number(value);
-        case 'lte': return Number(fieldValue) <= Number(value);
-        case 'in': return Array.isArray(value) && value.includes(fieldValue);
-        case 'notIn': return Array.isArray(value) && !value.includes(fieldValue);
-        default: return true; // unsupported operators pass by default
-    }
-};
-
 export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { fields, actions, columns } = config.props || {};
     const handleAction = useActionHandler();
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
 
     // Dynamically build Zod schema from the schema validations
     const formSchema = useMemo(() => {
@@ -161,7 +146,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
 
     const formValues = useWatch({ control: form.control });
 
-    const onSubmit = (data: any) => {
+    const onSubmit = async (data: any) => {
         // Filter out fields that are hidden by visibleWhen before submitting
         const visibleData = { ...data };
         fields?.forEach((field: any) => {
@@ -172,13 +157,24 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
 
         const submitAction = actions?.find((a: any) => a.type === 'submit' || a.submitAction);
         if (submitAction) {
-            handleAction({
-                ...submitAction,
-                api: {
-                    ...submitAction.api,
-                    body: visibleData
-                }
-            });
+            setSubmitError(null);
+            setSubmitSuccess(null);
+            try {
+                await handleAction({
+                    ...submitAction,
+                    type: submitAction.api ? 'api-mutation' : (submitAction.type === 'submit' ? 'api-mutation' : submitAction.type),
+                    api: {
+                        ...submitAction.api,
+                        body: visibleData
+                    }
+                });
+                setSubmitSuccess(submitAction.successMessage || "Operation successful");
+                setTimeout(() => {
+                    useOverlayStore.getState().close(config.id);
+                }, 1500);
+            } catch (err: any) {
+                setSubmitError(err.message || "An error occurred");
+            }
         } else {
             console.log('Form Submitted (No Endpoint configured):', visibleData);
         }
@@ -200,7 +196,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                     control={form.control}
                                     name={field.name}
                                     render={({ field: fieldProps }) => (
-                                        <FormItem className={field.span ? `col-span-${field.span}` : ''}>
+                                        <FormItem className={`flex flex-col justify-end ${field.span ? `col-span-${field.span}` : ''}`}>
                                             <FormLabel className="text-sm font-semibold text-muted-foreground tracking-wide">{field.label}</FormLabel>
                                             <FormControl>
                                                 {config.props?.mode === 'view' ? (

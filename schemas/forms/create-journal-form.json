@@ -1,0 +1,105 @@
+{
+    "id": "create-journal-form",
+    "type": "form-container",
+    "props": {
+        "title": "Create Direct Journal",
+        "fields": [
+            {
+                "id": "journalNumber",
+                "name": "journalNumber",
+                "label": "Journal Number",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "journalDate",
+                "name": "journalDate",
+                "label": "Journal Date",
+                "type": "date",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "component",
+                "name": "component",
+                "label": "Component",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "lob",
+                "name": "lob",
+                "label": "Line of Business",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "businessProcessCode",
+                "name": "businessProcessCode",
+                "label": "Business Process Code",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "businessKey",
+                "name": "businessKey",
+                "label": "Business Key",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "accountGroup",
+                "name": "accountGroup",
+                "label": "Account Group",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-journal",
+                "label": "Create Journal",
+                "submitAction": true,
+                "variant": "primary",
+                "api": {
+                    "endpoint": "/api/accounting/journals",
+                    "method": "POST"
+                }
+            }
+        ]
+    }
+}

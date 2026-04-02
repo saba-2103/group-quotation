@@ -4,11 +4,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ActionConfig } from '@/types/widget';
 import { useRouter } from 'next/navigation';
 import { useOverlayStore } from '@/hooks/useOverlayStore';
+import { useWidgetState } from '@/hooks/useWidgetState';
 
 export const useActionHandler = () => {
     const router = useRouter();
     const queryClient = useQueryClient();
     const { open } = useOverlayStore();
+    const { setValue, patchValue, getValue } = useWidgetState();
 
     const { mutateAsync } = useMutation({
         mutationFn: async (action: ActionConfig) => {
@@ -21,9 +23,25 @@ export const useActionHandler = () => {
                 }
             });
             if (!res.ok) {
-                throw new Error(`Action failed: ${res.statusText}`);
+                let errorMessage = `Action failed: ${res.statusText}`;
+                try {
+                    const text = await res.text();
+                    if (text) {
+                        const errorData = JSON.parse(text);
+                        if (errorData.message) {
+                            errorMessage = errorData.message;
+                        } else if (errorData.error) {
+                            errorMessage = errorData.error;
+                        }
+                    }
+                } catch (e) {
+                    // Ignore JSON parsing errors for error responses
+                }
+                throw new Error(errorMessage);
             }
-            return res.json();
+            if (res.status === 204) return null;
+            const text = await res.text();
+            return text ? JSON.parse(text) : null;
         }
     });
 
@@ -45,7 +63,14 @@ export const useActionHandler = () => {
                         console.log("Success Toast:", action.successMessage); // Placeholder for toast
                     }
                     if (action.refreshKey) {
-                        queryClient.invalidateQueries({ queryKey: [action.refreshKey] });
+                        // Invalidate any query whose first queryKey element starts with the action.refreshKey
+                        const refreshKeyStr = action.refreshKey;
+                        queryClient.invalidateQueries({
+                            predicate: (query) => {
+                                const key = query.queryKey[0];
+                                return typeof key === 'string' && key.startsWith(refreshKeyStr);
+                            }
+                        });
                     }
                 }
                 break;
@@ -82,6 +107,22 @@ export const useActionHandler = () => {
                 break;
             case 'trigger-event':
                 console.log('Trigger Event:', action.target);
+                break;
+            case 'update-widget-state':
+                if (action.props) {
+                    const { key, operation, value } = action.props;
+                    switch (operation) {
+                        case 'set':
+                            setValue(key, value);
+                            break;
+                        case 'patch':
+                            patchValue(key, value);
+                            break;
+                        case 'toggle':
+                            setValue(key, !getValue(key));
+                            break;
+                    }
+                }
                 break;
         }
     };

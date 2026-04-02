@@ -1,16 +1,15 @@
 "use client";
 
 import { useCallback } from "react";
-import {
-  ColumnConfig,
-  TableRow,
-} from "../components/widgets/data/DataTable/types";
+import { ColumnConfig, TableRow } from "../components/widgets/data/DataTable/types";
+import { EXPORT_STYLE_CONFIG } from "../components/widgets/data/DataTable/constants";
 
 type ExportFormat = "csv" | "xlsx" | "pdf";
 
 interface UseTableExportOptions {
   columns: ColumnConfig[];
   widgetId?: string;
+  downloadRef: React.RefObject<HTMLAnchorElement | null>;
 }
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -26,20 +25,22 @@ const buildFilename = (widgetId?: string): string => {
 
 const toCell = (val: TableRow[string]) => String(val ?? "");
 
-const getHeaders = (cols: ColumnConfig[]) => cols.map((c) => c.header);
+const getHeaders = (cols: ColumnConfig[]): string[] =>
+  cols.map((c) => c.header ?? c.label ?? c.accessorKey);
 
 const getMatrix = (rows: TableRow[], cols: ColumnConfig[]) =>
   rows.map((row) => cols.map((c) => toCell(row[c.accessorKey])));
 
-// Append to body so all browsers reliably fire the download
-const triggerDownload = (blob: Blob, filename: string) => {
+const triggerDownload = (
+  blob: Blob,
+  filename: string,
+  ref: React.RefObject<HTMLAnchorElement | null>,
+) => {
+  if (!ref.current) return;
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  ref.current.href = url;
+  ref.current.download = filename;
+  ref.current.click();
   URL.revokeObjectURL(url);
 };
 
@@ -52,12 +53,14 @@ const exportCSV = (
   rows: TableRow[],
   cols: ColumnConfig[],
   filename: string,
+  ref: React.RefObject<HTMLAnchorElement | null>,
 ) => {
   const matrix = [getHeaders(cols), ...getMatrix(rows, cols)];
   const csv = matrix.map((row) => row.map(escapeCsv).join(",")).join("\n");
   triggerDownload(
     new Blob([csv], { type: "text/csv;charset=utf-8;" }),
     `${filename}.csv`,
+    ref,
   );
 };
 
@@ -67,44 +70,33 @@ const exportXLSX = async (
   rows: TableRow[],
   cols: ColumnConfig[],
   filename: string,
+  ref: React.RefObject<HTMLAnchorElement | null>,
 ) => {
   const { utils, write } = await import("xlsx");
   const ws = utils.aoa_to_sheet([getHeaders(cols), ...getMatrix(rows, cols)]);
   const wb = utils.book_new();
-  utils.book_append_sheet(wb, ws, "Sheet1");
-  // Use write + Blob instead of writeFile to avoid Node.js fs in browser
+  utils.book_append_sheet(wb, ws, EXPORT_STYLE_CONFIG.xlsx.sheetName);
   const buffer: ArrayBuffer = write(wb, { bookType: "xlsx", type: "array" });
   triggerDownload(
     new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     }),
     `${filename}.xlsx`,
+    ref,
   );
 };
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
 
-type PdfMake = {
-  vfs: unknown;
-  createPdf: (def: object) => { download: (name: string) => void };
-};
-
-const loadPdfMake = async (): Promise<PdfMake> => {
-  // Sequential import so vfs_fonts is fully resolved before we assign it
-  const { default: pdfMake } = await import("pdfmake/build/pdfmake");
-  const fontsModule = await import("pdfmake/build/vfs_fonts");
-  const instance = pdfMake as unknown as PdfMake;
-
-  // In webpack/Next.js, CJS module.exports lands on .default.
-  // Spread to a plain object so pdfmake's VFS bracket-access always works.
-  const fontsDefault = (
-    fontsModule as unknown as { default?: Record<string, string> }
-  ).default;
-  instance.vfs = fontsDefault
-    ? { ...fontsDefault }
-    : { ...(fontsModule as unknown as Record<string, string>) };
-
-  return instance;
+const loadPdfMake = async () => {
+  const [pdfModule, fontsModule] = await Promise.all([
+    import("pdfmake/build/pdfmake"),
+    import("pdfmake/build/vfs_fonts"),
+  ]);
+  const pdfMake = pdfModule.default;
+  // pdfmake 0.3.x uses addVirtualFileSystem; vfs_fonts exports the flat font dictionary directly.
+  pdfMake.addVirtualFileSystem(fontsModule.default);
+  return pdfMake;
 };
 
 const exportPDF = async (
@@ -112,24 +104,25 @@ const exportPDF = async (
   cols: ColumnConfig[],
   filename: string,
 ) => {
-  const pdfMake = await loadPdfMake();
+  const instance = await loadPdfMake();
+  const { pdf } = EXPORT_STYLE_CONFIG;
   const headers = getHeaders(cols);
 
   const headerRow = headers.map((h) => ({
     text: h,
     bold: true,
-    fontSize: 9,
-    fillColor: "#1e1e1e",
-    color: "#ffffff",
+    fontSize: pdf.fontSize,
+    fillColor: pdf.headerFillColor,
+    color: pdf.headerTextColor,
   }));
   const body = getMatrix(rows, cols).map((row) =>
-    row.map((cell) => ({ text: cell, fontSize: 9 })),
+    row.map((cell) => ({ text: cell, fontSize: pdf.fontSize })),
   );
 
-  pdfMake
+  instance
     .createPdf({
-      pageOrientation: "landscape",
-      defaultStyle: { font: "Roboto" },
+      pageOrientation: pdf.orientation,
+      defaultStyle: { font: pdf.font },
       content: [
         {
           table: {
@@ -138,7 +131,8 @@ const exportPDF = async (
             body: [headerRow, ...body],
           },
           layout: {
-            fillColor: (i: number) => (i > 0 && i % 2 === 0 ? "#f5f5f5" : null),
+            fillColor: (i: number) =>
+              i > 0 && i % 2 === 0 ? pdf.alternateRowColor : null,
           },
         },
       ],
@@ -148,29 +142,20 @@ const exportPDF = async (
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 
-const exporters: Record<
-  ExportFormat,
-  (
-    rows: TableRow[],
-    cols: ColumnConfig[],
-    filename: string,
-  ) => Promise<void> | void
-> = {
-  csv: exportCSV,
-  xlsx: exportXLSX,
-  pdf: exportPDF,
-};
-
 export const useTableExport = ({
   columns,
   widgetId,
+  downloadRef,
 }: UseTableExportOptions) => {
   const exportData = useCallback(
     async (rows: TableRow[], format: ExportFormat) => {
       if (rows.length === 0) return;
-      await exporters[format](rows, columns, buildFilename(widgetId));
+      const filename = buildFilename(widgetId);
+      if (format === "csv") exportCSV(rows, columns, filename, downloadRef);
+      else if (format === "xlsx") await exportXLSX(rows, columns, filename, downloadRef);
+      else await exportPDF(rows, columns, filename);
     },
-    [columns, widgetId],
+    [columns, widgetId, downloadRef],
   );
 
   return { exportData };
