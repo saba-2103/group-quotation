@@ -221,23 +221,104 @@ Trigger: when the team needs to change a schema without a BFF deploy.
 
 ```sql
 CREATE TABLE view_schemas (
+
+  -- Surrogate primary key. Never exposed to clients.
+  -- Why: gives every row a stable identity independent of business keys,
+  --      needed for versioning (multiple rows share the same view_id).
+  -- Value: auto-generated UUID. No input required.
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- The logical name of the page or view this schema belongs to.
+  -- Why: the primary lookup key — "give me the schema for this view".
+  -- Values: 'quotations-list', 'dashboard', 'claim-detail', 'member-upload'.
+  --         Convention: kebab-case, matches the route segment.
+  -- Source: set by the frontend engineer when creating a schema. Matches
+  --         the viewId passed to useViewMetadata() on the corresponding page.
   view_id     VARCHAR(255) NOT NULL,
-  context     JSONB        NOT NULL DEFAULT '{}',  -- see §9 for context dimensions
+
+  -- Free-form JSONB map of dimension key-value pairs that narrow this schema
+  -- to a specific audience. See §9 for the full context resolution model.
+  -- Why: one view_id can have many schema variants (per tenant, role, locale, etc.)
+  --      without needing a column per dimension. Adding a new dimension (e.g. clientId)
+  --      requires no migration — just write a new row with the new key.
+  -- Values:
+  --   {}                                          → global default (matches everyone)
+  --   { "tenantId": "group-insurance" }           → all users of that tenant
+  --   { "tenantId": "gi", "role": "underwriter" } → specific role within a tenant
+  --   { "tenantId": "gi", "lob": "motor" }        → specific line of business
+  --   { "tenantId": "gi", "locale": "hi" }        → Hindi locale override
+  -- Source: set by the frontend engineer when authoring a variant schema.
+  --         Values must come from the Standard Context Dimension Registry (§9).
+  --         Never set from user input — always from verified session data at query time.
+  context     JSONB        NOT NULL DEFAULT '{}',
+
+  -- Manual tiebreaker when two schemas have the same specificity score.
+  -- Why: if two schemas both match with the same number of context dimensions
+  --      (e.g. { tenantId, role } vs { tenantId, lob } — both score 2),
+  --      the one with the higher priority wins.
+  -- Values: any integer. 0 = default. 10 = higher priority. Negative allowed.
+  -- Source: set by the frontend engineer. Use sparingly — most schemas don't need it.
+  --         Only required when two equally-specific variants exist for the same view.
   priority    INTEGER      NOT NULL DEFAULT 0,
+
+  -- The full WidgetConfig tree for this view, as a JSON object.
+  -- Why: this is the payload — what WidgetRenderer receives and renders.
+  -- Values: a valid WidgetConfig JSON object. Validated against WidgetConfigSchema
+  --         (Zod) at write time; a schema that fails validation is never stored.
+  -- Source: authored by a frontend engineer, either as a JSON file (Phase 1)
+  --         or via the Schema Admin API POST endpoint (Phase 6).
   config      JSONB        NOT NULL,
+
+  -- Monotonically increasing integer. Incremented on every write to this (view_id, context).
+  -- Why: enables history browsing and rollback without deleting old rows.
+  --      Old versions are kept with is_active = false.
+  -- Values: 1 on first write, 2 on first update, 3 on second update, etc.
+  -- Source: computed by the BFF admin write handler — never set by the caller.
   version     INTEGER      NOT NULL DEFAULT 1,
+
+  -- Whether this row is the currently-served version for its (view_id, context).
+  -- Why: versioning is achieved by keeping all past rows and flipping this flag.
+  --      Only the row with is_active = true is returned by the metadata endpoint.
+  --      Rollback = set an old row back to true (and the current one to false).
+  -- Values: true (this is the live schema) | false (superseded or deleted).
+  -- Source: managed entirely by the BFF write handler. Callers never set this directly.
   is_active   BOOLEAN      NOT NULL DEFAULT true,
+
+  -- Timestamp of when this version was written.
+  -- Why: audit trail — when was this schema changed?
+  -- Values: UTC timestamp, set automatically at insert time.
+  -- Source: database default. Never set by the caller.
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+
+  -- Identity of the engineer or system that wrote this version.
+  -- Why: audit trail — who made this change? Useful when debugging a bad deploy.
+  -- Values: email address or username from the authenticated admin session.
+  --         e.g. 'priya@company.com', 'ci-bot'.
+  -- Source: extracted from the admin API session by the BFF handler. Never trusted from
+  --         the request body.
   created_by  VARCHAR(255),
+
+  -- Free-text description of what changed and why.
+  -- Why: human-readable changelog entry. Makes history browsing useful.
+  -- Values: 'Added risk-level column for underwriter role',
+  --         'Removed bulk-action button — not ready for prod',
+  --         'Hotfix: corrected endpoint path'.
+  -- Source: optional field in the admin API request body, written by the engineer.
   change_note TEXT
+
 );
 
--- One active schema per (view_id, context) combination
+-- Enforces that only one row per (view_id, context) combination is active at a time.
+-- Without this, two rows could both be active for the same view + context, and the
+-- resolution query would return an arbitrary winner.
+-- The partial index (WHERE is_active = true) means old inactive versions don't conflict.
 CREATE UNIQUE INDEX view_schemas_active_unique
   ON view_schemas (view_id, context)
   WHERE is_active = true;
 
+-- GIN index on the context JSONB column.
+-- Required for the @> containment operator used in the resolution query (§9).
+-- Without it, every schema lookup would be a full table scan.
 CREATE INDEX view_schemas_gin ON view_schemas USING gin (context jsonb_path_ops);
 ```
 
