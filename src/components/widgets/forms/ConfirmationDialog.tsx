@@ -1,77 +1,59 @@
 import React, { useState } from 'react';
 import { useOverlayStore } from '@/hooks/useOverlayStore';
+import { useActionHandler } from '@/hooks/useActionHandler';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/components/widgets/controls/ActionButton';
 import { ActionConfig } from '@/types/widget';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+type ApiMutationAction = Extract<ActionConfig, { type: 'api-mutation' }>;
 
 interface ConfirmationDialogProps {
-    id: string; // The store ID
-    action: ActionConfig; // The mutation action configuration passed as payload data
+    id: string;
+    action: ApiMutationAction;
 }
 
 export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({ id, action }) => {
     const { close } = useOverlayStore();
-    const queryClient = useQueryClient();
-    const [error, setError] = useState<string | null>(null);
-
-    const { mutateAsync, isPending } = useMutation({
-        mutationFn: async (act: ActionConfig) => {
-            if (act.type !== 'api-mutation' || !act.api) return;
-            const res = await fetch(act.api.endpoint, {
-                method: act.api.method,
-                body: JSON.stringify(act.api.body),
-                headers: { 'Content-Type': 'application/json' }
-            });
-            if (!res.ok) throw new Error(`Action failed: ${res.statusText}`);
-            if (res.status === 204) return null;
-            const text = await res.text();
-            return text ? JSON.parse(text) : null;
-        }
-    });
-
-    if (action.type !== 'api-mutation') return null;
+    const handleAction = useActionHandler();
+    const [mutationError, setMutationError] = useState<string | null>(null);
+    const [isPending, setIsPending] = useState(false);
 
     const handleConfirm = async () => {
         try {
-            setError(null);
-            await mutateAsync(action);
-            if (action.successMessage) {
-                console.log("Success Toast:", action.successMessage); // Placeholder toast
-            }
-            if (action.refreshKey) {
-                // Allow for partial matching of the query key (e.g. invalidate all queries starting with the endpoint)
-                queryClient.invalidateQueries({ queryKey: [action.refreshKey] });
-            }
+            setMutationError(null);
+            setIsPending(true);
+            // Strip `confirm` so useActionHandler executes the mutation directly
+            // without re-opening a confirmation dialog.
+            await handleAction({ ...action, confirm: undefined });
             close(id);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Confirmation failed.");
+            setMutationError(err instanceof Error ? err.message : 'Confirmation failed.');
+        } finally {
+            setIsPending(false);
         }
     };
 
-    const isDestructive = action.variant === "destructive";
-
     return (
-        <Dialog open={true} onOpenChange={(open: boolean) => !open && close(id)}>
-            <DialogContent className="max-w-md">
+        <Dialog open={true} onOpenChange={() => {}}>
+            <DialogContent
+                onInteractOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+            >
                 <DialogHeader>
-                    <DialogTitle>{action.confirm?.title || action.label || "Confirm Action"}</DialogTitle>
-                    <DialogDescription>{action.confirm?.message || "Are you sure you want to proceed?"}</DialogDescription>
+                    <DialogTitle>{action.confirm?.title ?? action.label ?? 'Confirm Action'}</DialogTitle>
+                    <DialogDescription>{action.confirm?.message ?? 'Are you sure you want to proceed?'}</DialogDescription>
                 </DialogHeader>
 
-                {error && <p className="text-sm text-destructive text-center mt-2">{error}</p>}
+                {mutationError && (
+                    <p className="text-sm text-destructive text-center mt-2">{mutationError}</p>
+                )}
 
                 <DialogFooter className="flex-row gap-3 sm:justify-end mt-4">
                     <Button variant="outline" onClick={() => close(id)} disabled={isPending}>
                         Cancel
                     </Button>
-                    <Button
-                        variant={isDestructive ? "destructive" : "default"}
-                        onClick={handleConfirm}
-                        disabled={isPending}
-                    >
-                        {isPending ? "Processing..." : (action.label || "Confirm")}
-                    </Button>
+                    <ActionButton action={action} onClick={handleConfirm} disabled={isPending} />
                 </DialogFooter>
             </DialogContent>
         </Dialog>
