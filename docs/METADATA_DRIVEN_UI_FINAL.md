@@ -33,7 +33,7 @@ The problem is one thing: **schemas are bundled inside the frontend deploy artif
 
 ### What changes
 
-Exactly one thing changes: **where the `WidgetConfig` tree comes from**.
+Two things would change: **where the `WidgetConfig` tree comes from** and **Data fetches would be proxied by BFF**
 
 | Layer | Before | After |
 |-------|--------|-------|
