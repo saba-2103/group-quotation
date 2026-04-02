@@ -10,26 +10,26 @@ const preview: Preview = {
         QueryClientProvider,
         {
           client: new QueryClient({
-            defaultOptions: { queries: { retry: false, staleTime: Infinity } },
-          }),
+            defaultOptions: { queries: { retry: false, staleTime: Infinity } }
+          })
         },
-        React.createElement(Story),
-      ),
+        React.createElement(Story)
+      )
   ],
   parameters: {
     nextjs: {
-      appDirectory: true,
+      appDirectory: true
     },
     controls: {
       matchers: {
         color: /(background|color)$/i,
-        date: /Date$/i,
-      },
+        date: /Date$/i
+      }
     },
     a11y: {
-      test: "todo",
-    },
-  },
+      test: "todo"
+    }
+  }
 };
 
 export default preview;

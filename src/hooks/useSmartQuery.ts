@@ -43,7 +43,7 @@ export function useSmartQuery(dataSource?: DataSourceConfig) {
                 }
             }
 
-            const res = await fetch(url, {
+      const res = await fetch(url, {
                 method: api.method,
                 body: api.method !== 'GET' ? JSON.stringify(allParams) : undefined,
                 headers: {
@@ -53,8 +53,15 @@ export function useSmartQuery(dataSource?: DataSourceConfig) {
             if (!res.ok) {
                 throw new Error(`Failed to fetch: ${res.statusText}`);
             }
-            return res.json();
-        },
+      const jsonData = await res.json();
+
+      // If valueKey is specified, extract that nested property
+      if (valueKey && jsonData && typeof jsonData === "object") {
+        return (jsonData as Record<string, any>)[valueKey] ?? jsonData;
+      }
+
+      return jsonData;
+    },
         refetchInterval: refreshInterval,
         enabled: !!api,
     });
