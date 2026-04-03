@@ -1,0 +1,94 @@
+{
+    "id": "journals-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "journals",
+        "label": "Accounting Journals",
+        "icon": "BookOpenText"
+    },
+    "children": [
+        {
+            "id": "journals-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/journals/search?page=0&size=50",
+                    "method": "GET"
+                },
+                "fallbackData": []
+            },
+            "props": {
+                "title": "Accounting Journals",
+                "headerActions": [
+                    {
+                        "id": "create-journal-btn",
+                        "label": "Create Direct Journal",
+                        "type": "open-modal",
+                        "target": "create-journal-form",
+                        "variant": "default"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "journalNumber",
+                        "accessorKey": "journalNumber",
+                        "label": "Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journalDate",
+                        "accessorKey": "journalDate",
+                        "label": "Journal Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "type",
+                        "accessorKey": "type",
+                        "label": "Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accountGroup",
+                        "accessorKey": "accountGroup",
+                        "label": "Account Group",
+                        "type": "text"
+                    },
+                    {
+                        "id": "state",
+                        "accessorKey": "state",
+                        "label": "State",
+                        "type": "badge"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "post-journal-btn",
+                        "label": "Post Journal",
+                        "type": "api-mutation",
+                        "visible": {
+                            "field": "state",
+                            "operator": "eq",
+                            "value": "PENDING"
+                        },
+                        "api": {
+                            "endpoint": "/api/accounting/journals/:journalNumber/post",
+                            "method": "POST"
+                        },
+                        "refreshKey": "/api/accounting/journals/search?page=0&size=50"
+                    },
+                    {
+                        "id": "reverse-journal-btn",
+                        "label": "Reverse",
+                        "type": "open-modal",
+                        "target": "reverse-journal-form",
+                        "visible": {
+                            "field": "state",
+                            "operator": "eq",
+                            "value": "POSTED"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

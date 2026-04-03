@@ -1,67 +1,82 @@
-import React from 'react';
-import { WidgetConfig } from '@/types/widget';
-import { useSmartQuery } from '@/hooks/useSmartQuery';
-import { Badge } from '@/components/ui/badge';
-import { DateDisplay } from '@/components/widgets/controls/dateWidget/DateDisplay';
+import React from "react";
+import { WidgetConfig } from "@/types/widget";
+import { useSmartQuery } from "@/hooks/useSmartQuery";
+import { KeyValueGridWidgetProps, ApiResponseData, DataRecord, KeyValueField, FieldValue, BadgeValueMapping } from "./types";
+import { Badge } from "@/components/ui/badge";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ErrorState } from "@/components/ui/error-state";
+import { DateDisplay } from "@/components/widgets/controls/dateWidget/DateDisplay";
+import { BADGE_COLOR_TO_VARIANT } from "./DataTable/constants";
+import * as Icons from "lucide-react";
 
-interface KeyValueField {
-    id: string;
-    label: string;
-    accessorKey: string;
-    type?: string;
-    icon?: string;
+function renderFieldValue(field: KeyValueField, value: FieldValue | undefined): React.ReactNode {
+  if (value === null || value === undefined) return <span>-</span>;
+
+  switch (field.type) {
+    case "badge": {
+      const badgeMapping: BadgeValueMapping | undefined = field.valueMapping?.find(
+        (m) => m.value === String(value)
+      );
+      const resolvedVariant =
+        badgeMapping?.variant ??
+        BADGE_COLOR_TO_VARIANT[badgeMapping?.color ?? ""] ??
+        "outline";
+      return (
+        <Badge variant={resolvedVariant as Parameters<typeof Badge>[0]["variant"]}>
+          {badgeMapping?.label ?? String(value)}
+        </Badge>
+      );
+    }
+    case "date":
+      return <DateDisplay value={String(value)} />;
+    default:
+      return <span>{String(value)}</span>;
+  }
 }
-
-interface BadgeValue {
-    label: string;
-    variant?: string;
-}
-
-type FieldValue = string | number | boolean | BadgeValue | null | undefined;
 
 export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => {
-    const { props = {}, dataSource } = config;
-    const fields = (props.fields ?? []) as KeyValueField[];
+  const { props = {}, dataSource } = config;
+  const { fields = [], data: propsData, isLoading: propsLoading, error: propsError } = props as KeyValueGridWidgetProps;
 
-    const { data, isLoading, error } = useSmartQuery(dataSource);
+  const {
+    data: queryData,
+    isLoading: queryIsLoading,
+    error: queryError
+  } = useSmartQuery(propsData == null ? dataSource : undefined);
 
-    if (isLoading) {
-        return <div className="p-6 text-sm text-muted-foreground animate-pulse">Loading summary...</div>;
-    }
+  const isLoading = propsLoading ?? queryIsLoading;
+  const error = propsError ?? queryError;
 
-    if (error) {
-        return <div className="p-6 text-sm text-destructive">Failed to load data</div>;
-    }
+  if (isLoading) return <LoadingState message="Loading" />;
+  if (error) return <ErrorState message="Failed to load data" />;
 
-    const sourceData = data as Record<string, FieldValue> | null;
+  const rawData = propsData ?? (queryData as ApiResponseData | null) ?? undefined;
+  const nestedValue = dataSource?.valueKey && rawData ? rawData[dataSource.valueKey] : undefined;
+  const sourceData: DataRecord | undefined =
+    nestedValue !== null && nestedValue !== undefined && typeof nestedValue === "object"
+      ? nestedValue
+      : (rawData as DataRecord | undefined);
 
-    return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-card rounded-lg border shadow-sm">
-            {fields.map((field) => {
-                const value = sourceData ? sourceData[field.accessorKey] : undefined;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-card rounded-lg border shadow-sm">
+      {fields.map((field: KeyValueField) => {
+        const iconKey = field.icon as keyof typeof Icons;
+        const IconComponent = field.icon
+          ? ((Icons[iconKey] as React.ComponentType<{ className?: string }>) ?? null)
+          : null;
+        const value = sourceData ? sourceData[field.accessorKey] : undefined;
 
-                return (
-                    <div key={field.id} className="flex flex-col space-y-1.5">
-                        <div className="flex items-center text-xs text-muted-foreground space-x-1.5 font-medium uppercase tracking-wider">
-                            <span>{field.label}</span>
-                        </div>
-                        <div className="text-sm font-semibold text-foreground">
-                            {field.type === 'badge' ? (() => {
-                                const badgeVal = value as BadgeValue | null | undefined;
-                                return (
-                                    <Badge variant={badgeVal?.variant as Parameters<typeof Badge>[0]['variant']}>
-                                        {badgeVal?.label ?? '-'}
-                                    </Badge>
-                                );
-                            })() : field.type === 'date' ? (
-                                <DateDisplay value={value ? String(value) : ''} />
-                            ) : (
-                                <span>{value ? String(value) : '-'}</span>
-                            )}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
+        return (
+          <div key={field.id} className="flex flex-col space-y-1.5">
+            <div className="flex items-center text-xs text-muted-foreground space-x-1.5 font-medium uppercase tracking-wider">
+              <span>{field.label}</span>
+            </div>
+            <div className="text-sm font-semibold text-foreground">
+              {renderFieldValue(field, value)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 };

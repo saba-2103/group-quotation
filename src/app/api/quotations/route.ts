@@ -13,7 +13,7 @@ const pendingQuotationsMockData: any[] = [
         mainStatus: "Pending",
         secondaryStatus: "Initial due diligence with Prospect",
         lineOfBusiness: "Term Life",
-        transactionStatus: { label: "Draft", variant: "grey" },
+        transactionStatus: "DR",
         channel: "Broker",
         agentName: "Marsh Insurance Brokers",
     },
@@ -29,7 +29,7 @@ const pendingQuotationsMockData: any[] = [
         mainStatus: "Pending",
         secondaryStatus: "Gathering initial data from Prospect",
         lineOfBusiness: "Term Life",
-        transactionStatus: { label: "Completed", variant: "info" },
+        transactionStatus: "CM",
         channel: "Agent",
         agentName: "AON Insurance Brokers",
     },
@@ -45,7 +45,7 @@ const pendingQuotationsMockData: any[] = [
         mainStatus: "Pending",
         secondaryStatus: "Pricing",
         lineOfBusiness: "Credit Life",
-        transactionStatus: { label: "Review", variant: "warning" },
+        transactionStatus: "RV",
         channel: "Direct",
         agentName: "",
     },
@@ -61,7 +61,7 @@ const pendingQuotationsMockData: any[] = [
         mainStatus: "Pending",
         secondaryStatus: "Quote follow-up",
         lineOfBusiness: "Credit Life",
-        transactionStatus: { label: "Review Completed", variant: "teal" },
+        transactionStatus: "RC",
         channel: "Broker",
         agentName: "Willis Towers Watson",
     },
@@ -77,7 +77,7 @@ const pendingQuotationsMockData: any[] = [
         mainStatus: "Pending",
         secondaryStatus: "Quote accepted by Prospect",
         lineOfBusiness: "Credit Life",
-        transactionStatus: { label: "Active", variant: "success" },
+        transactionStatus: "AC",
         channel: "Agent",
         agentName: "John Smith",
     },
@@ -93,7 +93,7 @@ const pendingQuotationsMockData: any[] = [
         mainStatus: "Pending",
         secondaryStatus: "Awaiting Documents",
         lineOfBusiness: "Term Life",
-        transactionStatus: { label: "Active Draft", variant: "amber" },
+        transactionStatus: "AD",
         channel: "Broker",
         agentName: "Aon Hewitt",
     },
@@ -109,14 +109,36 @@ const pendingQuotationsMockData: any[] = [
         mainStatus: "Pending",
         secondaryStatus: "Withdrawn",
         lineOfBusiness: "Credit Life",
-        transactionStatus: { label: "In-Active", variant: "destructive" },
+        transactionStatus: "IA",
         channel: "Direct",
         agentName: "",
     },
 ];
 
-export async function GET() {
-    return NextResponse.json(pendingQuotationsMockData);
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+
+    let filteredData = [...pendingQuotationsMockData];
+
+    // Basic filtering logic
+    searchParams.forEach((value, key) => {
+        if (!value || value === 'All') return;
+
+        filteredData = filteredData.filter(item => {
+            const itemValue = (item as any)[key];
+            if (itemValue === undefined) return true; // Skip keys not in data
+
+            // Case-insensitive partial match for strings
+            if (typeof itemValue === 'string') {
+                return itemValue.toLowerCase().includes(value.toLowerCase());
+            }
+
+            // Exact match for other types
+            return String(itemValue) === value;
+        });
+    });
+
+    return NextResponse.json(filteredData);
 }
 
 export async function POST(request: Request) {
@@ -128,7 +150,7 @@ export async function POST(request: Request) {
         quoteVersion: "V1.0",
         mainStatus: "Pending",
         secondaryStatus: "Draft",
-        transactionStatus: { label: "Active", variant: "success" },
+        transactionStatus: "AC",
     };
     pendingQuotationsMockData.push(newQuotation);
     return NextResponse.json(newQuotation, { status: 201 });

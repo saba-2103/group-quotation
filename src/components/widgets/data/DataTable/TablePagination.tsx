@@ -23,7 +23,9 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
   totalCount,
   pageIndex,
   pageSize,
+  pageSizeOptions,
 }) => {
+  const sizeOptions = pageSizeOptions ?? PAGE_SIZE_OPTIONS;
   return (
     <div className="flex items-center justify-between px-2 py-1">
       <span className="text-sm text-muted-foreground">
@@ -46,7 +48,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {PAGE_SIZE_OPTIONS.map((s) => (
+              {sizeOptions.map((s) => (
                 <SelectItem key={s} value={String(s)}>
                   {s}
                 </SelectItem>
