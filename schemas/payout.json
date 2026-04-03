@@ -1,0 +1,29 @@
+{
+    "id": "payout-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-8"
+    },
+    "children": [
+        {
+            "id": "payout-header",
+            "type": "page-header",
+            "props": {
+                "title": "Payouts",
+                "description": "Manage claim payouts, refunds, and commissions"
+            }
+        },
+        {
+            "id": "payout-tabs",
+            "type": "tabs-container",
+            "props": {
+                "defaultValue": "payouts"
+            },
+            "children": [
+                {
+                    "$ref": "schemas/tabs/payout/payouts.json"
+                }
+            ]
+        }
+    ]
+}

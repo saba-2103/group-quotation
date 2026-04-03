@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, MoreHorizontal, Trash2 } from "lucide-react";
-import { WidgetConfig } from "@/types/widget";
+import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
+import { WidgetConfig, ActionConfig } from "@/types/widget";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     DropdownMenu,
@@ -20,22 +20,41 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useActionHandler } from "@/hooks/useActionHandler";
-import { useOverlayStore } from "@/hooks/useOverlayStore";
-import { ConfirmationDialog } from "../forms/ConfirmationDialog";
+import { ActionRenderer } from "@/components/widgets/controls/ActionRenderer";
 
 const WidgetRenderer = React.lazy(() =>
     import("@/components/registry/WidgetRenderer").then((m) => ({ default: m.WidgetRenderer }))
 );
 
-const DELETE_DIALOG_ID = "tabs-delete-confirm";
+// ── Prop interfaces ───────────────────────────────────────────────────────────
+
+interface TabsContainerProps {
+    hasWorkflow?: boolean;
+    confirmNavigation?: boolean;
+    prevLabel?: string;
+    nextLabel?: string;
+    completeLabel?: string;
+}
+
+interface TabPanelProps {
+    label?: string;
+    icon?: string;
+    deleteAction?: ActionConfig;
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     const { children } = config;
-    const hasWorkflow: boolean = config.props?.hasWorkflow ?? false;
-    const confirmNavigation: boolean = config.props?.confirmNavigation ?? false;
+    const {
+        hasWorkflow = false,
+        confirmNavigation = false,
+        prevLabel = "Prev",
+        nextLabel = "Next",
+        completeLabel = "Complete",
+    } = (config.props ?? {}) as TabsContainerProps;
 
     const handleAction = useActionHandler();
-    const { open, openOverlays } = useOverlayStore();
 
     const [activeTab, setActiveTab] = useState(children?.[0]?.id ?? "");
     const [pendingTab, setPendingTab] = useState<string | null>(null);
@@ -46,8 +65,8 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
     const currentIndex = children.findIndex((t) => t.id === activeTab);
     const isFirst = currentIndex === 0;
     const isLast = currentIndex === children.length - 1;
-    const currentTab = children[currentIndex];
-    const deleteAction = currentTab?.props?.deleteAction;
+    const currentTabProps = (children[currentIndex]?.props ?? {}) as TabPanelProps;
+    const deleteAction = currentTabProps.deleteAction;
 
     // ── Navigation ────────────────────────────────────────────────────────────
 
@@ -121,42 +140,33 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                 {/* Footer: Delete / Prev / Next / Complete */}
                 <div className="flex items-center justify-between pt-4 mt-4 border-t">
                     <div>
-                        {deleteAction && (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => open(DELETE_DIALOG_ID, 'dialog', deleteAction)}
-                            >
-                                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                                Delete
-                            </Button>
-                        )}
+                        {deleteAction && <ActionRenderer action={deleteAction} />}
                     </div>
 
                     <div className="flex items-center gap-2">
                         {!isFirst && (
                             <Button variant="outline" size="sm" onClick={() => requestNavigate(children[currentIndex - 1].id)}>
                                 <ChevronLeft className="h-4 w-4 mr-1" />
-                                Prev
+                                {prevLabel}
                             </Button>
                         )}
                         {!isLast && (
                             <Button size="sm" onClick={() => requestNavigate(children[currentIndex + 1].id)}>
-                                Next
+                                {nextLabel}
                                 <ChevronRight className="h-4 w-4 ml-1" />
                             </Button>
                         )}
                         {isLast && hasWorkflow && (
-                            <Button size="sm" onClick={() => handleAction({ id: 'complete', type: 'trigger-event', target: 'complete' })}>
-                                Complete
+                            <Button size="sm" onClick={() => handleAction({ id: "complete", type: "trigger-event", target: "complete" })}>
+                                {completeLabel}
                             </Button>
                         )}
                     </div>
                 </div>
             </Tabs>
 
-            {/* Nav guard — simple dialog, not an API action */}
-            <Dialog open={showNavGuard} onOpenChange={(open) => !open && cancelNav()}>
+            {/* Nav guard — local UI dialog, not an API action */}
+            <Dialog open={showNavGuard} onOpenChange={(isOpen) => !isOpen && cancelNav()}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
                         <DialogTitle>Unsaved Changes</DialogTitle>
@@ -167,20 +177,15 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                     <DialogFooter className="flex-row gap-3 sm:justify-end mt-4">
                         <Button variant="outline" onClick={cancelNav}>Stay</Button>
                         <Button variant="ghost" onClick={confirmNav}>Discard & Continue</Button>
-                        <Button onClick={() => { handleAction({ id: 'save', type: 'trigger-event', target: 'save' }); confirmNav(); }}>
+                        <Button onClick={async () => {
+                            await handleAction({ id: "save", type: "trigger-event", target: "save" });
+                            confirmNav();
+                        }}>
                             Save & Continue
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-
-            {/* Delete — reuses ConfirmationDialog via overlay store */}
-            {openOverlays[DELETE_DIALOG_ID] && (
-                <ConfirmationDialog
-                    id={DELETE_DIALOG_ID}
-                    action={openOverlays[DELETE_DIALOG_ID].data}
-                />
-            )}
         </>
     );
 };

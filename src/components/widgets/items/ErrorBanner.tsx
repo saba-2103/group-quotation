@@ -39,7 +39,7 @@ export const ErrorBanner: React.FC<{ config: WidgetConfig }> = ({ config }) => {
           key={error.error_code}
           className={cn(
             "group relative flex items-start gap-0 overflow-hidden rounded-lg transition-all duration-350 ease-in-out",
-            "border border-red-300 bg-red-50 dark:border-red-900/40 dark:from-red-950/40 dark:to-rose-950/20",
+            "border border-red-300 bg-red-50 dark:border-red-900/40 dark:bg-red-950/40",
             dismissing.has(error.error_code)
               ? "translate-x-full opacity-0 max-h-0 mb-0"
               : "translate-x-0 opacity-100 max-h-24",

@@ -93,9 +93,10 @@ import { Meta } from "@storybook/addon-docs/blocks";
 <div className="intro-section">
   # Keystone UI — Component Library
 
-  This is the Storybook for **Keystone UI**, a schema-driven UI platform built on Next.js and deployed on Cloudflare Workers via OpenNext.
+This is the Storybook for **Keystone UI**, a schema-driven UI platform built on Next.js and deployed on Cloudflare Workers via OpenNext.
 
-  > **Core Philosophy:** _"Everything is a Widget."_ Pages are not hardcoded — they are JSON schemas rendered recursively by the `WidgetRenderer` engine.
+> **Core Philosophy:** _"Everything is a Widget."_ Pages are not hardcoded — they are JSON schemas rendered recursively by the `WidgetRenderer` engine.
+
 </div>
 
 <hr className="divider" />
@@ -116,17 +117,15 @@ import { Meta } from "@storybook/addon-docs/blocks";
 
 ## Stories Structure
 
-Stories are **centralized** in `src/stories/` and mirror the component structure.
+Stories in `src/stories/` with mock data in `__mocks__/`.
 
 <pre>
-{`src/stories/
-└── ui/                         ← Shadcn base primitives
-    ├── button.stories.tsx      → Button (6 variants, 8 sizes)
-    ├── badge.stories.tsx       → Badge (7 variants incl. success/warning/info)
-    ├── input.stories.tsx       → Input (default, disabled, error states)
-    ├── card.stories.tsx        → Card (with header, footer, metric layout)
-    ├── skeleton.stories.tsx    → Skeleton (line, paragraph, card, table)
-    └── tabs.stories.tsx        → Tabs (default pill + case underline variants)`}
+  {`src/stories/
+├── __mocks__/                  ← All mock data
+│   ├── widgets/                → DataTable, KeyValueGrid, ChartWidget, PageHeader
+│   └── ui/                     → Badge, Button, Card, Input, Tabs
+├── ui/                         ← Shadcn primitives
+└── widgets/                    ← Schema-driven widgets`}
 </pre>
 
 <hr className="divider" />
@@ -136,19 +135,33 @@ Stories are **centralized** in `src/stories/` and mirror the component structure
 <div className="grid">
   <div className="card">
     <h3>🧱 UI Primitives</h3>
-    <p>Base Shadcn components — Button, Badge, Input, Card, Skeleton, Tabs. These are the lowest-level building blocks, fully styled with Tailwind CVA variants.</p>
+    <p>
+      Base Shadcn components — Button, Badge, Input, Card, Skeleton, Tabs. Fully
+      styled with Tailwind CVA variants.
+    </p>
   </div>
   <div className="card">
     <h3>🪟 Layout Widgets</h3>
-    <p>Schema-driven layout containers — <code>stack-layout</code>, <code>grid-layout</code>, <code>tabs-container</code>, <code>section-group</code>. These are resolved by the <code>WidgetRenderer</code>.</p>
+    <p>
+      Schema-driven layout containers — <code>stack-layout</code>,{" "}
+      <code>grid-layout</code>, <code>tabs-container</code>,{" "}
+      <code>section-group</code>.
+    </p>
   </div>
   <div className="card">
     <h3>📊 Data Widgets</h3>
-    <p>Smart data-fetching widgets — <code>data-table</code>, <code>key-value-grid</code>, <code>metric-card</code>. They use <code>useSmartQuery</code> to bind to a <code>dataSource</code> in the schema.</p>
+    <p>
+      Smart data-fetching widgets — <code>data-table</code>,{" "}
+      <code>key-value-grid</code>, <code>metric-card</code>. Use{" "}
+      <code>useSmartQuery</code> for data binding.
+    </p>
   </div>
   <div className="card">
     <h3>📝 Form Widgets</h3>
-    <p>Schema-driven forms — <code>form-container</code>, <code>filter-bar</code>. Fields and validations are defined in JSON and rendered dynamically with React Hook Form + Zod.</p>
+    <p>
+      Schema-driven forms — <code>form-container</code>, <code>filter-bar</code>
+      . Rendered with React Hook Form + Zod.
+    </p>
   </div>
 </div>
 
@@ -156,24 +169,15 @@ Stories are **centralized** in `src/stories/` and mirror the component structure
 
 ## How to Add a New Story
 
-Place new story files inside `src/stories/ui/` (for primitives) and follow this pattern:
-
 <pre>
-{`import type { Meta, StoryObj } from '@storybook/react';
-import { YourComponent } from '../../components/ui/your-component';
+  {`// 1. Create mock: __mocks__/ui/component.mock.ts
+export const componentMocks = { data: {...} };
 
-const meta: Meta<typeof YourComponent> = {
-    title: 'UI/YourComponent',
-    component: YourComponent,
-    tags: ['autodocs'],
-};
+// 2. Add to __mocks__/index.ts
+export * from './ui/component.mock';
 
-export default meta;
-type Story = StoryObj<typeof YourComponent>;
-
-export const Default: Story = {
-    args: { /* your props here */ },
-};`}
+// 3. Use in story
+import { componentMocks } from '@/stories/__mocks__';`}
 </pre>
 
 <hr className="divider" />
@@ -182,6 +186,7 @@ export const Default: Story = {
 
 <div>
   <span className="badge badge-blue">UI</span> Base Shadcn primitives
-  <span className="badge badge-green">Widgets</span> Schema-driven layout & data widgets
+  <span className="badge badge-green">Widgets</span> Schema-driven layout & data
+  widgets
   <span className="badge badge-purple">Forms</span> Form field components
 </div>

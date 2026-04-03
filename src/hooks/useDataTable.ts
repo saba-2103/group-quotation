@@ -1,23 +1,16 @@
-import { useState, useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  ColumnDef,
-  SortingState,
-  ColumnFiltersState,
-  RowSelectionState,
-  PaginationState,
+  ColumnDef
 } from "@tanstack/react-table";
 import { WidgetConfig } from "@/types/widget";
 import { SCROLLABLE_COLUMN_THRESHOLD } from "../components/widgets/data/DataTable/constants";
-import {
-  ColumnConfig,
-  FetchParams,
-  TableRow,
-} from "../components/widgets/data/DataTable/types";
+import { ColumnConfig, TableRow } from "../components/widgets/data/DataTable/types";
+import { useSmartQuery } from "./useSmartQuery";
 
 interface UseDataTableOptions {
   props: WidgetConfig["props"];
@@ -30,135 +23,102 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     bulkActions,
     pagination,
     selectable,
-    volumeMode = "low",
-    totalRows,
-    onFetchData,
+    dataSource,
+    rowIdKey = "id",
+    defaultSort
   } = props || {};
 
-  const rawData = useMemo<TableRow[]>(() => props?.data ?? [], [props?.data]);
+  const {
+    data: fetchedData,
+    isLoading: isQueryLoading,
+    error: queryError,
+  } = useSmartQuery(props?.data == null ? dataSource : undefined);
 
-  const isServerSide = volumeMode === "high";
+  const rawData = useMemo<TableRow[]>(() => {
+    const sourceData = props?.data ?? fetchedData;
 
-  // ── TanStack state ──────────────────────────────────────────────────────
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [paginationState, setPaginationState] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: pagination?.pageSize ?? 20,
-  });
-
-  // Reset selection + page when data changes
-  useEffect(() => {
-    setRowSelection({});
-    setPaginationState((prev) => ({ ...prev, pageIndex: 0 }));
-  }, [rawData]);
-
-  // Server-side: fire onFetchData on every sort / filter / page change
-  useEffect(() => {
-    if (!isServerSide || !onFetchData) return;
-    const params: FetchParams = {
-      page: paginationState.pageIndex + 1,
-      pageSize: paginationState.pageSize,
-    };
-    if (sorting.length > 0) {
-      params.sort = {
-        column: sorting[0].id,
-        direction: sorting[0].desc ? "desc" : "asc",
-      };
+    // Handle various response formats
+    if (Array.isArray(sourceData)) {
+      return sourceData;
     }
-    if (columnFilters.length > 0) {
-      params.filters = Object.fromEntries(
-        columnFilters.map((f) => [f.id, f.value as string | number | boolean]),
-      );
-    }
-    onFetchData(params);
-  }, [sorting, columnFilters, paginationState, isServerSide, onFetchData]);
 
-  // ── Column definitions
+    if (sourceData && typeof sourceData === "object") {
+      const arrayValue = Object.values(sourceData as Record<string, TableRow[]>).find(Array.isArray);
+      if (arrayValue) return arrayValue;
+    }
+
+    // Fallback to empty array
+    return [];
+  }, [props?.data, fetchedData]);
+
+  // ── Column definitions ─────────────────────────────────────────────────
   const columnDefs = useMemo<ColumnDef<TableRow>[]>(() => {
     if (!columns) return [];
     return (columns as ColumnConfig[]).map((col) => ({
-      id: col.accessorKey || col.header,
+      id: col.id ?? col.accessorKey,
       accessorKey: col.accessorKey,
-      header: col.header,
+      header: col.header ?? col.label,
       enableSorting: col.sortable ?? false,
       enableColumnFilter: col.filterable ?? false,
-      meta: col,
+      meta: col
     }));
   }, [columns]);
 
-  // Unique values for select-type filters (low-volume only)
+  // Unique values for select-type filters
   const selectFilterOptions = useMemo(() => {
     const opts: Record<string, string[]> = {};
-    if (!columns || isServerSide) return opts;
+    if (!columns) return opts;
     (columns as ColumnConfig[]).forEach((col) => {
       if (col.filterable && col.filterType === "select") {
-        opts[col.accessorKey] = Array.from(
-          new Set(rawData.map((row) => String(row[col.accessorKey] ?? ""))),
-        ).filter(Boolean);
+        opts[col.accessorKey] = Array.from(new Set(rawData.map((row) => String(row[col.accessorKey] ?? "")))).filter(
+          Boolean
+        );
       }
     });
     return opts;
-  }, [columns, rawData, isServerSide]);
+  }, [columns, rawData]);
 
-  // ── Table instance ────────────────────────────────────────────────────────
+  // ── Table instance — TanStack owns all sorting/filtering/pagination state ──
   const table = useReactTable<TableRow>({
     data: rawData,
     columns: columnDefs,
-    state: {
-      sorting,
-      columnFilters,
-      rowSelection,
-      pagination: paginationState,
+    initialState: {
+      sorting: defaultSort ? [{ id: defaultSort.field, desc: defaultSort.direction === "desc" }] : [],
+      pagination: {
+        pageIndex: 0,
+        pageSize: pagination?.pageSize ?? 20
+      }
     },
-    getRowId: (row, index) => String(row.id ?? row.quotationNumber ?? index),
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPaginationState,
+    getRowId: (row, index) => String(row[rowIdKey] ?? index),
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    manualSorting: isServerSide,
-    manualFiltering: isServerSide,
-    manualPagination: isServerSide,
-    pageCount:
-      isServerSide && totalRows != null
-        ? Math.ceil(totalRows / paginationState.pageSize)
-        : undefined,
     enableRowSelection: selectable ?? false,
-    enableMultiRowSelection: selectable ?? false,
+    enableMultiRowSelection: selectable ?? false
   });
 
   // ── Derived values ────────────────────────────────────────────────────────
   const isScrollable = (columns?.length ?? 0) > SCROLLABLE_COLUMN_THRESHOLD;
   const hasRowActions = Boolean(rowActions && rowActions.length > 0);
   const isPaginationEnabled = pagination?.enabled ?? false;
-  const hasFilters = Boolean(
-    (columns as ColumnConfig[])?.some((col) => col.filterable),
-  );
-  const selectedCount = table.getSelectedRowModel().rows.length;
+  const hasFilters = Boolean((columns as ColumnConfig[])?.some((col) => col.filterable));
   const { pageIndex, pageSize } = table.getState().pagination;
-  const totalCount = isServerSide
-    ? (totalRows ?? rawData.length)
-    : table.getFilteredRowModel().rows.length;
-  const colSpan =
-    (columns?.length ?? 0) + (selectable ? 1 : 0) + (hasRowActions ? 1 : 0);
+  const selectedCount = table.getSelectedRowModel().rows.length;
+  const totalCount = table.getFilteredRowModel().rows.length;
+  const colSpan = (columns?.length ?? 0) + (selectable ? 1 : 0) + (hasRowActions ? 1 : 0);
 
   return {
-    // table
     table,
     rawData,
-    columnFilters,
     selectFilterOptions,
     // config refs
     columns: columns as ColumnConfig[],
     rowActions,
     bulkActions,
     selectable,
-    isServerSide,
+    rowIdKey: rowIdKey as string,
+    pagination,
     // derived flags
     isScrollable,
     hasRowActions,
@@ -171,8 +131,8 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     colSpan,
     // selection
     selectedCount,
-    // state setters for UI actions
-    setRowSelection,
-    setColumnFilters,
+    // async fetch state
+    isQueryLoading,
+    queryError
   };
 };
