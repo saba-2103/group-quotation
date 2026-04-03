@@ -16,7 +16,7 @@ import {
 
 interface ContextHelpTooltipProps {
   helpText: string;
-  delayMs?: number; // hover duration before tooltip appears (default 800ms)
+  delayMs?: number; // hover duration before tooltip appears (default 500ms)
   children: React.ReactNode;
 }
 

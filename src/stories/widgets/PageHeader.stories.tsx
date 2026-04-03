@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { PageHeader } from "@/components/widgets/layout/PageHeader";
+import { PageHeader } from "@/components/widgets/layout/PageHeader/PageHeader";
 import { pageHeaderMocks } from "@/stories/__mocks__";
 
 const meta: Meta<typeof PageHeader> = {
