@@ -1,6 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { ColumnConfig, ValueMapping } from "./DataTable/types";
+import { DateDisplay } from "@/components/widgets/controls/dateWidget/DateDisplay";
 import { BADGE_COLOR_TO_VARIANT } from "./DataTable/constants";
 
 interface CellRendererProps {
@@ -45,6 +46,9 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
 
     case "number":
       return <span>{Number(value)}</span>;
+
+    case "date":
+      return <DateDisplay value={String(value)} />;
 
     default:
       return <span>{String(value)}</span>;

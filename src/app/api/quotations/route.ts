@@ -150,7 +150,7 @@ export async function POST(request: Request) {
         quoteVersion: "V1.0",
         mainStatus: "Pending",
         secondaryStatus: "Draft",
-        transactionStatus: "Active",
+        transactionStatus: "AC",
     };
     pendingQuotationsMockData.push(newQuotation);
     return NextResponse.json(newQuotation, { status: 201 });

@@ -9,9 +9,9 @@ const meta: Meta<typeof Badge> = {
   argTypes: {
     variant: {
       control: "select",
-      options: badgeMocks.variants,
-    },
-  },
+      options: badgeMocks.variants
+    }
+  }
 };
 
 export default meta;
@@ -27,17 +27,15 @@ export const AllVariants: Story = {
         </Badge>
       ))}
     </div>
-  ),
+  )
 };
 
-// --- Real-world Usage (as seen in your quotations table) ---
+// --- Real-world Usage (as seen in quotations table) ---
 export const StatusBadges: Story = {
   render: () => (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2 items-center">
-        <span className="text-sm text-muted-foreground w-32">
-          Census Status:
-        </span>
+        <span className="text-sm text-muted-foreground w-32">Census Status:</span>
         {badgeMocks.statusExamples.census.map((status, index) => (
           <Badge key={index} variant={status.variant}>
             {status.label}
@@ -53,35 +51,35 @@ export const StatusBadges: Story = {
         ))}
       </div>
     </div>
-  ),
+  )
 };
 
 // --- Variants ---
 
 export const Default: Story = {
-  args: { children: badgeMocks.labels.default, variant: "default" },
+  args: { children: badgeMocks.labels.default, variant: "default" }
 };
 
 export const Secondary: Story = {
-  args: { children: badgeMocks.labels.secondary, variant: "secondary" },
+  args: { children: badgeMocks.labels.secondary, variant: "secondary" }
 };
 
 export const Destructive: Story = {
-  args: { children: badgeMocks.labels.destructive, variant: "destructive" },
+  args: { children: badgeMocks.labels.destructive, variant: "destructive" }
 };
 
 export const Outline: Story = {
-  args: { children: badgeMocks.labels.outline, variant: "outline" },
+  args: { children: badgeMocks.labels.outline, variant: "outline" }
 };
 
 export const Success: Story = {
-  args: { children: badgeMocks.labels.success, variant: "success" },
+  args: { children: badgeMocks.labels.success, variant: "success" }
 };
 
 export const Warning: Story = {
-  args: { children: badgeMocks.labels.warning, variant: "warning" },
+  args: { children: badgeMocks.labels.warning, variant: "warning" }
 };
 
 export const Info: Story = {
-  args: { children: badgeMocks.labels.info, variant: "info" },
+  args: { children: badgeMocks.labels.info, variant: "info" }
 };

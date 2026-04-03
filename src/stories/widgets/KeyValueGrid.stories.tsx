@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { KeyValueGrid } from "@/components/widgets/data/KeyValueGrid";
-import { keyValueGridMocks } from "@/stories/__mocks__";
+import { TenantConfigProvider } from "@/contexts/TenantConfigContext";
+import { keyValueGridMocks, keyValueGridApiSeedData, transactionStatusLabels } from "@/stories/__mocks__";
 
 const meta: Meta<typeof KeyValueGrid> = {
   title: "Widgets/KeyValueGrid",
@@ -11,115 +14,164 @@ const meta: Meta<typeof KeyValueGrid> = {
       <div className="p-4">
         <Story />
       </div>
-    ),
-  ],
+    )
+  ]
 };
 
 export default meta;
 type Story = StoryObj<typeof KeyValueGrid>;
 
-// ─── All Variants Composite Story ────────────────────────────────
+// ── Story decorator ───────────────────────────────────────────────────────────
+// Pre-seeds the React Query cache so stories never make real network requests.
+// Key shape mirrors useSmartQuery: [endpoint, method, params, dependentState]
 
-export const AllVariants: Story = {
+const withSeededData = (endpoints: string[]) => (Story: React.ComponentType) => {
+  const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
+  endpoints.forEach((endpoint) => {
+    client.setQueryData([endpoint, "GET", undefined, {}], keyValueGridApiSeedData[endpoint]);
+  });
+  return (
+    <QueryClientProvider client={client}>
+      <Story />
+    </QueryClientProvider>
+  );
+};
+
+// ── Empty — no data source ────────────────────────────────────────────────────
+
+export const Empty: Story = {
+  name: "Empty — No Data",
+  args: {
+    config: {
+      id: "kv-empty",
+      type: "key-value-grid",
+      props: keyValueGridMocks.configs.policyEmptyPreview
+    }
+  }
+};
+
+// ── Basic — text fields ───────────────────────────────────────────────────────
+
+export const Basic: Story = {
+  name: "Basic — Text Fields",
+  decorators: [withSeededData(["/api/mock/policy-summary"])],
+  args: {
+    config: {
+      id: "kv-basic",
+      type: "key-value-grid",
+      dataSource: keyValueGridMocks.dataSources.policyDetail,
+      props: keyValueGridMocks.configs.policyBasicText
+    }
+  }
+};
+
+// ── Date fields — DD/MM/YYYY ──────────────────────────────────────────────────
+
+export const WithDateFieldsDDMMYYYY: Story = {
+  name: "Date Fields — DD/MM/YYYY",
+  decorators: [
+    withSeededData(["/api/mock/policy-summary"]),
+    (Story) => (
+      <TenantConfigProvider dateFormat="DD/MM/YYYY">
+        <Story />
+      </TenantConfigProvider>
+    )
+  ],
+  args: {
+    config: {
+      id: "kv-dates-dmy",
+      type: "key-value-grid",
+      dataSource: keyValueGridMocks.dataSources.policyDetail,
+      props: keyValueGridMocks.configs.policyWithDates
+    }
+  }
+};
+
+// ── Date fields — MM/DD/YYYY ──────────────────────────────────────────────────
+
+export const WithDateFieldsMMDDYYYY: Story = {
+  name: "Date Fields — MM/DD/YYYY",
+  decorators: [
+    withSeededData(["/api/mock/policy-summary"]),
+    (Story) => (
+      <TenantConfigProvider dateFormat="MM/DD/YYYY">
+        <Story />
+      </TenantConfigProvider>
+    )
+  ],
+  args: {
+    config: {
+      id: "kv-dates-mdy",
+      type: "key-value-grid",
+      dataSource: keyValueGridMocks.dataSources.policyDetail,
+      props: keyValueGridMocks.configs.policyWithDates
+    }
+  }
+};
+
+// ── Transaction status badge ──────────────────────────────────────────────────
+
+export const WithTransactionStatus: Story = {
+  name: "Transaction Status Field",
+  decorators: [withSeededData(["/api/mock/policy-summary"])],
+  args: {
+    config: {
+      id: "kv-tran-status",
+      type: "key-value-grid",
+      dataSource: keyValueGridMocks.dataSources.policyDetail,
+      props: keyValueGridMocks.configs.policyWithStatus
+    }
+  }
+};
+
+// ── All 7 transaction status codes ───────────────────────────────────────────
+
+export const AllTransactionStatuses: Story = {
+  name: "All Transaction Status Codes",
   render: () => (
-    <div className="flex flex-col gap-12 space-y-8">
-      <div>
-        <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
-          1. Active Quotation Summary
-        </h3>
-        <KeyValueGrid
-          config={{
-            id: "grid-active",
-            type: "key-value-grid",
-            dataSource: keyValueGridMocks.dataSources.active,
-            props: keyValueGridMocks.configs.quotationSummary,
-          }}
-        />
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
-          2. Expired Quotation Summary
-        </h3>
-        <KeyValueGrid
-          config={{
-            id: "grid-expired",
-            type: "key-value-grid",
-            dataSource: keyValueGridMocks.dataSources.expired,
-            props: keyValueGridMocks.configs.quotationSummary,
-          }}
-        />
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
-          3. Loading State
-        </h3>
-        <KeyValueGrid
-          config={{
-            id: "grid-loading",
-            type: "key-value-grid",
-            props: { ...keyValueGridMocks.configs.quotationSummary, isLoading: true } as any,
-          }}
-        />
-      </div>
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4 text-foreground border-b pb-2">
-          4. Error State
-        </h3>
-        <KeyValueGrid
-          config={{
-            id: "grid-error",
-            type: "key-value-grid",
-            props: { ...keyValueGridMocks.configs.quotationSummary, error: true } as any,
-          }}
-        />
-      </div>
+    <div className="flex flex-col gap-4">
+      {transactionStatusLabels.map((statusLabel) => {
+        const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
+        const endpoint = `/api/mock/policy-${statusLabel}`;
+        client.setQueryData([endpoint, "GET", undefined, {}], {
+          ...keyValueGridApiSeedData["/api/mock/policy-summary"],
+          tranStatus: statusLabel
+        });
+        return (
+          <QueryClientProvider key={statusLabel} client={client}>
+            <KeyValueGrid
+              config={{
+                id: `kv-status-${statusLabel}`,
+                type: "key-value-grid",
+                dataSource: { api: { endpoint, method: "GET" as const } },
+                props: keyValueGridMocks.configs.policyStatusShowcase
+              }}
+            />
+          </QueryClientProvider>
+        );
+      })}
     </div>
-  ),
+  )
 };
 
-// ─── Individual Stories ──────────────────────────────────────
+// ── All field types combined ──────────────────────────────────────────────────
 
-export const Active: Story = {
+export const AllFieldTypes: Story = {
+  name: "All Field Types — Text + Date + Status + Badge",
+  decorators: [
+    withSeededData(["/api/mock/policy-summary"]),
+    (Story) => (
+      <TenantConfigProvider dateFormat="DD/MM/YYYY">
+        <Story />
+      </TenantConfigProvider>
+    )
+  ],
   args: {
     config: {
-      id: "kv-grid-active",
+      id: "kv-all-types",
       type: "key-value-grid",
-      dataSource: keyValueGridMocks.dataSources.active,
-      props: keyValueGridMocks.configs.quotationSummary,
-    },
-  },
-};
-
-export const Expired: Story = {
-  args: {
-    config: {
-      id: "kv-grid-expired",
-      type: "key-value-grid",
-      dataSource: keyValueGridMocks.dataSources.expired,
-      props: keyValueGridMocks.configs.quotationSummary,
-    },
-  },
-};
-
-export const Loading: Story = {
-  args: {
-    config: {
-      id: "kv-grid-loading",
-      type: "key-value-grid",
-      props: { ...keyValueGridMocks.configs.quotationSummary, isLoading: true } as any,
-    },
-  },
-};
-
-export const ErrorState: Story = {
-  args: {
-    config: {
-      id: "kv-grid-error",
-      type: "key-value-grid",
-      props: { ...keyValueGridMocks.configs.quotationSummary, error: true } as any,
-    },
-  },
+      dataSource: keyValueGridMocks.dataSources.policyDetail,
+      props: keyValueGridMocks.configs.policyAllFields
+    }
+  }
 };
