@@ -7,7 +7,6 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { DateDisplay } from "@/components/widgets/controls/dateWidget/DateDisplay";
 import { BADGE_COLOR_TO_VARIANT } from "./DataTable/constants";
-import * as Icons from "lucide-react";
 
 function renderFieldValue(field: KeyValueField, value: FieldValue | undefined): React.ReactNode {
   if (value === null || value === undefined) return <span>-</span>;
@@ -36,7 +35,15 @@ function renderFieldValue(field: KeyValueField, value: FieldValue | undefined): 
 
 export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   const { props = {}, dataSource } = config;
-  const { fields = [], data: propsData, isLoading: propsLoading, error: propsError } = props as KeyValueGridWidgetProps;
+  const {
+    fields = [],
+    columns = 4,
+    loadingMessage = "Loading",
+    errorMessage = "Failed to load data",
+    data: propsData,
+    isLoading: propsLoading,
+    error: propsError,
+  } = props as KeyValueGridWidgetProps;
 
   const {
     data: queryData,
@@ -47,8 +54,8 @@ export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => 
   const isLoading = propsLoading ?? queryIsLoading;
   const error = propsError ?? queryError;
 
-  if (isLoading) return <LoadingState message="Loading" />;
-  if (error) return <ErrorState message="Failed to load data" />;
+  if (isLoading) return <LoadingState message={loadingMessage} />;
+  if (error) return <ErrorState message={errorMessage} />;
 
   const rawData = propsData ?? (queryData as ApiResponseData | null) ?? undefined;
   const nestedValue = dataSource?.valueKey && rawData ? rawData[dataSource.valueKey] : undefined;
@@ -58,12 +65,11 @@ export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => 
       : (rawData as DataRecord | undefined);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-6 bg-card rounded-lg border shadow-sm">
+    <div
+      className="grid gap-6 p-6 bg-card rounded-lg border shadow-sm"
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+    >
       {fields.map((field: KeyValueField) => {
-        const iconKey = field.icon as keyof typeof Icons;
-        const IconComponent = field.icon
-          ? ((Icons[iconKey] as React.ComponentType<{ className?: string }>) ?? null)
-          : null;
         const value = sourceData ? sourceData[field.accessorKey] : undefined;
 
         return (

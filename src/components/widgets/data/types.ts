@@ -20,6 +20,9 @@ export interface KeyValueField {
 
 export interface KeyValueGridWidgetProps {
   fields?: KeyValueField[];
+  columns?: number;
+  loadingMessage?: string;
+  errorMessage?: string;
   data?: DataRecord;
   isLoading?: boolean;
   error?: string;
