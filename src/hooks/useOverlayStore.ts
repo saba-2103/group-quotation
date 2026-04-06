@@ -18,6 +18,7 @@ export const useOverlayStore = create<OverlayState>((set) => ({
         }
     })),
     close: (id) => set((state) => {
+        if (!(id in state.openOverlays)) return state;
         const next = { ...state.openOverlays };
         delete next[id];
         return { openOverlays: next };
