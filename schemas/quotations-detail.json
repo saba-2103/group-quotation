@@ -11,6 +11,17 @@
       "props": {
         "title": "Quotation Details",
         "description": "Manage specific quotation info",
+        "hasWorkflow": true,
+        "tranStatus": { "label": "Active Draft", "variant": "amber" },
+        "validActions": [
+          { "code": "add",     "label": "Add"     },
+          { "code": "edit",    "label": "Edit"    },
+          { "code": "enquire", "label": "Enquire" }
+        ],
+        "validButtons": [
+          { "id": "submit", "label": "Submit", "variant": "secondary", "type": "trigger-event", "target": "submit" },
+          { "id": "close",  "label": "Close",  "variant": "ghost",     "type": "trigger-event", "target": "close"  }
+        ],
         "breadcrumbs": [
           {
             "label": "Home",
@@ -44,6 +55,15 @@
               "method": "GET"
             },
             "filename": "quotation-export.pdf"
+          },
+          {
+            "id": "screen-help",
+            "label": "Screen Help",
+            "icon": "HelpCircle",
+            "display": "icon",
+            "variant": "ghost",
+            "type": "open-sheet",
+            "target": "qtn-detail-001-help"
           }
         ]
       }

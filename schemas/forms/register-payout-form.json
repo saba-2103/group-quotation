@@ -1,0 +1,393 @@
+{
+    "id": "register-payout-form",
+    "type": "form-container",
+    "props": {
+        "title": "Register New Payout",
+        "fields": [
+            {
+                "id": "payoutDate",
+                "name": "payoutDate",
+                "label": "Payout Date",
+                "type": "date",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payout date is required"
+                    }
+                ]
+            },
+            {
+                "id": "lob",
+                "name": "lob",
+                "label": "Line of Business",
+                "type": "select",
+                "options": [
+                    {
+                        "label": "Motor",
+                        "value": "MOTOR"
+                    },
+                    {
+                        "label": "Health",
+                        "value": "HEALTH"
+                    }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Line of business is required"
+                    }
+                ]
+            },
+            {
+                "id": "component",
+                "name": "component",
+                "label": "Component",
+                "type": "select",
+                "options": [
+                    {
+                        "label": "Claims",
+                        "value": "CLAIMS"
+                    },
+                    {
+                        "label": "Refunds",
+                        "value": "REFUNDS"
+                    }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Component is required"
+                    }
+                ]
+            },
+            {
+                "id": "reason",
+                "name": "reason",
+                "label": "Reason",
+                "type": "select",
+                "options": [
+                    {
+                        "label": "Claim Payout",
+                        "value": "CLAIM_PAYOUT"
+                    },
+                    {
+                        "label": "Refund",
+                        "value": "REFUND"
+                    },
+                    {
+                        "label": "Commission",
+                        "value": "COMMISSION"
+                    },
+                    {
+                        "label": "Premium Return",
+                        "value": "PREMIUM_RETURN"
+                    },
+                    {
+                        "label": "Maturity Benefit",
+                        "value": "MATURITY_BENEFIT"
+                    },
+                    {
+                        "label": "Surrender Benefit",
+                        "value": "SURRENDER_BENEFIT"
+                    }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Reason is required"
+                    }
+                ]
+            },
+            {
+                "id": "primaryEntityType",
+                "name": "primaryEntityType",
+                "label": "Primary Entity Type",
+                "type": "select",
+                "defaultValue": "POLICY",
+                "options": [
+                    {
+                        "label": "Policy",
+                        "value": "POLICY"
+                    },
+                    {
+                        "label": "Member",
+                        "value": "MEMBER"
+                    },
+                    {
+                        "label": "Agent",
+                        "value": "AGENT"
+                    },
+                    {
+                        "label": "Claim",
+                        "value": "CLAIM"
+                    },
+                    {
+                        "label": "Receipt",
+                        "value": "RECEIPT"
+                    },
+                    {
+                        "label": "Premium",
+                        "value": "PREMIUM"
+                    },
+                    {
+                        "label": "Commission",
+                        "value": "COMMISSION"
+                    },
+                    {
+                        "label": "Journal",
+                        "value": "JOURNAL"
+                    }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Entity type is required"
+                    }
+                ]
+            },
+            {
+                "id": "primaryEntityId",
+                "name": "primaryEntityId",
+                "label": "Entity ID",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Entity ID is required"
+                    }
+                ]
+            },
+            {
+                "id": "amount",
+                "name": "amount",
+                "label": "Amount",
+                "type": "number",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Amount is required"
+                    },
+                    {
+                        "rule": "min",
+                        "value": 1,
+                        "message": "Amount must be greater than 0"
+                    }
+                ]
+            },
+            {
+                "id": "currency",
+                "name": "currency",
+                "label": "Currency",
+                "type": "select",
+                "defaultValue": "INR",
+                "options": [
+                    {
+                        "label": "INR - Indian Rupee",
+                        "value": "INR"
+                    },
+                    {
+                        "label": "USD - US Dollar",
+                        "value": "USD"
+                    }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Currency is required"
+                    }
+                ]
+            },
+            {
+                "id": "payoutMode",
+                "name": "payoutMode",
+                "label": "Payout Mode",
+                "type": "select",
+                "options": [
+                    {
+                        "label": "NEFT",
+                        "value": "NEFT"
+                    },
+                    {
+                        "label": "Cheque",
+                        "value": "CHEQUE"
+                    }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payout mode is required"
+                    }
+                ]
+            },
+            {
+                "id": "payeeName",
+                "name": "payeeName",
+                "label": "Payee Name",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payee name is required"
+                    }
+                ]
+            },
+            {
+                "id": "payeeBankAccount",
+                "name": "payeeBankAccount",
+                "label": "Bank Account Number",
+                "type": "text"
+            },
+            {
+                "id": "payeeIfscCode",
+                "name": "payeeIfscCode",
+                "label": "IFSC Code",
+                "type": "text"
+            },
+            {
+                "id": "payeeSwiftCode",
+                "name": "payeeSwiftCode",
+                "label": "SWIFT Code",
+                "type": "text"
+            },
+            {
+                "id": "payeeClientId",
+                "name": "payeeClientId",
+                "label": "Payee Client ID",
+                "type": "text"
+            },
+            {
+                "id": "remarks",
+                "name": "remarks",
+                "label": "Payout Remarks",
+                "type": "text"
+            },
+            {
+                "id": "tenderRemarks",
+                "name": "tenderRemarks",
+                "label": "Tender Remarks",
+                "type": "text"
+            },
+            {
+                "id": "secondaryEntityType",
+                "name": "secondaryEntityType",
+                "label": "Secondary Entity Type",
+                "type": "select",
+                "options": [
+                    {
+                        "label": "Policy",
+                        "value": "POLICY"
+                    },
+                    {
+                        "label": "Member",
+                        "value": "MEMBER"
+                    },
+                    {
+                        "label": "Agent",
+                        "value": "AGENT"
+                    },
+                    {
+                        "label": "Claim",
+                        "value": "CLAIM"
+                    },
+                    {
+                        "label": "Receipt",
+                        "value": "RECEIPT"
+                    },
+                    {
+                        "label": "Premium",
+                        "value": "PREMIUM"
+                    },
+                    {
+                        "label": "Commission",
+                        "value": "COMMISSION"
+                    },
+                    {
+                        "label": "Journal",
+                        "value": "JOURNAL"
+                    }
+                ]
+            },
+            {
+                "id": "secondaryEntityId",
+                "name": "secondaryEntityId",
+                "label": "Secondary Entity ID",
+                "type": "text"
+            },
+            {
+                "id": "sourceType",
+                "name": "sourceType",
+                "label": "Source Type",
+                "type": "select",
+                "options": [
+                    {
+                        "label": "Claim",
+                        "value": "CLAIM"
+                    },
+                    {
+                        "label": "Customer Refund",
+                        "value": "CUST_REFUND"
+                    },
+                    {
+                        "label": "Commission",
+                        "value": "COMMISSION"
+                    },
+                    {
+                        "label": "Premium Refund",
+                        "value": "PREMIUM_REFUND"
+                    }
+                ]
+            },
+            {
+                "id": "sourceDocumentId",
+                "name": "sourceDocumentId",
+                "label": "Source Document ID",
+                "type": "text"
+            },
+            {
+                "id": "sourceRemarks",
+                "name": "sourceRemarks",
+                "label": "Source Remarks",
+                "type": "text"
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-payout",
+                "label": "Submit Payout",
+                "submitAction": true,
+                "variant": "primary",
+                "refreshKey": "/api/moneyout/payouts/search?page=0&size=50",
+                "api": {
+                    "endpoint": "/api/moneyout/payouts",
+                    "method": "POST",
+                    "payloadMapping": {
+                        "payoutDate": "{{form.payoutDate}}",
+                        "lob": "{{form.lob}}",
+                        "component": "{{form.component}}",
+                        "genType": "USER",
+                        "reason": "{{form.reason}}",
+                        "primaryEntityType": "{{form.primaryEntityType}}",
+                        "primaryEntityId": "{{form.primaryEntityId}}",
+                        "transactionAmount": {
+                            "amount": "{{form.amount}}",
+                            "currency": "{{form.currency}}"
+                        },
+                        "tender": {
+                            "payoutMode": "{{form.payoutMode}}",
+                            "isDigital": true,
+                            "transactionAmount": {
+                                "amount": "{{form.amount}}",
+                                "currency": "{{form.currency}}"
+                            },
+                            "payeeName": "{{form.payeeName}}",
+                            "payeeRole": "CLAIMANT",
+                            "payeeBankAccount": "{{form.payeeBankAccount}}",
+                            "payeeIfscCode": "{{form.payeeIfscCode}}"
+                        },
+                        "sources": []
+                    }
+                }
+            }
+        ]
+    }
+}

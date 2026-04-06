@@ -1,0 +1,33 @@
+{
+    "id": "reverse-event-form",
+    "type": "form-container",
+    "props": {
+        "title": "Reverse Event",
+        "fields": [
+            {
+                "id": "reversalEventDate",
+                "name": "reversalEventDate",
+                "label": "Reversal Event Date",
+                "type": "date",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Reversal date is required"
+                    }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-reverse-event",
+                "label": "Reverse",
+                "submitAction": true,
+                "variant": "destructive",
+                "api": {
+                    "endpoint": "/api/accounting/events/:id/reverse",
+                    "method": "POST"
+                }
+            }
+        ]
+    }
+}

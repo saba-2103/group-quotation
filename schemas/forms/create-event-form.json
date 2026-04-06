@@ -1,0 +1,93 @@
+{
+    "id": "create-event-form",
+    "type": "form-container",
+    "props": {
+        "title": "Create Accounting Event",
+        "fields": [
+            {
+                "id": "component",
+                "name": "component",
+                "label": "Component",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "lob",
+                "name": "lob",
+                "label": "Line of Business",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "businessKey",
+                "name": "businessKey",
+                "label": "Business Key",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "businessProcessCode",
+                "name": "businessProcessCode",
+                "label": "Business Process Code",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "eventDate",
+                "name": "eventDate",
+                "label": "Event Date",
+                "type": "date",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Required"
+                    }
+                ]
+            },
+            {
+                "id": "reference",
+                "name": "reference",
+                "label": "Reference",
+                "type": "text"
+            },
+            {
+                "id": "remarks",
+                "name": "remarks",
+                "label": "Remarks",
+                "type": "text"
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-event",
+                "label": "Create Event",
+                "submitAction": true,
+                "variant": "primary",
+                "api": {
+                    "endpoint": "/api/accounting/events",
+                    "method": "POST"
+                }
+            }
+        ]
+    }
+}

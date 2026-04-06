@@ -140,6 +140,13 @@
                             "id": "documents-table",
                             "type": "data-table",
                             "props": {
+                                "dataSource": {
+                                    "type": "api",
+                                    "api": {
+                                        "endpoint": "/api/quotations/{{id}}/documents",
+                                        "method": "GET"
+                                    }
+                                },
                                 "selectable": true,
                                 "columns": [
                                     {
@@ -243,23 +250,6 @@
                                             { "value": "expired", "label": "Expired", "color": "error" }
                                         ]
                                     }
-                                ],
-                                "data": [
-                                    { "id": "1", "documentType": "Medical Examination Report", "documentSource": "client", "linkedEntity": "Main Policy", "effectiveDate": "2024-01-01", "expiryDate": "2025-01-01", "uploadedBy": "John Smith", "verificationStatus": "verified", "documentStatus": "approved" },
-                                    { "id": "2", "documentType": "KYC - Identity Document", "documentSource": "broker", "linkedEntity": "Main Policy", "effectiveDate": "2023-06-15", "expiryDate": "2025-01-01", "uploadedBy": "Sarah Connor", "verificationStatus": "expired", "documentStatus": "expired" },
-                                    { "id": "3", "documentType": "Financial Statements 2023", "documentSource": "client", "linkedEntity": "Subsidiary A", "effectiveDate": "2024-03-01", "expiryDate": "2026-03-01", "uploadedBy": "John Smith", "verificationStatus": "pending", "documentStatus": "pending" },
-                                    { "id": "4", "documentType": "Group Life Schedule", "documentSource": "insurer", "linkedEntity": "Plan - Term Life", "effectiveDate": "2024-01-01", "expiryDate": "2027-01-01", "uploadedBy": "Mike Johnson", "verificationStatus": "verified", "documentStatus": "approved" },
-                                    { "id": "5", "documentType": "Underwriting Questionnaire", "documentSource": "broker", "linkedEntity": "Main Policy", "effectiveDate": "2024-02-14", "expiryDate": "2025-02-14", "uploadedBy": "Sarah Connor", "verificationStatus": "rejected", "documentStatus": "rejected" },
-                                    { "id": "6", "documentType": "Board Resolution", "documentSource": "client", "linkedEntity": "Main Policy", "effectiveDate": "2023-11-01", "expiryDate": "2026-11-01", "uploadedBy": "John Smith", "verificationStatus": "verified", "documentStatus": "approved" },
-                                    { "id": "7", "documentType": "Audited Balance Sheet", "documentSource": "client", "linkedEntity": "Subsidiary B", "effectiveDate": "2024-04-01", "expiryDate": "2025-04-01", "uploadedBy": "Emily Davis", "verificationStatus": "pending", "documentStatus": "pending" },
-                                    { "id": "8", "documentType": "Premium Schedule", "documentSource": "insurer", "linkedEntity": "Plan - Health", "effectiveDate": "2024-01-01", "expiryDate": "2025-01-01", "uploadedBy": "Mike Johnson", "verificationStatus": "verified", "documentStatus": "approved" },
-                                    { "id": "9", "documentType": "Annexure of Members", "documentSource": "lender", "linkedEntity": "Main Policy", "effectiveDate": "2024-05-10", "expiryDate": "2025-05-10", "uploadedBy": "Sarah Connor", "verificationStatus": "pending", "documentStatus": "pending" },
-                                    { "id": "10", "documentType": "Certificate of Incorporation", "documentSource": "client", "linkedEntity": "Main Policy", "effectiveDate": "2020-01-01", "expiryDate": "2030-01-01", "uploadedBy": "John Smith", "verificationStatus": "verified", "documentStatus": "approved" },
-                                    { "id": "11", "documentType": "Medical Aid Scheme Rules", "documentSource": "insurer", "linkedEntity": "Plan - Health", "effectiveDate": "2024-01-01", "expiryDate": "2025-01-01", "uploadedBy": "Mike Johnson", "verificationStatus": "expired", "documentStatus": "expired" },
-                                    { "id": "12", "documentType": "Tax Clearance Certificate", "documentSource": "client", "linkedEntity": "Main Policy", "effectiveDate": "2024-06-01", "expiryDate": "2025-06-01", "uploadedBy": "Emily Davis", "verificationStatus": "pending", "documentStatus": "pending" },
-                                    { "id": "13", "documentType": "Risk Benefit Schedule", "documentSource": "broker", "linkedEntity": "Plan - Credit Life", "effectiveDate": "2024-01-15", "expiryDate": "2026-01-15", "uploadedBy": "Sarah Connor", "verificationStatus": "verified", "documentStatus": "approved" },
-                                    { "id": "14", "documentType": "Pre-existing Conditions Declaration", "documentSource": "client", "linkedEntity": "Main Policy", "effectiveDate": "2024-03-20", "expiryDate": "2025-03-20", "uploadedBy": "John Smith", "verificationStatus": "rejected", "documentStatus": "rejected" },
-                                    { "id": "15", "documentType": "Investment Policy Statement", "documentSource": "insurer", "linkedEntity": "Plan - Investment", "effectiveDate": "2024-07-01", "expiryDate": "2027-07-01", "uploadedBy": "Mike Johnson", "verificationStatus": "pending", "documentStatus": "pending" }
                                 ],
                                 "bulkActions": [
                                     {

@@ -34,7 +34,7 @@ const statusOptions = [
     { code: 'SU', description: 'Suspended' },
 ];
 
-// --- Optional field (NULL injected automatically) ---
+// --- Optional field ---
 export const OptionalField: Story = {
     args: {
         config: {
@@ -50,7 +50,7 @@ export const OptionalField: Story = {
     },
 };
 
-// --- Mandatory field (no NULL option) ---
+// --- Mandatory field — shows * and error when empty ---
 export const MandatoryField: Story = {
     args: {
         config: {
