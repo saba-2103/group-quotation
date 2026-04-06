@@ -647,9 +647,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("select", {
-          field: "trigger",
-          operator: "eq",
-          value: "b",
+          "==": [{ var: "trigger" }, "b"],
         }),
       );
 
@@ -674,9 +672,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("select", {
-          field: "trigger",
-          operator: "eq",
-          value: "b",
+          "==": [{ var: "trigger" }, "b"],
         }),
       );
 
@@ -697,9 +693,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("select", {
-          field: "trigger",
-          operator: "neq",
-          value: "a",
+          "!=": [{ var: "trigger" }, "a"],
         }),
       );
 
@@ -732,9 +726,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("text", {
-          field: "trigger",
-          operator: "gt",
-          value: 5,
+          ">": [{ var: "trigger" }, 5],
         }),
       );
 
@@ -753,9 +745,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("text", {
-          field: "trigger",
-          operator: "lt",
-          value: 5,
+          "<": [{ var: "trigger" }, 5],
         }),
       );
 
@@ -770,9 +760,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("text", {
-          field: "trigger",
-          operator: "gte",
-          value: 5,
+          ">=": [{ var: "trigger" }, 5],
         }),
       );
 
@@ -787,9 +775,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("text", {
-          field: "trigger",
-          operator: "lte",
-          value: 5,
+          "<=": [{ var: "trigger" }, 5],
         }),
       );
 
@@ -804,9 +790,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("select", {
-          field: "trigger",
-          operator: "in",
-          value: ["a", "b"],
+          in: [{ var: "trigger" }, ["a", "b"]],
         }),
       );
 
@@ -827,9 +811,7 @@ describe("FormContainer — unit", () => {
       const user = userEvent.setup();
       renderForm(
         makeVisibleWhenConfig("select", {
-          field: "trigger",
-          operator: "notIn",
-          value: ["a"],
+          "!": { in: [{ var: "trigger" }, ["a"]] },
         }),
       );
 
@@ -870,7 +852,7 @@ describe("FormContainer — unit", () => {
               type: "text",
               order: 2,
               defaultValue: "hidden-value",
-              visibleWhen: { field: "status", operator: "eq", value: "active" },
+              visibleWhen: { "==": [{ var: "status" }, "active"] },
             },
           ],
           actions: [submitAction],
