@@ -19,8 +19,12 @@ const toJsonLogic = (condition: VisibilityCondition) => {
       case "lt": return { "<": [varExpr, value] };
       case "gte": return { ">=": [varExpr, value] };
       case "lte": return { "<=": [varExpr, value] };
-      case "in": return { "in": [varExpr, value] };
-      case "notIn": return { "!": { "in": [varExpr, value] } };
+      case "in":
+        if(!Array.isArray(value)) return false;
+        return { "in": [varExpr, value] };
+      case "notIn":
+        if(!Array.isArray(value)) return false;
+        return { "!": { "in": [varExpr, value] } };
       default: return { "==": [varExpr, value] };
     }
   };
