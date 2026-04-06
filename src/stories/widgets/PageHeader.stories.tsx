@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { PageHeader } from "@/components/widgets/layout/PageHeader/PageHeader";
+import { PageHeader } from "@/components/widgets/layout/PageHeader";
 import { pageHeaderMocks } from "@/stories/__mocks__";
 
 const meta: Meta<typeof PageHeader> = {
@@ -11,8 +11,8 @@ const meta: Meta<typeof PageHeader> = {
       <div className="p-6 bg-background space-y-2">
         <Story />
       </div>
-    ),
-  ],
+    )
+  ]
 };
 
 export default meta;
@@ -32,7 +32,7 @@ export const AllVariants: Story = {
             config={{
               id: "v-minimal",
               type: "page-header",
-              props: pageHeaderMocks.configs.minimal,
+              props: pageHeaderMocks.configs.minimal
             }}
           />
         </div>
@@ -47,7 +47,7 @@ export const AllVariants: Story = {
             config={{
               id: "v-default",
               type: "page-header",
-              props: pageHeaderMocks.configs.settings,
+              props: pageHeaderMocks.configs.settings
             }}
           />
         </div>
@@ -62,13 +62,13 @@ export const AllVariants: Story = {
             config={{
               id: "v-complex",
               type: "page-header",
-              props: pageHeaderMocks.configs.userManagement,
+              props: pageHeaderMocks.configs.userManagement
             }}
           />
         </div>
       </div>
     </div>
-  ),
+  )
 };
 
 // ─── Individual Stories ──────────────────────────────────────
@@ -78,9 +78,9 @@ export const Default: Story = {
     config: {
       id: "page-header-default",
       type: "page-header",
-      props: pageHeaderMocks.configs.default,
-    },
-  },
+      props: pageHeaderMocks.configs.default
+    }
+  }
 };
 
 export const WithActions: Story = {
@@ -88,9 +88,9 @@ export const WithActions: Story = {
     config: {
       id: "page-header-with-actions",
       type: "page-header",
-      props: pageHeaderMocks.configs.withActions,
-    },
-  },
+      props: pageHeaderMocks.configs.withActions
+    }
+  }
 };
 
 export const Minimal: Story = {
@@ -98,7 +98,7 @@ export const Minimal: Story = {
     config: {
       id: "page-header-minimal",
       type: "page-header",
-      props: pageHeaderMocks.configs.minimal,
-    },
-  },
+      props: pageHeaderMocks.configs.minimal
+    }
+  }
 };
