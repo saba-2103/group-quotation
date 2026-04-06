@@ -6,6 +6,7 @@ import { FieldError } from 'react-hook-form';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { ContextHelpTooltip } from '../../items/ContextHelpTooltip';
+import { ActionRenderer } from '../../controls/ActionRenderer';
 import { FormFieldConfig, FormAction, BackendError, FormValues } from './types';
 import { isRequiredField, isFieldDisabled } from './utils';
 import { useFormContainer } from './useFormContainer';
@@ -32,7 +33,6 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
         onSubmit,
         isValid,
         isSubmitting,
-        handleAction,
     } = useFormContainer({
         fields: fields as FormFieldConfig[],
         actions: actions as FormAction[],
@@ -40,7 +40,8 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
     });
 
     const isViewMode = mode === 'view' || disabled === true;
-    const showActions = !isViewMode && (actions as FormAction[]).length > 0;
+    const formActions = actions as FormAction[];
+    const showActions = !isViewMode && formActions.length > 0;
     const gridColumns = typeof columns === 'number' && columns > 0 ? columns : 3;
 
     return (
@@ -63,7 +64,7 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                     control={form.control}
                                     name={field.name as keyof FormValues}
                                     render={({ field: fieldProps }) => (
-                                        <FormItem className={field.span ? `col-span-${field.span}` : ''}>
+                                        <FormItem style={field.span ? { gridColumn: `span ${field.span}` } : undefined}>
                                             <FormLabel className={LABEL_CLASS}>
                                                 {field.label}
                                                 {required && <span className={REQUIRED_ASTERISK_CLASS}>*</span>}
@@ -99,17 +100,21 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                     Reset
                                 </Button>
                             )}
-                            {(actions as FormAction[]).map((act) => (
-                                <Button
-                                    key={act.id}
-                                    type={act.submitAction ? 'submit' : 'button'}
-                                    variant={act.variant ?? 'default'}
-                                    disabled={act.submitAction ? (!isValid || isSubmitting) : false}
-                                    onClick={!act.submitAction ? () => handleAction(act) : undefined}
-                                >
-                                    {act.label}
-                                </Button>
-                            ))}
+                            {formActions.map((act) => {
+                                if (act.submitAction) {
+                                    return (
+                                        <Button
+                                            key={act.id}
+                                            type="submit"
+                                            variant={act.variant ?? 'default'}
+                                            disabled={!isValid || isSubmitting}
+                                        >
+                                            {act.label}
+                                        </Button>
+                                    );
+                                }
+                                return <ActionRenderer key={act.id} action={act} />;
+                            })}
                         </div>
                     )}
                 </form>

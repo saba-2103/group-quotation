@@ -1,13 +1,14 @@
 'use client';
 
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useCallback } from 'react';
 import { useForm, useWatch, UseFormReturn, SubmitHandler, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useActionHandler } from '@/hooks/useActionHandler';
 import { useTenantConfig, DateFormat } from '@/contexts/TenantConfigContext';
 import { ActionConfig } from '@/types/widget';
 import { FormFieldConfig, FormAction, BackendError, FormValues } from './types';
-import { buildFormSchema, buildDefaultValues, evaluateCondition } from './utils';
+import { buildFormSchema, buildDefaultValues } from './utils';
+import { evaluateCondition } from '@/lib/conditions';
 
 interface UseFormContainerOptions {
     fields: FormFieldConfig[];
@@ -40,6 +41,11 @@ export const useFormContainer = ({
 
     const entrySnapshot = useRef<FormValues>(defaultValues);
 
+    // resetToEntry() restores the entry-time values
+    useEffect(() => {
+        entrySnapshot.current = defaultValues;
+    }, [defaultValues]);
+
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as Resolver<FormValues>,
         defaultValues,
@@ -59,7 +65,7 @@ export const useFormContainer = ({
         });
     }, [backendErrors, fields, form]);
 
-    const handleSubmit: SubmitHandler<FormValues> = (data) => {
+    const handleSubmit: SubmitHandler<FormValues> = useCallback(async (data) => {
         const visibleData: FormValues = { ...data };
         fields.forEach((field) => {
             if (field.visibleWhen && !evaluateCondition(field.visibleWhen, formValues)) {
@@ -71,11 +77,11 @@ export const useFormContainer = ({
         if (!submitAction) return;
 
         if (submitAction.type === 'api-mutation') {
-            handleAction({ ...submitAction, api: { ...submitAction.api, body: visibleData } });
+            await handleAction({ ...submitAction, api: { ...submitAction.api, body: visibleData } });
         } else {
-            handleAction(submitAction);
+            await handleAction(submitAction);
         }
-    };
+    }, [actions, fields, formValues, handleAction]);
 
     return {
         form,

@@ -88,10 +88,6 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
     ),
     'api-dropdown': ({ field, fieldProps, isDisabled, isRequired }) => (
         <Dropdown
-            variableCode={field.variableCode}
-            entityId={field.entityId}
-            language={field.language}
-            mandatory={isRequired}
             value={(fieldProps.value as string) ?? ''}
             onChange={fieldProps.onChange}
             placeholder={field.placeholder}
@@ -100,8 +96,6 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
     ),
     'api-dropdown-transactional': ({ field, fieldProps, isDisabled, isRequired }) => (
         <Dropdown
-            endpoint={field.endpoint}
-            mandatory={isRequired}
             value={(fieldProps.value as string) ?? ''}
             onChange={fieldProps.onChange}
             placeholder={field.placeholder}

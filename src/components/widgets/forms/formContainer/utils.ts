@@ -3,10 +3,7 @@ import {
   FormFieldConfig,
   FieldValidation,
   FieldSchema,
-  VisibleWhenCondition,
   FormValues,
-  ConditionValue,
-  FormFieldValue,
 } from "./types";
 import { REQUIRED_RULE } from "./constants";
 
@@ -42,53 +39,6 @@ export const isRequiredField = (field: FormFieldConfig): boolean =>
 export const isFieldDisabled = (field: FormFieldConfig): boolean =>
   field.disabled === true;
 
-const compareValues = (
-  fieldValue: FormFieldValue | undefined,
-  operator: VisibleWhenCondition["operator"],
-  conditionValue: ConditionValue,
-): boolean => {
-  const numField = Number(fieldValue);
-  const numCond = Number(conditionValue);
-
-  switch (operator) {
-    case "eq":
-      return fieldValue === conditionValue;
-    case "neq":
-      return fieldValue !== conditionValue;
-    case "gt":
-      return numField > numCond;
-    case "lt":
-      return numField < numCond;
-    case "gte":
-      return numField >= numCond;
-    case "lte":
-      return numField <= numCond;
-    case "in":
-      return (
-        Array.isArray(conditionValue) &&
-        conditionValue.includes(fieldValue as string & number)
-      );
-    case "notIn":
-      return (
-        Array.isArray(conditionValue) &&
-        !conditionValue.includes(fieldValue as string & number)
-      );
-    default:
-      return true;
-  }
-};
-
-export const evaluateCondition = (
-  condition: VisibleWhenCondition | undefined,
-  formValues: FormValues,
-): boolean => {
-  if (!condition) return true;
-  return compareValues(
-    formValues[condition.field],
-    condition.operator,
-    condition.value,
-  );
-};
 
 const buildFieldSchema = (
   field: FormFieldConfig,

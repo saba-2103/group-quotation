@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { FormContainer } from "../../../components/widgets/forms/FormContainer";
+import { FormContainer } from "../../../components/widgets/forms/formContainer";
 import { WidgetConfig } from "@/types/widget";
 
 // ─── Mock dependencies ────────────────────────────────────────────────────────
