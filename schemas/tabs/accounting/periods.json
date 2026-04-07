@@ -60,9 +60,12 @@
                         "type": "api-mutation",
                         "refreshKey": "/api/accounting/periods/list?page=0&size=50",
                         "visible": {
-                            "field": "state",
-                            "operator": "eq",
-                            "value": "NOT_STARTED"
+                            "==": [
+                                {
+                                    "var": "state"
+                                },
+                                "NOT_STARTED"
+                            ]
                         },
                         "api": {
                             "endpoint": "/api/accounting/periods/:id/open",
@@ -75,12 +78,15 @@
                         "type": "api-mutation",
                         "refreshKey": "/api/accounting/periods/list?page=0&size=50",
                         "visible": {
-                            "field": "state",
-                            "operator": "in",
-                            "value": [
-                                "OPEN",
-                                "REOPEN",
-                                "REOPENED"
+                            "in": [
+                                {
+                                    "var": "state"
+                                },
+                                [
+                                    "OPEN",
+                                    "REOPEN",
+                                    "REOPENED"
+                                ]
                             ]
                         },
                         "api": {
@@ -94,9 +100,12 @@
                         "type": "api-mutation",
                         "refreshKey": "/api/accounting/periods/list?page=0&size=50",
                         "visible": {
-                            "field": "state",
-                            "operator": "eq",
-                            "value": "CLOSED"
+                            "==": [
+                                {
+                                    "var": "state"
+                                },
+                                "CLOSED"
+                            ]
                         },
                         "api": {
                             "endpoint": "/api/accounting/periods/:id/reopen",

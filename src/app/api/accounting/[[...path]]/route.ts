@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = 'http://localhost:8090/api';
+const BACKEND_URL = 'https://group-pas-dev.anairacloud.com/api';
 
 type RouteContext = { params: Promise<{ path?: string[] }> };
 

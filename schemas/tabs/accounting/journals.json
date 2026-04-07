@@ -66,9 +66,12 @@
                         "label": "Post Journal",
                         "type": "api-mutation",
                         "visible": {
-                            "field": "state",
-                            "operator": "eq",
-                            "value": "PENDING"
+                            "==": [
+                                {
+                                    "var": "state"
+                                },
+                                "PENDING"
+                            ]
                         },
                         "api": {
                             "endpoint": "/api/accounting/journals/:journalNumber/post",
@@ -82,9 +85,12 @@
                         "type": "open-modal",
                         "target": "reverse-journal-form",
                         "visible": {
-                            "field": "state",
-                            "operator": "eq",
-                            "value": "POSTED"
+                            "==": [
+                                {
+                                    "var": "state"
+                                },
+                                "POSTED"
+                            ]
                         }
                     }
                 ]

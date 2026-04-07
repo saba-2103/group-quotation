@@ -86,9 +86,12 @@
                         "label": "Approve",
                         "type": "api-mutation",
                         "visible": {
-                            "field": "payoutState",
-                            "operator": "eq",
-                            "value": "PENDING"
+                            "==": [
+                                {
+                                    "var": "payoutState"
+                                },
+                                "PENDING"
+                            ]
                         },
                         "api": {
                             "endpoint": "/api/moneyout/payouts/:id/approve",
@@ -102,9 +105,12 @@
                         "type": "api-mutation",
                         "variant": "destructive",
                         "visible": {
-                            "field": "payoutState",
-                            "operator": "eq",
-                            "value": "PENDING"
+                            "==": [
+                                {
+                                    "var": "payoutState"
+                                },
+                                "PENDING"
+                            ]
                         },
                         "api": {
                             "endpoint": "/api/moneyout/payouts/:id/reject",
@@ -123,11 +129,14 @@
                         "type": "api-mutation",
                         "refreshKey": "/api/moneyout/payouts/search?page=0&size=50",
                         "visible": {
-                            "field": "payoutState",
-                            "operator": "in",
-                            "value": [
-                                "APPROVED",
-                                "DISBURSEMENT_REJECTED"
+                            "in": [
+                                {
+                                    "var": "payoutState"
+                                },
+                                [
+                                    "APPROVED",
+                                    "DISBURSEMENT_REJECTED"
+                                ]
                             ]
                         },
                         "api": {

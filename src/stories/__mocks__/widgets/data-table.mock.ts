@@ -299,7 +299,7 @@ const withdrawAction: RowActionConfig = {
     title: "Withdraw Quotation",
     message: "Are you sure you want to withdraw this quotation?",
   },
-  visible: { field: "mainStatus", operator: "eq", value: "Pending" },
+  visible: { "==": [{ var: "mainStatus" }, "Pending"] },
 };
 
 const cloneAction: RowActionConfig = {
