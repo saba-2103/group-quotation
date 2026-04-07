@@ -9,7 +9,7 @@ import { QuickLinksWidget } from "../widgets/items/QuickLinksWidget";
 import { DataTable } from "../widgets/data/DataTable";
 import { FilterBar } from "../widgets/controls/FilterBar";
 import { TabsContainer } from "../widgets/container/TabsContainer";
-import { FormContainer } from "../widgets/forms/FormContainer";
+import { FormContainer } from "../widgets/forms/formContainer";
 import { KeyValueGrid } from "../widgets/data/KeyValueGrid";
 import { ErrorBanner } from "../widgets/items/ErrorBanner";
 import { DateWidget } from "../widgets/controls/dateWidget/index";
