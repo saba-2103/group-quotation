@@ -30,9 +30,51 @@
                 ],
                 "columns": [
                     {
+                        "id": "journal_number",
+                        "accessorKey": "journal_number",
+                        "label": "Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_date",
+                        "accessorKey": "journal_date",
+                        "label": "Journal Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "account_year",
+                        "accessorKey": "account_year",
+                        "label": "Accounting Year",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_month",
+                        "accessorKey": "account_month",
+                        "label": "Accounting Month",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_status",
+                        "accessorKey": "journal_status",
+                        "label": "Journal Status",
+                        "type": "badge"
+                    },
+                    {
+                        "id": "reversed_journal_number",
+                        "accessorKey": "reversed_journal_number",
+                        "label": "Reversed Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "balance_error_flag",
+                        "accessorKey": "balance_error_flag",
+                        "label": "Balance Error (Y/N)",
+                        "type": "text"
+                    },
+                    {
                         "id": "component",
                         "accessorKey": "component",
-                        "label": "Component",
+                        "label": "Component Id",
                         "type": "text"
                     },
                     {
@@ -60,12 +102,6 @@
                         "type": "text"
                     },
                     {
-                        "id": "business_process_description",
-                        "accessorKey": "business_process_description",
-                        "label": "Business Process Description",
-                        "type": "text"
-                    },
-                    {
                         "id": "accounting_event_id",
                         "accessorKey": "accounting_event_id",
                         "label": "Accounting Event Id",
@@ -75,48 +111,6 @@
                         "id": "account_group",
                         "accessorKey": "account_group",
                         "label": "Account Group",
-                        "type": "text"
-                    },
-                    {
-                        "id": "journal_number",
-                        "accessorKey": "journal_number",
-                        "label": "Journal Number",
-                        "type": "text"
-                    },
-                    {
-                        "id": "journal_date",
-                        "accessorKey": "journal_date",
-                        "label": "Journal Date",
-                        "type": "date"
-                    },
-                    {
-                        "id": "account_year",
-                        "accessorKey": "account_year",
-                        "label": "Account Year",
-                        "type": "text"
-                    },
-                    {
-                        "id": "account_month",
-                        "accessorKey": "account_month",
-                        "label": "Account Month",
-                        "type": "text"
-                    },
-                    {
-                        "id": "journal_status",
-                        "accessorKey": "journal_status",
-                        "label": "Journal Status",
-                        "type": "badge"
-                    },
-                    {
-                        "id": "reversed_journal_number",
-                        "accessorKey": "reversed_journal_number",
-                        "label": "Reversed Journal Number",
-                        "type": "text"
-                    },
-                    {
-                        "id": "balance_error_flag",
-                        "accessorKey": "balance_error_flag",
-                        "label": "Balance Error Flag",
                         "type": "text"
                     }
                 ],
