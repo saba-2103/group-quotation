@@ -22,7 +22,7 @@
                     {
                         "id": "create-posting-rule-btn",
                         "label": "Create Posting Rule",
-                        "type": "open-modal",
+                        "type": "open-sheet",
                         "target": "create-posting-rule-form",
                         "variant": "default"
                     }
@@ -33,6 +33,12 @@
                         "accessorKey": "ruleId",
                         "label": "Rule ID",
                         "type": "text"
+                    },
+                    {
+                        "id": "seqno",
+                        "accessorKey": "seqno",
+                        "label": "Seqno",
+                        "type": "number"
                     },
                     {
                         "id": "lob",
