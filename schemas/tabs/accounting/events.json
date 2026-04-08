@@ -29,12 +29,6 @@
                 ],
                 "columns": [
                     {
-                        "id": "businessKey",
-                        "accessorKey": "businessKey",
-                        "label": "Business Key",
-                        "type": "text"
-                    },
-                    {
                         "id": "component",
                         "accessorKey": "component",
                         "label": "Component",
@@ -43,13 +37,37 @@
                     {
                         "id": "lob",
                         "accessorKey": "lob",
-                        "label": "LOB",
+                        "label": "Line of Business",
                         "type": "text"
+                    },
+                    {
+                        "id": "businessKey",
+                        "accessorKey": "businessKey",
+                        "label": "Business Key",
+                        "type": "text"
+                    },
+                    {
+                        "id": "tranno",
+                        "accessorKey": "tranno",
+                        "label": "Transaction Number",
+                        "type": "number"
                     },
                     {
                         "id": "businessProcessCode",
                         "accessorKey": "businessProcessCode",
-                        "label": "Process Code",
+                        "label": "Business Process Code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "businessProcessDescription",
+                        "accessorKey": "businessProcessDescription",
+                        "label": "Business Process Description",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accountingEventId",
+                        "accessorKey": "accountingEventId",
+                        "label": "Accounting Event Id",
                         "type": "text"
                     },
                     {
@@ -59,16 +77,22 @@
                         "type": "date"
                     },
                     {
-                        "id": "state",
-                        "accessorKey": "state",
-                        "label": "State",
+                        "id": "reversalFlag",
+                        "accessorKey": "reversalFlag",
+                        "label": "Reversal Flag",
+                        "type": "text"
+                    },
+                    {
+                        "id": "eventStatus",
+                        "accessorKey": "eventStatus",
+                        "label": "Event Status",
                         "type": "badge"
                     },
                     {
-                        "id": "detailCount",
-                        "accessorKey": "detailCount",
-                        "label": "Details",
-                        "type": "number"
+                        "id": "eventStatusDate",
+                        "accessorKey": "eventStatusDate",
+                        "label": "Event Status Date",
+                        "type": "date"
                     }
                 ],
                 "rowActions": [
@@ -79,7 +103,7 @@
                         "visible": {
                             "==": [
                                 {
-                                    "var": "state"
+                                    "var": "eventStatus"
                                 },
                                 "PENDING"
                             ]
@@ -98,7 +122,7 @@
                         "visible": {
                             "==": [
                                 {
-                                    "var": "state"
+                                    "var": "eventStatus"
                                 },
                                 "POSTED"
                             ]
