@@ -29,10 +29,16 @@
                 ],
                 "columns": [
                     {
-                        "id": "displayId",
-                        "accessorKey": "displayId",
-                        "label": "Display ID",
-                        "type": "text"
+                        "id": "accountingYear",
+                        "accessorKey": "accountingYear",
+                        "label": "Accounting Year",
+                        "type": "number"
+                    },
+                    {
+                        "id": "accountingMonth",
+                        "accessorKey": "accountingMonth",
+                        "label": "Accounting Month",
+                        "type": "number"
                     },
                     {
                         "id": "startDate",
@@ -49,68 +55,14 @@
                     {
                         "id": "state",
                         "accessorKey": "state",
-                        "label": "State",
+                        "label": "Period Status",
                         "type": "badge"
-                    }
-                ],
-                "rowActions": [
-                    {
-                        "id": "open-period-btn",
-                        "label": "Open",
-                        "type": "api-mutation",
-                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
-                        "visible": {
-                            "==": [
-                                {
-                                    "var": "state"
-                                },
-                                "NOT_STARTED"
-                            ]
-                        },
-                        "api": {
-                            "endpoint": "/api/accounting/periods/:id/open",
-                            "method": "POST"
-                        }
                     },
                     {
-                        "id": "close-period-btn",
-                        "label": "Close",
-                        "type": "api-mutation",
-                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
-                        "visible": {
-                            "in": [
-                                {
-                                    "var": "state"
-                                },
-                                [
-                                    "OPEN",
-                                    "REOPEN",
-                                    "REOPENED"
-                                ]
-                            ]
-                        },
-                        "api": {
-                            "endpoint": "/api/accounting/periods/:id/close",
-                            "method": "POST"
-                        }
-                    },
-                    {
-                        "id": "reopen-period-btn",
-                        "label": "Reopen",
-                        "type": "api-mutation",
-                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
-                        "visible": {
-                            "==": [
-                                {
-                                    "var": "state"
-                                },
-                                "CLOSED"
-                            ]
-                        },
-                        "api": {
-                            "endpoint": "/api/accounting/periods/:id/reopen",
-                            "method": "POST"
-                        }
+                        "id": "isCurrent",
+                        "accessorKey": "isCurrent",
+                        "label": "Is Current",
+                        "type": "text"
                     }
                 ]
             }
