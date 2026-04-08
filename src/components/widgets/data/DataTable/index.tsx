@@ -79,7 +79,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     exportData(rows, format);
   };
 
-  const { emptyState, isLoading: propLoading, error: propError, actionsLabel } = config.props || {};
+  const { emptyState, isLoading: propLoading, error: propError, actionsLabel, headerActions } = config.props || {};
 
   const isLoading = propLoading || isQueryLoading;
   const error = propError || queryError;
@@ -115,6 +115,9 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
         >
           {/* Toolbar */}
           <div className="flex items-center justify-end px-3 py-2 border-b gap-2">
+            {headerActions?.map((action: ActionConfig) => (
+              <ActionRenderer key={action.id} action={action} />
+            ))}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
