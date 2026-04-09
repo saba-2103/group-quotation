@@ -7,17 +7,15 @@
 
 ---
 
-## Executive Summary
+## What This System Is
 
-Keystone UI is a metadata-driven, multi-tenant insurance platform. Every screen is described as a schema — a JSON document defining layout, widgets, columns, actions, and conditions. The browser fetches the schema for the current page, then independently fetches the data to populate it. Structure and data are always separate.
+Keystone UI is a multi-tenant insurance platform. Every page is described as a **schema** — a JSON document that says what widgets appear on the page, what columns a table has, what actions are available, and what conditions control visibility. The browser fetches that schema, then independently fetches the data to fill it. Structure and data never travel together.
 
-The assembly architecture is browser-based. There is no middleware server between the browser and the backend. Schemas are resolved at the CDN edge, data is fetched directly from backend APIs with JWT authentication, and display configuration (labels, translations, badge variants) is materialised server-side before it ever reaches the browser. Three independent data flows replace what a backend-for-frontend server would otherwise own — each independently cacheable, deployable, and scalable.
-
-The result: no server to provision, monitor, or scale for UI assembly. Schema resolution runs at the network edge. Display config updates without a frontend deployment. Field-level conditional logic runs entirely in the browser with no round-trips per keystroke. And contract violations between the frontend and backend are caught in CI before they reach production users.
+The architecture is browser-based. There is no middleware server assembling the UI before it reaches the browser. The browser talks directly to the backend, schemas are resolved at the CDN edge, and display configuration — labels, translations, badge colours — is pre-computed server-side so the browser only ever receives ready-to-render output.
 
 ---
 
-## Full System Architecture
+## The Full System
 
 ```mermaid
 flowchart TB
@@ -72,228 +70,98 @@ flowchart TB
     MS -->|"CDN purge"| Worker
 ```
 
-**Three browser-initiated flows:**
+---
 
-| Flow | Hook | Destination | What it returns |
-|---|---|---|---|
-| Schema | `useViewMetadata()` | CDN Edge → S3 | Resolved schema (layout + pre-materialised config values) |
-| Data | `useSmartQuery()` / `useWorkbenchBootstrap()` | Backend APIs | Domain data, workflow contract |
-| Field rules | `useFieldConfig()` | Field Config API | JSONLogic rules, evaluated locally |
+## How This Works — Walking Through the Diagram
 
-**One server-side flow (not browser-initiated):**
-
-Admin saves a config blob → Config System emits an event → Schema Materialisation Service rewrites the affected resolved schemas in S3 → CDN cache is purged. The browser's next schema fetch sees the new labels. No frontend deployment required.
+Let's trace what happens when a user opens the quotations list page. This walkthrough covers every component and every arrow in the diagram above.
 
 ---
 
-## Layer 1 — Edge Schema Resolution
+### Step 1 — The browser needs to know what the page looks like
 
-The CDN edge function is a stateless Cloudflare Worker co-deployed with the frontend. It has no persistent state, no database, and no application server.
+The browser doesn't have the page structure locally. It calls `useViewMetadata()`, which sends a request to the **CDN edge function** — a lightweight Cloudflare Worker running at the network edge, close to the user.
 
-```mermaid
-sequenceDiagram
-    participant B as Browser
-    participant W as Cloudflare Worker
-    participant S3 as S3 Bucket
-    participant RQ as React Query Cache
+The request includes the user's JWT token. The Worker reads three things from it: `tenantId`, `role`, `lob`, `locale`, and `portalType`. It uses these to figure out which version of the schema to serve.
 
-    B->>RQ: useViewMetadata("quotations-list")
-    alt Cache hit
-        RQ-->>B: cached schema (staleTime: 5 min)
-    else Cache miss
-        B->>W: GET /schema/quotations-list<br/>Authorization: Bearer {jwt}
-        W->>W: decode JWT → extract tenantId, role, lob, locale
-        W->>S3: ListObjects(prefix="quotations-list/")
-        S3-->>W: candidate file list
-        W->>W: run specificity algorithm → pick winner
-        W->>S3: GetObject(winner key)
-        S3-->>W: resolved-schema.json
-        W-->>B: 200 resolved schema<br/>Cache-Control: public, max-age=300, stale-while-revalidate=3600
-        B->>RQ: store in cache
-        RQ-->>B: schema
-    end
+Here's why that matters: the quotations list looks different depending on who's looking at it. An underwriter at Tenant A needs different columns, different actions, and possibly different labels than a broker at Tenant B. We handle this by pre-building one schema file per meaningful context combination and storing them in S3:
+
+```
+keystone-resolved-schemas/quotations-list/
+  base.json                                    ← default, for anyone not matched below
+  tenant=gi.json                               ← GI tenant override
+  tenant=gi+role=underwriter.json              ← GI underwriters specifically
+  tenant=gi+role=underwriter+lob=motor.json    ← GI motor underwriters
+  ...
 ```
 
-**Specificity resolution:** Schema files in S3 are named with context dimensions — `tenant=gi+role=underwriter+lob=motor.json`. The worker scores each candidate file against the user's context (each matched dimension adds weight) and serves the highest-scoring file. More-specific fields override less-specific ones in a deep merge. This is the same mechanism CSS uses for selector specificity.
+The Worker loads the list of available files for this view, scores each one against the user's context, and picks the best match — the file with the most matching dimensions wins. This is the same idea as CSS specificity: the most specific rule wins. The Worker then fetches that file from S3 and returns it to the browser with a long cache header (`Cache-Control: public, max-age=300, stale-while-revalidate=3600`), so subsequent requests hit the CDN without touching S3 at all.
 
-**What the schema contains:** The resolved schema has display values already baked in. There are no raw domain codes, no `{field}Display` conventions, no labels to translate. The Config System materialised them before the file was written to S3 (see Layer 3).
+**What's inside that file?** The schema tells the browser the page structure: which widgets to render, in what layout, with what columns and actions. Crucially, it also already contains all the display values — labels like "Pending Approval" for a status badge, the page title, any translated strings. The browser doesn't look these up. They're already there, baked in. We'll come back to how they got there.
 
-→ Detail: [`01-EDGE-SCHEMA-RESOLUTION.md`](./browser-arch/01-EDGE-SCHEMA-RESOLUTION.md) · [`01a`](./browser-arch/01a-CLOUDFLARE-WORKER.md) · [`01b`](./browser-arch/01b-S3-SCHEMA-LAYOUT.md) · [`01c`](./browser-arch/01c-SPECIFICITY-ALGORITHM.md)
+Once the schema is in the browser, React Query caches it for 5 minutes. If the user navigates away and comes back, the cached schema is used immediately — no network call.
 
 ---
 
-## Layer 2 — Auth and Security
+### Step 2 — Each widget fetches its own data
 
-Auth is fully implemented by the backend platform team. The browser's responsibilities are narrow: hold the access token in memory, attach it to every request, and handle token expiry gracefully.
+The schema the browser just received describes each widget's data source: "call `/v1/quotations` with these params to get the rows." The widgets — through `useSmartQuery()` — make those calls directly to the **backend APIs** with the user's JWT as a Bearer token.
 
-| Concern | Implementation |
-|---|---|
-| Access token storage | In-memory only (never `localStorage`). XSS cannot steal it. |
-| Refresh token storage | `HttpOnly` cookie. JavaScript cannot read it. |
-| Silent re-authentication | Refresh endpoint called automatically before access token expires |
-| Request auth | `Authorization: Bearer {token}` attached by `createApiClient` factory |
-| 401 handling | `createApiClient` attempts one silent refresh, then retries. On second 401, redirect to login. |
-| Cross-tenant access | Backend returns `404` not `403` — prevents resource existence leakage |
-| CORS | Configured by backend platform middleware. Frontend origin is whitelisted across all services. |
-| Action capabilities | Evaluated by the orchestration backend, returned in the workflow contract. Never derived from browser config or cached state. |
+The backend validates the token (the platform middleware team built this — tenant guard, role check, permissions), executes the query, and returns domain data: rows, metrics, entities.
 
-The JWT carries: `userId`, `tenantId`, `role`, `lob`, `locale`, `portalType`, `permissions[]`. These populate `AppContext` on login and are immutable for the session. The edge function reads these claims to resolve the schema variant; it does not re-validate the signature (that is the backend's job).
+Two things to notice here:
 
-→ Detail: [`02-AUTH-AND-SECURITY.md`](./browser-arch/02-AUTH-AND-SECURITY.md) · [`02a`](./browser-arch/02a-JWT-CLAIMS-CONTRACT.md) · [`02b`](./browser-arch/02b-BACKEND-JWT-VALIDATION.md) · [`02c`](./browser-arch/02c-IDOR-AND-CORS.md)
+**Schema and data are completely independent.** The schema is structural and stable — it changes rarely and is cached for minutes. The data is volatile — it changes constantly and is never cached for long. If a data fetch fails or is slow, the page still loads and shows its structure with an empty or loading state. The page doesn't disappear because a backend was slow.
+
+**The browser talks directly to the backend.** There is no server in the middle translating requests. The backend URLs are known to the browser. This is intentional — the security boundary is the JWT, not network topology. The backend validates every request. Hiding URLs behind a proxy doesn't make the system more secure; validating tokens does.
 
 ---
 
-## Layer 3 — Client Config System
+### Step 3 — Forms fetch their field rules
 
-This is the most architecturally significant layer. It establishes a single source of truth for all display semantics: labels, translations, badge colours, and display flags. The backend owns domain codes (`PENDING_APPROVAL`). The Config System owns what those codes mean to the user.
+This step only happens on pages with forms. When a form mounts, `useFieldConfig()` calls the **Field Config API** with a list of field IDs. The API responds with a set of rules — one per field — in JSONLogic format:
 
-```mermaid
-flowchart LR
-    subgraph Authoring["Authoring Time (once per schema)"]
-        Dev["Developer creates schema"]
-        Dev -->|"declares config bindings"| Bindings["config-bindings.json\nkeystone-schema-bindings/ in S3\n(server-side only, never served to browser)"]
-    end
-
-    subgraph Runtime["Config Save Time (each time a label changes)"]
-        Admin["Admin saves config blob\ne.g. PENDING_APPROVAL → Pending Approval"]
-        Admin --> CRUD["Config CRUD Service"]
-        CRUD -->|"emit event"| Queue["Webhook / Queue"]
-        Queue --> MS["Schema Materialisation Service"]
-        MS -->|"read"| Bindings
-        MS -->|"resolve all bindings\nfor affected schema variants"| Resolved["resolved-schema.json\nkeystone-resolved-schemas/ in S3\n(CDN-served, browser-facing)"]
-        MS -->|"CDN purge"| CDN["CDN Edge Cache"]
-    end
-
-    subgraph BrowserFetch["Next Browser Request"]
-        CDN -->|"fresh resolved schema"| Browser["Browser\nsees plain labels, no domain codes"]
-    end
+```json
+{
+  "dependentDOB": {
+    "visibility": { "===": [{ "var": "formValues.hasDependents" }, true] }
+  },
+  "medicalHistory": {
+    "required": { "===": [{ "var": "$context.lob" }, "health"] }
+  }
+}
 ```
 
-**Schema-level binding declaration:** Config bindings are declared on the schema, not on the component. A `Badge` component is context-free — it receives `{ label, variant }` as plain props. The schema for `quotations-list` declares that `columns.status.valueMap` should be resolved from config key `insurance.quotation.status`. The component never knows which config key it came from.
+These rules are fetched once per form and cached for 5 minutes. From that point, the browser evaluates them **locally** every time the user types — no server round-trip per keystroke. The rule above says "show `dependentDOB` if `hasDependents` is true in the form." The browser evaluates that against current form state and shows or hides the field instantly.
 
-**Pre-materialisation:** Transformations run server-side at config save time. The browser fetches the already-resolved output. No transformation logic ever executes in the browser.
+Notice the second rule references `$context.lob`. That's the user's line of business from their JWT — not from the form. A user cannot fake their `$context` by typing something into a field. The rules can express business logic that depends on who the user is, not just what they've typed.
 
-**Fallback:** If the backend introduces a new enum value before its config mapping is registered, the Materialisation Service writes `{ label: "<raw_value>", variant: "neutral" }` and fires a `config.gap.detected` monitoring alert. No component breaks. The gap is visible in production monitoring before users notice it.
-
-**Config key governance:** Keys are permanent identifiers — values can change, keys cannot be renamed. Adding a new key requires registering it in the owned namespace. Renames are two-step: add new key, migrate all bindings, deprecate old key.
-
-→ Detail: [`03-CLIENT-CONFIG-SYSTEM.md`](./browser-arch/03-CLIENT-CONFIG-SYSTEM.md) · [`03a`](./browser-arch/03a-CONFIG-BLOB-SCHEMA.md) · [`03b`](./browser-arch/03b-SCHEMA-BINDINGS.md) · [`03c`](./browser-arch/03c-MATERIALISATION-SERVICE.md) · [`03d`](./browser-arch/03d-KEY-GOVERNANCE.md)
+**What field rules are not for:** they don't control whether a user *can* approve a quote or issue a policy. That's action capability, which lives in the workflow contract (Step 4).
 
 ---
 
-## Layer 4 — Contract Enforcement
+### Step 4 — Workbench pages get one coherent snapshot
 
-A backend field rename should never silently break the UI for production users. Two complementary layers prevent this.
+Dashboards and queue screens are simple: one schema fetch, each widget fetches its own data. Fine.
 
-```mermaid
-flowchart LR
-    FE["Frontend writes\nPact consumer test"]
-    FE -->|"publish to Pact Broker"| PB["Pact Broker"]
-    PB -->|"backend CI pulls\nand verifies"| BE["Backend CI"]
-    BE -->|"fail → blocks deploy"| Block["Deploy blocked\nbefore users affected"]
+Complex workbench pages are different — a quotation cockpit, a claims desk, a policy servicing screen. These have 8–10 panels that must all represent the *same moment in time*. If each panel fetches data independently, you get inconsistent states: the case header says "Pending" while the action panel says "Approved," because a mutation landed between two fetches. Debugging that is a nightmare.
 
-    API["API call in browser"]
-    API --> CAC["createApiClient factory\n• attaches JWT\n• handles 401 → refresh\n• parses with Zod"]
-    CAC -->|"parse fails"| Sentry["Sentry alert\n+ Datadog metric"]
-    CAC -->|"parse succeeds"| UI["UI renders"]
-    Sentry -->|"metric > 0\nin 5-min window"| PD["PagerDuty alert"]
+So workbench pages use `useWorkbenchBootstrap()`, which makes **one call** to the Bootstrap API and receives everything the page needs for its first render:
+
+```
+GET /v1/quotations/bootstrap?entityId=QT-2024-0042
+
+Response:
+  caseHeader       — the quote header for the page title
+  entities         — risk entities, plan summaries
+  workflow         — stage, allowed actions, blockers
+  jobs             — any running async jobs
+  regionPayloads   — data pre-loaded for each major panel
 ```
 
-**Pact (CI — pre-deployment):** The frontend team writes consumer contract tests that describe the exact shape expected from each API. The backend CI downloads and verifies these contracts. A field rename (`amountCents` → `amount_cents`) fails the backend's Pact verification step and blocks the deployment. No user is affected because the change never reaches production.
+Every panel hydrates from this one snapshot. After the initial render, individual panels can refresh their own data independently — but the first render is always coherent.
 
-**Browser Zod (runtime — safety net):** Every API call in the browser goes through `createApiClient`. This factory attaches the JWT, handles 401 → silent refresh → retry, and parses the response against a Zod schema. If parsing fails, a `ZodContractViolationError` is reported to Sentry with full context and a Datadog metric is incremented. A PagerDuty alert fires on any production occurrence. No raw `fetch()` calls are permitted — a `no-raw-fetch` ESLint rule enforces this.
-
-The resolved schema returned by the CDN edge also has a Zod schema (`WidgetConfigSchema`). It goes through `createApiClient` like any other API call.
-
-→ Detail: [`04-CONTRACT-ENFORCEMENT.md`](./browser-arch/04-CONTRACT-ENFORCEMENT.md) · [`04a`](./browser-arch/04a-PACT-CONTRACT-TESTING.md) · [`04b`](./browser-arch/04b-BROWSER-ZOD-AND-OBSERVABILITY.md)
-
----
-
-## Layer 5 — Field Config API
-
-Field-level conditional logic — which fields are visible, which are required, which are editable — is owned by the backend. It is served as JSONLogic expressions and evaluated entirely in the browser with no server round-trips per keystroke.
-
-```mermaid
-sequenceDiagram
-    participant F as Form mounts
-    participant H as useFieldConfig()
-    participant API as Field Config API
-    participant RQ as React Query Cache
-    participant E as JSONLogic Evaluator
-
-    F->>H: useFieldConfig(formId, fieldIds)
-    H->>RQ: check cache (5 min TTL)
-    alt Cache miss
-        H->>API: POST /v1/field-config/batch<br/>{ formId, fieldIds, context }
-        API-->>H: { fieldId → { visibility, required, editability, options, validation } }
-        H->>RQ: store rules
-    end
-    loop On every form value change
-        F->>E: evaluate rules against { formValues, $context }
-        E-->>F: { visible, required, disabled, readOnly }
-    end
-```
-
-`$context` in rules contains `{ role, tenantId, lob, locale }` — populated from the JWT. A user cannot influence `$context` through form input. This is how rules like "this field is required only for `lob=health`" remain server-controlled even though evaluation is client-side.
-
-**What Field Config is not:** It does not control action capabilities (`canApprove`, `canIssue`). Those come from the workflow contract, evaluated server-side. Field Config governs field-level UX within a form; workflow contracts govern business-critical action gating.
-
-→ Detail: [`05-FIELD-CONFIG-API.md`](./browser-arch/05-FIELD-CONFIG-API.md) · [`05a`](./browser-arch/05a-API-SPECIFICATION.md) · [`05b`](./browser-arch/05b-JSONLOGIC-PATTERNS.md)
-
----
-
-## Layer 6 — Client Runtime
-
-The client runtime assembles schema, data, conditions, and components into a rendered page.
-
-### State
-
-Three stores, each with a specific scope:
-
-| Store | Library | Holds | Lifetime |
-|---|---|---|---|
-| Server state | React Query | API responses, mutations | `staleTime: 5 min`, `gcTime: 10 min` |
-| Interaction state | Zustand | Selected rows, open panels, filters | Page lifetime |
-| Identity | AppContext | `userId`, `role`, `tenantId`, `lob`, `locale` | Login session (immutable) |
-
-### Rendering Pipeline
-
-```mermaid
-flowchart TD
-    Route["Page URL / route params"]
-    Route --> UVM2["useViewMetadata(viewId)\nfetch schema from CDN Edge"]
-    UVM2 --> WR2["WidgetRenderer\nfor each widget in schema"]
-    WR2 -->|"evaluate WidgetCondition"| Cond{"visible?"}
-    Cond -->|"no"| Skip["skip — render nothing"]
-    Cond -->|"yes"| Reg["WidgetRegistry.resolve(widget.type)"]
-    Reg --> Comp["React Component\nuseSmartQuery(widget.dataSource)"]
-    Comp --> DOM["Mounted DOM"]
-```
-
-`WidgetRenderer` is the only place where conditions gate rendering. Components receive props and render unconditionally — they contain no condition logic, making them independently testable.
-
-### Standard vs Workbench Pages
-
-**Standard pages** (dashboards, queues, list-detail): fetch schema once, each widget fetches its own data independently.
-
-**Workbench pages** (quotation cockpit, PAS servicing, claims desk, accounting recon): require a single coherent snapshot on load to ensure all regions represent the same moment in time.
-
-```mermaid
-flowchart LR
-    subgraph Standard["Standard Page"]
-        s1["useViewMetadata()"] --> s2["Widget A → own fetch"]
-        s1 --> s3["Widget B → own fetch"]
-        s1 --> s4["Widget C → own fetch"]
-    end
-
-    subgraph Workbench["Workbench Page"]
-        w1["useViewMetadata()"] --> w2["useWorkbenchBootstrap()\none coherent snapshot:\ncaseHeader + entities +\nworkflow + jobs + regionPayloads"]
-        w2 --> w3["All regions hydrate\nfrom snapshot"]
-        w3 --> w4["Selective child refresh\nfor subpanels after render"]
-    end
-```
-
-The bootstrap response includes the **workflow contract** — the backend's evaluation of what stage the case is in, which actions are currently allowed, and what blockers exist:
+The `workflow` part of this response is particularly important. It's the backend's evaluation of the current state of this case:
 
 ```json
 {
@@ -303,75 +171,95 @@ The bootstrap response includes the **workflow contract** — the backend's eval
       "approveQuote":    { "enabled": false, "reasons": ["pricing_not_finalized"] },
       "requestEvidence": { "enabled": true }
     },
-    "blockers": [],
-    "draftState": { "exists": false }
+    "blockers": []
   }
 }
 ```
 
-Action buttons in the UI read `workflow.actions` to determine their enabled state. The backend enforces the gate on the mutation endpoint regardless of what the UI shows.
-
-### Widget Registry
-
-The `WidgetRegistry` maps schema `type` strings to React components. Any component that satisfies a declared prop contract can be registered. The registry is type-agnostic — it does not classify components. Schema is the business entity; components are UI.
-
-`WidgetRenderer` calls `WidgetRegistry.resolve(type, contractVersion)`. If the type is not registered, it renders a contained error boundary, not a page crash.
-
-→ Detail: [`06-CLIENT-RUNTIME.md`](./browser-arch/06-CLIENT-RUNTIME.md) · [`06a`](./browser-arch/06a-STATE-MANAGEMENT.md) · [`06b`](./browser-arch/06b-WIDGET-AND-FIELD-CONDITIONS.md) · [`06c`](./browser-arch/06c-WORKBENCH-RUNTIME.md) · [`06d`](./browser-arch/06d-WIDGET-REGISTRY.md)
+The "Approve Quote" button reads `workflow.actions.approveQuote.enabled`. It's `false`, so it renders as disabled with the reason "pricing not finalised." This decision came from the backend — it evaluated the current state of the quote and told the UI what's allowed. The UI reflects it; the backend enforces it. If someone somehow triggered the approve endpoint anyway, the backend would reject it. The UI is a reflection, not the gate.
 
 ---
 
-## Key Design Principles
+### Step 5 — How the labels got into the schema
 
-**1. Schema is the business entity. Components are UI.**  
-The schema describes what a page contains and how it behaves. Components render what they receive. A component has no knowledge of which schema it is being used in or which config key drove its label. Separation is total.
+Go back to Step 1. The schema file already had "Pending Approval" in it. The Worker didn't fetch that from anywhere. The browser didn't look it up. How did it get there?
 
-**2. Config pre-materialised server-side.**  
-No transformation logic executes in the browser. The browser fetches resolved output. Labels, translations, and badge variants are baked into the schema by the Materialisation Service before the file is written to S3.
+This is the **Client Config System**. It's a server-side system that owns all display semantics — labels, translations, badge colours. The backend owns domain codes like `PENDING_APPROVAL`. The Config System owns what those codes mean to users.
 
-**3. Schema-level config binding, not component-level.**  
-The schema declares what config keys it needs. The same `Badge` component renders correctly in a quotation list and a claims list because each schema declares different config bindings independently.
+Here's the flow, starting from the bottom-left of the diagram:
 
-**4. Backend owns domain codes. Config System owns display semantics.**  
-`PENDING_APPROVAL` is a backend domain code. "Pending Approval" with a warning badge is a Config System blob. The backend never dictates labels. The Config System never dictates business logic.
+An admin opens the **Admin UI** and changes a label — say, "Pending Approval" becomes "Under Review." They save it. The **Config CRUD Service** writes the new value and emits a save event onto a **queue** (or webhook).
 
-**5. Action capabilities come from the backend, not from the browser.**  
-`canApprove`, `canIssue`, `canPost` are returned in the workflow contract from server-side orchestration evaluation. They are not derived from cached widget state, not stored in config, and not computed in the browser.
+The **Schema Materialisation Service** picks up the event. It knows which config key changed. It scans all schema binding files — stored in the private `keystone-schema-bindings` S3 bucket — to find every view that uses this config key. For each one, it resolves all the config bindings for every context variant of that schema, producing updated `resolved-schema.json` files. It writes those to the `keystone-resolved-schemas` S3 bucket and fires a CDN cache purge for the affected paths.
 
-**6. Contract violations are caught before users are affected.**  
-Pact consumer tests catch backend drift in CI. Browser Zod is the runtime safety net. An alert fires on any production contract violation. The system is designed to fail loudly and early.
+The next user who loads the quotations list page gets the Worker, which fetches the freshly written file from S3, and serves "Under Review" to the browser. No frontend deployment. No code change. The schema file changed, and that's all.
 
-**7. The schema context dimensions are stable.**  
-Schema variants are resolved by: `tenantId`, `role`, `lob`, `locale`, `portalType`. These are slow-changing identity dimensions. Volatile transactional state (quote stage, claim severity) must not drive schema variants — it drives workflow contracts and action capabilities.
+**Why this matters:** labels and translations are not in the codebase. They're in the Config System. A product manager can rename a status, add a translation, or change a badge colour through the admin UI — without involving an engineer. The change propagates automatically to every tenant and context that uses that config key.
+
+There are two S3 buckets in play with deliberately different access controls:
+- `keystone-resolved-schemas` — the Cloudflare Worker can read it; the CDN caches from it; the browser ultimately sees what's in it
+- `keystone-schema-bindings` — private; only the Materialisation Service can read it; no browser, no CDN, no Worker ever touches it
 
 ---
 
-## Document Reference
+### The Full Picture
 
-| Document | Purpose |
-|---|---|
-| [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Root reference — layer map, design decisions, trade-offs |
-| [`01-EDGE-SCHEMA-RESOLUTION.md`](./browser-arch/01-EDGE-SCHEMA-RESOLUTION.md) | Edge function overview, cache strategy, error handling |
-| [`01a-CLOUDFLARE-WORKER.md`](./browser-arch/01a-CLOUDFLARE-WORKER.md) | Worker script, bindings, KV cache, pre-warming |
-| [`01b-S3-SCHEMA-LAYOUT.md`](./browser-arch/01b-S3-SCHEMA-LAYOUT.md) | S3 key naming spec, full context combination table, versioning |
-| [`01c-SPECIFICITY-ALGORITHM.md`](./browser-arch/01c-SPECIFICITY-ALGORITHM.md) | Scoring rules, TypeScript implementation, merge algorithm, test cases |
-| [`02-AUTH-AND-SECURITY.md`](./browser-arch/02-AUTH-AND-SECURITY.md) | Browser auth contract, JWT lifecycle, CORS |
-| [`02a-JWT-CLAIMS-CONTRACT.md`](./browser-arch/02a-JWT-CLAIMS-CONTRACT.md) | JWT claims interface, silent refresh flow |
-| [`02b-BACKEND-JWT-VALIDATION.md`](./browser-arch/02b-BACKEND-JWT-VALIDATION.md) | Error shapes, 401 retry sequence |
-| [`02c-IDOR-AND-CORS.md`](./browser-arch/02c-IDOR-AND-CORS.md) | 404 rationale, CORS, token storage rules |
-| [`03-CLIENT-CONFIG-SYSTEM.md`](./browser-arch/03-CLIENT-CONFIG-SYSTEM.md) | Config System overview, event flow, admin UI |
-| [`03a-CONFIG-BLOB-SCHEMA.md`](./browser-arch/03a-CONFIG-BLOB-SCHEMA.md) | Config blob data model, value types, CRUD API |
-| [`03b-SCHEMA-BINDINGS.md`](./browser-arch/03b-SCHEMA-BINDINGS.md) | Binding declaration format, 3 mapping types, authoring workflow |
-| [`03c-MATERIALISATION-SERVICE.md`](./browser-arch/03c-MATERIALISATION-SERVICE.md) | Materialisation algorithm, retry policy, idempotency, monitoring |
-| [`03d-KEY-GOVERNANCE.md`](./browser-arch/03d-KEY-GOVERNANCE.md) | Key immutability, deprecation lifecycle, namespace ownership |
-| [`04-CONTRACT-ENFORCEMENT.md`](./browser-arch/04-CONTRACT-ENFORCEMENT.md) | Two-layer defence overview, ESLint rule, alerting |
-| [`04a-PACT-CONTRACT-TESTING.md`](./browser-arch/04a-PACT-CONTRACT-TESTING.md) | Pact consumer test examples, CI step order |
-| [`04b-BROWSER-ZOD-AND-OBSERVABILITY.md`](./browser-arch/04b-BROWSER-ZOD-AND-OBSERVABILITY.md) | `createApiClient` factory, Zod schemas, Sentry/Datadog integration |
-| [`05-FIELD-CONFIG-API.md`](./browser-arch/05-FIELD-CONFIG-API.md) | Field Config API overview, `useFieldConfig` hook |
-| [`05a-API-SPECIFICATION.md`](./browser-arch/05a-API-SPECIFICATION.md) | Endpoint spec, TypeScript interfaces, Zod schema, example payload |
-| [`05b-JSONLOGIC-PATTERNS.md`](./browser-arch/05b-JSONLOGIC-PATTERNS.md) | Common patterns, `$context`, anti-patterns, unit tests |
-| [`06-CLIENT-RUNTIME.md`](./browser-arch/06-CLIENT-RUNTIME.md) | Runtime overview, state stores, rendering pipeline, hook inventory |
-| [`06a-STATE-MANAGEMENT.md`](./browser-arch/06a-STATE-MANAGEMENT.md) | React Query config, Zustand store structure, AppContext |
-| [`06b-WIDGET-AND-FIELD-CONDITIONS.md`](./browser-arch/06b-WIDGET-AND-FIELD-CONDITIONS.md) | WidgetCondition and RowCondition interfaces, 5 worked examples |
-| [`06c-WORKBENCH-RUNTIME.md`](./browser-arch/06c-WORKBENCH-RUNTIME.md) | Bootstrap hook, WorkflowRuntime, DraftRuntime, JobRuntime, AuditRuntime |
-| [`06d-WIDGET-REGISTRY.md`](./browser-arch/06d-WIDGET-REGISTRY.md) | Registry API, prop contract declaration, versioning, contract testing |
+To summarise what happens when a user loads a page:
+
+1. `useViewMetadata()` → CDN Worker → S3 → **the right schema for this user, with labels already resolved**
+2. Each widget's `useSmartQuery()` → Backend API → **live domain data**
+3. If there's a form: `useFieldConfig()` → Field Config API → **field rules, evaluated locally per keystroke**
+4. If it's a workbench: `useWorkbenchBootstrap()` → Bootstrap API → **one coherent snapshot including workflow state and action capabilities**
+
+And separately, whenever an admin changes a label:
+- Config System → queue event → Materialisation Service → rewrite schemas in S3 → purge CDN cache → **next schema fetch gets the new value**
+
+There is no server assembling this. Each of the four browser flows is independent, separately cacheable, and separately deployable. A schema change doesn't require a code deploy. A label change doesn't require a schema change. A data model change in the backend is caught by contract tests before it reaches production.
+
+---
+
+## Design Principles
+
+These are the decisions that give the architecture its shape. Every non-obvious choice above traces back to one of these.
+
+**Schema is the business entity. Components are UI.** The schema says what a page contains and how it behaves. Components render what they receive. A `Badge` component doesn't know if it's rendering a quotation status or a claims status — it just renders `{ label, variant }`. The schema is the thing that carries business context.
+
+**Display semantics belong to the Config System, not the backend.** The backend produces `PENDING_APPROVAL`. The Config System produces `{ label: "Pending Approval", variant: "warning" }`. The backend never dictates what things look like. The Config System never dictates business logic. This boundary is what allows labels to change without code changes.
+
+**Config is pre-materialised, not transformed in the browser.** Transformation runs server-side at config save time. The browser fetches resolved output. No logic executes in the browser to produce labels from raw values — that would mean sending transformation code to every user's browser, which is both a security risk and a performance cost.
+
+**Action capabilities come from the backend.** `canApprove`, `canIssue`, `canPost` — these are not derived from browser state or config. They come from backend evaluation in the workflow contract. The UI reflects them; the backend enforces them.
+
+**Contract violations are caught before users are affected.** Backend API changes are validated against consumer contract tests (Pact) in CI, before deployment. Every API response is also parsed against a Zod schema in the browser at runtime as a safety net. Any violation fires an alert immediately.
+
+**Schema context dimensions are stable.** Schema variants are resolved by `tenantId`, `role`, `lob`, `locale`, `portalType` — slow-changing identity dimensions. Transactional state (quote stage, claim severity) never drives schema variants. It drives workflow contracts. Mixing the two would create an explosion of schema combinations that can't be managed.
+
+---
+
+## Going Deeper
+
+The sections below are reference material. Read them when you're working in that layer.
+
+### Layer 1 — Edge Schema Resolution
+The specificity algorithm, full S3 key naming spec, Worker script, cache and pre-warming strategy.  
+→ [`01-EDGE-SCHEMA-RESOLUTION.md`](./browser-arch/01-EDGE-SCHEMA-RESOLUTION.md) · [`01a`](./browser-arch/01a-CLOUDFLARE-WORKER.md) · [`01b`](./browser-arch/01b-S3-SCHEMA-LAYOUT.md) · [`01c`](./browser-arch/01c-SPECIFICITY-ALGORITHM.md)
+
+### Layer 2 — Auth and Security
+JWT lifecycle in the browser, the claims contract, CORS, 404-not-403 for IDOR prevention.  
+→ [`02-AUTH-AND-SECURITY.md`](./browser-arch/02-AUTH-AND-SECURITY.md) · [`02a`](./browser-arch/02a-JWT-CLAIMS-CONTRACT.md) · [`02b`](./browser-arch/02b-BACKEND-JWT-VALIDATION.md) · [`02c`](./browser-arch/02c-IDOR-AND-CORS.md)
+
+### Layer 3 — Client Config System
+Config blob data model, schema binding declarations, the materialisation algorithm, key governance and deprecation.  
+→ [`03-CLIENT-CONFIG-SYSTEM.md`](./browser-arch/03-CLIENT-CONFIG-SYSTEM.md) · [`03a`](./browser-arch/03a-CONFIG-BLOB-SCHEMA.md) · [`03b`](./browser-arch/03b-SCHEMA-BINDINGS.md) · [`03c`](./browser-arch/03c-MATERIALISATION-SERVICE.md) · [`03d`](./browser-arch/03d-KEY-GOVERNANCE.md)
+
+### Layer 4 — Contract Enforcement
+Pact consumer tests, `createApiClient` factory, Browser Zod, Sentry and Datadog integration, PagerDuty alerting.  
+→ [`04-CONTRACT-ENFORCEMENT.md`](./browser-arch/04-CONTRACT-ENFORCEMENT.md) · [`04a`](./browser-arch/04a-PACT-CONTRACT-TESTING.md) · [`04b`](./browser-arch/04b-BROWSER-ZOD-AND-OBSERVABILITY.md)
+
+### Layer 5 — Field Config API
+API specification, JSONLogic patterns and anti-patterns, `$context` security model, local evaluation.  
+→ [`05-FIELD-CONFIG-API.md`](./browser-arch/05-FIELD-CONFIG-API.md) · [`05a`](./browser-arch/05a-API-SPECIFICATION.md) · [`05b`](./browser-arch/05b-JSONLOGIC-PATTERNS.md)
+
+### Layer 6 — Client Runtime
+State stores, rendering pipeline, condition system, workbench bootstrap, workflow and draft runtimes, widget registry.  
+→ [`06-CLIENT-RUNTIME.md`](./browser-arch/06-CLIENT-RUNTIME.md) · [`06a`](./browser-arch/06a-STATE-MANAGEMENT.md) · [`06b`](./browser-arch/06b-WIDGET-AND-FIELD-CONDITIONS.md) · [`06c`](./browser-arch/06c-WORKBENCH-RUNTIME.md) · [`06d`](./browser-arch/06d-WIDGET-REGISTRY.md)
