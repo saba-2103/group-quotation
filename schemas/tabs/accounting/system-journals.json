@@ -20,13 +20,7 @@
             "props": {
                 "title": "System Journals Listing",
                 "columns": [
-                    {
-                        "id": "component",
-                        "accessorKey": "component",
-                        "label": "Component",
-                        "type": "text"
-                    },
-                    {
+{
                         "id": "lob",
                         "accessorKey": "lob",
                         "label": "Line of Business",
