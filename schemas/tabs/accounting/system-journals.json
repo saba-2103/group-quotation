@@ -19,6 +19,7 @@
             },
             "props": {
                 "title": "System Journals Listing",
+                "rowIdKey": "journal_number",
                 "columns": [
 {
                         "id": "lob",
@@ -72,7 +73,7 @@
                         "id": "journal_date",
                         "accessorKey": "journal_date",
                         "label": "Journal Date",
-                        "type": "text"
+                        "type": "date"
                     },
                     {
                         "id": "account_year",
