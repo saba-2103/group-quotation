@@ -219,7 +219,6 @@
       "id": "save-key-data",
       "label": "Save Key Data",
       "variant": "default",
-      "actionType": "action",
       "submitAction": {
         "endpoint": "/api/quotations/key-data",
         "method": "POST",
@@ -230,7 +229,6 @@
       "id": "reset",
       "label": "Reset",
       "variant": "outline",
-      "actionType": "interactive"
     }
   ]
 }

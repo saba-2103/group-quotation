@@ -14,7 +14,6 @@
             {
                 "id": "close",
                 "label": "Close",
-                "actionType": "action",
                 "variant": "outline",
                 "submitAction": false
             }
