@@ -19,6 +19,16 @@
             },
             "props": {
                 "title": "Direct Journals Listing",
+                "rowIdKey": "journal_number",
+                "rowActions": [
+                    {
+                        "id": "view-direct-journal-btn",
+                        "label": "View",
+                        "icon": "Eye",
+                        "type": "navigate",
+                        "target": "/accounting/direct-journals/:id"
+                    }
+                ],
                 "columns": [
                     {
                         "id": "lob",
