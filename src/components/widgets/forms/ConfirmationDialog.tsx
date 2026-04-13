@@ -3,7 +3,6 @@ import { useOverlayStore } from '@/hooks/useOverlayStore';
 import { useActionHandler } from '@/hooks/useActionHandler';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ActionButton } from '@/components/widgets/controls/ActionButton';
 import { ActionConfig } from '@/types/widget';
 
 type ApiMutationAction = Extract<ActionConfig, { type: 'api-mutation' }>;
@@ -53,7 +52,9 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({ id, acti
                     <Button variant="outline" onClick={() => close(id)} disabled={isPending}>
                         Cancel
                     </Button>
-                    <ActionButton action={action} onClick={handleConfirm} disabled={isPending} />
+                    <Button variant={action.variant === "destructive" ? "destructive" : "default"} onClick={handleConfirm} disabled={isPending}>
+                        {action.label ?? 'Confirm'}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
