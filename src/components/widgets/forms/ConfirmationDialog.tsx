@@ -52,7 +52,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({ id, acti
                     <Button variant="outline" onClick={() => close(id)} disabled={isPending}>
                         Cancel
                     </Button>
-                    <Button variant={action.variant === "destructive" ? "destructive" : "default"} onClick={handleConfirm} disabled={isPending}>
+                    <Button variant={action.variant ?? "default"} onClick={handleConfirm} disabled={isPending}>
                         {action.label ?? 'Confirm'}
                     </Button>
                 </DialogFooter>
