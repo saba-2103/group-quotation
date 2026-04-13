@@ -1,0 +1,122 @@
+import { NextResponse } from 'next/server';
+
+const journalLinesMockData: Record<string, object[]> = {
+    "JNL-2024-002": [
+        {
+            journal_number: "JNL-2024-002",
+            acct_seqno: "1",
+            event_seq: "1",
+            account_group: "GRP-002",
+            account_subgroup: "SUBGRP-C",
+            entity1_type: "POL",
+            entity1: "POL-20002",
+            entity2_type: "MEM",
+            entity2: "MEM-00456",
+            effective_date: "2024-03-20",
+            transaction_date: "2024-03-20",
+            transaction_currency: "USD",
+            amount_in_trans_currency: "7500.00",
+            gl_currency: "USD",
+            exchange_rate: "1.00",
+            amount_in_gl_currency: "7500.00",
+            summary_flag: "N",
+            dc_ind: "D",
+            account_year: "2024",
+            account_month: "03",
+            gl_pseudo_name: "PREM-INCOME-HEALTH",
+            gl_extract_jobno: "900002",
+            gl_extract_date: "2024-03-21",
+            remarks: "Health premium posting",
+            created_user_id: "admin"
+        },
+        {
+            journal_number: "JNL-2024-002",
+            acct_seqno: "2",
+            event_seq: "1",
+            account_group: "GRP-002",
+            account_subgroup: "SUBGRP-D",
+            entity1_type: "POL",
+            entity1: "POL-20002",
+            entity2_type: "MEM",
+            entity2: "MEM-00456",
+            effective_date: "2024-03-20",
+            transaction_date: "2024-03-20",
+            transaction_currency: "USD",
+            amount_in_trans_currency: "7500.00",
+            gl_currency: "USD",
+            exchange_rate: "1.00",
+            amount_in_gl_currency: "7500.00",
+            summary_flag: "N",
+            dc_ind: "C",
+            account_year: "2024",
+            account_month: "03",
+            gl_pseudo_name: "CASH-CLEARING",
+            gl_extract_jobno: "900002",
+            gl_extract_date: "2024-03-21",
+            remarks: "Health premium clearing",
+            created_user_id: "admin"
+        }
+    ],
+    "JNL-2024-001": [
+        {
+            journal_number: "JNL-2024-001",
+            acct_seqno: "1",
+            event_seq: "1",
+            account_group: "GRP-001",
+            account_subgroup: "SUBGRP-A",
+            entity1_type: "POL",
+            entity1: "POL-10001",
+            entity2_type: "MEM",
+            entity2: "MEM-00123",
+            effective_date: "2024-03-15",
+            transaction_date: "2024-03-15",
+            transaction_currency: "USD",
+            amount_in_trans_currency: "5000.00",
+            gl_currency: "USD",
+            exchange_rate: "1.00",
+            amount_in_gl_currency: "5000.00",
+            summary_flag: "N",
+            dc_ind: "D",
+            account_year: "2024",
+            account_month: "03",
+            gl_pseudo_name: "PREM-INCOME-LIFE",
+            gl_extract_jobno: "900001",
+            gl_extract_date: "2024-03-16",
+            remarks: "Premium receipt posting",
+            created_user_id: "admin"
+        },
+        {
+            journal_number: "JNL-2024-001",
+            acct_seqno: "2",
+            event_seq: "1",
+            account_group: "GRP-001",
+            account_subgroup: "SUBGRP-B",
+            entity1_type: "POL",
+            entity1: "POL-10001",
+            entity2_type: "MEM",
+            entity2: "MEM-00123",
+            effective_date: "2024-03-15",
+            transaction_date: "2024-03-15",
+            transaction_currency: "USD",
+            amount_in_trans_currency: "5000.00",
+            gl_currency: "USD",
+            exchange_rate: "1.00",
+            amount_in_gl_currency: "5000.00",
+            summary_flag: "N",
+            dc_ind: "C",
+            account_year: "2024",
+            account_month: "03",
+            gl_pseudo_name: "CASH-CLEARING",
+            gl_extract_jobno: "900001",
+            gl_extract_date: "2024-03-16",
+            remarks: "Premium receipt clearing",
+            created_user_id: "admin"
+        }
+    ]
+};
+
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+    const { id } = await context.params;
+    const lines = journalLinesMockData[id] ?? [];
+    return NextResponse.json(lines);
+}
