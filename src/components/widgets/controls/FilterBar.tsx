@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { WidgetConfig } from "@/types/widget";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { useWidgetState } from "@/hooks/useWidgetState";
@@ -68,6 +68,29 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
 
   const activeFilterValues = getValue(stateKey, {});
 
+  const SEARCH_DEBOUNCE_MS = 300;
+  const [searchInputValue, setSearchInputValue] = useState<string>((activeFilterValues[searchKey] as string) ?? "");
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync local input when external state is cleared (e.g. "Clear all")
+  useEffect(() => {
+    const externalValue = (activeFilterValues[searchKey] as string) ?? "";
+    if (externalValue !== searchInputValue) {
+      setSearchInputValue(externalValue);
+    }
+  }, [activeFilterValues[searchKey]]);
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchInputValue(value);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      handleAction({
+        type: "update-widget-state",
+        props: { key: stateKey, operation: "patch", value: { [searchKey]: value } }
+      });
+    }, SEARCH_DEBOUNCE_MS);
+  };
+
   const handleFilterChange = (filterStateKey: string, filterStateValue: string) => {
     handleAction({
       type: "update-widget-state",
@@ -99,11 +122,22 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
         const matchedOption = filterDef.options.find((option) => option.value === filterStateValue);
         chipDisplayLabel = matchedOption?.label ?? String(filterStateValue);
       }
-      return { key: filterStateKey, label: `${filterDef.label}: ${chipDisplayLabel}` };
+      return { key: filterStateKey, label: filterStateValue === "true" ? filterDef.label : `${filterDef.label}: ${chipDisplayLabel}` };
     })
     .filter((appliedChip): appliedChip is { key: string; label: string } => appliedChip !== null);
 
   const selectFilters = filters.filter((filter) => filter.type === "select");
+  const textFilters = filters.filter((filter) => filter.type === "text");
+
+  const renderTextFilter = (filter: FilterConfig) => (
+    <DropdownMenuCheckboxItem
+      key={filter.id}
+      checked={!!activeFilterValues[filter.id]}
+      onCheckedChange={(checked) => handleFilterChange(filter.id, checked ? "true" : "")}
+    >
+      {filter.label}
+    </DropdownMenuCheckboxItem>
+  );
 
   const renderSelectFilter = (filter: FilterConfig) => {
     const selectedOptionValue = activeFilterValues[filter.id];
@@ -139,14 +173,14 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
         <div className="relative flex-1 min-w-[220px]">
           <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            value={activeFilterValues[searchKey] || ""}
-            onChange={(e) => handleFilterChange(searchKey, e.target.value)}
+            value={searchInputValue}
+            onChange={(e) => handleSearchInputChange(e.target.value)}
             placeholder={searchPlaceholder}
             className="bg-card pl-8"
           />
         </div>
 
-        {selectFilters.length > 0 && (
+        {(selectFilters.length > 0 || textFilters.length > 0) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-1">
@@ -157,6 +191,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
             <DropdownMenuContent align="end" className="min-w-[220px]">
               <DropdownMenuLabel>{filterByLabel}</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {textFilters.map(renderTextFilter)}
               {selectFilters.map(renderSelectFilter)}
             </DropdownMenuContent>
           </DropdownMenu>
