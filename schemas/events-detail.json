@@ -1,0 +1,123 @@
+{
+    "id": "events-detail-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-6"
+    },
+    "children": [
+        {
+            "id": "events-detail-header",
+            "type": "page-header",
+            "props": {
+                "title": "Accounting Event Enquiry",
+                "description": "View accounting event header and line details",
+                "breadcrumbs": [
+                    {
+                        "label": "Home",
+                        "href": "/"
+                    },
+                    {
+                        "label": "Accounting",
+                        "href": "/accounting"
+                    },
+                    {
+                        "label": "Accounting Events",
+                        "href": "/accounting"
+                    },
+                    {
+                        "label": "Event Enquiry"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "events-summary-grid",
+            "type": "key-value-grid",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/events/{{id}}",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "fields": [
+                    {
+                        "id": "component",
+                        "label": "Component",
+                        "accessorKey": "component",
+                        "type": "text"
+                    },
+                    {
+                        "id": "lob",
+                        "label": "Line of Business",
+                        "accessorKey": "lob",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business_key",
+                        "label": "Business Key",
+                        "accessorKey": "business_key",
+                        "type": "text"
+                    },
+                    {
+                        "id": "tranno",
+                        "label": "Transaction Number",
+                        "accessorKey": "tranno",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business_process_code",
+                        "label": "Business Process Code",
+                        "accessorKey": "business_process_code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business_process_description",
+                        "label": "Business Process Description",
+                        "accessorKey": "business_process_description",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accounting_event_id",
+                        "label": "Accounting Event Id",
+                        "accessorKey": "accounting_event_id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "event_date",
+                        "label": "Event Date",
+                        "accessorKey": "event_date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "reversal_flag",
+                        "label": "Reversal Flag",
+                        "accessorKey": "reversal_flag",
+                        "type": "text"
+                    },
+                    {
+                        "id": "event_status",
+                        "label": "Event Status",
+                        "accessorKey": "event_status",
+                        "type": "text"
+                    },
+                    {
+                        "id": "event_status_date",
+                        "label": "Event Status Date",
+                        "accessorKey": "event_status_date",
+                        "type": "date"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "events-detail-tabs",
+            "type": "tabs-container",
+            "children": [
+                {
+                    "$ref": "schemas/tabs/accounting/event-lines.json"
+                }
+            ]
+        }
+    ]
+}

@@ -18,6 +18,7 @@
             },
             "props": {
                 "title": "Accounting Events",
+                "rowIdKey": "accountingEventId",
                 "headerActions": [
                     {
                         "id": "create-event-btn",
@@ -72,6 +73,13 @@
                     }
                 ],
                 "rowActions": [
+                    {
+                        "id": "view-event-btn",
+                        "label": "View",
+                        "icon": "ExternalLink",
+                        "type": "navigate",
+                        "target": "/accounting/events/:id"
+                    },
                     {
                         "id": "post-event-btn",
                         "label": "Post Event",

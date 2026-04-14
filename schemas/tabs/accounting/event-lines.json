@@ -1,0 +1,128 @@
+{
+    "id": "event-lines-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "event-lines",
+        "label": "Event Lines",
+        "icon": "List"
+    },
+    "children": [
+        {
+            "id": "event-lines-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/events/{{id}}/lines",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Event Lines",
+                "columns": [
+                    {
+                        "id": "event_seq",
+                        "accessorKey": "event_seq",
+                        "label": "Event Sequence",
+                        "type": "number"
+                    },
+                    {
+                        "id": "account_group",
+                        "accessorKey": "account_group",
+                        "label": "Account Group",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_sub_group",
+                        "accessorKey": "account_sub_group",
+                        "label": "Account Sub Group",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1_type",
+                        "accessorKey": "entity1_type",
+                        "label": "Entity 1 Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1",
+                        "accessorKey": "entity1",
+                        "label": "Entity 1",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity2_type",
+                        "accessorKey": "entity2_type",
+                        "label": "Entity 2 Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity2",
+                        "accessorKey": "entity2",
+                        "label": "Entity 2",
+                        "type": "text"
+                    },
+                    {
+                        "id": "effective_date",
+                        "accessorKey": "effective_date",
+                        "label": "Effective Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "transaction_date",
+                        "accessorKey": "transaction_date",
+                        "label": "Transaction Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "transaction_currency",
+                        "accessorKey": "transaction_currency",
+                        "label": "Transaction Currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "amount_in_trans_currency",
+                        "accessorKey": "amount_in_trans_currency",
+                        "label": "Amount in Transaction Currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "summary_flag",
+                        "accessorKey": "summary_flag",
+                        "label": "Summary Flag",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_number",
+                        "accessorKey": "journal_number",
+                        "label": "Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_date",
+                        "accessorKey": "journal_date",
+                        "label": "Journal Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "balance_error_flag",
+                        "accessorKey": "balance_error_flag",
+                        "label": "Balance Error Flag",
+                        "type": "text"
+                    },
+                    {
+                        "id": "reversed_journal_number",
+                        "accessorKey": "reversed_journal_number",
+                        "label": "Reversed Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "remarks",
+                        "accessorKey": "remarks",
+                        "label": "Remarks",
+                        "type": "text"
+                    }
+                ]
+            }
+        }
+    ]
+}
