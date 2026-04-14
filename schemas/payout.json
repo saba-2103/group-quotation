@@ -22,6 +22,9 @@
             "children": [
                 {
                     "$ref": "schemas/tabs/payout/payouts.json"
+                },
+                {
+                    "$ref": "schemas/tabs/payout/payout-modes.json"
                 }
             ]
         }
