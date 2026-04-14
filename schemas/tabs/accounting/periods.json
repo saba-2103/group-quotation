@@ -20,19 +20,26 @@
                 "title": "Periods",
                 "headerActions": [
                     {
-                        "id": "create-period-btn",
-                        "label": "Create Period",
-                        "type": "open-modal",
+                        "id": "add-period-btn",
+                        "label": "Add New Entry",
+                        "icon": "Plus",
+                        "type": "open-sheet",
                         "target": "create-period-form",
-                        "variant": "default"
+                        "variant": "outline"
                     }
                 ],
                 "columns": [
                     {
-                        "id": "displayId",
-                        "accessorKey": "displayId",
-                        "label": "Display ID",
-                        "type": "text"
+                        "id": "accountingYear",
+                        "accessorKey": "accountingYear",
+                        "label": "Accounting Year",
+                        "type": "number"
+                    },
+                    {
+                        "id": "accountingMonth",
+                        "accessorKey": "accountingMonth",
+                        "label": "Accounting Month",
+                        "type": "number"
                     },
                     {
                         "id": "startDate",
@@ -49,67 +56,45 @@
                     {
                         "id": "state",
                         "accessorKey": "state",
-                        "label": "State",
+                        "label": "Period Status",
                         "type": "badge"
+                    },
+                    {
+                        "id": "isCurrent",
+                        "accessorKey": "isCurrent",
+                        "label": "Is Current",
+                        "type": "text"
                     }
                 ],
                 "rowActions": [
                     {
-                        "id": "open-period-btn",
-                        "label": "Open",
-                        "type": "api-mutation",
-                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
-                        "visible": {
-                            "==": [
-                                {
-                                    "var": "state"
-                                },
-                                "NOT_STARTED"
-                            ]
-                        },
-                        "api": {
-                            "endpoint": "/api/accounting/periods/:id/open",
-                            "method": "POST"
-                        }
+                        "id": "edit-period-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-modal",
+                        "target": "edit-period-form"
                     },
                     {
-                        "id": "close-period-btn",
-                        "label": "Close",
-                        "type": "api-mutation",
-                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
-                        "visible": {
-                            "in": [
-                                {
-                                    "var": "state"
-                                },
-                                [
-                                    "OPEN",
-                                    "REOPEN",
-                                    "REOPENED"
-                                ]
-                            ]
-                        },
-                        "api": {
-                            "endpoint": "/api/accounting/periods/:id/close",
-                            "method": "POST"
-                        }
+                        "id": "enquire-period-btn",
+                        "label": "Enquire",
+                        "icon": "Eye",
+                        "type": "open-modal",
+                        "target": "enquire-period-form"
                     },
                     {
-                        "id": "reopen-period-btn",
-                        "label": "Reopen",
+                        "id": "delete-period-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
                         "type": "api-mutation",
-                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
-                        "visible": {
-                            "==": [
-                                {
-                                    "var": "state"
-                                },
-                                "CLOSED"
-                            ]
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Period",
+                            "message": "Are you sure you want to delete this accounting period? This action cannot be undone."
                         },
+                        "refreshKey": "/api/accounting/periods/list?page=0&size=50",
                         "api": {
-                            "endpoint": "/api/accounting/periods/:id/reopen",
-                            "method": "POST"
+                            "endpoint": "/api/accounting/periods/:id",
+                            "method": "DELETE"
                         }
                     }
                 ]

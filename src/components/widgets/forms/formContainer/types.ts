@@ -1,13 +1,11 @@
 import * as z from 'zod';
 import { ActionConfig } from '@/types/widget';
+import { VisibilityCondition } from '@/lib/conditions';
 
 export type ScreenAction = string;
 
 // Union of all possible values a form field can hold at runtime
 export type FormFieldValue = string | number | boolean;
-
-// Union of all values that can appear in a visibleWhen condition
-export type ConditionValue = string | number | boolean | string[] | number[];
 
 export interface SelectOption {
     value: string;
@@ -18,12 +16,6 @@ export interface FieldValidation {
     rule: string;
     value?: number | string;
     message?: string;
-}
-
-export interface VisibleWhenCondition {
-    field: string;
-    operator: string;
-    value: ConditionValue;
 }
 
 export interface FormFieldConfig {
@@ -39,7 +31,7 @@ export interface FormFieldConfig {
     defaultValue?: FormFieldValue;
     validations?: FieldValidation[];
     options?: SelectOption[];
-    visibleWhen?: VisibleWhenCondition;
+    visibleWhen?: VisibilityCondition;
     span?: number;
     // api-dropdown fields
     variableCode?: string;
