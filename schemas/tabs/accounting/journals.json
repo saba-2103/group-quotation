@@ -115,7 +115,7 @@
                         "label": "View",
                         "icon": "ExternalLink",
                         "type": "navigate",
-                        "target": "/accounting/journals/:id"
+                        "target": "/accounting/journal/:id"
                     },
                     {
                         "id": "post-journal-btn",
