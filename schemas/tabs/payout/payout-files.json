@@ -2,8 +2,8 @@
     "id": "payout-file-formats-tab",
     "type": "tab-panel",
     "props": {
-        "value": "payout-file-formats",
-        "label": "Payout File Formats",
+        "value": "payout-files",
+        "label": "Payout Files",
         "icon": "FileText"
     },
     "children": [
