@@ -1,0 +1,91 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Payout File Format Details",
+        "description": "View payout file format details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "template_id",
+                "name": "template_id",
+                "label": "Template Id",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "seqno",
+                "name": "seqno",
+                "label": "Seq No.",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "input_field_name",
+                "name": "input_field_name",
+                "label": "Input Field Name",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "output_field_name",
+                "name": "output_field_name",
+                "label": "Output Field Name",
+                "type": "text",
+                "order": 4,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "is_mandatory",
+                "name": "is_mandatory",
+                "label": "Is it Mandatory",
+                "type": "text",
+                "order": 5,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "validation_rule_code",
+                "name": "validation_rule_code",
+                "label": "Validation Rule Code",
+                "type": "text",
+                "order": 6,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "default_value",
+                "name": "default_value",
+                "label": "Default Value",
+                "type": "text",
+                "order": 7,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "format_expression",
+                "name": "format_expression",
+                "label": "Formatting Regular Expression",
+                "type": "text",
+                "order": 8,
+                "size": "sm",
+                "disabled": true
+            }
+        ],
+        "actions": [
+            {
+                "id": "close-enquire-payout-file-format",
+                "label": "Close",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

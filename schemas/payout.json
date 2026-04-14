@@ -25,6 +25,9 @@
                 },
                 {
                     "$ref": "schemas/tabs/payout/payout-modes.json"
+                },
+                {
+                    "$ref": "schemas/tabs/payout/payout-file-formats.json"
                 }
             ]
         }
