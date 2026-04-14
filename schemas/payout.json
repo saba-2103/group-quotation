@@ -28,6 +28,9 @@
                 },
                 {
                     "$ref": "schemas/tabs/payout/payout-file-formats.json"
+                },
+                {
+                    "$ref": "schemas/tabs/payout/payout-templates.json"
                 }
             ]
         }

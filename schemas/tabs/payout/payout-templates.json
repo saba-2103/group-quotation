@@ -1,0 +1,105 @@
+{
+    "id": "payout-templates-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "payout-templates",
+        "label": "Payout Templates",
+        "icon": "FileText"
+    },
+    "children": [
+        {
+            "id": "payout-templates-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/config/payout-templates",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Payout Templates",
+                "rowIdKey": "template_id",
+                "headerActions": [
+                    {
+                        "id": "add-payout-template-btn",
+                        "label": "Add New",
+                        "icon": "Plus",
+                        "type": "open-modal",
+                        "target": "add-payout-template-form",
+                        "variant": "outline"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "template_id",
+                        "accessorKey": "template_id",
+                        "label": "Template Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "template_desc",
+                        "accessorKey": "template_desc",
+                        "label": "Template Description",
+                        "type": "text"
+                    },
+                    {
+                        "id": "seqno",
+                        "accessorKey": "seqno",
+                        "label": "Seq No.",
+                        "type": "text"
+                    },
+                    {
+                        "id": "input_field_name",
+                        "accessorKey": "input_field_name",
+                        "label": "Input Field Name",
+                        "type": "text"
+                    },
+                    {
+                        "id": "output_field_name",
+                        "accessorKey": "output_field_name",
+                        "label": "Output Field Name",
+                        "type": "text"
+                    },
+                    {
+                        "id": "is_mandatory",
+                        "accessorKey": "is_mandatory",
+                        "label": "Is it Mandatory",
+                        "type": "text"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "edit-payout-template-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-modal",
+                        "target": "edit-payout-template-form"
+                    },
+                    {
+                        "id": "enquire-payout-template-btn",
+                        "label": "Enquire",
+                        "icon": "Eye",
+                        "type": "open-modal",
+                        "target": "enquire-payout-template-form"
+                    },
+                    {
+                        "id": "delete-payout-template-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Payout Template",
+                            "message": "Are you sure you want to delete this payout template? This action cannot be undone."
+                        },
+                        "refreshKey": "/api/moneyout/config/payout-templates",
+                        "api": {
+                            "endpoint": "/api/moneyout/config/payout-templates/:template_id",
+                            "method": "DELETE"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

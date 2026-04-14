@@ -1,0 +1,161 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Add Payout Template",
+        "description": "Enter payout template details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "template_id",
+                "name": "template_id",
+                "label": "Template Id",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Template Id is required"
+                    }
+                ]
+            },
+            {
+                "id": "template_desc",
+                "name": "template_desc",
+                "label": "Template Description",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Template Description is required"
+                    }
+                ]
+            },
+            {
+                "id": "payout_mode",
+                "name": "payout_mode",
+                "label": "Payout Mode",
+                "type": "select",
+                "order": 3,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/payout-modes",
+                        "method": "GET"
+                    }
+                },
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payout Mode is required"
+                    }
+                ]
+            },
+            {
+                "id": "output_file_path",
+                "name": "output_file_path",
+                "label": "Output File Path",
+                "type": "text",
+                "order": 4,
+                "size": "sm"
+            },
+            {
+                "id": "output_format",
+                "name": "output_format",
+                "label": "Output Format",
+                "type": "select",
+                "order": 5,
+                "size": "sm",
+                "options": [
+                    { "value": ".csv", "label": ".csv" },
+                    { "value": ".json", "label": ".json" }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Output Format is required"
+                    }
+                ]
+            },
+            {
+                "id": "output_file_name_pattern",
+                "name": "output_file_name_pattern",
+                "label": "Regular Expression for Output File Name Pattern",
+                "type": "text",
+                "order": 6,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Output File Name Pattern is required"
+                    }
+                ]
+            },
+            {
+                "id": "csv_delimiter",
+                "name": "csv_delimiter",
+                "label": "Delimiter Character in case of CSV Files",
+                "type": "text",
+                "order": 7,
+                "size": "sm"
+            },
+            {
+                "id": "record_separator",
+                "name": "record_separator",
+                "label": "Line Feed Character",
+                "type": "text",
+                "order": 8,
+                "size": "sm"
+            },
+            {
+                "id": "enclosure_char",
+                "name": "enclosure_char",
+                "label": "Quote Character (Single or Double Quote)",
+                "type": "text",
+                "order": 9,
+                "size": "sm"
+            },
+            {
+                "id": "header_template",
+                "name": "header_template",
+                "label": "Optional Header Template",
+                "type": "text",
+                "order": 10,
+                "size": "sm"
+            },
+            {
+                "id": "footer_template",
+                "name": "footer_template",
+                "label": "Optional Footer Template",
+                "type": "text",
+                "order": 11,
+                "size": "sm"
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-add-payout-template",
+                "label": "Add Template",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/payout-templates",
+                "api": {
+                    "endpoint": "/api/moneyout/config/payout-templates",
+                    "method": "POST"
+                },
+                "successMessage": "Payout Template added successfully!"
+            },
+            {
+                "id": "cancel-add-payout-template",
+                "label": "Cancel",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}
