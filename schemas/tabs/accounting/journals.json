@@ -12,13 +12,14 @@
             "type": "data-table",
             "dataSource": {
                 "api": {
-                    "endpoint": "/api/accounting/journals/search?page=0&size=50",
+                    "endpoint": "/api/accounting/journals/search",
                     "method": "GET"
                 },
                 "fallbackData": []
             },
             "props": {
                 "title": "Accounting Journals",
+                "rowIdKey": "journal_number",
                 "headerActions": [
                     {
                         "id": "create-journal-btn",
@@ -30,37 +31,92 @@
                 ],
                 "columns": [
                     {
-                        "id": "journalNumber",
-                        "accessorKey": "journalNumber",
+                        "id": "journal_number",
+                        "accessorKey": "journal_number",
                         "label": "Journal Number",
                         "type": "text"
                     },
                     {
-                        "id": "journalDate",
-                        "accessorKey": "journalDate",
+                        "id": "journal_date",
+                        "accessorKey": "journal_date",
                         "label": "Journal Date",
                         "type": "date"
                     },
                     {
-                        "id": "type",
-                        "accessorKey": "type",
-                        "label": "Type",
+                        "id": "account_year",
+                        "accessorKey": "account_year",
+                        "label": "Accounting Year",
                         "type": "text"
                     },
                     {
-                        "id": "accountGroup",
-                        "accessorKey": "accountGroup",
+                        "id": "account_month",
+                        "accessorKey": "account_month",
+                        "label": "Accounting Month",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_status",
+                        "accessorKey": "journal_status",
+                        "label": "Journal Status",
+                        "type": "badge"
+                    },
+                    {
+                        "id": "reversed_journal_number",
+                        "accessorKey": "reversed_journal_number",
+                        "label": "Reversed Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "balance_error_flag",
+                        "accessorKey": "balance_error_flag",
+                        "label": "Balance Error (Y/N)",
+                        "type": "text"
+                    },
+{
+                        "id": "lob",
+                        "accessorKey": "lob",
+                        "label": "Line of Business",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business_key",
+                        "accessorKey": "business_key",
+                        "label": "Business Key",
+                        "type": "text"
+                    },
+                    {
+                        "id": "tranno",
+                        "accessorKey": "tranno",
+                        "label": "Transaction Number",
+                        "type": "number"
+                    },
+                    {
+                        "id": "business_process_code",
+                        "accessorKey": "business_process_code",
+                        "label": "Business Process Code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accounting_event_id",
+                        "accessorKey": "accounting_event_id",
+                        "label": "Accounting Event Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_group",
+                        "accessorKey": "account_group",
                         "label": "Account Group",
                         "type": "text"
-                    },
-                    {
-                        "id": "state",
-                        "accessorKey": "state",
-                        "label": "State",
-                        "type": "badge"
                     }
                 ],
                 "rowActions": [
+                    {
+                        "id": "view-journal-btn",
+                        "label": "View",
+                        "icon": "ExternalLink",
+                        "type": "navigate",
+                        "target": "/accounting/journals/:id"
+                    },
                     {
                         "id": "post-journal-btn",
                         "label": "Post Journal",
@@ -68,13 +124,13 @@
                         "visible": {
                             "==": [
                                 {
-                                    "var": "state"
+                                    "var": "journal_status"
                                 },
                                 "PENDING"
                             ]
                         },
                         "api": {
-                            "endpoint": "/api/accounting/journals/:journalNumber/post",
+                            "endpoint": "/api/accounting/journals/:journal_number/post",
                             "method": "POST"
                         },
                         "refreshKey": "/api/accounting/journals/search?page=0&size=50"
@@ -87,7 +143,7 @@
                         "visible": {
                             "==": [
                                 {
-                                    "var": "state"
+                                    "var": "journal_status"
                                 },
                                 "POSTED"
                             ]
