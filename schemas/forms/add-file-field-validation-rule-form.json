@@ -1,0 +1,124 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Add File Field Validation Rule",
+        "description": "Enter validation rule details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "validation_rule_code",
+                "name": "validation_rule_code",
+                "label": "Validation Rule Code",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Validation Rule Code is required"
+                    }
+                ]
+            },
+            {
+                "id": "validation_rule_description",
+                "name": "validation_rule_description",
+                "label": "Validation Rule Description",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Validation Rule Description is required"
+                    }
+                ]
+            },
+            {
+                "id": "rule_type",
+                "name": "rule_type",
+                "label": "Rule Type",
+                "type": "select",
+                "order": 3,
+                "size": "sm",
+                "options": [
+                    { "value": "REGEX", "label": "REGEX" },
+                    { "value": "JAVA CLASS", "label": "JAVA CLASS" },
+                    { "value": "JAVASCRIPT", "label": "JAVASCRIPT" },
+                    { "value": "RTCBA", "label": "RTCBA" }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Rule Type is required"
+                    }
+                ]
+            },
+            {
+                "id": "regular_expression",
+                "name": "regular_expression",
+                "label": "Regular Expression Pattern to match with",
+                "type": "text",
+                "order": 4,
+                "size": "sm"
+            },
+            {
+                "id": "validator_class",
+                "name": "validator_class",
+                "label": "Validator Class for the attribute",
+                "type": "text",
+                "order": 5,
+                "size": "sm"
+            },
+            {
+                "id": "validator_script",
+                "name": "validator_script",
+                "label": "Validation Script code",
+                "type": "textarea",
+                "order": 6,
+                "size": "sm",
+                "span": 2
+            },
+            {
+                "id": "is_active",
+                "name": "is_active",
+                "label": "Valid Flag",
+                "type": "select",
+                "order": 7,
+                "size": "sm",
+                "options": [
+                    { "value": "Y", "label": "Yes" },
+                    { "value": "N", "label": "No" }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Valid Flag is required"
+                    }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-add-file-field-validation-rule",
+                "label": "Add Rule",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/file-field-validation-rules",
+                "api": {
+                    "endpoint": "/api/moneyout/config/file-field-validation-rules",
+                    "method": "POST"
+                },
+                "successMessage": "Validation Rule added successfully!"
+            },
+            {
+                "id": "cancel-add-file-field-validation-rule",
+                "label": "Cancel",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}
