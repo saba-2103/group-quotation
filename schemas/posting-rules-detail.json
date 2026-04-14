@@ -1,0 +1,75 @@
+{
+  "id": "posting-rules-detail-page",
+  "type": "stack-layout",
+  "props": {
+    "className": "gap-6"
+  },
+  "children": [
+    {
+      "id": "posting-rules-detail-header",
+      "type": "page-header",
+      "props": {
+        "title": "Accounting Posting Rules Maintenance",
+        "description": "View posting rule header and line details",
+        "breadcrumbs": [
+          {
+            "label": "Home",
+            "href": "/"
+          },
+          {
+            "label": "Accounting",
+            "href": "/accounting"
+          },
+          {
+            "label": "Posting Rules",
+            "href": "/accounting"
+          },
+          {
+            "label": "Posting Rule Maintenance"
+          }
+        ]
+      }
+    },
+    {
+      "id": "posting-rules-summary-grid",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/accounting/posting-rules/{{id}}",
+          "method": "GET"
+        }
+      },
+      "props": {
+        "fields": [
+          {
+            "id": "lob",
+            "label": "Line of Business",
+            "accessorKey": "lob",
+            "type": "text"
+          },
+          {
+            "id": "business_process_code",
+            "label": "Business Process Code",
+            "accessorKey": "business_process_code",
+            "type": "text"
+          },
+          {
+            "id": "account_group",
+            "label": "Account Group",
+            "accessorKey": "account_group",
+            "type": "text"
+          }
+        ]
+      }
+    },
+    {
+      "id": "posting-rules-detail-tabs",
+      "type": "tabs-container",
+      "children": [
+        {
+          "$ref": "schemas/tabs/accounting/posting-rules-lines.json"
+        }
+      ]
+    }
+  ]
+}
