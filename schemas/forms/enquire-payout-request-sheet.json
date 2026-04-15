@@ -1,0 +1,328 @@
+{
+    "id": "enquire-payout-request-sheet",
+    "type": "section-group",
+    "props": {
+        "title": "Payout Enquiry"
+    },
+    "children": [
+        {
+            "id": "payout-enquiry-header",
+            "type": "form-container",
+            "props": {
+                "title": "Payout Header",
+                "description": "Header details for this payout request",
+                "columns": 2,
+                "fields": [
+                    {
+                        "id": "payout_request_id",
+                        "name": "payout_request_id",
+                        "label": "Payout Request Id",
+                        "type": "text",
+                        "order": 1,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payout_date",
+                        "name": "payout_date",
+                        "label": "Payout Date",
+                        "type": "date",
+                        "order": 2,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "lob",
+                        "name": "lob",
+                        "label": "Line of Business",
+                        "type": "text",
+                        "order": 3,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payout_reason",
+                        "name": "payout_reason",
+                        "label": "Payout Reason",
+                        "type": "text",
+                        "order": 4,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "entity1_type",
+                        "name": "entity1_type",
+                        "label": "Entity 1 Type",
+                        "type": "text",
+                        "order": 5,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "entity1",
+                        "name": "entity1",
+                        "label": "Entity 1",
+                        "type": "text",
+                        "order": 6,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "amount_in_trans_currency",
+                        "name": "amount_in_trans_currency",
+                        "label": "Amount in Transaction Currency",
+                        "type": "number",
+                        "order": 7,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "gl_currency",
+                        "name": "gl_currency",
+                        "label": "General Ledger Currency",
+                        "type": "text",
+                        "order": 8,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "exchange_rate",
+                        "name": "exchange_rate",
+                        "label": "Exchange Rate",
+                        "type": "number",
+                        "order": 9,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "amount_in_gl_currency",
+                        "name": "amount_in_gl_currency",
+                        "label": "Amount in General Ledger Currency",
+                        "type": "number",
+                        "order": 10,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "transaction_status",
+                        "name": "transaction_status",
+                        "label": "Transaction Status",
+                        "type": "text",
+                        "order": 11,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payout_status",
+                        "name": "payout_status",
+                        "label": "Payout Status",
+                        "type": "text",
+                        "order": 12,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "status_update_date",
+                        "name": "status_update_date",
+                        "label": "Payout Status Update Date",
+                        "type": "date",
+                        "order": 13,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payout_initiated_by",
+                        "name": "payout_initiated_by",
+                        "label": "Initiated By",
+                        "type": "text",
+                        "order": 14,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payout_initiated_date",
+                        "name": "payout_initiated_date",
+                        "label": "Initiated Date",
+                        "type": "date",
+                        "order": 15,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "final_approval_by",
+                        "name": "final_approval_by",
+                        "label": "Final Approved By",
+                        "type": "text",
+                        "order": 16,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "final_approval_date",
+                        "name": "final_approval_date",
+                        "label": "Approved Date",
+                        "type": "date",
+                        "order": 17,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "remarks",
+                        "name": "remarks",
+                        "label": "Remarks",
+                        "type": "text",
+                        "order": 18,
+                        "size": "sm",
+                        "disabled": true
+                    }
+                ]
+            }
+        },
+        {
+            "id": "payout-enquiry-tender",
+            "type": "form-container",
+            "props": {
+                "title": "Tender Details",
+                "description": "Payee and instrument details for this payout",
+                "columns": 2,
+                "fields": [
+                    {
+                        "id": "payout_tender_seqno",
+                        "name": "payout_tender_seqno",
+                        "label": "Payee Number",
+                        "type": "number",
+                        "order": 1,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payee_role",
+                        "name": "payee_role",
+                        "label": "Payee Role",
+                        "type": "text",
+                        "order": 2,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payee_client_id",
+                        "name": "payee_client_id",
+                        "label": "Payee Client",
+                        "type": "text",
+                        "order": 3,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payee_name",
+                        "name": "payee_name",
+                        "label": "Payee Name",
+                        "type": "text",
+                        "order": 4,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payout_mode",
+                        "name": "payout_mode",
+                        "label": "Payout Mode",
+                        "type": "text",
+                        "order": 5,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "is_digital",
+                        "name": "is_digital",
+                        "label": "Digital Payout",
+                        "type": "text",
+                        "order": 6,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payee_bank_account",
+                        "name": "payee_bank_account",
+                        "label": "Payee Bank",
+                        "type": "text",
+                        "order": 7,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payee_ifsc_code",
+                        "name": "payee_ifsc_code",
+                        "label": "Payee IFSC",
+                        "type": "text",
+                        "order": 8,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "payee_swift_code",
+                        "name": "payee_swift_code",
+                        "label": "Payee Swift",
+                        "type": "text",
+                        "order": 9,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "transaction_currency",
+                        "name": "transaction_currency",
+                        "label": "Transaction Currency",
+                        "type": "text",
+                        "order": 10,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "tender_amount_in_trans_currency",
+                        "name": "amount_in_trans_currency",
+                        "label": "Amount in Transaction Currency",
+                        "type": "number",
+                        "order": 11,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "tender_gl_currency",
+                        "name": "gl_currency",
+                        "label": "General Ledger Currency",
+                        "type": "text",
+                        "order": 12,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "tender_exchange_rate",
+                        "name": "exchange_rate",
+                        "label": "Exchange Rate",
+                        "type": "number",
+                        "order": 13,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "tender_amount_in_gl_currency",
+                        "name": "amount_in_gl_currency",
+                        "label": "Amount in General Ledger Currency",
+                        "type": "number",
+                        "order": 14,
+                        "size": "sm",
+                        "disabled": true
+                    },
+                    {
+                        "id": "tender_remarks",
+                        "name": "remarks",
+                        "label": "Remarks",
+                        "type": "text",
+                        "order": 15,
+                        "size": "sm",
+                        "disabled": true
+                    }
+                ]
+            }
+        }
+    ]
+}
