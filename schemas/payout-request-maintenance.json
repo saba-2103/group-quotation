@@ -1,138 +1,156 @@
 {
-    "id": "pending-payouts-tab",
-    "type": "tab-panel",
+    "id": "payout-request-maintenance-page",
+    "type": "stack-layout",
     "props": {
-        "label": "Pending Payouts",
-        "value": "pending-payouts",
-        "icon": "Clock"
+        "className": "p-6 gap-6"
     },
     "children": [
         {
-            "id": "pending-payouts-table",
-            "type": "data-table",
+            "id": "payout-request-maintenance-header",
+            "type": "page-header",
+            "props": {
+                "title": "Payout Request Maintenance",
+                "description": "View and manage payout request details",
+                "breadcrumbs": [
+                    {
+                        "label": "Home",
+                        "href": "/"
+                    },
+                    {
+                        "label": "Money Out",
+                        "href": "/payout"
+                    },
+                    {
+                        "label": "Pending Payouts",
+                        "href": "/payout"
+                    },
+                    {
+                        "label": "Payout Request Maintenance"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "payout-request-header-grid",
+            "type": "key-value-grid",
             "dataSource": {
                 "api": {
-                    "endpoint": "/api/moneyout/payouts/pending",
+                    "endpoint": "/api/moneyout/payouts/{{id}}",
                     "method": "GET"
                 }
             },
             "props": {
-                "title": "Pending Payouts",
-                "rowIdKey": "payout_request_id",
-                "columns": [
+                "fields": [
                     {
                         "id": "payout_request_id",
+                        "label": "Payout Request Id",
                         "accessorKey": "payout_request_id",
-                        "label": "Payout Request ID",
                         "type": "text"
                     },
                     {
                         "id": "payout_date",
-                        "accessorKey": "payout_date",
                         "label": "Payout Date",
+                        "accessorKey": "payout_date",
                         "type": "date"
                     },
                     {
                         "id": "lob",
-                        "accessorKey": "lob",
                         "label": "Line of Business",
+                        "accessorKey": "lob",
                         "type": "text"
                     },
                     {
                         "id": "component",
+                        "label": "Component",
                         "accessorKey": "component",
-                        "label": "Component Id",
                         "type": "text"
                     },
                     {
                         "id": "payout_gen_type",
-                        "accessorKey": "payout_gen_type",
                         "label": "Payout Generation Type",
+                        "accessorKey": "payout_gen_type",
                         "type": "text"
                     },
                     {
                         "id": "payout_reason",
-                        "accessorKey": "payout_reason",
                         "label": "Payout Reason",
+                        "accessorKey": "payout_reason",
                         "type": "text"
                     },
                     {
                         "id": "entity1_type",
-                        "accessorKey": "entity1_type",
                         "label": "Entity 1 Type",
+                        "accessorKey": "entity1_type",
                         "type": "text"
                     },
                     {
                         "id": "entity1",
-                        "accessorKey": "entity1",
                         "label": "Entity 1",
+                        "accessorKey": "entity1",
                         "type": "text"
                     },
                     {
                         "id": "transaction_currency",
-                        "accessorKey": "transaction_currency",
                         "label": "Transaction Currency",
+                        "accessorKey": "transaction_currency",
                         "type": "text"
                     },
                     {
                         "id": "amount_in_trans_currency",
-                        "accessorKey": "amount_in_trans_currency",
                         "label": "Amount in Transaction Currency",
+                        "accessorKey": "amount_in_trans_currency",
                         "type": "number"
                     },
                     {
                         "id": "gl_currency",
+                        "label": "General Ledger Currency",
                         "accessorKey": "gl_currency",
-                        "label": "GL Currency",
                         "type": "text"
                     },
                     {
                         "id": "exchange_rate",
-                        "accessorKey": "exchange_rate",
                         "label": "Exchange Rate",
+                        "accessorKey": "exchange_rate",
                         "type": "number"
                     },
                     {
                         "id": "amount_in_gl_currency",
-                        "accessorKey": "amount_in_gl_currency",
                         "label": "Amount in GL Currency",
+                        "accessorKey": "amount_in_gl_currency",
                         "type": "number"
                     },
                     {
-                        "id": "payout_status",
-                        "accessorKey": "payout_status",
-                        "label": "Payout Status",
-                        "type": "badge"
-                    },
-                    {
-                        "id": "payout_initiated_by",
-                        "accessorKey": "payout_initiated_by",
-                        "label": "Payout Initiated By User",
+                        "id": "transaction_status",
+                        "label": "Transaction Status",
+                        "accessorKey": "transaction_status",
                         "type": "text"
                     },
                     {
-                        "id": "payout_intiated_date",
-                        "accessorKey": "payout_intiated_date",
-                        "label": "Payout Initiated Date",
-                        "type": "date"
+                        "id": "payout_status",
+                        "label": "Payout Status",
+                        "accessorKey": "payout_status",
+                        "type": "text"
                     },
                     {
-                        "id": "transaction_status",
-                        "accessorKey": "transaction_status",
-                        "label": "Transaction Status",
-                        "type": "badge"
-                    }
-                ],
-                "rowActions": [
-                    {
-                        "id": "edit-pending-payout",
-                        "label": "Edit",
-                        "icon": "Pencil",
-                        "type": "navigate",
-                        "target": "/payout/payout-request-maintenance/:id"
+                        "id": "remarks",
+                        "label": "Remarks",
+                        "accessorKey": "remarks",
+                        "type": "text"
                     }
                 ]
             }
+        },
+        {
+            "id": "payout-request-sections-container",
+            "type": "tabs-container",
+            "children": [
+                {
+                    "$ref": "schemas/tabs/payout/payout-request-tender.json"
+                },
+                {
+                    "$ref": "schemas/tabs/payout/payout-request-source.json"
+                }
+            ]
         }
     ]
 }
