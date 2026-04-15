@@ -151,7 +151,7 @@
                         "label": "View",
                         "icon": "ExternalLink",
                         "type": "navigate",
-                        "target": "/moneyout/payout/:id"
+                        "target": "/payout/payout-enquiry-detail/:id"
                     },
                     {
                         "id": "enquire-payout-request",
