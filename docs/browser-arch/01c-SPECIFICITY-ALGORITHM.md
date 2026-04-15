@@ -1,361 +1,300 @@
-# 01c — Specificity Algorithm
+# 01c — Inline Conditions
 
 **Status:** Adopted  
-**Last updated:** 2026-04-08  
+**Last updated:** 2026-04-09  
 **Parent doc:** [01-EDGE-SCHEMA-RESOLUTION.md](./01-EDGE-SCHEMA-RESOLUTION.md)  
+**Decision record:** [ADR-003](../ADR-003-schema-partials-replace-specificity.md) — why specificity was removed; inline conditions rationale within
 
 ---
 
 ## Overview
 
-The specificity algorithm is the function that, given a request context and a set of candidate S3 keys for a `viewId`, selects the schema that most precisely matches the user's context. It is inspired by the CSS specificity model: each dimension match contributes a weighted score, the highest score wins, and ties are resolved by merging rather than by arbitrary selection.
+A schema file is a single unified document. It describes the complete schema for a tenant — columns, actions, widgets, layout — with visibility conditions annotated directly on the items that have them. There is no separate "base" block or "overrides" array. You read the file top-to-bottom and see exactly what exists and when each item appears.
 
-The algorithm runs inside the Cloudflare Worker on every cache miss. It operates entirely on strings (the S3 key names) and in-memory parsed JSON. There is no database query, no external call, and no state.
-
----
-
-## Dimension Weights
-
-| Dimension | Weight | Rationale |
-|---|---|---|
-| `tenantId` | 100 | Tenant identity is the primary discriminant — a tenant-specific schema should always beat a role/lob-only schema |
-| `role` | 10 | Role shapes functional capabilities within a tenant |
-| `lob` | 10 | Line of business shapes domain-specific fields; equal weight to role since either alone meaningfully changes the view |
-| `locale` | 5 | Locale affects labels only (already baked in); lower weight because locale variants are usually thin label overrides, not structural changes |
-| `portalType` | 5 | Portal variants are typically layout adjustments; lower weight for the same reason as locale |
-
-**Maximum possible score:** 100 + 10 + 10 + 5 + 5 = **130** (all 5 dimensions match)
+The Cloudflare Worker reads the file and filters the document: any item whose `$show` condition does not match the user's JWT claims is removed before the document is returned. Items with no condition are always included.
 
 ---
 
-## Scoring Rules
+## The `$show` and `$hide` Conditions
 
-A candidate key scores a dimension **only if all of the following are true:**
-
-1. The key filename **explicitly encodes** that dimension (e.g. `tenant=gi` is in the filename).
-2. The encoded value **exactly matches** the request context value for that dimension (case-insensitive, after normalisation to lowercase).
-3. If the request context has `null` for a dimension (the user's JWT does not include that claim), no candidate that explicitly encodes that dimension can score it — they are **disqualified** for that dimension.
-
-A candidate is **disqualified entirely** (score = -1, excluded from ranking) if it encodes a dimension whose value does not match the request context — regardless of how well it matches other dimensions. A file named `tenant=zurich+role=underwriter.json` cannot score anything for a `tenantId=gi` context. It is filtered out before scoring begins.
-
-**Scoring is additive:** a file that matches `tenant` and `role` scores 110 (100 + 10). It does not get a bonus for matching more dimensions than the request context has.
-
----
-
-## TypeScript Implementation
-
-This is the canonical algorithm implementation. The Cloudflare Worker imports `runSpecificityAlgorithm` from this module.
+Any item within a schema array (a column, an action, a widget, a tab) may carry a `$show` or `$hide` condition.
 
 ```typescript
-// workers/schema-resolver/src/specificity.ts
-
-export interface SchemaContext {
-  tenantId: string;
-  role: string;
-  lob: string | null;
-  locale: string | null;
-  portalType: string | null;
-}
-
-export interface ResolutionResult {
-  /** The single winning key, or null if no candidates matched and no base.json exists. */
-  winnerKey: string | null;
+// Applicable to any object within a schema array
+interface ConditionalItem {
   /**
-   * When two or more candidates tie on score, mergeKeys contains all tied keys
-   * ordered from least to most specific (for merge order). winnerKey is set to
-   * the most specific key in this case.
+   * Item is included ONLY IF all condition keys match the JWT claims.
+   * A null/absent JWT claim never satisfies a condition key.
+   * Comparison is case-insensitive.
    */
-  mergeKeys: string[];
-}
+  $show?: Record<string, string>;
 
-const DIMENSION_WEIGHTS: Record<string, number> = {
-  tenant:     100,
-  role:       10,
-  lob:        10,
-  locale:     5,
-  portaltype: 5,   // lowercase — filenames are normalised
-};
-
-/**
- * Parses a schema key filename into a dimension map.
- * e.g. "quotations-list/tenant=gi+role=underwriter+lob=motor.json"
- *   → { tenant: "gi", role: "underwriter", lob: "motor" }
- *
- * "quotations-list/base.json" → {} (empty — matches everything)
- */
-function parseKeyDimensions(key: string): Record<string, string> {
-  const filename = key.split('/').pop() ?? key;
-  const base = filename.replace(/\.json$/, '');
-
-  if (base === 'base') return {};
-
-  return Object.fromEntries(
-    base.split('+').map((part) => {
-      const eqIdx = part.indexOf('=');
-      if (eqIdx === -1) throw new Error(`Invalid key segment: ${part}`);
-      return [part.slice(0, eqIdx).toLowerCase(), part.slice(eqIdx + 1).toLowerCase()];
-    })
-  );
-}
-
-/**
- * Normalises a context value for comparison.
- * Null means "not present in this user's JWT" — treated as wildcard.
- */
-function normalise(value: string | null): string | null {
-  return value?.toLowerCase() ?? null;
-}
-
-/**
- * Scores a single candidate key against the request context.
- * Returns -1 if the candidate is disqualified (encodes a dimension
- * that conflicts with the context).
- */
-function scoreCandidate(
-  key: string,
-  ctx: SchemaContext,
-): number {
-  const dims = parseKeyDimensions(key);
-
-  const contextMap: Record<string, string | null> = {
-    tenant:     normalise(ctx.tenantId),
-    role:       normalise(ctx.role),
-    lob:        normalise(ctx.lob),
-    locale:     normalise(ctx.locale),
-    portaltype: normalise(ctx.portalType),
-  };
-
-  let score = 0;
-
-  for (const [dim, value] of Object.entries(dims)) {
-    const ctxValue = contextMap[dim];
-
-    if (ctxValue === null) {
-      // Request context has no value for this dimension.
-      // A file that explicitly encodes this dimension cannot match — disqualify.
-      return -1;
-    }
-
-    if (ctxValue !== value) {
-      // Explicit mismatch — disqualify entirely.
-      return -1;
-    }
-
-    // Match — add weight.
-    score += DIMENSION_WEIGHTS[dim] ?? 0;
-  }
-
-  return score;
-}
-
-/**
- * Main entry point. Given the list of S3 keys for a viewId and the
- * request context, returns the resolution result.
- */
-export function runSpecificityAlgorithm(
-  candidateKeys: string[],
-  ctx: SchemaContext,
-): ResolutionResult {
-  const baseKey = candidateKeys.find((k) => k.endsWith('/base.json')) ?? null;
-
-  // Score all candidates
-  const scored: Array<{ key: string; score: number }> = candidateKeys
-    .map((key) => ({ key, score: scoreCandidate(key, ctx) }))
-    .filter(({ score }) => score >= 0)   // remove disqualified
-    .sort((a, b) => b.score - a.score);  // highest score first
-
-  if (scored.length === 0) {
-    // No candidates matched — fall back to base.json
-    return { winnerKey: baseKey, mergeKeys: [] };
-  }
-
-  const topScore = scored[0].score;
-
-  if (topScore === 0) {
-    // Only base.json matched (score 0 = no dimension matches = base)
-    return { winnerKey: baseKey, mergeKeys: [] };
-  }
-
-  const topTier = scored.filter(({ score }) => score === topScore);
-
-  if (topTier.length === 1) {
-    // Clear winner
-    return { winnerKey: topTier[0].key, mergeKeys: [] };
-  }
-
-  // Tie: collect all tied keys for merging.
-  // Also include base.json as the merge base if it exists.
-  // Order: base → tied candidates (any order among themselves — merge is commutative for non-overlapping paths)
-  const mergeKeys = [
-    ...(baseKey ? [baseKey] : []),
-    ...topTier.map(({ key }) => key),
-  ];
-
-  return { winnerKey: topTier[topTier.length - 1].key, mergeKeys };
+  /**
+   * Item is excluded IF all condition keys match the JWT claims.
+   * Inverse of $show. Use when the default is "show" and you want to hide
+   * for a specific context. Less common than $show.
+   */
+  $hide?: Record<string, string>;
 }
 ```
 
+**Rules:**
+- All keys in `$show` / `$hide` must match for the condition to apply. `{ "role": "underwriter", "lob": "motor" }` matches only when both claims match.
+- If neither `$show` nor `$hide` is present, the item is always included.
+- If both are present on the same item, `$show` takes precedence.
+- `$show` and `$hide` are stripped from the output — the browser receives a clean document with no condition metadata.
+- Conditions apply to the item itself, not recursively to its children. A column with `$show` that passes is included in full; its own child fields are not re-evaluated (unless they also carry conditions).
+
 ---
 
-## Merge Algorithm (Tie-Breaking)
-
-When two candidates tie on score, neither is discarded. Their contents are deep-merged. The merge rule is:
-
-**More-specific fields override less-specific fields. In a tie, "more specific" is defined by dimension count — the candidate with more encoded dimensions wins field-level conflicts.**
-
-If two tied candidates have the same dimension count (true equality), conflicts are resolved by dimension value priority order: `tenant` value > `role` value > `lob` value > `locale` value > `portalType` value. In practice, true ties between files of equal dimension count are rare.
+## Resolution Algorithm
 
 ```typescript
-// workers/schema-resolver/src/merge.ts
+// workers/schema-resolver/src/conditions.ts
 
 /**
- * Deep-merges an ordered array of schema objects.
- * Later entries in the array override earlier entries at the field level.
- * Arrays are replaced (not concatenated) — a more-specific schema can
- * completely replace a columns[] array.
+ * Walks the schema document and removes any items whose $show/$hide condition
+ * does not match the request context. Strips $show/$hide keys from the output.
+ *
+ * Objects are walked recursively. Arrays are filtered then recursed.
+ * Scalars and null are returned unchanged.
  */
-export function mergeSchemas(schemas: ResolvedSchema[]): ResolvedSchema {
-  if (schemas.length === 0) throw new Error('Cannot merge empty schema array');
-  if (schemas.length === 1) return schemas[0];
-
-  return schemas.reduce((acc, schema) => deepMerge(acc, schema));
+export function applyConditions(
+  schema: TenantSchema,
+  ctx: SchemaContext,
+): ResolvedSchema {
+  return deepFilter(schema, ctx) as ResolvedSchema;
 }
 
-function deepMerge<T extends Record<string, unknown>>(base: T, override: T): T {
-  const result = { ...base };
-
-  for (const key of Object.keys(override) as (keyof T)[]) {
-    const baseVal = base[key];
-    const overrideVal = override[key];
-
-    if (
-      typeof baseVal === 'object' &&
-      baseVal !== null &&
-      !Array.isArray(baseVal) &&
-      typeof overrideVal === 'object' &&
-      overrideVal !== null &&
-      !Array.isArray(overrideVal)
-    ) {
-      // Both are plain objects — recurse
-      result[key] = deepMerge(baseVal as Record<string, unknown>, overrideVal as Record<string, unknown>) as T[keyof T];
-    } else {
-      // Scalar, array, or null — override wins (replace, not concatenate)
-      result[key] = overrideVal;
-    }
+function deepFilter(value: unknown, ctx: SchemaContext): unknown {
+  if (Array.isArray(value)) {
+    return value
+      .filter((item) => isVisible(item, ctx))
+      .map((item) => deepFilter(item, ctx));
   }
 
-  return result;
+  if (typeof value === 'object' && value !== null) {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (k === '$show' || k === '$hide') continue;   // strip — never sent to browser
+      out[k] = deepFilter(v, ctx);
+    }
+    return out;
+  }
+
+  return value;  // scalar — return as-is
+}
+
+/**
+ * Returns true if the item should be included in the output.
+ * Non-object values (scalars, null) are always visible.
+ */
+function isVisible(item: unknown, ctx: SchemaContext): boolean {
+  if (typeof item !== 'object' || item === null) return true;
+
+  const obj = item as Record<string, unknown>;
+
+  if (obj.$show != null) {
+    return conditionMatches(obj.$show as Record<string, string>, ctx);
+  }
+  if (obj.$hide != null) {
+    return !conditionMatches(obj.$hide as Record<string, string>, ctx);
+  }
+  return true;
+}
+
+/**
+ * Returns true if every key in the condition matches the JWT context value.
+ * A null/undefined context value never matches.
+ */
+function conditionMatches(
+  condition: Record<string, string>,
+  ctx: SchemaContext,
+): boolean {
+  const ctxMap: Record<string, string | null | undefined> = {
+    role:       ctx.role,
+    lob:        ctx.lob,
+    locale:     ctx.locale,
+    portalType: ctx.portalType,
+  };
+  return Object.entries(condition).every(([key, value]) => {
+    const ctxValue = ctxMap[key];
+    if (ctxValue == null) return false;
+    return ctxValue.toLowerCase() === value.toLowerCase();
+  });
 }
 ```
 
-**Array replacement rationale:** A more-specific schema that overrides `columns[]` is declaring the complete column set for that context. Concatenating arrays would produce duplicate columns. Replacement is the correct semantic.
+**Why filter instead of merge:**  
+The previous design (flat partials array + deep merge) required the Worker to understand override semantics — later partials win at conflicting paths, arrays replace not concatenate. This was necessary because overrides lived separately from the base. With inline conditions, the document already contains the full picture. The Worker only needs to decide: is this item in or out. No merge logic, no conflict resolution.
 
 ---
 
-## Test Cases
+## Example Schema File: `quotations-list/gi.json`
 
-The following test cases cover the algorithm end-to-end. These cases should be maintained as unit tests in `workers/schema-resolver/src/specificity.test.ts`.
-
-### Case 1 — Clear winner by highest score
-
-```
-Context:    tenantId=gi, role=underwriter, lob=motor, locale=en-gb, portalType=broker
-
-Candidates:
-  quotations-list/base.json                                      → score  0
-  quotations-list/tenant=gi.json                                 → score 100
-  quotations-list/tenant=gi+role=underwriter.json                → score 110
-  quotations-list/tenant=gi+role=underwriter+lob=motor.json      → score 120  ← WINNER
-  quotations-list/role=underwriter.json                          → score  10
-  quotations-list/lob=motor.json                                 → score  10
-
-Result: winnerKey = "quotations-list/tenant=gi+role=underwriter+lob=motor.json", mergeKeys = []
-```
-
-### Case 2 — Context missing an optional dimension (lob is null)
-
-```
-Context:    tenantId=gi, role=admin, lob=null, locale=null, portalType=null
-
-Candidates:
-  quotations-list/base.json                                      → score  0
-  quotations-list/tenant=gi.json                                 → score 100  ← WINNER
-  quotations-list/tenant=gi+role=admin.json                      → score 110  ← WINNER
-  quotations-list/tenant=gi+lob=motor.json                       → DISQUALIFIED (lob in file but null in ctx)
-  quotations-list/tenant=gi+role=underwriter+lob=motor.json      → DISQUALIFIED (role mismatch + lob null)
-
-Result: winnerKey = "quotations-list/tenant=gi+role=admin.json", mergeKeys = []
-```
-
-### Case 3 — No tenant match, falls back to base
-
-```
-Context:    tenantId=newclient, role=broker, lob=motor, locale=en-gb, portalType=broker
-
-Candidates:
-  quotations-list/base.json                                      → score  0  ← WINNER (only match)
-  quotations-list/tenant=gi.json                                 → DISQUALIFIED
-  quotations-list/tenant=zurich+role=broker.json                 → DISQUALIFIED
-
-Result: winnerKey = "quotations-list/base.json", mergeKeys = []
-```
-
-### Case 4 — Tie between two single-dimension matches: merge
-
-```
-Context:    tenantId=gi, role=broker, lob=motor, locale=null, portalType=null
-
-Candidates:
-  quotations-list/base.json                                      → score  0
-  quotations-list/tenant=gi.json                                 → score 100
-  quotations-list/role=broker.json                               → score  10
-  quotations-list/lob=motor.json                                 → score  10
-
-Scoring summary:
-  - tenant=gi.json:    100 (clear highest)
-  - role=broker.json:   10
-  - lob=motor.json:     10   ← TIE between role=broker.json and lob=motor.json
-
-Top score is 100 — tenant=gi.json wins with no tie.
-(role and lob files are not in the top tier)
-
-Result: winnerKey = "quotations-list/tenant=gi.json", mergeKeys = []
-```
-
-### Case 4b — Tie at top tier: two candidates both at score 110
-
-```
-Context:    tenantId=gi, role=underwriter, lob=motor, locale=en-gb, portalType=null
-
-Candidates:
-  quotations-list/base.json                                      → score   0
-  quotations-list/tenant=gi+role=underwriter.json                → score 110  ← TIE
-  quotations-list/tenant=gi+lob=motor.json                       → score 110  ← TIE
-
-Both files score 110. Neither disqualifies the other.
-
-Result:
-  winnerKey = "quotations-list/tenant=gi+lob=motor.json"  (last in mergeKeys)
-  mergeKeys = [
-    "quotations-list/base.json",
-    "quotations-list/tenant=gi+role=underwriter.json",
-    "quotations-list/tenant=gi+lob=motor.json"
+```json
+{
+  "schemaId": "quotations-list",
+  "tenantId": "gi",
+  "version": "2.1.0",
+  "resolvedAt": "2026-04-09T10:00:00Z",
+  "layout": { "type": "data-table", "title": "Quotations" },
+  "columns": [
+    {
+      "key": "reference",
+      "label": "Reference",
+      "type": "text"
+    },
+    {
+      "key": "status",
+      "label": "Status",
+      "type": "badge",
+      "valueMap": {
+        "DRAFT":            { "label": "Draft",            "variant": "neutral" },
+        "PENDING_APPROVAL": { "label": "Pending Approval", "variant": "warning" },
+        "APPROVED":         { "label": "Approved",         "variant": "success" }
+      }
+    },
+    {
+      "key": "premium",
+      "label": "Premium",
+      "type": "currency"
+    },
+    {
+      "key": "client-reference",
+      "label": "Your Reference",
+      "type": "text",
+      "$show": { "role": "broker" }
+    },
+    {
+      "key": "risk-summary",
+      "label": "Risk Summary",
+      "type": "text",
+      "$show": { "role": "underwriter" }
+    },
+    {
+      "key": "tech-rating",
+      "label": "Tech Rating",
+      "type": "text",
+      "$show": { "role": "underwriter" }
+    },
+    {
+      "key": "vehicle-reg",
+      "label": "Vehicle Reg",
+      "type": "text",
+      "$show": { "role": "underwriter", "lob": "motor" }
+    },
+    {
+      "key": "ncb",
+      "label": "NCB",
+      "type": "percent",
+      "$show": { "role": "underwriter", "lob": "motor" }
+    }
+  ],
+  "actions": [
+    { "key": "view",          "label": "View" },
+    { "key": "new-quotation", "label": "New Quotation" },
+    {
+      "key": "bulk-approve",
+      "label": "Bulk Approve",
+      "$show": { "role": "underwriter" }
+    }
   ]
-
-Merge order: base → tenant=gi+role=underwriter → tenant=gi+lob=motor
-  (tenant=gi+lob=motor fields override tenant=gi+role=underwriter fields at conflicts)
+}
 ```
 
-### Case 5 — No candidates, no base.json → 404
+Reading this file top-to-bottom you can see the entire schema and precisely when each item appears. No mental merging required.
+
+---
+
+## Worked Resolution Traces
+
+### GI underwriter, motor LOB
 
 ```
-Context:    tenantId=gi, role=underwriter, lob=motor, locale=null, portalType=null
+JWT: { tenantId: "gi", role: "underwriter", lob: "motor" }
+File: quotations-list/gi.json
 
-Candidates:   (empty — viewId does not exist in S3)
+columns filtered:
+  reference          — no condition           → INCLUDED
+  status             — no condition           → INCLUDED
+  premium            — no condition           → INCLUDED
+  client-reference   — $show { role: broker } → role=underwriter ≠ broker  → EXCLUDED
+  risk-summary       — $show { role: underwriter } → MATCH                 → INCLUDED
+  tech-rating        — $show { role: underwriter } → MATCH                 → INCLUDED
+  vehicle-reg        — $show { role: underwriter, lob: motor } → MATCH     → INCLUDED
+  ncb                — $show { role: underwriter, lob: motor } → MATCH     → INCLUDED
 
-Result: winnerKey = null, mergeKeys = []
-  → Worker returns 404 SCHEMA_NOT_FOUND
+actions filtered:
+  view           — no condition                           → INCLUDED
+  new-quotation  — no condition                           → INCLUDED
+  bulk-approve   — $show { role: underwriter } → MATCH   → INCLUDED
+
+Result: [reference, status, premium, risk-summary, tech-rating, vehicle-reg, ncb]
+        actions: [view, new-quotation, bulk-approve]
 ```
+
+### GI broker, any LOB
+
+```
+JWT: { tenantId: "gi", role: "broker", lob: "property" }
+File: quotations-list/gi.json
+
+columns filtered:
+  reference          → INCLUDED
+  status             → INCLUDED
+  premium            → INCLUDED
+  client-reference   — $show { role: broker } → MATCH   → INCLUDED
+  risk-summary       — $show { role: underwriter } → no match → EXCLUDED
+  tech-rating        → EXCLUDED
+  vehicle-reg        — $show { role: underwriter, lob: motor } → no match → EXCLUDED
+  ncb                → EXCLUDED
+
+actions filtered:
+  view           → INCLUDED
+  new-quotation  → INCLUDED
+  bulk-approve   — $show { role: underwriter } → no match → EXCLUDED
+
+Result: [reference, status, premium, client-reference]
+        actions: [view, new-quotation]
+```
+
+### New tenant — fallback to default
+
+```
+JWT: { tenantId: "newclient", role: "broker" }
+
+Worker tries: quotations-list/newclient.json → not found
+Worker tries: quotations-list/default.json   → found
+
+Applies same condition filtering against default.json
+```
+
+---
+
+## Value-Level Variation (Different `valueMap` for Different Contexts)
+
+`$show` / `$hide` handle **inclusion** — whether an item is in the output or not. They do not handle **value overrides** — changing the content of an item that is already included.
+
+The primary mechanism for value-level variation is the **Config System**: different config keys per context. If motor underwriters need `"APPROVED"` to display as `"On Cover"` rather than `"Approved"`, the correct approach is:
+
+1. Register a separate config key: `insurance.quotation.status.motor`
+2. In `config-bindings.json`, declare a binding that targets `insurance.quotation.status.motor` for the motor column
+
+When a value override within a single column is genuinely needed (same column key, different content), the pattern is **two items with complementary conditions**:
+
+```json
+{ "key": "status", "type": "badge",
+  "$hide": { "lob": "motor" },
+  "valueMap": { "APPROVED": { "label": "Approved",  "variant": "success" } }
+},
+{ "key": "status", "type": "badge",
+  "$show": { "lob": "motor" },
+  "valueMap": { "APPROVED": { "label": "On Cover",  "variant": "success" } }
+}
+```
+
+The renderer receives exactly one `status` column (the non-motor user gets the first, the motor user gets the second). Each has its own config binding resolved at materialisation time. This pattern is explicit and readable at the cost of duplication for that field.
 
 ---
 
@@ -363,10 +302,9 @@ Result: winnerKey = null, mergeKeys = []
 
 | Case | Behaviour |
 |---|---|
-| `base.json` missing and no other match | Return `winnerKey: null` → Worker returns 404 |
-| All candidates disqualified (none match context) | Fall back to `base.json`; if absent, 404 |
-| Candidate key with unknown dimension name (e.g. `product=xxx`) | That dimension's weight = 0 (from `DIMENSION_WEIGHTS`); file is not disqualified, scores 0 for that dimension; effectively treated as base |
-| `viewId` contains a `/` (nested view IDs) | The `ListObjectsV2` prefix is `{viewId}/` — nested view IDs work if the full path is used as the viewId |
-| Context value contains special characters | Values are normalised to `[a-z0-9\-]` before comparison; the normalisation must be applied consistently in both Materialisation Service key writing and Worker context parsing |
-| Two files with identical content but different keys tie | Merge produces the same result as either file alone — safe |
-| `locale` value `en-GB` vs `en-gb` in JWT | Worker normalises both to lowercase before comparison; key names are always written lowercase by the Materialisation Service |
+| No conditions match for any item | All unconditioned items are returned; schema is the base set |
+| JWT has no `lob` claim | Any `$show` with `lob` key evaluates to false — those items excluded |
+| `$show` with unknown condition key | Unknown key is not in `ctxMap`, resolves to null → condition false → item excluded; Worker logs a warning |
+| Nested arrays (e.g. tabs containing columns) | `deepFilter` recurses into all arrays at any depth |
+| `$show` on a non-array item (e.g. top-level field) | `$show` has no effect on objects outside arrays — conditions only filter array items |
+| `default.json` missing and tenant file missing | Worker returns 404 `SCHEMA_NOT_FOUND` |

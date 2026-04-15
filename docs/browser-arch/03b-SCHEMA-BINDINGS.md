@@ -30,15 +30,17 @@ S3 bucket: keystone-schema-bindings   ← private, Materialisation Service acces
 
 S3 bucket: keystone-resolved-schemas  ← CDN-accessible, browser-facing
   {viewId}/
-    {context-variant}.json             ← e.g. tenant=gi+role=underwriter+lob=motor.json
+    default.json                       ← universal fallback schema
+    {tenantId}.json                    ← one file per tenant (base + partials)
   e.g.:
-    keystone-resolved-schemas/quotations-list/base.json
-    keystone-resolved-schemas/quotations-list/tenant=gi+role=underwriter.json
+    keystone-resolved-schemas/quotations-list/default.json
+    keystone-resolved-schemas/quotations-list/gi.json
+    keystone-resolved-schemas/quotations-list/zurich.json
 ```
 
 These are **two separate S3 buckets** with different IAM policies. The Cloudflare Worker (CDN edge) has read access only to `keystone-resolved-schemas`. The Materialisation Service has read access to `keystone-schema-bindings` and write access to `keystone-resolved-schemas`. The browser never interacts with either bucket directly.
 
-The binding file is **per viewId**, not per variant. One binding file serves all tenant × locale variants of the same view. The Materialisation Service uses it for every variant of that view.
+The binding file is **per viewId**, not per tenant. One binding file covers all tenants for the same view. The Materialisation Service uses it when materialising any tenant's schema file for that view.
 
 ---
 

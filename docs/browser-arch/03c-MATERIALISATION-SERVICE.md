@@ -7,7 +7,7 @@
 
 ## 1. Service Overview
 
-The Schema Materialisation Service is a standalone backend service (or serverless function) whose sole responsibility is producing `resolved-schema.json` files in S3. It is triggered by config save events and runs to completion, writing one resolved schema file per affected tenant × locale variant.
+The Schema Materialisation Service is a standalone backend service (or serverless function) whose sole responsibility is producing resolved schema files in S3. It is triggered by config save events and runs to completion, writing one schema file per affected tenant — each file is a flat schema document with inline `$show`/`$hide` conditions and all config-derived values already baked in.
 
 The browser never calls this service. Its output is static files on S3, served via CDN. The service is entirely invisible to the client.
 
@@ -162,22 +162,23 @@ function materialise(event: ConfigSavedEvent): void
     idempotencyStore.set(event.eventId)
     return
 
-  // ── Step 3: Determine affected schema variants ────────────────────────────
+  // ── Step 3: Determine affected tenant schemas ────────────────────────────
   //
-  // For each affected viewId, determine which tenant × locale variants exist
-  // and which are affected by this event.
+  // For each affected viewId, determine which tenant schemas exist and which
+  // are affected by this event. One schema file per tenant — no locale variants
+  // as separate files (locale is a $show condition within the schema document).
   //
   for each viewId in affectedViewIds:
-    allVariants = schemaVariantRegistry.getVariants(viewId)
-    // Each variant: { viewId, tenantId, locale }
+    allTenants = schemaVariantRegistry.getTenantsForView(viewId)
+    // Each tenant: { viewId, tenantId }
 
-    affectedVariants = allVariants.filter(variant =>
-      isVariantAffected(variant, event.affectedTenantIds, event.affectedLocale)
+    affectedTenants = allTenants.filter(tenant =>
+      isVariantAffected(tenant, event.affectedTenantIds)
     )
 
-    // ── Step 4: Materialise each affected variant ─────────────────────────
-    for each variant in affectedVariants:
-      materialiseVariant(viewId, variant, event.correlationId)
+    // ── Step 4: Materialise each affected tenant schema ───────────────────
+    for each tenant in affectedTenants:
+      materialiseVariant(viewId, tenant, event.correlationId)
 
   // ── Step 5: Record idempotency ────────────────────────────────────────────
   idempotencyStore.set(event.eventId, ttl=7_days)
@@ -216,70 +217,65 @@ function keyMatchesEvent(
 ```
 function materialiseVariant(
   viewId: string,
-  variant: { tenantId: string, locale: string },
+  tenant: { tenantId: string },
   correlationId: string
 ): void
 
-  // Load raw schema (structure only, no display values)
-  rawSchema = s3.get(`keystone-raw-schemas/${viewId}/schema.json`)
+  // Load the schema definition for this tenant:
+  // a flat schema document with inline $show/$hide conditions (no config values yet)
+  rawSchema = schemaStore.get(viewId, tenant.tenantId)
+  // rawSchema: { base: {...}, partials: [{ id, condition, overrides }, ...] }
 
   // Load binding declarations for this viewId
   bindings = s3.get(`keystone-schema-bindings/${viewId}/config-bindings.json`)
 
-  // Start with a deep clone of the raw schema
+  // Resolve config bindings throughout the document.
+  // Binding paths may target base fields or fields within specific partials.
+  // e.g. "base.columns.status.valueMap"
+  //      "partials[id=role-underwriter-lob-motor].overrides.columns.status.valueMap"
   resolvedSchema = deepClone(rawSchema)
 
-  // Resolve each binding
   for each (schemaPath, bindingEntry) in bindings:
-    resolvedValue = resolveBinding(bindingEntry, variant)
+    resolvedValue = resolveBinding(bindingEntry, tenant)
     jsonPathSet(resolvedSchema, schemaPath, resolvedValue)
 
   // Attach resolution metadata
-  resolvedSchema._meta = {
-    viewId: viewId,
-    tenantId: variant.tenantId,
-    locale: variant.locale,
-    resolvedAt: now().toISOString(),
-    correlationId: correlationId
-  }
+  resolvedSchema.tenantId   = tenant.tenantId
+  resolvedSchema.resolvedAt = now().toISOString()
 
-  // Write to S3
-  s3Key = `keystone-resolved-schemas/${viewId}/${variant.tenantId}/${variant.locale}/resolved-schema.json`
+  // Write to S3 — one file per tenant per view
+  s3Key = `keystone-resolved-schemas/${viewId}/${tenant.tenantId.toLowerCase()}.json`
   s3.put(s3Key, resolvedSchema, contentType="application/json")
 
-  // Invalidate CDN cache
-  cdn.purge(s3Key)
+  // Invalidate CDN cache for the view
+  cdn.purgeByTag(`schema-${viewId}`)
 
-  metrics.record("materialisation.variant.written", {
-    viewId, tenantId: variant.tenantId, locale: variant.locale
+  metrics.record("materialisation.tenant.written", {
+    viewId, tenantId: tenant.tenantId
   })
 ```
 
 ---
 
-## 4. Config Resolution with Specificity
+## 4. Config Blob Resolution Priority
 
-When resolving each binding, the service applies the specificity algorithm to find the most specific config blob for the current variant context.
+When resolving each binding, the service looks for the most specific config blob available for the current tenant. Priority is tenant-specific first, then base (applies to all tenants).
 
 ```
 function resolveBinding(
   bindingEntry: BindingEntry,
-  variant: { tenantId: string, locale: string }
+  tenant: { tenantId: string }
 ): ConfigBlobValue
 
   configKey = bindingEntry.configKey
 
-  // Specificity resolution order (highest wins):
-  // 1. tenantId + locale  (most specific)
-  // 2. tenantId + null    (tenant default, no locale)
-  // 3. null + locale      (base tenant, locale-specific)
-  // 4. null + null        (base, applies to all)
+  // Priority order (first non-null result wins):
+  // 1. tenant-specific blob   (highest priority)
+  // 2. base blob              (applies to all tenants)
 
   candidates = [
-    configStore.get(configKey, tenantId: variant.tenantId, locale: variant.locale),
-    configStore.get(configKey, tenantId: variant.tenantId, locale: null),
-    configStore.get(configKey, tenantId: null,             locale: variant.locale),
-    configStore.get(configKey, tenantId: null,             locale: null)
+    configStore.get(configKey, tenantId: tenant.tenantId),
+    configStore.get(configKey, tenantId: null)
   ]
 
   winner = candidates.find(c => c !== null)

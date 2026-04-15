@@ -77,8 +77,8 @@ The CDN edge function is a stateless worker (Cloudflare Worker or equivalent) co
 **What it does:**
 
 1. Reads the user's JWT context: `tenantId`, `role`, `lob`, `locale`, `portalType`
-2. Loads schema candidates from S3 for the requested `viewId`
-3. Runs a CSS-specificity-style resolution algorithm to select the most specific matching variant
+2. Fetches the schema file for the tenant from S3 (`{viewId}/{tenantId}.json`, falling back to `{viewId}/default.json`)
+3. Applies the schema's conditional partials: overrides whose conditions match the user's JWT claims are deep-merged onto the base, in declared order
 4. Returns the resolved schema (which already has config values baked in — see Layer 3)
 5. Serves the result with a long CDN TTL (`Cache-Control: public, max-age=300, stale-while-revalidate=3600`)
 
@@ -87,22 +87,17 @@ The CDN edge function is a stateless worker (Cloudflare Worker or equivalent) co
 ```
 s3://keystone-resolved-schemas/
   {viewId}/
-    base.json                              ← least specific
-    tenant={tenantId}.json
-    role={role}.json
-    lob={lob}.json
-    tenant={tenantId}+role={role}.json
-    tenant={tenantId}+lob={lob}.json
-    tenant={tenantId}+role={role}+lob={lob}.json   ← most specific
+    default.json             ← universal fallback for tenants with no explicit schema
+    {tenantId}.json          ← one file per tenant; flat schema with inline $show/$hide conditions
 ```
 
-Each file at this path is a `resolved-schema.json` — a schema with config bindings already materialised by the Schema Materialisation Service. The browser never fetches raw bindings or config blobs.
+Each file is a flat schema document — columns, actions, widgets, all in one place, with `$show`/`$hide` conditions annotated directly on conditional items. All config binding values are already materialised by the Schema Materialisation Service. The browser never fetches raw bindings or config blobs.
 
-The `config-bindings.json` files (the declarations of what config keys a schema needs) are authoring-time artefacts stored separately and consumed only by the Materialisation Service. They are not in the S3 path the edge function reads.
+The `config-bindings.json` files (the declarations of what config keys a schema needs) are authoring-time artefacts stored separately in `keystone-schema-bindings/` and consumed only by the Materialisation Service. They are never in the CDN-accessible bucket.
 
-**Specificity algorithm:** Files are scored on how many context dimensions they match and how specifically (exact match outranks wildcard). The highest-scoring file wins. If multiple files tie, the merge rule is: more-specific fields override less-specific ones, not wholesale replacement.
+**Inline conditions:** Schema items carry their own visibility conditions — `$show` or `$hide` annotated directly on any column, action, or widget that is conditional. The Worker filters the document at request time: items whose condition doesn't match the JWT claims are removed before the response is sent. There is no separate overrides block, no merge logic, no ordering concerns. See [ADR-003](ADR-003-schema-partials-replace-specificity.md) for why specificity scoring was replaced and why inline conditions were chosen over a flat partials array.
 
-**Cold-fetch latency:** The first schema request to a cold CDN edge node involves S3 `ListObjects` + `GetObject` — approximately 50–100ms. Mitigated by `stale-while-revalidate`, pre-warming on deploy, and React Query in-memory caching making this the cold path only.
+**Cold-fetch latency:** The first schema request to a cold CDN edge node involves two `GetObject` calls at most — approximately 30–60ms. Mitigated by `stale-while-revalidate`, pre-warming on deploy, and React Query in-memory caching making this the cold path only.
 
 → *Detail doc to be written: `browser-arch/01-EDGE-SCHEMA-RESOLUTION.md`*
 
@@ -373,7 +368,7 @@ Schema is the business entity. Components are UI. The registry is the binding be
 | Backend `{field}Display` view model convention | **Replaced** by Config System pre-materialisation |
 | `valueMapping` in schema columns | **Replaced** by schema-level config binding declarations |
 | `TENANT_LABEL_OVERRIDES` in backend | **Replaced** by Config System per-tenant config blobs |
-| CDN edge function + specificity algorithm (Layer 1) | **Unchanged** |
+| CDN edge function (Layer 1) | **Updated** — specificity algorithm replaced with schema-level conditional partials (see ADR-003) |
 | Field Config API / JSONLogic (Layer 5) | **Unchanged** |
 | Pact + Browser Zod contract enforcement (Layer 4) | **Unchanged, extended** to cover resolved schema format |
 | Three client state stores (Layer 6) | **Unchanged** |
@@ -389,8 +384,8 @@ The browser fetches resolved data. No transformation logic executes in the brows
 **2. Schema-level config binding, not component-level.**
 Components are context-free. Schemas carry business context. The same `Badge` component works in a quotation list and a claims list because the binding to the right config key is declared in the schema, not the component.
 
-**3. Config specificity inherits from schema specificity.**
-The same resolution algorithm that selects the right schema variant also resolves the right config values for that variant. Tenant A's label overrides are co-located with Tenant A's schema variant. One algorithm, one output.
+**3. Config values are co-located with the schema variant they apply to.**
+Each tenant's schema file contains its own partials, and config values are materialised into those partials at write time. Tenant A's label overrides live inside Tenant A's schema file. There is no cross-tenant resolution pass.
 
 **4. Backend owns domain codes. Config System owns display semantics.**
 When the backend introduces a new enum value, it registers the display mapping in the Config System before using the code in production. The Materialisation Service falls back to `{ label: value, variant: "neutral" }` with a monitoring alert for any unregistered code.

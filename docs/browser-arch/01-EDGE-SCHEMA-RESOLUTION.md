@@ -30,11 +30,12 @@ Cloudflare Worker  (edge, co-deployed with frontend)
   │
   ├─ 2. Check KV hot cache  →  HIT: return immediately
   │
-  ├─ 3. List S3 candidates for viewId
+  ├─ 3. GET {viewId}/{tenantId}.json from S3
+  │      (falls back to {viewId}/default.json if not found)
   │
-  ├─ 4. Run specificity algorithm  →  select winner
+  ├─ 4. Filter items by $show/$hide conditions (applyConditions)
   │
-  ├─ 5. GET resolved-schema.json from S3
+  └─ 5. Return filtered schema (conditions stripped from output)
   │
   └─ 6. Return with Cache-Control headers + Surrogate-Key
          └─► CDN caches at edge node
@@ -113,52 +114,43 @@ Claims extracted from the JWT payload:
 
 | Claim | Type | Used for |
 |---|---|---|
-| `tenantId` | `string` | Primary resolution dimension (weight 100) |
-| `role` | `string` | Role-level schema variant (weight 10) |
-| `lob` | `string` | Line-of-business variant (weight 10) |
-| `locale` | `string` | Locale variant, e.g. `en-GB`, `de-DE` (weight 5) |
-| `portalType` | `string` | Portal variant, e.g. `broker`, `direct`, `admin` (weight 5) |
+| `tenantId` | `string` | Selects which schema file to load (`{viewId}/{tenantId}.json`) |
+| `role` | `string` | Matched against partial conditions within the schema file |
+| `lob` | `string` | Matched against partial conditions within the schema file |
+| `locale` | `string` | Matched against partial conditions within the schema file |
+| `portalType` | `string` | Matched against partial conditions within the schema file |
 
-If a claim is absent from the JWT payload (user's role doesn't have an lob, for instance), that dimension is treated as a wildcard — no file that requires an explicit match on that dimension can win over one that doesn't mention it.
+If a claim is absent from the JWT payload, any partial whose condition references that claim will not match. The user receives the base schema plus any partials whose conditions are fully satisfied by the claims they do have.
 
 Full claim extraction and context construction is documented in [01a-CLOUDFLARE-WORKER.md](./01a-CLOUDFLARE-WORKER.md).
 
 ---
 
-## S3 Candidate Loading
+## S3 File Loading
 
-The Worker performs two S3 operations per cache miss:
+The Worker performs at most **two `GetObject` calls** per cache miss — no `ListObjects`, no candidate scoring:
 
-1. **`ListObjectsV2`** with prefix `{viewId}/` — returns the set of all candidate files for the view.
-2. **`GetObject`** on the winning key selected by the specificity algorithm.
+1. **`GetObject {viewId}/{tenantId}.json`** — tenant-specific schema file (primary).
+2. **`GetObject {viewId}/default.json`** — universal fallback, only attempted if the tenant file is not found.
 
-The `ListObjectsV2` result is itself cached in Cloudflare KV (TTL: 60 seconds) keyed by `viewId`. This means repeated requests for the same view within a minute share the candidate list, even if they carry different JWT contexts. The object list is stable between schema deploys; only the object content changes.
-
-Full S3 key naming convention is documented in [01b-S3-SCHEMA-LAYOUT.md](./01b-S3-SCHEMA-LAYOUT.md).
+Full S3 key naming convention and file format are documented in [01b-S3-SCHEMA-LAYOUT.md](./01b-S3-SCHEMA-LAYOUT.md).
 
 ---
 
 ## Resolution Algorithm (Overview)
 
-Once the candidate file list is available, the Worker applies the specificity algorithm to select the winning schema file.
+Once the schema file is fetched, the Worker filters its items by the user's context.
 
-**Core rule:** Each candidate filename encodes which context dimensions it applies to. The algorithm scores each candidate against the request context. The highest-scoring candidate wins. If two candidates tie on score, their contents are deep-merged with the more-specific file's fields taking precedence over the less-specific file's fields.
+**Core rule:** The schema file is a flat document. Items within arrays (columns, actions, widgets, tabs) may carry a `$show` or `$hide` condition. The Worker walks the document and removes any item whose condition doesn't match the user's JWT claims. Items with no condition are always included. `$show`/`$hide` keys are stripped from the output — the browser receives a clean document.
 
-**Dimension weights:**
+**Condition matching:**
+- All keys in a condition must match the corresponding JWT claim value (case-insensitive).
+- A missing JWT claim (null) never satisfies a condition key.
+- There is no scoring, no merging, and no ordering — the schema is already the complete picture.
 
-| Dimension | Weight |
-|---|---|
-| `tenantId` | 100 |
-| `role` | 10 |
-| `lob` | 10 |
-| `locale` | 5 |
-| `portalType` | 5 |
+**Fallback:** If no tenant file and no default file exist for the `viewId`, the Worker returns 404.
 
-A file that matches `tenantId + role + lob` scores 120. A file that matches only `tenantId` scores 100. The more-specific file wins.
-
-**Base fallback:** If no candidate matches any dimension in the request context, `base.json` is returned. If `base.json` does not exist, the Worker returns a 404.
-
-Full algorithm specification including TypeScript implementation, tie-breaking rules, merge algorithm, and test cases is in [01c-SPECIFICITY-ALGORITHM.md](./01c-SPECIFICITY-ALGORITHM.md).
+Full inline conditions specification, TypeScript implementation, and worked resolution traces are in [01c — Inline Conditions](./01c-SPECIFICITY-ALGORITHM.md).
 
 ---
 
@@ -193,7 +185,7 @@ ETag: "{s3-etag}"
 
 ### Schema Not Found (404)
 
-If the S3 `ListObjectsV2` for `{viewId}/` returns an empty set, or if `base.json` is absent for a view that has no other candidates matching the context:
+If neither `{viewId}/{tenantId}.json` nor `{viewId}/default.json` exists in S3:
 
 ```
 HTTP/1.1 404 Not Found
@@ -281,13 +273,12 @@ queryKey: ['schema', viewId, tenantId]
 On a cold CDN edge node (Worker has not seen this `viewId + context` combination):
 
 1. **KV lookup miss:** ~1ms
-2. **S3 `ListObjectsV2`:** 20–50ms
-3. **Specificity algorithm:** <1ms (CPU-only, O(n) where n = candidate files, typically ≤20)
-4. **S3 `GetObject`:** 30–80ms
+2. **S3 `GetObject` (tenant file):** 5–15ms (R2) / 30–80ms (cross-region S3)
+3. **Partial application:** <1ms (CPU-only — array iteration, O(n) partials)
 
-**Worst-case cold path: ~150ms.** Mitigations:
+**Worst-case cold path: ~100ms** (S3 fallback path: two `GetObject` calls). R2 reduces this to ~30ms. Mitigations:
 
-- **Pre-warming on deploy:** `wrangler deploy` hook fires a `GET /schemas/{viewId}` request for the base context of each known tenant, warming the KV cache and CDN before real traffic arrives.
+- **Pre-warming on deploy:** `wrangler deploy` hook fires a `GET /schemas/{viewId}` request for the most common contexts of each known tenant, warming the KV cache and CDN before real traffic arrives.
 - **`stale-while-revalidate`:** After the first warm request, all subsequent requests within the `stale-while-revalidate` window are served from CDN without invoking the Worker.
 - **React Query in-memory cache:** Within the same browser session, all hook calls for the same `viewId` are served from memory after the first fetch — zero network round trips.
 
@@ -299,4 +290,4 @@ On a cold CDN edge node (Worker has not seen this `viewId + context` combination
 |---|---|
 | [01a-CLOUDFLARE-WORKER.md](./01a-CLOUDFLARE-WORKER.md) | Worker script structure, environment bindings, KV cache, pre-warming, error shapes |
 | [01b-S3-SCHEMA-LAYOUT.md](./01b-S3-SCHEMA-LAYOUT.md) | S3 key naming spec, full combination table, versioning, rollback |
-| [01c-SPECIFICITY-ALGORITHM.md](./01c-SPECIFICITY-ALGORITHM.md) | Scoring rules, merge algorithm, TypeScript implementation, test cases |
+| [01c — Inline Conditions](./01c-SPECIFICITY-ALGORITHM.md) | `$show`/`$hide` condition spec, `applyConditions` implementation, worked resolution traces |

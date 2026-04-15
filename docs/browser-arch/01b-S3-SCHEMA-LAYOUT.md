@@ -1,144 +1,91 @@
 # 01b — S3 / R2 Schema Layout
 
 **Status:** Adopted  
-**Last updated:** 2026-04-08  
-**Parent doc:** [01-EDGE-SCHEMA-RESOLUTION.md](./01-EDGE-SCHEMA-RESOLUTION.md)  
+**Last updated:** 2026-04-09  
+**Parent doc:** [01-EDGE-SCHEMA-RESOLUTION.md](./01-EDGE-SCHEMA-RESOLUTION.md)
 
 ---
 
 ## Overview
 
-This document is the authoritative specification for how `resolved-schema.json` files are stored in S3 (or Cloudflare R2). The key naming convention is the contract between:
+This document is the authoritative specification for how schema files are stored in S3 (or Cloudflare R2). The key naming convention is the contract between:
 
 1. The **Schema Materialisation Service** — which writes files to S3 after a config change or schema deploy.
 2. The **Cloudflare Worker** — which reads files from S3 to serve schema requests.
-3. The **specificity algorithm** — which parses key names to score candidates.
 
-Any change to this convention must be coordinated across all three.
+Any change to this convention must be coordinated across both.
 
 ---
 
 ## Bucket Structure
 
 ```
-keystone-resolved-schemas/                      ← primary resolved-schema bucket
+keystone-resolved-schemas/              ← CDN-accessible; read by the Worker
   {viewId}/
-    base.json
-    tenant={tenantId}.json
-    role={role}.json
-    lob={lob}.json
-    locale={locale}.json
-    portalType={portalType}.json
-    tenant={tenantId}+role={role}.json
-    tenant={tenantId}+lob={lob}.json
-    tenant={tenantId}+locale={locale}.json
-    tenant={tenantId}+portalType={portalType}.json
-    role={role}+lob={lob}.json
-    role={role}+locale={locale}.json
-    role={role}+portalType={portalType}.json
-    lob={lob}+locale={locale}.json
-    lob={lob}+portalType={portalType}.json
-    locale={locale}+portalType={portalType}.json
-    tenant={tenantId}+role={role}+lob={lob}.json
-    ... (further combinations as needed — see full table below)
+    default.json                        ← Universal fallback for tenants with no explicit schema
+    {tenantId}.json                     ← One file per tenant per view
 
-keystone-schema-bindings/              ← separate bucket, NOT read by the Worker
+keystone-schema-bindings/              ← Private; accessible only to the Materialisation Service
   {viewId}/
-    config-bindings.json               ← consumed only by Materialisation Service
+    config-bindings.json               ← Authoring-time binding declarations; never read by Worker or browser
 ```
 
-**Critical separation:** `keystone-schema-bindings` and `keystone-resolved-schemas` are two separate S3 buckets with different IAM policies. The Worker only has read access to `keystone-resolved-schemas`. The `keystone-schema-bindings` bucket is accessible only to the Materialisation Service. No binding declarations, config keys, or transformation rules exist in the CDN-accessible bucket.
+**Critical separation:** `keystone-resolved-schemas` and `keystone-schema-bindings` are two separate S3 buckets with different IAM policies. The Worker has read access to `keystone-resolved-schemas` only. No binding declarations, config keys, or transformation rules exist in the CDN-accessible bucket.
 
 ---
 
-## The Five Context Dimensions
+## File Naming Rules
 
-| Dimension | JWT Claim | Example Values | Notes |
-|---|---|---|---|
-| `tenantId` | `tenantId` | `gi`, `zurich`, `hiscox` | Primary discriminator. Every tenant has a base schema or inherits from `base.json`. |
-| `role` | `role` | `underwriter`, `broker`, `admin`, `claims-handler` | Reflects the user's functional role within the tenant. |
-| `lob` | `lob` | `motor`, `property`, `liability`, `marine` | Line of business. A user's role may be lob-agnostic (null lob claim). |
-| `locale` | `locale` | `en-GB`, `de-DE`, `fr-FR` | BCP 47 language tag. Used for label overrides (the Materialisation Service bakes translated labels in). |
-| `portalType` | `portalType` | `broker`, `direct`, `admin`, `mta` | Which portal surface the user is accessing. Drives layout and action visibility differences. |
+1. **Tenant file:** `{viewId}/{tenantId}.json` — the complete schema for a specific tenant. Contains `base` schema and all `partials` for that tenant. See [01c-CONDITIONAL-PARTIALS](./01c-SPECIFICITY-ALGORITHM.md) for the file format.
+2. **Default file:** `{viewId}/default.json` — fallback schema for tenants with no explicit file. Should represent a minimal working schema for new onboardings.
+3. **Tenant ID normalisation:** Tenant IDs are lowercased. `tenantId=GI` in the JWT becomes `gi.json` on disk.
+4. **No subdirectories beyond viewId:** The full key is always exactly `{viewId}/{tenantId}.json`. No nesting.
 
 ---
 
-## Key Naming Specification
+## How the Worker Uses This Layout
 
-### Rules
-
-1. **Key format:** `{viewId}/{dimensionPart}.json`  
-2. **Base key:** `{viewId}/base.json` — matches any context; used as fallback.  
-3. **Dimension encoding:** `{name}={value}` for each dimension present in the file.  
-4. **Multi-dimension separator:** `+` (plus sign, URL-safe, readable in S3 console).  
-5. **Dimension ordering in filename:** fixed order, always written in this sequence:
-   ```
-   tenant → role → lob → locale → portalType
-   ```
-   A file encoding tenant and lob (skipping role) is written as:
-   ```
-   tenant=gi+lob=motor.json
-   ```
-   Never `lob=motor+tenant=gi.json`. The ordering is enforced by the Materialisation Service.  
-6. **Character set:** dimension values must match `[a-z0-9\-]`. Values with uppercase are normalised to lowercase before use in key names. The JWT claim value `en-GB` becomes `locale=en-gb` in the key name.  
-7. **No URL-encoding needed:** `+` is the only special character in key names and it is the literal separator, not a URL-encoded space.  
-8. **Length limit:** S3 keys have a 1024-byte limit. The longest possible key (all 5 dimensions, maximum value lengths) stays well below this.  
-
-### Key Name Examples
+On a cache miss, the Worker performs at most **two `GetObject` calls:**
 
 ```
-quotations-list/base.json
-quotations-list/tenant=gi.json
-quotations-list/tenant=gi+role=underwriter.json
-quotations-list/tenant=gi+role=underwriter+lob=motor.json
-quotations-list/tenant=gi+role=underwriter+lob=motor+locale=en-gb.json
-quotations-list/tenant=gi+role=underwriter+lob=motor+locale=en-gb+portaltype=broker.json
-quotations-list/role=broker.json
-quotations-list/lob=motor+locale=en-gb.json
+1. Attempt:  keystone-resolved-schemas/{viewId}/{tenantId}.json
+             → found: apply partials, return
+             → not found: continue
+
+2. Attempt:  keystone-resolved-schemas/{viewId}/default.json
+             → found: apply inline conditions, return
+             → not found: return 404 SCHEMA_NOT_FOUND
 ```
+
+There is no `ListObjects`. There is no scoring. The Worker reads one file, filters out items whose `$show`/`$hide` conditions don't match the user's JWT claims, and returns the cleaned document.
+
+The KV hot cache key is `{viewId}:{contextHash}` — keying the resolved (post-filter) output per user context.
 
 ---
 
-## Full Combination Table
+## File Format
 
-This table shows the complete set of key patterns from least to most specific. In practice, the Materialisation Service only creates keys for which a schema variant has been authored — it does not create empty files for theoretical combinations.
+Each file is a flat schema document with inline conditions. There is no `base`/`partials` split — the schema is the complete picture, with `$show`/`$hide` annotations on items that are conditional. Full specification in [01c — Inline Conditions](./01c-SPECIFICITY-ALGORITHM.md).
 
-| Specificity | # Dimensions | Pattern | Score* |
-|---|---|---|---|
-| Base | 0 | `base.json` | 0 |
-| Single | 1 | `tenant={t}.json` | 100 |
-| Single | 1 | `role={r}.json` | 10 |
-| Single | 1 | `lob={l}.json` | 10 |
-| Single | 1 | `locale={lo}.json` | 5 |
-| Single | 1 | `portalType={p}.json` | 5 |
-| Double | 2 | `tenant={t}+role={r}.json` | 110 |
-| Double | 2 | `tenant={t}+lob={l}.json` | 110 |
-| Double | 2 | `tenant={t}+locale={lo}.json` | 105 |
-| Double | 2 | `tenant={t}+portaltype={p}.json` | 105 |
-| Double | 2 | `role={r}+lob={l}.json` | 20 |
-| Double | 2 | `role={r}+locale={lo}.json` | 15 |
-| Double | 2 | `role={r}+portaltype={p}.json` | 15 |
-| Double | 2 | `lob={l}+locale={lo}.json` | 15 |
-| Double | 2 | `lob={l}+portaltype={p}.json` | 15 |
-| Double | 2 | `locale={lo}+portaltype={p}.json` | 10 |
-| Triple | 3 | `tenant={t}+role={r}+lob={l}.json` | 120 |
-| Triple | 3 | `tenant={t}+role={r}+locale={lo}.json` | 115 |
-| Triple | 3 | `tenant={t}+role={r}+portaltype={p}.json` | 115 |
-| Triple | 3 | `tenant={t}+lob={l}+locale={lo}.json` | 115 |
-| Triple | 3 | `tenant={t}+lob={l}+portaltype={p}.json` | 115 |
-| Triple | 3 | `tenant={t}+locale={lo}+portaltype={p}.json` | 110 |
-| Triple | 3 | `role={r}+lob={l}+locale={lo}.json` | 25 |
-| Triple | 3 | `role={r}+lob={l}+portaltype={p}.json` | 25 |
-| Triple | 3 | `role={r}+locale={lo}+portaltype={p}.json` | 20 |
-| Triple | 3 | `lob={l}+locale={lo}+portaltype={p}.json` | 20 |
-| Quad | 4 | `tenant={t}+role={r}+lob={l}+locale={lo}.json` | 125 |
-| Quad | 4 | `tenant={t}+role={r}+lob={l}+portaltype={p}.json` | 125 |
-| Quad | 4 | `tenant={t}+role={r}+locale={lo}+portaltype={p}.json` | 120 |
-| Quad | 4 | `tenant={t}+lob={l}+locale={lo}+portaltype={p}.json` | 120 |
-| Quad | 4 | `role={r}+lob={l}+locale={lo}+portaltype={p}.json` | 30 |
-| Full | 5 | `tenant={t}+role={r}+lob={l}+locale={lo}+portaltype={p}.json` | 130 |
+```json
+{
+  "schemaId": "{viewId}",
+  "tenantId": "{tenantId}",
+  "version": "{semver}",
+  "resolvedAt": "{ISO-8601}",
+  "layout": { ... },
+  "columns": [
+    { "key": "...", "label": "...", "type": "..." },
+    { "key": "...", "label": "...", "type": "...", "$show": { "{claim-key}": "{claim-value}" } }
+  ],
+  "actions": [
+    { "key": "...", "label": "..." },
+    { "key": "...", "label": "...", "$show": { "{claim-key}": "{claim-value}" } }
+  ]
+}
+```
 
-*Score = sum of weights of matched dimensions (tenantId=100, role=10, lob=10, locale=5, portalType=5)
+Items with no `$show` or `$hide` are always included. Items that are conditional carry the condition directly on themselves — no separate overrides block. The `$show`/`$hide` keys are stripped from the output before the document is returned to the browser.
 
 ---
 
@@ -146,86 +93,97 @@ This table shows the complete set of key patterns from least to most specific. I
 
 The Materialisation Service is a backend service (not browser-facing). It runs when:
 
-1. A schema variant is authored or updated in the schema editor.
+1. A schema is authored or updated in the schema editor.
 2. A config blob is saved in the Client Config System (triggers re-materialisation of all schemas that bind to the changed config key).
 3. A manual re-materialise is triggered (e.g. after a bulk config import).
 
-**Write procedure for a single variant:**
+**Write procedure for a single view-tenant schema:**
 
 ```
-1. Read the schema definition for the variant (e.g. tenant=gi + role=underwriter + lob=motor)
-2. Read the config-bindings.json for the viewId from keystone-schema-bindings/{viewId}/config-bindings.json
+1. Read the schema definition for the view-tenant combination from the schema store.
+   The schema is already a flat document with $show/$hide conditions on items.
+
+2. Read config-bindings.json for this viewId from:
+      keystone-schema-bindings/{viewId}/config-bindings.json
+
 3. For each binding declaration:
    a. Resolve the config key against the Client Config System
-   b. Apply the resolved value to the schema at the declared path
-4. Produce resolved-schema.json (schema + all config values baked in)
-5. Write to S3: keystone-resolved-schemas/{viewId}/tenant=gi+role=underwriter+lob=motor.json
-6. If writing R2: same key, same content
-7. Emit a CDN purge event: Surrogate-Key = schema-{viewId}
+   b. Apply the resolved value to the schema at the declared JSON path
+      (bindings target any field in the flat document — conditions are preserved)
+
+4. Produce the resolved flat document (all config values baked in, $show/$hide intact)
+
+5. Write atomically to S3:
+      keystone-resolved-schemas/{viewId}/{tenantId}.json
+
+6. Emit CDN purge event:  Surrogate-Key = schema-{viewId}
 ```
 
 **What the Materialisation Service never does:**
-- Write to `keystone-resolved-schemas/{viewId}/config-bindings.json` — config bindings live only in the separate `keystone-schema-bindings` bucket.
-- Write partial or in-progress schemas — the file is written atomically (S3 PUT replaces the object).
-- Create combination keys that have no authored variant — it only writes keys for variants that exist in the schema editor.
+- Write to `keystone-resolved-schemas/{viewId}/config-bindings.json` — bindings live only in the private bucket.
+- Write partial or in-progress files — the PUT replaces the object atomically.
+- Evaluate or strip `$show`/`$hide` conditions — that is the Worker's job at request time.
+- Create a schema file for a tenant that has not been explicitly onboarded.
 
 ---
 
-## `config-bindings.json` Files
-
-Config bindings are stored separately from resolved schemas:
+## Concrete Example: `quotations-list` View
 
 ```
-keystone-schema-bindings/
-  quotations-list/
-    config-bindings.json
-  claims-list/
-    config-bindings.json
-  policy-detail/
-    config-bindings.json
+keystone-resolved-schemas/quotations-list/
+│
+├── default.json
+│     ← Minimal universal schema for tenants with no explicit file.
+│       Columns: [reference, status, premium]. Actions: [view].
+│       No $show conditions — same for everyone.
+│
+├── gi.json
+│     ← GI tenant schema — flat document, conditions inline on items.
+│       All columns present; conditional ones annotated with $show:
+│         client-reference   $show: { role: "broker" }
+│         risk-summary       $show: { role: "underwriter" }
+│         tech-rating        $show: { role: "underwriter" }
+│         vehicle-reg        $show: { role: "underwriter", lob: "motor" }
+│         ncb                $show: { role: "underwriter", lob: "motor" }
+│         property-address   $show: { role: "underwriter", lob: "property" }
+│         sum-insured        $show: { role: "underwriter", lob: "property" }
+│         admin-tenant-col   $show: { portalType: "admin" }
+│       bulk-approve action  $show: { role: "underwriter" }
+│
+└── zurich.json
+      ← Zurich tenant schema — same structure, different branding, Zurich column set.
+         Zurich-specific conditions on Zurich-specific items.
 ```
 
-**Structure:**
+**Resolution for a GI underwriter on motor:**
 
-```json
-// keystone-schema-bindings/quotations-list/config-bindings.json
-{
-  "version": "1",
-  "viewId": "quotations-list",
-  "bindings": {
-    "columns.status.valueMap": {
-      "configKey": "insurance.quotation.status",
-      "mapping": "enum-to-display",
-      "fallback": { "label": "Unknown", "variant": "neutral" }
-    },
-    "header.title": {
-      "configKey": "insurance.quotation.list.title",
-      "mapping": "string",
-      "fallback": "Quotations"
-    },
-    "columns.lob.valueMap": {
-      "configKey": "insurance.lob",
-      "mapping": "enum-to-display",
-      "fallback": { "label": "Unknown", "variant": "neutral" }
-    }
-  }
-}
 ```
+JWT: { tenantId: "gi", role: "underwriter", lob: "motor" }
+File fetched: quotations-list/gi.json
 
-**This file is never read by the Worker or the browser.** It is an authoring-time contract between the schema editor and the Materialisation Service. The resolved output bakes these values into the `resolved-schema.json` before it is written to S3.
+Columns filtered:
+  reference          — no condition                                   → included
+  status             — no condition                                   → included
+  premium            — no condition                                   → included
+  client-reference   — $show { role: broker }        → no match      → excluded
+  risk-summary       — $show { role: underwriter }   → match         → included
+  tech-rating        — $show { role: underwriter }   → match         → included
+  vehicle-reg        — $show { role: underwriter, lob: motor } → match → included
+  ncb                — $show { role: underwriter, lob: motor } → match → included
+  property-address   — $show { role: underwriter, lob: property } → no match → excluded
+  sum-insured        — $show { role: underwriter, lob: property } → no match → excluded
+
+Result: [reference, status, premium, risk-summary, tech-rating, vehicle-reg, ncb]
+        bulk-approve action included
+```
 
 ---
 
 ## S3 Object Versioning Policy
 
-S3 versioning is **enabled** on the `keystone-resolved-schemas` bucket. The `keystone-schema-bindings` bucket also has versioning enabled — binding file history is kept for audit purposes. Each `PUT` creates a new version of the object.
+S3 versioning is **enabled** on both buckets. Each `PUT` creates a new version of the object.
 
-**Retention policy:**
-- Keep the **last 20 versions** of each object.
-- Versions older than the 20th are expired by an S3 lifecycle rule.
-- This provides approximately 20 schema deploys of rollback history per key.
-
-**S3 lifecycle rule (applied to the bucket):**
+**Retention policy:** Keep the last 20 versions per object. S3 lifecycle rule expires older versions.
 
 ```json
 {
@@ -243,27 +201,27 @@ S3 versioning is **enabled** on the `keystone-resolved-schemas` bucket. The `key
 }
 ```
 
-The `NoncurrentDays: 1` is a minimum required by S3; effectively the rule keeps 20 non-current versions and marks older ones for expiry after 1 day.
+The `NoncurrentDays: 1` is the minimum required by S3; effectively the rule retains 20 non-current versions and marks older ones for expiry after 1 day.
 
 ---
 
 ## Rollback Procedure
 
-To roll back a schema to a previous version:
+To roll back a schema file to a previous version:
 
 ```bash
 # 1. List versions of the target key
 aws s3api list-object-versions \
   --bucket keystone-resolved-schemas \
-  --prefix "quotations-list/tenant=gi+role=underwriter+lob=motor.json" \
+  --prefix "quotations-list/gi.json" \
   --query 'Versions[*].{VersionId:VersionId,LastModified:LastModified}' \
   --output table
 
 # 2. Copy the desired version to make it the current HEAD
 aws s3api copy-object \
   --bucket keystone-resolved-schemas \
-  --copy-source "keystone-resolved-schemas/quotations-list/tenant=gi+role=underwriter+lob=motor.json?versionId=abc123" \
-  --key "quotations-list/tenant=gi+role=underwriter+lob=motor.json"
+  --copy-source "keystone-resolved-schemas/quotations-list/gi.json?versionId=abc123" \
+  --key "quotations-list/gi.json"
 
 # 3. Purge CDN cache for this view
 curl -X POST "https://api.cloudflare.com/client/v4/zones/{zone_id}/purge_cache" \
@@ -272,72 +230,48 @@ curl -X POST "https://api.cloudflare.com/client/v4/zones/{zone_id}/purge_cache" 
   -d '{"tags": ["schema-quotations-list"]}'
 ```
 
-**After CDN purge:** the next request to the Worker will fetch the rolled-back version from S3 and cache it. The React Query in-memory cache in browser clients will serve stale data for up to 5 minutes (matching `staleTime`). For an urgent rollback, append `?_schema_bust=1` to schema requests (the Worker treats this as a cache bypass) or issue a broader CDN purge by tenant tag.
+**After CDN purge:** the next request fetches the rolled-back version from S3 and re-caches it. The React Query in-memory cache in active browser sessions will serve stale data for up to 5 minutes (matching `staleTime`). For an urgent rollback, append `?_schema_bust=1` to schema requests (the Worker treats this as a cache bypass) or issue a broader CDN purge by tenant tag.
 
 ---
 
-## Concrete Examples: `quotations-list` View
+## `config-bindings.json` Files
 
-The following illustrates which S3 keys would exist for a realistic deployment involving two tenants, each with role and lob variants.
+Config bindings are stored separately and are never read by the Worker or the browser:
 
 ```
-keystone-resolved-schemas/quotations-list/
-├── base.json
-│     ← Default schema for all tenants/roles/lobs.
-│       Contains: standard columns (reference, status, premium, insured, created),
-│       standard actions (view, new-quotation), default title "Quotations"
-│
-├── tenant=gi.json
-│     ← GI tenant override.
-│       Adds GI-specific branding classes, overrides title to "GI Quotations",
-│       adds a "GI Reference" column not in base.
-│
-├── tenant=gi+role=underwriter.json
-│     ← GI underwriter override.
-│       Adds bulk-approve action, expander row with risk summary,
-│       shows additional technical columns hidden from brokers.
-│
-├── tenant=gi+role=underwriter+lob=motor.json
-│     ← GI underwriter working on motor.
-│       Adds vehicle registration column, NCB column,
-│       overrides status valueMap with motor-specific statuses.
-│
-├── tenant=gi+role=underwriter+lob=property.json
-│     ← GI underwriter working on property.
-│       Adds property address column, sum insured column,
-│       overrides status valueMap with property-specific statuses.
-│
-├── tenant=gi+role=broker.json
-│     ← GI broker.
-│       Removes internal pricing columns, adds client reference column.
-│
-├── tenant=gi+portaltype=admin.json
-│     ← GI admin portal.
-│       Adds tenant management columns, removes end-user actions.
-│
-├── tenant=zurich.json
-│     ← Zurich tenant override.
-│       Different title, different branding, Zurich-specific column order.
-│
-└── tenant=zurich+role=underwriter+lob=motor.json
-      ← Zurich underwriter / motor.
-        Zurich-specific motor columns, Zurich status labels.
+keystone-schema-bindings/
+  quotations-list/
+    config-bindings.json
+  claims-list/
+    config-bindings.json
+  policy-detail/
+    config-bindings.json
 ```
 
-**Resolution for a GI underwriter on motor:**
+**Structure example:**
 
-Request context: `tenantId=gi, role=underwriter, lob=motor, locale=en-gb, portalType=broker`
-
-Candidates and scores:
+```json
+{
+  "version": "1",
+  "viewId": "quotations-list",
+  "bindings": {
+    "base.columns.status.valueMap": {
+      "configKey": "insurance.quotation.status",
+      "mapping": "enum-to-display",
+      "fallback": { "label": "Unknown", "variant": "neutral" }
+    },
+    "base.layout.title": {
+      "configKey": "insurance.quotation.list.title",
+      "mapping": "string",
+      "fallback": "Quotations"
+    },
+    "partials[id=role-underwriter-lob-motor].overrides.columns.status.valueMap": {
+      "configKey": "insurance.quotation.status.motor",
+      "mapping": "enum-to-display",
+      "fallback": { "label": "Unknown", "variant": "neutral" }
+    }
+  }
+}
 ```
-base.json                                          → score 0
-tenant=gi.json                                     → score 100
-tenant=gi+role=underwriter.json                    → score 110
-tenant=gi+role=underwriter+lob=motor.json          → score 120  ← WINNER
-tenant=gi+role=broker.json                         → score 110 (role=broker ≠ underwriter, disqualified)
-tenant=gi+portaltype=admin.json                    → score 105 (portalType=admin ≠ broker, disqualified)
-tenant=zurich.json                                 → score 0   (tenant=zurich ≠ gi, disqualified)
-tenant=zurich+role=underwriter+lob=motor.json      → score 0   (tenant mismatch, disqualified)
-```
 
-Result: `tenant=gi+role=underwriter+lob=motor.json` is served.
+Binding paths use dot notation. Paths into partials use the `partials[id={partial-id}]` prefix to target a specific partial's overrides. **This file is never read by the Worker or the browser.** It is consumed only by the Materialisation Service at schema write time.

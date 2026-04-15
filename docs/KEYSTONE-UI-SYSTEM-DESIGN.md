@@ -33,7 +33,7 @@ flowchart TB
     end
 
     subgraph Edge["CDN Edge — Layer 1"]
-        Worker["Cloudflare Worker\nSpecificity Resolution"]
+        Worker["Cloudflare Worker\nInline Condition Filter"]
     end
 
     subgraph S3["AWS S3"]
@@ -84,18 +84,23 @@ The browser doesn't have the page structure locally. It calls `useViewMetadata()
 
 The request includes the user's JWT token. The Worker reads three things from it: `tenantId`, `role`, `lob`, `locale`, and `portalType`. It uses these to figure out which version of the schema to serve.
 
-Here's why that matters: the quotations list looks different depending on who's looking at it. An underwriter at Tenant A needs different columns, different actions, and possibly different labels than a broker at Tenant B. We handle this by pre-building one schema file per meaningful context combination and storing them in S3:
+Here's why that matters: the quotations list looks different depending on who's looking at it. An underwriter at GI needs different columns and actions than a broker at Zurich. We handle this by building one schema file per tenant, stored in S3:
 
 ```
 keystone-resolved-schemas/quotations-list/
-  base.json                                    ← default, for anyone not matched below
-  tenant=gi.json                               ← GI tenant override
-  tenant=gi+role=underwriter.json              ← GI underwriters specifically
-  tenant=gi+role=underwriter+lob=motor.json    ← GI motor underwriters
-  ...
+  default.json    ← universal fallback for tenants with no explicit schema
+  gi.json         ← GI tenant: all columns and actions, with $show conditions on the conditional ones
+  zurich.json     ← Zurich tenant: same structure, Zurich-specific content
 ```
 
-The Worker loads the list of available files for this view, scores each one against the user's context, and picks the best match — the file with the most matching dimensions wins. This is the same idea as CSS specificity: the most specific rule wins. The Worker then fetches that file from S3 and returns it to the browser with a long cache header (`Cache-Control: public, max-age=300, stale-while-revalidate=3600`), so subsequent requests hit the CDN without touching S3 at all.
+Each file is a complete, flat schema document — columns, actions, widgets, all in one place. Items that only appear for certain roles or LOBs carry a `$show` condition right on themselves:
+
+```json
+{ "key": "vehicle-reg", "label": "Vehicle Reg", "$show": { "role": "underwriter", "lob": "motor" } }
+{ "key": "bulk-approve", "label": "Bulk Approve", "$show": { "role": "underwriter" } }
+```
+
+The Worker fetches the tenant's file (one `GetObject` call), walks through the document, and removes any item whose `$show` condition doesn't match the user's JWT. The result is returned to the browser as a clean document — no condition keys, no metadata — with a long cache header (`Cache-Control: public, max-age=300, stale-while-revalidate=3600`), so subsequent requests hit the CDN without touching S3 at all.
 
 **What's inside that file?** The schema tells the browser the page structure: which widgets to render, in what layout, with what columns and actions. Crucially, it also already contains all the display values — labels like "Pending Approval" for a status badge, the page title, any translated strings. The browser doesn't look these up. They're already there, baked in. We'll come back to how they got there.
 
@@ -241,8 +246,8 @@ These are the decisions that give the architecture its shape. Every non-obvious 
 The sections below are reference material. Read them when you're working in that layer.
 
 ### Layer 1 — Edge Schema Resolution
-The specificity algorithm, full S3 key naming spec, Worker script, cache and pre-warming strategy.  
-→ [`01-EDGE-SCHEMA-RESOLUTION.md`](./browser-arch/01-EDGE-SCHEMA-RESOLUTION.md) · [`01a`](./browser-arch/01a-CLOUDFLARE-WORKER.md) · [`01b`](./browser-arch/01b-S3-SCHEMA-LAYOUT.md) · [`01c`](./browser-arch/01c-SPECIFICITY-ALGORITHM.md)
+Conditional partials schema format, S3 file layout, Worker script, cache and pre-warming strategy. Why specificity scoring was removed: [ADR-003](./ADR-003-schema-partials-replace-specificity.md).  
+→ [`01-EDGE-SCHEMA-RESOLUTION.md`](./browser-arch/01-EDGE-SCHEMA-RESOLUTION.md) · [`01a`](./browser-arch/01a-CLOUDFLARE-WORKER.md) · [`01b`](./browser-arch/01b-S3-SCHEMA-LAYOUT.md) · [`01c — Conditional Partials`](./browser-arch/01c-SPECIFICITY-ALGORITHM.md)
 
 ### Layer 2 — Auth and Security
 JWT lifecycle in the browser, the claims contract, CORS, 404-not-403 for IDOR prevention.  

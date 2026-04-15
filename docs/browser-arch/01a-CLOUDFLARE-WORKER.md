@@ -23,8 +23,8 @@ The Worker is written in TypeScript and uses Hono as a lightweight routing layer
 
 import { Hono } from 'hono';
 import { decodeJwtClaims } from './jwt';
-import { buildSchemaContext } from './context';
-import { resolveSchema } from './resolver';
+import { buildSchemaContext, contextHash } from './context';
+import { resolveSchema, SchemaNotFoundError } from './resolver';
 import { KvSchemaCache } from './kv-cache';
 import type { Env } from './env';
 
@@ -214,9 +214,9 @@ export interface SchemaContext {
 
 /**
  * Builds the resolution context from JWT claims.
- * Optional dimensions default to null — the specificity algorithm
- * treats null dimensions as wildcards (they cannot match a file
- * that explicitly encodes that dimension).
+ * Optional dimensions default to null.
+ * A null dimension never satisfies a partial condition that references it —
+ * a user without an lob claim cannot match { lob: "motor" }.
  */
 export function buildSchemaContext(claims: JwtClaims): SchemaContext {
   return {
@@ -252,7 +252,7 @@ export function contextHash(ctx: SchemaContext): string {
 ```typescript
 // workers/schema-resolver/src/resolver.ts
 
-import { runSpecificityAlgorithm } from './specificity';
+import { applyConditions } from './conditions';
 import type { Env } from './env';
 
 export class SchemaNotFoundError extends Error {
@@ -263,48 +263,34 @@ export class SchemaNotFoundError extends Error {
 }
 
 /**
- * Lists all candidate objects for viewId, runs the specificity algorithm,
- * fetches the winning object from R2.
+ * Fetches the schema file for the given tenant (or the default fallback),
+ * then filters out any items whose $show/$hide condition doesn't match
+ * the request context.
+ *
+ * Two GetObject calls at most — no ListObjects, no scoring, no merging.
  */
 export async function resolveSchema(
   viewId: string,
   ctx: SchemaContext,
   env: Env,
 ): Promise<ResolvedSchema> {
-  // List all keys under viewId/
-  const listed = await env.SCHEMA_BUCKET.list({ prefix: `${viewId}/` });
-  const candidateKeys = listed.objects.map((o) => o.key);
+  const tenantKey  = `${viewId}/${ctx.tenantId.toLowerCase()}.json`;
+  const defaultKey = `${viewId}/default.json`;
 
-  if (candidateKeys.length === 0) {
+  // Try tenant-specific file first, fall back to default
+  let schemaObj = await env.SCHEMA_BUCKET.get(tenantKey);
+  if (!schemaObj) {
+    schemaObj = await env.SCHEMA_BUCKET.get(defaultKey);
+  }
+
+  if (!schemaObj) {
     throw new SchemaNotFoundError(viewId);
   }
 
-  // Run specificity algorithm — returns the winning key (or merged result)
-  const { winnerKey, mergeKeys } = runSpecificityAlgorithm(candidateKeys, ctx);
+  const tenantSchema = await schemaObj.json<TenantSchema>();
 
-  if (!winnerKey) {
-    throw new SchemaNotFoundError(viewId);
-  }
-
-  if (mergeKeys.length === 0) {
-    // Single winner — fetch and return directly
-    const obj = await env.SCHEMA_BUCKET.get(winnerKey);
-    if (!obj) throw new SchemaNotFoundError(viewId);
-    return obj.json<ResolvedSchema>();
-  }
-
-  // Tie: fetch all merge candidates in parallel
-  const objects = await Promise.all(
-    mergeKeys.map((key) => env.SCHEMA_BUCKET.get(key))
-  );
-
-  const schemas = objects.map((obj, i) => {
-    if (!obj) throw new Error(`R2 object disappeared: ${mergeKeys[i]}`);
-    return obj.json<ResolvedSchema>();
-  });
-
-  const resolved = await Promise.all(schemas);
-  return mergeSchemas(resolved); // mergeSchemas: more-specific fields win
+  // Filter items by $show/$hide conditions — no merging, no overrides
+  return applyConditions(tenantSchema, ctx);
 }
 ```
 
@@ -415,16 +401,16 @@ Cloudflare Workers have the following limits on the free and paid tiers:
 | Subrequest duration | — | 30s |
 | Worker bundle size | 1MB | 10MB |
 
-**Impact on the specificity algorithm:**
+**Impact of inline condition filtering:**
 
-The algorithm is O(n) where n = number of candidate files for a view. A view should never have more than 50 candidate files (2^5 combinations = 32 maximum, in practice far fewer because not every dimension combination is materialised). The algorithm itself runs in <1ms. The limiting factor is always the R2 `GetObject` call (~5–15ms for R2, up to 80ms for cross-region S3).
+`applyConditions` performs a single recursive walk of the schema document, evaluating `$show`/`$hide` on each array item. The walk is O(n) where n = total number of items in the document. Typical schema documents contain fewer than 100 items. The filter runs in <1ms. The limiting factor is always the R2 `GetObject` call (~5–15ms for R2, up to 80ms for cross-region S3).
 
 **Total Worker CPU budget per request:**
 - JWT decode: ~0.1ms
 - Context build: <0.1ms
 - KV lookup: ~1ms
-- Specificity algorithm: <1ms
 - R2 `GetObject` (counted against subrequest time, not CPU): 5–15ms
+- Condition filter (`applyConditions`): <1ms
 - JSON serialisation: ~0.5ms
 
 **Well within the 10ms CPU limit.** The 10ms budget is CPU-only; waiting on subrequests (KV, R2) does not consume CPU time.

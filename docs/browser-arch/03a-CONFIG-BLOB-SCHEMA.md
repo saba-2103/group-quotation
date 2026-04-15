@@ -257,7 +257,7 @@ Maps every domain code in an enum namespace to a `BadgeValue`. The materialisati
 
 The Config System implements a **base + override** layering model. Every config key has exactly one base blob (no `tenantId`). Tenants may have zero or one override blob per key (with their `tenantId` set).
 
-At materialisation time, the Materialisation Service resolves the most specific blob using the specificity algorithm (see [03 §5](./03-CLIENT-CONFIG-SYSTEM.md#5-config-specificity-and-schema-specificity)). It never merges blobs — the winning blob's `value` is used in full.
+At materialisation time, the Materialisation Service resolves the most specific blob using priority order: tenant-specific blob wins over base blob (see [03c §4](./03c-MATERIALISATION-SERVICE.md#4-config-blob-resolution-priority)). It never merges blobs — the winning blob's `value` is used in full.
 
 ### Example: Tenant Override
 

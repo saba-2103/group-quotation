@@ -204,6 +204,7 @@ See [06d — Widget Registry](./06d-WIDGET-REGISTRY.md) for the registration API
 | [06b — Widget and Field Conditions](./06b-WIDGET-AND-FIELD-CONDITIONS.md) | WidgetCondition and RowCondition TypeScript interfaces, evaluation order, useFieldConfig bridge, 5 worked examples |
 | [06c — Workbench Runtime](./06c-WORKBENCH-RUNTIME.md) | Bootstrap hook, WorkflowRuntime, DraftRuntime, JobRuntime, AuditRuntime |
 | [06d — Widget Registry](./06d-WIDGET-REGISTRY.md) | Registration API, prop contract declaration, versioning rules, contract testing |
+| [06e — Schema Document Spec](./06e-SCHEMA-DOCUMENT-SPEC.md) | Full schema key reference, per-widget props, dataSource, actions, conditions, implementation status |
 
 ---
 
