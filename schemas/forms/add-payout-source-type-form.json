@@ -1,0 +1,110 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Add Payout Source Type",
+        "description": "Enter payout source type details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "lob",
+                "name": "lob",
+                "label": "Line of Business",
+                "type": "select",
+                "order": 1,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/valid-values?variable_code=lob",
+                        "method": "GET"
+                    }
+                },
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Line of Business is required"
+                    }
+                ]
+            },
+            {
+                "id": "payout_source_type",
+                "name": "payout_source_type",
+                "label": "Payout Source Type",
+                "type": "select",
+                "order": 2,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/valid-values?variable_code=payout_source_type",
+                        "method": "GET"
+                    }
+                },
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payout Source Type is required"
+                    }
+                ]
+            },
+            {
+                "id": "payout_source_type_desc",
+                "name": "payout_source_type_desc",
+                "label": "Payout Source Type Desc",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "account_group",
+                "name": "account_group",
+                "label": "Account Group",
+                "type": "select",
+                "order": 4,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/valid-values?variable_code=account_group",
+                        "method": "GET"
+                    }
+                }
+            },
+            {
+                "id": "account_sub_group",
+                "name": "account_sub_group",
+                "label": "Account Sub Group",
+                "type": "select",
+                "order": 5,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/valid-values?variable_code=account_subgroup",
+                        "method": "GET"
+                    }
+                }
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-add-payout-source-type",
+                "label": "Add Payout Source Type",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/payout-source-types",
+                "api": {
+                    "endpoint": "/api/moneyout/config/payout-source-types",
+                    "method": "POST"
+                },
+                "successMessage": "Payout Source Type added successfully!"
+            },
+            {
+                "id": "cancel-add-payout-source-type",
+                "label": "Cancel",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}
