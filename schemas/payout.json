@@ -43,6 +43,9 @@
         },
         {
           "$ref": "schemas/tabs/payout/file-field-validation-rules.json"
+        },
+        {
+          "$ref": "schemas/tabs/payout/payout-cancellation.json"
         }
       ]
     }

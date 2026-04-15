@@ -1,0 +1,162 @@
+{
+    "id": "payout-cancellation-tab",
+    "type": "tab-panel",
+    "props": {
+        "label": "Payout Cancellation",
+        "value": "payout-cancellation",
+        "icon": "XCircle"
+    },
+    "children": [
+        {
+            "id": "payout-cancellation-search-bar",
+            "type": "search-bar",
+            "props": {
+                "stateKey": "moneyout:payout-cancellation:filters",
+                "filters": [
+                    { "id": "payout_request_id", "label": "Payout Request ID", "type": "text" },
+                    { "id": "payout_date_from", "label": "Payout Date From", "type": "date" },
+                    { "id": "payout_date_to", "label": "Payout Date To", "type": "date" },
+                    { "id": "lob", "label": "Line of Business", "type": "text" },
+                    { "id": "payout_gen_type", "label": "Payout Generation Type", "type": "text" },
+                    { "id": "payee_role", "label": "Payee Role", "type": "text" },
+                    { "id": "payee_client_id", "label": "Payee Client ID", "type": "text" },
+                    { "id": "payout_mode", "label": "Payout Mode", "type": "text" },
+                    { "id": "payout_reason", "label": "Payout Reason", "type": "text" },
+                    { "id": "entity1_type", "label": "Entity 1 Type", "type": "text" },
+                    { "id": "entity1", "label": "Entity 1", "type": "text" },
+                    { "id": "payout_status", "label": "Payout Status", "type": "text" },
+                    { "id": "transaction_status", "label": "Transaction Status", "type": "text" }
+                ]
+            }
+        },
+        {
+            "id": "payout-cancellation-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/payouts/cancellation?page=0&size=50",
+                    "method": "GET"
+                },
+                "fallbackData": [],
+                "stateDependencies": ["moneyout:payout-cancellation:filters"]
+            },
+            "props": {
+                "title": "Payout Cancellation",
+                "rowIdKey": "payout_request_id",
+                "columns": [
+                    {
+                        "id": "payout_request_id",
+                        "accessorKey": "payout_request_id",
+                        "label": "Payout Request ID",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_date",
+                        "accessorKey": "payout_date",
+                        "label": "Payout Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "lob",
+                        "accessorKey": "lob",
+                        "label": "Line of Business",
+                        "type": "text"
+                    },
+                    {
+                        "id": "component",
+                        "accessorKey": "component",
+                        "label": "Component Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_gen_type",
+                        "accessorKey": "payout_gen_type",
+                        "label": "Payout Generation Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_role",
+                        "accessorKey": "payee_role",
+                        "label": "Payee Role",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_client_id",
+                        "accessorKey": "payee_client_id",
+                        "label": "Payee Client Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_name",
+                        "accessorKey": "payee_name",
+                        "label": "Payee Name",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_mode",
+                        "accessorKey": "payout_mode",
+                        "label": "Payout Mode",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_reason",
+                        "accessorKey": "payout_reason",
+                        "label": "Payout Reason",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1_type",
+                        "accessorKey": "entity1_type",
+                        "label": "Entity 1 Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1",
+                        "accessorKey": "entity1",
+                        "label": "Entity 1",
+                        "type": "text"
+                    },
+                    {
+                        "id": "amount_in_trans_currency",
+                        "accessorKey": "amount_in_trans_currency",
+                        "label": "Amount in Transaction Currency",
+                        "type": "number"
+                    },
+                    {
+                        "id": "payout_status",
+                        "accessorKey": "payout_status",
+                        "label": "Payout Status",
+                        "type": "badge"
+                    },
+                    {
+                        "id": "payout_initiated_by",
+                        "accessorKey": "payout_initiated_by",
+                        "label": "Payout Initiated By User",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_initiated_date",
+                        "accessorKey": "payout_initiated_date",
+                        "label": "Payout Initiated Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "transaction_status",
+                        "accessorKey": "transaction_status",
+                        "label": "Transaction Status",
+                        "type": "badge"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "cancel-payout-request",
+                        "label": "Edit",
+                        "icon": "ExternalLink",
+                        "type": "navigate",
+                        "target": "/payout/payout-cancel-detail/:id"
+                    }
+                ]
+            }
+        }
+    ]
+}
