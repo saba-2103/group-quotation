@@ -6,8 +6,8 @@
         "columns": 2,
         "fields": [
             {
-                "id": "template_id",
-                "name": "template_id",
+                "id": "templateId",
+                "name": "templateId",
                 "label": "Template Id",
                 "type": "text",
                 "order": 1,
@@ -20,29 +20,15 @@
                 ]
             },
             {
-                "id": "template_desc",
-                "name": "template_desc",
-                "label": "Template Description",
-                "type": "text",
-                "order": 2,
-                "size": "sm",
-                "validations": [
-                    {
-                        "rule": "required",
-                        "message": "Template Description is required"
-                    }
-                ]
-            },
-            {
-                "id": "payout_mode",
-                "name": "payout_mode",
+                "id": "payoutMode",
+                "name": "payoutMode",
                 "label": "Payout Mode",
                 "type": "select",
-                "order": 3,
+                "order": 2,
                 "size": "sm",
                 "dataSource": {
                     "api": {
-                        "endpoint": "/api/moneyout/config/payout-modes",
+                        "endpoint": "/api/moneyout/config/payout-mode-policies",
                         "method": "GET"
                     }
                 },
@@ -54,23 +40,23 @@
                 ]
             },
             {
-                "id": "output_file_path",
-                "name": "output_file_path",
+                "id": "outputFilePath",
+                "name": "outputFilePath",
                 "label": "Output File Path",
                 "type": "text",
-                "order": 4,
+                "order": 3,
                 "size": "sm"
             },
             {
-                "id": "output_format",
-                "name": "output_format",
+                "id": "outputFormat",
+                "name": "outputFormat",
                 "label": "Output Format",
                 "type": "select",
-                "order": 5,
+                "order": 4,
                 "size": "sm",
                 "options": [
-                    { "value": ".csv", "label": ".csv" },
-                    { "value": ".json", "label": ".json" }
+                    { "value": "CSV", "label": "CSV" },
+                    { "value": "FIXED", "label": "Fixed Width" }
                 ],
                 "validations": [
                     {
@@ -80,11 +66,11 @@
                 ]
             },
             {
-                "id": "output_file_name_pattern",
-                "name": "output_file_name_pattern",
-                "label": "Regular Expression for Output File Name Pattern",
+                "id": "outputFileNamePattern",
+                "name": "outputFileNamePattern",
+                "label": "Output File Name Pattern",
                 "type": "text",
-                "order": 6,
+                "order": 5,
                 "size": "sm",
                 "validations": [
                     {
@@ -94,43 +80,43 @@
                 ]
             },
             {
-                "id": "csv_delimiter",
-                "name": "csv_delimiter",
-                "label": "Delimiter Character in case of CSV Files",
+                "id": "csvDelimiter",
+                "name": "csvDelimiter",
+                "label": "Delimiter Character (CSV)",
+                "type": "text",
+                "order": 6,
+                "size": "sm"
+            },
+            {
+                "id": "recordSeparator",
+                "name": "recordSeparator",
+                "label": "Line Feed Character",
                 "type": "text",
                 "order": 7,
                 "size": "sm"
             },
             {
-                "id": "record_separator",
-                "name": "record_separator",
-                "label": "Line Feed Character",
+                "id": "enclosureChar",
+                "name": "enclosureChar",
+                "label": "Quote Character",
                 "type": "text",
                 "order": 8,
                 "size": "sm"
             },
             {
-                "id": "enclosure_char",
-                "name": "enclosure_char",
-                "label": "Quote Character (Single or Double Quote)",
+                "id": "headerTemplate",
+                "name": "headerTemplate",
+                "label": "Optional Header Template",
                 "type": "text",
                 "order": 9,
                 "size": "sm"
             },
             {
-                "id": "header_template",
-                "name": "header_template",
-                "label": "Optional Header Template",
-                "type": "text",
-                "order": 10,
-                "size": "sm"
-            },
-            {
-                "id": "footer_template",
-                "name": "footer_template",
+                "id": "footerTemplate",
+                "name": "footerTemplate",
                 "label": "Optional Footer Template",
                 "type": "text",
-                "order": 11,
+                "order": 10,
                 "size": "sm"
             }
         ],
@@ -142,9 +128,9 @@
                 "type": "api-mutation",
                 "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/payout-templates",
+                "refreshKey": "/api/moneyout/config/bank-file-templates",
                 "api": {
-                    "endpoint": "/api/moneyout/config/payout-templates",
+                    "endpoint": "/api/moneyout/config/bank-file-templates",
                     "method": "POST"
                 },
                 "successMessage": "Payout Template added successfully!"
