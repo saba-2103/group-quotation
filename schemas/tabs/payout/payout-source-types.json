@@ -12,7 +12,7 @@
             "type": "data-table",
             "dataSource": {
                 "api": {
-                    "endpoint": "/api/moneyout/config/payout-source-types",
+                    "endpoint": "/api/moneyout/config/source-type-account-mappings",
                     "method": "GET"
                 }
             },
@@ -37,26 +37,26 @@
                         "type": "text"
                     },
                     {
-                        "id": "payout_source_type",
-                        "accessorKey": "payout_source_type",
+                        "id": "sourceType",
+                        "accessorKey": "sourceType",
                         "label": "Payout Source Type",
                         "type": "text"
                     },
                     {
-                        "id": "payout_source_type_desc",
-                        "accessorKey": "payout_source_type_desc",
+                        "id": "sourceTypeDesc",
+                        "accessorKey": "sourceTypeDesc",
                         "label": "Payout Source Type Desc",
                         "type": "text"
                     },
                     {
-                        "id": "account_group",
-                        "accessorKey": "account_group",
+                        "id": "accountGroup",
+                        "accessorKey": "accountGroup",
                         "label": "Account Group",
                         "type": "text"
                     },
                     {
-                        "id": "account_sub_group",
-                        "accessorKey": "account_sub_group",
+                        "id": "accountSubgroup",
+                        "accessorKey": "accountSubgroup",
                         "label": "Account Sub Group",
                         "type": "text"
                     }
@@ -86,9 +86,9 @@
                             "title": "Delete Payout Source Type",
                             "message": "Are you sure you want to delete this payout source type? This action cannot be undone."
                         },
-                        "refreshKey": "/api/moneyout/config/payout-source-types",
+                        "refreshKey": "/api/moneyout/config/source-type-account-mappings",
                         "api": {
-                            "endpoint": "/api/moneyout/config/payout-source-types/:id",
+                            "endpoint": "/api/moneyout/config/source-type-account-mappings/:id",
                             "method": "DELETE"
                         }
                     }

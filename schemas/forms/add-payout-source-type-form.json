@@ -26,8 +26,8 @@
                 ]
             },
             {
-                "id": "payout_source_type",
-                "name": "payout_source_type",
+                "id": "sourceType",
+                "name": "sourceType",
                 "label": "Payout Source Type",
                 "type": "select",
                 "order": 2,
@@ -46,20 +46,11 @@
                 ]
             },
             {
-                "id": "payout_source_type_desc",
-                "name": "payout_source_type_desc",
-                "label": "Payout Source Type Desc",
-                "type": "text",
-                "order": 3,
-                "size": "sm",
-                "disabled": true
-            },
-            {
-                "id": "account_group",
-                "name": "account_group",
+                "id": "accountGroup",
+                "name": "accountGroup",
                 "label": "Account Group",
                 "type": "select",
-                "order": 4,
+                "order": 3,
                 "size": "sm",
                 "dataSource": {
                     "api": {
@@ -69,11 +60,11 @@
                 }
             },
             {
-                "id": "account_sub_group",
-                "name": "account_sub_group",
+                "id": "accountSubgroup",
+                "name": "accountSubgroup",
                 "label": "Account Sub Group",
                 "type": "select",
-                "order": 5,
+                "order": 4,
                 "size": "sm",
                 "dataSource": {
                     "api": {
@@ -91,9 +82,9 @@
                 "type": "api-mutation",
                 "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/payout-source-types",
+                "refreshKey": "/api/moneyout/config/source-type-account-mappings",
                 "api": {
-                    "endpoint": "/api/moneyout/config/payout-source-types",
+                    "endpoint": "/api/moneyout/config/source-type-account-mappings",
                     "method": "POST"
                 },
                 "successMessage": "Payout Source Type added successfully!"

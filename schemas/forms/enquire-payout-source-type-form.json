@@ -15,8 +15,8 @@
                 "disabled": true
             },
             {
-                "id": "payout_source_type",
-                "name": "payout_source_type",
+                "id": "sourceType",
+                "name": "sourceType",
                 "label": "Payout Source Type",
                 "type": "text",
                 "order": 2,
@@ -24,8 +24,8 @@
                 "disabled": true
             },
             {
-                "id": "payout_source_type_desc",
-                "name": "payout_source_type_desc",
+                "id": "sourceTypeDesc",
+                "name": "sourceTypeDesc",
                 "label": "Payout Source Type Desc",
                 "type": "text",
                 "order": 3,
@@ -33,8 +33,8 @@
                 "disabled": true
             },
             {
-                "id": "account_group",
-                "name": "account_group",
+                "id": "accountGroup",
+                "name": "accountGroup",
                 "label": "Account Group",
                 "type": "text",
                 "order": 4,
@@ -42,8 +42,8 @@
                 "disabled": true
             },
             {
-                "id": "account_sub_group",
-                "name": "account_sub_group",
+                "id": "accountSubgroup",
+                "name": "accountSubgroup",
                 "label": "Account Sub Group",
                 "type": "text",
                 "order": 5,
