@@ -6,15 +6,15 @@
         "columns": 2,
         "fields": [
             {
-                "id": "template_id",
-                "name": "template_id",
+                "id": "templateId",
+                "name": "templateId",
                 "label": "Template Id",
                 "type": "select",
                 "order": 1,
                 "size": "sm",
                 "dataSource": {
                     "api": {
-                        "endpoint": "/api/moneyout/config/payout-file-templates",
+                        "endpoint": "/api/moneyout/config/bank-file-templates",
                         "method": "GET"
                     }
                 },
@@ -26,8 +26,8 @@
                 ]
             },
             {
-                "id": "seqno",
-                "name": "seqno",
+                "id": "seqNo",
+                "name": "seqNo",
                 "label": "Seq No.",
                 "type": "number",
                 "order": 2,
@@ -40,16 +40,16 @@
                 ]
             },
             {
-                "id": "input_field_name",
-                "name": "input_field_name",
+                "id": "inputFieldName",
+                "name": "inputFieldName",
                 "label": "Input Field Name",
                 "type": "text",
                 "order": 3,
                 "size": "sm"
             },
             {
-                "id": "output_field_name",
-                "name": "output_field_name",
+                "id": "outputFieldName",
+                "name": "outputFieldName",
                 "label": "Output Field Name",
                 "type": "text",
                 "order": 4,
@@ -62,8 +62,8 @@
                 ]
             },
             {
-                "id": "is_mandatory",
-                "name": "is_mandatory",
+                "id": "isMandatory",
+                "name": "isMandatory",
                 "label": "Is it Mandatory",
                 "type": "select",
                 "order": 5,
@@ -74,30 +74,30 @@
                 ]
             },
             {
-                "id": "validation_rule_code",
-                "name": "validation_rule_code",
+                "id": "validationRuleCode",
+                "name": "validationRuleCode",
                 "label": "Validation Rule Code",
                 "type": "select",
                 "order": 6,
                 "size": "sm",
                 "dataSource": {
                     "api": {
-                        "endpoint": "/api/moneyout/config/payout-validation-rules",
+                        "endpoint": "/api/moneyout/config/payout-field-validation-rules",
                         "method": "GET"
                     }
                 }
             },
             {
-                "id": "default_value",
-                "name": "default_value",
+                "id": "defaultValue",
+                "name": "defaultValue",
                 "label": "Default Value",
                 "type": "text",
                 "order": 7,
                 "size": "sm"
             },
             {
-                "id": "format_expression",
-                "name": "format_expression",
+                "id": "formatExpression",
+                "name": "formatExpression",
                 "label": "Formatting Regular Expression",
                 "type": "text",
                 "order": 8,
@@ -112,9 +112,9 @@
                 "type": "api-mutation",
                 "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/payout-file-formats",
+                "refreshKey": "/api/moneyout/config/bank-file-field-formats",
                 "api": {
-                    "endpoint": "/api/moneyout/config/payout-file-formats",
+                    "endpoint": "/api/moneyout/config/bank-file-field-formats",
                     "method": "POST"
                 },
                 "successMessage": "Payout File Format added successfully!"
