@@ -27,19 +27,25 @@
                 "id": "is_digital",
                 "name": "is_digital",
                 "label": "Digital Payout",
-                "type": "text",
+                "type": "select",
                 "order": 3,
                 "size": "sm",
-                "disabled": true
+                "options": [
+                    { "value": "Y", "label": "Yes" },
+                    { "value": "N", "label": "No" }
+                ]
             },
             {
                 "id": "require_bankaccount",
                 "name": "require_bankaccount",
                 "label": "Bank Account Details",
-                "type": "text",
+                "type": "select",
                 "order": 4,
                 "size": "sm",
-                "disabled": true
+                "options": [
+                    { "value": "Y", "label": "Yes" },
+                    { "value": "N", "label": "No" }
+                ]
             },
             {
                 "id": "require_ifsc",
@@ -94,9 +100,9 @@
                 "type": "api-mutation",
                 "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/payout-modes",
+                "refreshKey": "/api/moneyout/config/payout-mode-policies",
                 "api": {
-                    "endpoint": "/api/moneyout/config/payout-modes/:payout_mode",
+                    "endpoint": "/api/moneyout/config/payout-mode-policies/:payout_mode",
                     "method": "PUT"
                 },
                 "successMessage": "Payout Mode updated successfully!"

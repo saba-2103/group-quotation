@@ -111,9 +111,9 @@
                 "type": "api-mutation",
                 "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/payout-modes",
+                "refreshKey": "/api/moneyout/config/payout-mode-policies",
                 "api": {
-                    "endpoint": "/api/moneyout/config/payout-modes",
+                    "endpoint": "/api/moneyout/config/payout-mode-policies",
                     "method": "POST"
                 },
                 "successMessage": "Payout Mode added successfully!"
