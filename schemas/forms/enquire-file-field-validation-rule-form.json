@@ -6,8 +6,8 @@
         "columns": 2,
         "fields": [
             {
-                "id": "validation_rule_code",
-                "name": "validation_rule_code",
+                "id": "validationRuleCode",
+                "name": "validationRuleCode",
                 "label": "Validation Rule Code",
                 "type": "text",
                 "order": 1,
@@ -15,57 +15,48 @@
                 "disabled": true
             },
             {
-                "id": "validation_rule_description",
-                "name": "validation_rule_description",
-                "label": "Validation Rule Description",
+                "id": "ruleType",
+                "name": "ruleType",
+                "label": "Rule Type",
                 "type": "text",
                 "order": 2,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "rule_type",
-                "name": "rule_type",
-                "label": "Rule Type",
+                "id": "regexPattern",
+                "name": "regexPattern",
+                "label": "Regular Expression Pattern",
                 "type": "text",
                 "order": 3,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "regular_expression",
-                "name": "regular_expression",
-                "label": "Regular Expression Pattern to match with",
+                "id": "javaValidatorClass",
+                "name": "javaValidatorClass",
+                "label": "Validator Class",
                 "type": "text",
                 "order": 4,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "validator_class",
-                "name": "validator_class",
-                "label": "Validator Class for the attribute",
-                "type": "text",
-                "order": 5,
-                "size": "sm",
-                "disabled": true
-            },
-            {
-                "id": "validator_script",
-                "name": "validator_script",
-                "label": "Validation Script code",
+                "id": "validationScript",
+                "name": "validationScript",
+                "label": "Validation Script",
                 "type": "textarea",
-                "order": 6,
+                "order": 5,
                 "size": "sm",
                 "span": 2,
                 "disabled": true
             },
             {
-                "id": "is_active",
-                "name": "is_active",
-                "label": "Valid Flag",
+                "id": "isActive",
+                "name": "isActive",
+                "label": "Is Active",
                 "type": "text",
-                "order": 7,
+                "order": 6,
                 "size": "sm",
                 "disabled": true
             }
