@@ -6,8 +6,8 @@
         "columns": 2,
         "fields": [
             {
-                "id": "bankcode",
-                "name": "bankcode",
+                "id": "bankCode",
+                "name": "bankCode",
                 "label": "Bank Code",
                 "type": "select",
                 "order": 1,
@@ -26,15 +26,15 @@
                 ]
             },
             {
-                "id": "payout_mode",
-                "name": "payout_mode",
+                "id": "payoutMode",
+                "name": "payoutMode",
                 "label": "Payout Mode",
                 "type": "select",
                 "order": 2,
                 "size": "sm",
                 "dataSource": {
                     "api": {
-                        "endpoint": "/api/moneyout/config/payout-modes",
+                        "endpoint": "/api/moneyout/config/payout-mode-policies",
                         "method": "GET"
                     }
                 },
@@ -46,15 +46,15 @@
                 ]
             },
             {
-                "id": "template_id",
-                "name": "template_id",
+                "id": "templateId",
+                "name": "templateId",
                 "label": "Template Id",
                 "type": "select",
                 "order": 3,
                 "size": "sm",
                 "dataSource": {
                     "api": {
-                        "endpoint": "/api/moneyout/config/payout-templates",
+                        "endpoint": "/api/moneyout/config/bank-file-templates",
                         "method": "GET"
                     }
                 },
@@ -66,8 +66,8 @@
                 ]
             },
             {
-                "id": "effective_date",
-                "name": "effective_date",
+                "id": "effectiveDate",
+                "name": "effectiveDate",
                 "label": "Effective Date",
                 "type": "date",
                 "order": 4,
@@ -80,24 +80,12 @@
                 ]
             },
             {
-                "id": "end_date",
-                "name": "end_date",
+                "id": "endDate",
+                "name": "endDate",
                 "label": "End Date",
                 "type": "date",
                 "order": 5,
                 "size": "sm"
-            },
-            {
-                "id": "is_active",
-                "name": "is_active",
-                "label": "Valid Flag",
-                "type": "select",
-                "order": 6,
-                "size": "sm",
-                "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
-                ]
             }
         ],
         "actions": [
@@ -108,9 +96,9 @@
                 "type": "api-mutation",
                 "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/bank-file-template-map",
+                "refreshKey": "/api/moneyout/config/bank-file-template-assignments",
                 "api": {
-                    "endpoint": "/api/moneyout/config/bank-file-template-map",
+                    "endpoint": "/api/moneyout/config/bank-file-template-assignments",
                     "method": "POST"
                 },
                 "successMessage": "Bank File Template Map added successfully!"
