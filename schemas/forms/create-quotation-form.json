@@ -190,7 +190,6 @@
                 "label": "Create Quotation",
                 "variant": "default",
                 "type": "api-mutation",
-                "actionType": "action",
                 "submitAction": true,
                 "api": {
                     "endpoint": "/api/quotations",
@@ -202,7 +201,6 @@
                 "id": "cancel",
                 "label": "Cancel",
                 "variant": "outline",
-                "actionType": "action",
                 "submitAction": false
             }
         ]

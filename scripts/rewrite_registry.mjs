@@ -8,7 +8,7 @@ const files = fs.readdirSync(formsDir).filter(f => f.endsWith('.json'));
 
 let out = `export const forms_registry: Record<string, any> = {\n`;
 
-const stub = {"type":"form-container","props":{"title":"Module Under Construction","description":"This operation is part of the legacy GTL schema and is currently being ported to the new Keystone-UI architecture.","fields":[{"name":"acknowledgement","label":"Acknowledge Porting Status","type":"checkbox"}],"actions":[{"id":"close","label":"Close","actionType":"action","variant":"outline","submitAction":false}]}};
+const stub = {"type":"form-container","props":{"title":"Module Under Construction","description":"This operation is part of the legacy GTL schema and is currently being ported to the new Keystone-UI architecture.","fields":[{"name":"acknowledgement","label":"Acknowledge Porting Status","type":"checkbox"}],"actions":[{"id":"close","label":"Close","variant":"outline","submitAction":false}]}};
 
 const stubString = JSON.stringify(stub);
 
