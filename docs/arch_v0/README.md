@@ -124,12 +124,17 @@ Architecture coverage is summarized in [`07-ARCHITECTURE-COMPLETENESS.md`](./07-
 
 ## Document Map
 
+Core
+
 - [`00-SYSTEM-DESIGN.md`](./00-SYSTEM-DESIGN.md): full end-to-end architecture
 - [`01-SCHEMA-DELIVERY.md`](./01-SCHEMA-DELIVERY.md): direct `schemaId -> CDN -> S3` delivery, variants, failure modes, rollback, hotfixes
 - [`02-AUTH-AND-SECURITY.md`](./02-AUTH-AND-SECURITY.md): browser auth, backend validation, direct API access, audit/rate limiting, schema sensitivity assumptions
 - [`03-CONFIG-AND-MATERIALISATION.md`](./03-CONFIG-AND-MATERIALISATION.md): display semantics, bindings, materialisation, purge strategy, governance
 - [`04-RUNTIME-AND-CONDITIONS.md`](./04-RUNTIME-AND-CONDITIONS.md): widget tree, runtime graph, JSONLogic conditions, variants, mutation semantics
 - [`05-CONTRACTS-OBSERVABILITY-AND-OPERATIONS.md`](./05-CONTRACTS-OBSERVABILITY-AND-OPERATIONS.md): contract enforcement, smoke rendering, SLOs, release pipeline, DR, hotfixes, observability
+
+Supporting resources
+
 - [`06-ONBOARDING-AND-LIFECYCLE.md`](./06-ONBOARDING-AND-LIFECYCLE.md): environment/deployment onboarding, schema lifecycle, rollout and rollback
 - [`07-ARCHITECTURE-COMPLETENESS.md`](./07-ARCHITECTURE-COMPLETENESS.md): architecture coverage checklist and resolved questions
 - [`08-SCHEMA-AUTHORING-AND-REVIEW.md`](./08-SCHEMA-AUTHORING-AND-REVIEW.md): schema authoring ownership, review flow, tooling, and variant approval
