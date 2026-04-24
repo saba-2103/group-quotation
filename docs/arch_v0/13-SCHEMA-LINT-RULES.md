@@ -306,6 +306,36 @@ Allowed operators are only:
 **Severity:** error  
 Any `var` path under `graph.*` must reference a declared namespace.
 
+### `condition-key-supported-by-node`
+
+**Severity:** error  
+Condition keys must only appear on node types that support them.
+
+Rules:
+
+- `visibleWhen` may appear on any widget node
+- `editableWhen` may appear only on editable input/field widgets
+- `requiredWhen` may appear only on form-field widgets that contribute submitted values
+
+Example invalid usage:
+
+```json
+{
+  "type": "SummaryCard",
+  "requiredWhen": {
+    "==": [
+      { "var": "graph.quote.state" },
+      "DRAFT"
+    ]
+  }
+}
+```
+
+Expected behavior:
+
+- validation should fail before publication
+- if it still reaches runtime, the renderer should log and ignore the unsupported key rather than crash the page
+
 ### `condition-complexity-budget`
 
 **Severity:** warning  

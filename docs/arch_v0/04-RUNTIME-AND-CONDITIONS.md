@@ -280,6 +280,58 @@ over:
 
 Conditions are static JSONLogic authored in schema from product specs.
 
+### Condition type
+
+At the runtime level, a condition is just a JSONLogic expression.
+
+```ts
+type ConditionExpr = Record<string, unknown>;
+```
+
+Recommended attachment interfaces:
+
+```ts
+interface CommonConditionProps {
+  visibleWhen?: ConditionExpr;
+}
+
+interface FieldConditionProps extends CommonConditionProps {
+  editableWhen?: ConditionExpr;
+  requiredWhen?: ConditionExpr;
+}
+```
+
+Interpretation:
+
+- `visibleWhen` is generic and may appear on any widget node
+- `editableWhen` is only for editable input/field widgets
+- `requiredWhen` is only for form-field widgets that participate in submit payloads
+
+### Condition attachment model
+
+Conditions are not all applicable to every node type.
+
+Recommended contract:
+
+```ts
+interface CommonConditionProps {
+  visibleWhen?: ConditionExpr;
+}
+
+interface FieldConditionProps extends CommonConditionProps {
+  editableWhen?: ConditionExpr;
+  requiredWhen?: ConditionExpr;
+}
+```
+
+Interpretation:
+
+- `visibleWhen` is the generic condition and may appear on any widget node, including sections, forms, fields, and actions
+- `editableWhen` is specific to editable input/field widgets
+- `requiredWhen` is specific to form-field widgets that contribute submitted values
+
+This means the architecture does **not** treat every condition key as universally valid on every node.
+
 Example:
 
 ```json
@@ -300,6 +352,33 @@ Example:
 - field editability
 - required-state
 - non-security presentation logic tied to loaded state
+
+### Recommended attachment points
+
+| Condition key | Applies to | Notes |
+|---|---|---|
+| `visibleWhen` | any widget node | generic visibility control |
+| `editableWhen` | input / field widgets | not for non-editable display widgets |
+| `requiredWhen` | form-field widgets | only for fields that participate in submit payloads |
+
+If a node type does not support a condition key, schema validation should reject it.
+
+### Runtime behavior for invalid condition usage
+
+Invalid condition-key usage should not crash the site if it reaches runtime.
+
+Runtime should:
+
+- log a contract/authoring violation with node type, key, and schema ID
+- ignore the unsupported condition key
+- continue rendering the page using safe defaults
+
+Examples:
+
+- `requiredWhen` on `SummaryCard` -> log and ignore `requiredWhen`
+- `editableWhen` on a non-editable display widget -> log and ignore `editableWhen`
+
+The preferred place to catch this is validation and CI. Runtime handling is a resilience fallback.
 
 ### What conditions may not replace
 

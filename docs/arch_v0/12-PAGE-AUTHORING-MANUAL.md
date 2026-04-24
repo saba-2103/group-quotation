@@ -419,6 +419,83 @@ Use for explicit external options.
 
 ## Condition Rules
 
+### Condition shape
+
+A condition is a JSONLogic expression.
+
+```ts
+type ConditionExpr = Record<string, unknown>;
+
+interface CommonConditionProps {
+  visibleWhen?: ConditionExpr;
+}
+
+interface FieldConditionProps extends CommonConditionProps {
+  editableWhen?: ConditionExpr;
+  requiredWhen?: ConditionExpr;
+}
+```
+
+### Which condition keys apply where
+
+Use this rule:
+
+- `visibleWhen` is generic and may be used on any widget node
+- `editableWhen` is only for editable input/field widgets
+- `requiredWhen` is only for form-field widgets that produce submitted values
+
+So this is valid:
+
+```json
+{
+  "type": "Section",
+  "visibleWhen": {
+    "==": [
+      { "var": "system.role" },
+      "underwriter"
+    ]
+  }
+}
+```
+
+And this is valid:
+
+```json
+{
+  "type": "TextField",
+  "editableWhen": {
+    "==": [
+      { "var": "graph.quote.state" },
+      "DRAFT"
+    ]
+  },
+  "requiredWhen": {
+    "<": [
+      { "var": "graph.quote.insured.age" },
+      18
+    ]
+  }
+}
+```
+
+But this should be treated as invalid authoring:
+
+```json
+{
+  "type": "SummaryCard",
+  "requiredWhen": {
+    "==": [
+      { "var": "graph.quote.state" },
+      "DRAFT"
+    ]
+  }
+}
+```
+
+because `requiredWhen` only makes sense for a submitted form field.
+
+If invalid condition usage still reaches runtime, the page should not crash. The renderer should log the violation and ignore the unsupported condition key.
+
 Conditions may reference only:
 
 - `system.*`
