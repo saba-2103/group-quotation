@@ -52,14 +52,43 @@ The architecture treats the page as a tree of widgets. Forms are widgets. Fields
 
 The single runtime data object the UI reads from.
 
-Recommended namespaces:
+Reserved roots:
 
-- `context`
-- `data`
-- `form`
-- `ui`
+- `system`
+- `graph`
+
+`system` is runtime-managed context.
+
+`graph` contains schema-declared namespaces for page state.
+
+Example:
+
+- `system.role`
+- `graph.quote`
+- `graph.quoteDraft`
+- `graph.filters`
+- `graph.pageState`
 
 The runtime graph is the read contract for the UI.
+
+### Graph namespace
+
+A schema-declared named branch under `graph.*`.
+
+Examples:
+
+- `graph.quote`
+- `graph.quoteDraft`
+- `graph.filters`
+- `graph.pageState`
+
+The namespace key defines the runtime path.
+
+Example:
+
+- namespace key `quoteDraft` -> runtime path `graph.quoteDraft`
+
+Namespaces must be unique within a schema and should be semantic rather than component-derived.
 
 ### Condition
 

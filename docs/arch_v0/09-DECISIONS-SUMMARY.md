@@ -40,7 +40,7 @@ Conditions come from the product specs and are authored directly in schema.
 The runtime condition language is JSONLogic with a bounded allowed subset.
 
 5. **The UI reads one runtime data graph.**
-The consumer contract for the UI is one graph with `context`, `data`, `form`, and `ui` namespaces.
+The consumer contract for the UI is one graph with reserved `system.*` and schema-declared `graph.*` namespaces, where namespace keys define the runtime paths.
 
 6. **Forms are widgets.**
 The page contract is a widget tree. Forms are widget nodes inside that tree.
@@ -76,7 +76,7 @@ Structure, bindings, conditions, inheritance, and justified variants all belong 
 Prefer one understandable schema with conditions over many similar schemas.
 
 **One read contract for the UI.**
-Even if data is loaded from multiple endpoints, the UI should read one runtime graph.
+Even if data is loaded from multiple endpoints, the UI should read one namespaced runtime graph.
 
 **Server-resolve display semantics.**
 Do not move label mapping or display transformation logic back into components.
@@ -88,7 +88,7 @@ UI conditions are not authorization or mutation enforcement.
 If schema publication fails, the system must degrade predictably and roll back quickly.
 
 **Prefer explicitness over cleverness.**
-Explicit `schemaId`, explicit graph paths, explicit value-source rules, explicit variant justification.
+Explicit `schemaId`, explicit namespace names, convention-derived graph paths, explicit value-source rules, explicit variant justification.
 
 ---
 
@@ -165,7 +165,7 @@ Every simplification here has a tradeoff.
 |---|---|---|
 | Direct `schemaId` delivery | much simpler runtime and operations | no built-in context-based delivery |
 | Static schema-authored conditions | simpler runtime, easier debugging | condition changes require schema republication |
-| Unified runtime graph | one testable/auditable read model | requires strict graph path discipline |
+| Namespaced runtime graph | one testable/auditable read model | requires strict namespace and graph path discipline |
 | Conditions-first policy | limits variant sprawl | some schemas may become more verbose |
 | No workbench runtime | coherent POC scope | no support for heavy multi-panel process screens |
 

@@ -117,9 +117,9 @@ The delivery mechanism is intentionally simple:
 - no delivery-time filtering or context matching
 - browser never sees raw binding declarations or config keys
 
-### Step 2 — The runtime builds one data graph for the page
+### Step 2 — The runtime builds one namespaced graph for the page
 
-The schema declares named data sources. The runtime hydrates those sources into one unified runtime data graph. Widgets do not read directly from raw endpoint responses. They bind to graph paths.
+The schema declares named namespaces and data sources. The runtime hydrates those sources into one unified runtime graph. Widgets do not read directly from raw endpoint responses. They bind to declared graph paths.
 
 That gives the page one read contract even if many API calls are needed.
 
@@ -199,7 +199,7 @@ This architecture does not include:
 
 **Display semantics are server-resolved.** The browser receives ready-to-render labels and display mappings.
 
-**The UI reads one runtime graph.** Even when data comes from many sources, the consumer contract is one graph.
+**The UI reads one namespaced runtime graph.** Even when data comes from many sources, the consumer contract is one graph with reserved `system.*` and schema-declared `graph.*` namespaces, where namespace keys define runtime paths by convention.
 
 **Backend validation remains authoritative.** Schema logic can shape presentation but not replace server-side mutation validation.
 
@@ -229,7 +229,7 @@ These are targets, not guarantees of zero incidents. They are the basis for moni
 
 **Schema becomes more load-bearing.** This is acceptable in v0 because conditions are stable and product-specified.
 
-**Runtime graph discipline becomes critical.** Without naming and binding conventions, the graph will drift and the simplification will erode.
+**Runtime graph discipline becomes critical.** Without explicit namespace naming and binding conventions, the graph will drift and the simplification will erode.
 
 **Variant sprawl is a real risk.** The architecture explicitly prefers conditions to prevent exploding numbers of schema artifacts.
 
@@ -258,4 +258,5 @@ docs/arch_v0/
   09-DECISIONS-SUMMARY.md
   10-TERMS-AND-ASSUMPTIONS.md
   11-API-TEAM-CONTRACT.md
+  12-PAGE-AUTHORING-MANUAL.md
 ```

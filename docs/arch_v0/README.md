@@ -24,7 +24,7 @@ Display semantics such as labels, translations, and badge variants are still pro
 The architecture therefore has four main moving parts:
 
 1. **Static schema delivery**: `schemaId -> CDN -> S3 artifact`
-2. **Unified page runtime**: one runtime graph for all page state
+2. **Unified page runtime**: one runtime graph with reserved `system.*` and schema-declared `graph.*` namespaces
 3. **Server-side config materialisation**: display semantics resolved before browser fetch
 4. **Backend mutation validation**: schema shapes UX, backend validates writes
 
@@ -56,14 +56,14 @@ Full detail: [`01-SCHEMA-DELIVERY.md`](./01-SCHEMA-DELIVERY.md).
 
 ## Runtime Model
 
-After schema fetch, the browser hydrates a single runtime data graph with these namespaces:
+After schema fetch, the browser hydrates one runtime data graph with two reserved roots:
 
-- `context`
-- `data`
-- `form`
-- `ui`
+- `system.*` for runtime-managed context
+- `graph.*` for schema-declared page state namespaces
 
 Conditions are evaluated locally against that graph using JSONLogic. The schema is a widget tree. Forms are widgets. Fields are child widgets within form widgets. Data bindings, inheritance, and inline value sources are all resolved within that runtime.
+
+The important naming rule is that schemas declare semantic namespaces under `graph.*`, such as `graph.quote`, `graph.quoteDraft`, `graph.filters`, or `graph.pageState`. The namespace key itself defines the runtime path, which keeps paths unique by construction and avoids broad buckets like `data` or brittle component-derived top-level state keys.
 
 Full detail: [`04-RUNTIME-AND-CONDITIONS.md`](./04-RUNTIME-AND-CONDITIONS.md).
 
@@ -136,3 +136,4 @@ Architecture coverage is summarized in [`07-ARCHITECTURE-COMPLETENESS.md`](./07-
 - [`09-DECISIONS-SUMMARY.md`](./09-DECISIONS-SUMMARY.md): locked decisions, principles, assumptions, tradeoffs, and quick answers to likely questions
 - [`10-TERMS-AND-ASSUMPTIONS.md`](./10-TERMS-AND-ASSUMPTIONS.md): shared vocabulary, assumptions, and definitions used across the architecture
 - [`11-API-TEAM-CONTRACT.md`](./11-API-TEAM-CONTRACT.md): what the frontend needs from backend/API teams to support this architecture
+- [`12-PAGE-AUTHORING-MANUAL.md`](./12-PAGE-AUTHORING-MANUAL.md): practical manual for creating pages, with a full worked schema example

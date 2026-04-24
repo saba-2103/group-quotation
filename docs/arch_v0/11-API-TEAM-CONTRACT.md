@@ -15,7 +15,7 @@ The frontend:
 
 - fetches schemas directly from CDN/S3 by `schemaId`
 - fetches domain data directly from backend APIs
-- evaluates UI conditions in the browser using schema-authored JSONLogic
+- evaluates UI conditions in the browser using schema-authored JSONLogic against a namespaced runtime graph
 - validates API responses with Pact and Zod
 - depends on backend APIs to validate every mutation server-side
 
@@ -58,6 +58,8 @@ Examples:
 - `quote.flags.requiresManualReview = true`
 
 The backend does **not** need to tell the UI what to show. It just needs to expose the relevant state cleanly.
+
+That state will be hydrated into schema-declared graph namespaces such as `graph.quote`, `graph.quoteDraft`, or `graph.filters`.
 
 ### 3. Strong server-side mutation validation
 
