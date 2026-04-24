@@ -70,7 +70,7 @@ These are the principles that should guide implementation choices when the docs 
 The POC should not carry machinery for scale patterns it is not actually using yet.
 
 **Schema is the page contract.**
-Structure, bindings, conditions, inheritance, and justified variants all belong to schema.
+Structure, bindings, conditions, scope-resolution rules, initialization rules, and justified variants all belong to schema.
 
 **Conditions first, variants second.**
 Prefer one understandable schema with conditions over many similar schemas.

@@ -37,7 +37,7 @@ Authored in source-managed schema files:
 - `visibleWhen`, `requiredWhen`, `editableWhen` JSONLogic
 - graph namespace declarations
 - data-source declarations
-- inheritance and value-source definitions
+- scope-resolution and value-source definitions
 - variants where justified
 
 ### Config System admin tooling
@@ -91,7 +91,7 @@ Reviewers should explicitly check:
 2. Are conditions clearly tied to the product spec?
 3. Are graph namespace names semantic, stable, and unique within the schema?
 4. Do namespace keys map cleanly to runtime paths as `graph.<namespaceName>`?
-5. Is inheritance shallow and understandable?
+5. Are scope-based bindings and initialization paths shallow and understandable?
 6. If a variant exists, is there a real justification for not using conditions?
 7. Does the schema remain within size and accessibility guardrails?
 

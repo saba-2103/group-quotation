@@ -144,7 +144,7 @@ The schema is a widget tree. Forms are widgets. Fields are child widgets within 
 Nodes resolve data in three ways:
 
 1. bind to a graph path
-2. inherit from parent scope
+2. resolve relative to parent scope
 3. read inline schema values
 
 ### Step 5 — Backend APIs validate writes
@@ -191,7 +191,7 @@ This architecture does not include:
 
 ## Core Design Principles
 
-**Schema is the page contract.** It declares the widget tree, data bindings, conditions, inheritance rules, and variants where necessary.
+**Schema is the page contract.** It declares the widget tree, data bindings, scope-resolution rules, initialization rules, and variants where necessary.
 
 **Conditions first, variants second.** If a UX difference can be expressed cleanly as a condition, use a condition. Introduce a variant only when the difference cannot be expressed cleanly and maintainably that way.
 

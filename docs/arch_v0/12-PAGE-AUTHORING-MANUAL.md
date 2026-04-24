@@ -402,6 +402,8 @@ Use when the widget reads directly from a known graph path.
 
 Use when the parent widget already binds to a namespace like `graph.quoteDraft`.
 
+This is scope-based resolution, not a generic inheritance mechanism.
+
 ### Value-source binding
 
 ```json
@@ -414,6 +416,22 @@ Use when the parent widget already binds to a namespace like `graph.quoteDraft`.
 ```
 
 Use for explicit external options.
+
+### Initialization from another namespace
+
+```json
+{
+  "quoteDraft": {
+    "kind": "local",
+    "usage": "form",
+    "initialValueFrom": "graph.quote"
+  }
+}
+```
+
+Use when local state should start from a known graph path.
+
+This is initialization, not ongoing inheritance.
 
 ---
 
@@ -532,6 +550,8 @@ Example:
 - `graph.quoteDraft` for user-edited values
 
 Do not write form state back into the domain namespace directly unless the page is explicitly designed that way.
+
+Think of `graph.quoteDraft` as a local namespace initialized from `graph.quote`, not as a magical inherited mirror of it.
 
 ---
 

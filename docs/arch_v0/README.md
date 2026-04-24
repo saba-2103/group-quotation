@@ -61,7 +61,7 @@ After schema fetch, the browser hydrates one runtime data graph with two reserve
 - `system.*` for runtime-managed context
 - `graph.*` for schema-declared page state namespaces
 
-Conditions are evaluated locally against that graph using JSONLogic. The schema is a widget tree. Forms are widgets. Fields are child widgets within form widgets. Data bindings, inheritance, and inline value sources are all resolved within that runtime.
+Conditions are evaluated locally against that graph using JSONLogic. The schema is a widget tree. Forms are widgets. Fields are child widgets within form widgets. Data bindings, scope-based path resolution, explicit initialization, and inline value sources are all resolved within that runtime.
 
 The important naming rule is that schemas declare semantic namespaces under `graph.*`, such as `graph.quote`, `graph.quoteDraft`, `graph.filters`, or `graph.pageState`. The namespace key itself defines the runtime path, which keeps paths unique by construction and avoids broad buckets like `data` or brittle component-derived top-level state keys.
 

@@ -34,7 +34,7 @@ It already contains:
 - display semantics resolved from the Config System
 - conditions
 - data-source declarations
-- inheritance/value-source definitions
+- scope-resolution and value-source definitions
 
 It does not contain:
 

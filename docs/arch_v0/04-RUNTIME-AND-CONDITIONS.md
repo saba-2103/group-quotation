@@ -13,7 +13,7 @@ The browser runtime in v0 has four responsibilities:
 1. fetch the resolved schema by `schemaId`
 2. hydrate a unified runtime data graph from declared data sources
 3. evaluate schema-authored JSONLogic conditions locally
-4. render the widget tree from bound and inherited values
+4. render the widget tree from bound, scope-resolved, and inline values
 
 There is no field-rule fetch path and no workbench/bootstrap flow.
 
@@ -28,7 +28,7 @@ There is no field-rule fetch path and no workbench/bootstrap flow.
 | `useSmartQuery(sourceDef)` | source-loader primitive for API-backed branches |
 | `ConditionEngine` | evaluate JSONLogic conditions |
 | `SchemaRenderer` | mount widgets from the widget tree |
-| `useValueSource()` | resolve inherited, data-bound, and inline value sources |
+| `useValueSource()` | resolve scope-based, data-bound, and inline value sources |
 
 `useFieldConfig()` is deliberately absent.
 
@@ -436,15 +436,82 @@ For the POC, a variant is a separate schema artifact with its own `schemaId`. It
 
 ---
 
-## Inheritance And Value Resolution
+## Value Resolution Model
 
-Each node may resolve values in one of three ways:
+Each node may resolve values in four ways:
 
-1. `inherit`
-2. `dataSource`
-3. `inline`
+1. absolute graph-path binding
+2. relative scope-based binding
+3. explicit initialization from another path
+4. inline literal value
 
-That contract applies uniformly across widgets and fields.
+This model is narrower and clearer than a generic "inherit" concept.
+
+### 1. Absolute graph-path binding
+
+Example:
+
+```json
+{ "bind": "graph.quote.summary" }
+```
+
+Use when the node reads directly from a known path.
+
+### 2. Relative scope-based binding
+
+Example:
+
+```json
+{ "bind": "insured.name" }
+```
+
+If the parent scope is `graph.quoteDraft`, this resolves to `graph.quoteDraft.insured.name`.
+
+### 3. Explicit initialization from another path
+
+Example:
+
+```json
+{
+  "quoteDraft": {
+    "kind": "local",
+    "usage": "form",
+    "initialValueFrom": "graph.quote"
+  }
+}
+```
+
+This is initialization, not ongoing inheritance.
+
+### 4. Inline literal value
+
+Example:
+
+```json
+{
+  "staticOptions": {
+    "kind": "inline",
+    "usage": "options",
+    "value": {
+      "gender": [
+        { "label": "Male", "value": "M" },
+        { "label": "Female", "value": "F" }
+      ]
+    }
+  }
+}
+```
+
+### Important rule
+
+The architecture should avoid a vague generic `inherit` source kind.
+
+The system behavior should stay explicit:
+
+- relative scope resolution
+- explicit path binding
+- explicit initialization
+- inline value
 
 ---
 

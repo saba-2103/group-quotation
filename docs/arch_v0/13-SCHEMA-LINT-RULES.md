@@ -247,7 +247,7 @@ Bad if `quote` was not declared:
 { "bind": "graph.quote.summary" }
 ```
 
-### `inherit-bind-parent-required`
+### `relative-bind-parent-required`
 
 **Severity:** error  
 Relative binds are allowed only when a parent binding scope exists.
