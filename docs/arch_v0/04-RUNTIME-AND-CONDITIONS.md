@@ -445,8 +445,6 @@ Each node may resolve values in four ways:
 3. explicit initialization from another path
 4. inline literal value
 
-This model is narrower and clearer than a generic "inherit" concept.
-
 ### 1. Absolute graph-path binding
 
 Example:
@@ -481,7 +479,6 @@ Example:
 }
 ```
 
-This is initialization, not ongoing inheritance.
 
 ### 4. Inline literal value
 
@@ -504,9 +501,7 @@ Example:
 
 ### Important rule
 
-The architecture should avoid a vague generic `inherit` source kind.
-
-The system behavior should stay explicit:
+The system behavior  stay explicit:
 
 - relative scope resolution
 - explicit path binding
