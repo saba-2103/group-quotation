@@ -191,7 +191,7 @@ Convention:
 
 Do not redundantly restate those paths in every namespace declaration.
 
-Why this is important:
+Why this contract matters:
 
 - `kind: "api"` cannot also legally declare `value`
 - `kind: "inline"` cannot also legally declare `endpoint`
@@ -368,13 +368,9 @@ Used for:
 
 Local mutable state for the form.
 
-This replaces the idea of a special top-level `form.*` store.
-
 ### `graph.pageState`
 
 Page-local interaction state.
-
-This replaces the idea of a vague top-level `ui.*` bucket.
 
 ### `graph.countryOptions`
 

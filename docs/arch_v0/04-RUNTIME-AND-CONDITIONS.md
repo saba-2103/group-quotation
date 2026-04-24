@@ -181,10 +181,10 @@ The schema and conditions then bind to:
 - `graph.filters.status`
 - `graph.pageState.activeTab`
 
-### Why this model is better
+### Properties of this model
 
 - forms stop being a special storage class
-- page-local UI state is explicitly named instead of hidden inside a broad `ui` bucket
+- page-local UI state is explicitly named through declared namespaces
 - schema authors get a declared naming contract
 - validation can detect namespace collisions early
 - paths are derived from namespace names instead of repeated manually
