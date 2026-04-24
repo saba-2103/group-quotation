@@ -134,3 +134,5 @@ Architecture coverage is summarized in [`07-ARCHITECTURE-COMPLETENESS.md`](./07-
 - [`07-ARCHITECTURE-COMPLETENESS.md`](./07-ARCHITECTURE-COMPLETENESS.md): architecture coverage checklist and resolved questions
 - [`08-SCHEMA-AUTHORING-AND-REVIEW.md`](./08-SCHEMA-AUTHORING-AND-REVIEW.md): schema authoring ownership, review flow, tooling, and variant approval
 - [`09-DECISIONS-SUMMARY.md`](./09-DECISIONS-SUMMARY.md): locked decisions, principles, assumptions, tradeoffs, and quick answers to likely questions
+- [`10-TERMS-AND-ASSUMPTIONS.md`](./10-TERMS-AND-ASSUMPTIONS.md): shared vocabulary, assumptions, and definitions used across the architecture
+- [`11-API-TEAM-CONTRACT.md`](./11-API-TEAM-CONTRACT.md): what the frontend needs from backend/API teams to support this architecture

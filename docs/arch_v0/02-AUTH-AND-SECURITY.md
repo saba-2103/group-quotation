@@ -124,8 +124,10 @@ Each audit event should capture:
 - endpoint or config key
 - action type
 - timestamp
-- correlation ID
-- outcome
+- `correlationId`: the request or operation ID used to trace one user action across logs, audit records, and downstream systems
+- `outcome`: the result of the action, for example `success`, `failed`, `rejected`, or `rolled_back`
+
+For shared definitions of common architecture terms, see [`10-TERMS-AND-ASSUMPTIONS.md`](./10-TERMS-AND-ASSUMPTIONS.md).
 
 ### Rate limiting
 
