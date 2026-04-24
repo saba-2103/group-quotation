@@ -137,3 +137,4 @@ Architecture coverage is summarized in [`07-ARCHITECTURE-COMPLETENESS.md`](./07-
 - [`10-TERMS-AND-ASSUMPTIONS.md`](./10-TERMS-AND-ASSUMPTIONS.md): shared vocabulary, assumptions, and definitions used across the architecture
 - [`11-API-TEAM-CONTRACT.md`](./11-API-TEAM-CONTRACT.md): what the frontend needs from backend/API teams to support this architecture
 - [`12-PAGE-AUTHORING-MANUAL.md`](./12-PAGE-AUTHORING-MANUAL.md): practical manual for creating pages, with a full worked schema example
+- [`13-SCHEMA-LINT-RULES.md`](./13-SCHEMA-LINT-RULES.md): machine-checkable validation rules for schema authoring

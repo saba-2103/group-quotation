@@ -156,16 +156,31 @@ interface PageSchema {
   widgetTree: WidgetNode;
 }
 
-interface GraphNamespaceDefinition {
-  kind: GraphNamespaceKind;
+type GraphNamespaceDefinition =
+  | ApiGraphNamespace
+  | LocalGraphNamespace
+  | InlineGraphNamespace;
+
+interface ApiGraphNamespace {
+  kind: 'api';
   usage?: GraphNamespaceUsage;
   mode?: GraphNamespaceMode;
-  endpoint?: string;
+  endpoint: string;
   method?: 'GET' | 'POST';
   dependsOn?: string[];
+}
+
+interface LocalGraphNamespace {
+  kind: 'local';
+  usage?: GraphNamespaceUsage;
   initialValue?: unknown;
   initialValueFrom?: string;
-  value?: unknown;
+}
+
+interface InlineGraphNamespace {
+  kind: 'inline';
+  usage?: GraphNamespaceUsage;
+  value: unknown;
 }
 ```
 
@@ -175,6 +190,14 @@ Convention:
 - namespace key `quoteDraft` always maps to runtime path `graph.quoteDraft`
 
 Do not redundantly restate those paths in every namespace declaration.
+
+Why this is important:
+
+- `kind: "api"` cannot also legally declare `value`
+- `kind: "inline"` cannot also legally declare `endpoint`
+- `kind: "local"` cannot also legally declare `method`
+
+The shape should make invalid combinations structurally impossible, not just discouraged in comments.
 
 ---
 
@@ -472,6 +495,8 @@ Before a page schema is considered ready, check:
 9. variant usage, if any, is justified
 10. schema passes size and accessibility checks
 
+For machine-checkable versions of these rules, see [`13-SCHEMA-LINT-RULES.md`](./13-SCHEMA-LINT-RULES.md).
+
 ---
 
 ## Rules For AI Agents
@@ -493,3 +518,4 @@ If an AI agent is authoring or proposing a page schema, it should:
 - system narrative: [`00-SYSTEM-DESIGN.md`](./00-SYSTEM-DESIGN.md)
 - authoring/review process: [`08-SCHEMA-AUTHORING-AND-REVIEW.md`](./08-SCHEMA-AUTHORING-AND-REVIEW.md)
 - terms and assumptions: [`10-TERMS-AND-ASSUMPTIONS.md`](./10-TERMS-AND-ASSUMPTIONS.md)
+- lint/validation rules: [`13-SCHEMA-LINT-RULES.md`](./13-SCHEMA-LINT-RULES.md)

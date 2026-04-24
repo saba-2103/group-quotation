@@ -93,22 +93,31 @@ interface GraphNamespaceMap {
   [namespaceName: string]: GraphNamespaceDefinition;
 }
 
-interface GraphNamespaceDefinition {
-  kind: GraphNamespaceKind;
+type GraphNamespaceDefinition =
+  | ApiGraphNamespace
+  | LocalGraphNamespace
+  | InlineGraphNamespace;
+
+interface ApiGraphNamespace {
+  kind: 'api';
   usage?: GraphNamespaceUsage;
   mode?: GraphNamespaceMode;
-
-  // api only
-  endpoint?: string;
+  endpoint: string;
   method?: 'GET' | 'POST';
   dependsOn?: string[];
+}
 
-  // local only
+interface LocalGraphNamespace {
+  kind: 'local';
+  usage?: GraphNamespaceUsage;
   initialValue?: unknown;
   initialValueFrom?: string;
+}
 
-  // inline only
-  value?: unknown;
+interface InlineGraphNamespace {
+  kind: 'inline';
+  usage?: GraphNamespaceUsage;
+  value: unknown;
 }
 ```
 
@@ -116,9 +125,9 @@ Rules:
 
 - namespace names are unique within a schema
 - runtime path is always `graph.<namespaceName>`
-- `kind: "api"` namespaces may declare `endpoint`, `method`, `mode`, and `dependsOn`
-- `kind: "local"` namespaces may declare `initialValue` or `initialValueFrom`
-- `kind: "inline"` namespaces may declare `value`
+- `kind: "api"` namespaces must provide `endpoint` and may provide only `usage`, `mode`, `method`, and `dependsOn`
+- `kind: "local"` namespaces may provide only `usage`, `initialValue`, and `initialValueFrom`
+- `kind: "inline"` namespaces must provide `value` and may provide only `usage` and `value`
 - `usage` is optional metadata, but when present it should use the bounded set above
 
 Recommended defaults:
