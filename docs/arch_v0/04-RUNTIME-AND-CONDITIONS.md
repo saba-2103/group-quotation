@@ -70,8 +70,6 @@ Reserved roots:
 - `system`: runtime-managed read-only context
 - `graph`: schema-declared namespaces for all page state
 
-This model is deliberately more generic than `data` / `form` / `ui`. It avoids hard-coding forms or transient UI state as special top-level storage categories.
-
 ### Schema-declared namespaces
 
 The schema declares the branches it needs under `graph`.
