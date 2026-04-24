@@ -2,7 +2,7 @@
 
 **Parent:** [`00-SYSTEM-DESIGN.md`](./00-SYSTEM-DESIGN.md)
 
-This document defines the browser runtime model for v0.
+This document defines the browser runtime model for the initial POC.
 
 ---
 
@@ -10,29 +10,27 @@ This document defines the browser runtime model for v0.
 
 The browser runtime in v0 has four responsibilities:
 
-1. fetch the resolved schema
+1. fetch the resolved schema by `schemaId`
 2. hydrate a unified runtime data graph from declared data sources
 3. evaluate schema-authored JSONLogic conditions locally
 4. render the widget tree from bound and inherited values
 
-There is no separate field-rule fetch path and no workbench bootstrap flow.
+There is no field-rule fetch path and no workbench/bootstrap flow.
 
 ---
 
 ## Primary Hooks
 
-v0 assumes these primary runtime responsibilities.
-
 | Hook / subsystem | Purpose |
 |---|---|
-| `useViewMetadata(viewId)` | fetch resolved schema from the edge |
+| `useViewMetadata(schemaId)` | fetch resolved schema from CDN |
 | `usePageDataGraph(schema, context)` | hydrate and expose the unified graph |
 | `useSmartQuery(sourceDef)` | source-loader primitive for API-backed branches |
 | `ConditionEngine` | evaluate JSONLogic conditions |
 | `SchemaRenderer` | mount widgets from the widget tree |
 | `useValueSource()` | resolve inherited, data-bound, and inline value sources |
 
-`useFieldConfig()` is deliberately absent from this list.
+`useFieldConfig()` is deliberately absent.
 
 ---
 
@@ -47,35 +45,6 @@ Rules:
 - fields are child widgets beneath form widgets
 - every node can carry bindings, conditions, and value-source definitions
 
-Example shape:
-
-```json
-{
-  "viewId": "quote-details",
-  "widgetTree": {
-    "type": "Page",
-    "children": [
-      {
-        "type": "SummaryCard",
-        "bind": "data.quote.summary"
-      },
-      {
-        "type": "Form",
-        "formId": "quoteDetails",
-        "bind": "data.quote",
-        "fields": [
-          {
-            "type": "TextField",
-            "name": "insuredName",
-            "bind": "insured.name"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
 ---
 
 ## Unified Runtime Data Graph
@@ -88,11 +57,8 @@ Recommended shape:
 interface RuntimeGraph {
   context: {
     userId: string;
-    tenantId: string;
     role: string;
-    lob: string | null;
-    locale: string | null;
-    portalType: string | null;
+    permissions: string[];
     routeParams: Record<string, string>;
   };
   data: Record<string, unknown>;
@@ -112,41 +78,14 @@ Namespaces:
 
 ## Data Sources
 
-v0 keeps the source model intentionally small.
-
-Supported kinds:
+Supported kinds in the POC:
 
 - `api`
 - `inline`
 
 Each source writes to an explicit target path in the graph.
 
-Example:
-
-```json
-{
-  "dataSources": {
-    "quote": {
-      "kind": "api",
-      "endpoint": "/v1/quotes/:quoteId",
-      "mode": "eager",
-      "target": "data.quote"
-    },
-    "countries": {
-      "kind": "api",
-      "endpoint": "/v1/lookups/countries",
-      "mode": "deferred",
-      "target": "data.lookups.countries"
-    },
-    "defaults": {
-      "kind": "inline",
-      "mode": "eager",
-      "value": { "currency": "AED" },
-      "target": "data.defaults"
-    }
-  }
-}
-```
+No two independent sources may target the same graph path.
 
 ---
 
@@ -178,13 +117,10 @@ Example:
 ### What conditions may not replace
 
 - backend validation
-- tenant guards
 - permission enforcement
 - regulated mutation checks
 
 ### Allowed JSONLogic subset
-
-Use a bounded subset:
 
 - `==`, `!=`
 - `<`, `<=`, `>`, `>=`
@@ -197,38 +133,30 @@ If a rule needs more than this, review the design before expanding the condition
 
 ---
 
-## Two Condition Systems
+## Active Condition Model In The POC
 
-v0 has two condition mechanisms and they serve different purposes.
+There is only one active condition system in this POC architecture:
 
-| Condition system | Lives in | Evaluated by | Inputs | Timing | Typical use |
-|---|---|---|---|---|---|
-| Edge condition | `$show` / `$hide` in resolved schema artifact | Cloudflare Worker | JWT-derived context only | once per schema fetch | audience and context shaping by tenant, role, LOB, locale, portal type |
-| Runtime condition | `visibleWhen`, `requiredWhen`, `editableWhen` JSONLogic | browser `ConditionEngine` | `context`, `data`, `form`, `ui` from runtime graph | initial render plus re-evaluation on changes | data-state, form-state, and interaction-state behavior |
+- runtime JSONLogic such as `visibleWhen`, `requiredWhen`, and `editableWhen`
 
-Rules:
+There is no delivery-time edge filtering because there is no Worker.
 
-- use edge `$show` / `$hide` for identity and context filtering that should happen before the browser renders the page
-- use runtime JSONLogic for behavior that depends on loaded API state, form state, or local UI state
-- if the Worker filters a node out at the edge, the runtime never sees it, so any runtime condition on that node is irrelevant
-- if both mechanisms are present on one node, both must effectively pass, with edge filtering happening first
+That means:
 
-Authoring recommendation:
+- no active `$show` / `$hide` evaluation at schema fetch time
+- no JWT-based pre-filtering of schema nodes
+- all active UI behavior is evaluated in the browser against the runtime graph
 
-- do not duplicate the same logic in both systems
-- use the edge system for claim-based audience selection
-- use the runtime system for stateful UI behavior after data has loaded
+If a future version reintroduces a resolver layer, an edge condition system can be added back deliberately.
 
 ---
 
 ## Conditions Versus Variants
 
-The architecture must remain disciplined here.
-
 ### Prefer conditions when
 
 - only a few widgets or fields differ
-- the difference depends on known state or context
+- the difference depends on known state or role/context already available in the runtime graph
 - the resulting JSONLogic remains readable
 
 ### Prefer a variant when
@@ -237,7 +165,7 @@ The architecture must remain disciplined here.
 - many nodes would otherwise carry inverse or duplicated conditions
 - the variant is clearer to author, review, and maintain
 
-Variant usage must be justified during schema review.
+For the POC, a variant is a separate schema artifact with its own `schemaId`. It is selected explicitly by route or configuration.
 
 ---
 
@@ -249,47 +177,7 @@ Each node may resolve values in one of three ways:
 2. `dataSource`
 3. `inline`
 
-Example for options:
-
-```json
-{
-  "type": "SelectField",
-  "name": "country",
-  "optionsSource": {
-    "kind": "dataSource",
-    "path": "data.lookups.countries"
-  }
-}
-```
-
-Or:
-
-```json
-{
-  "type": "SelectField",
-  "name": "country",
-  "optionsSource": {
-    "kind": "inherit",
-    "path": "lookups.countries"
-  }
-}
-```
-
-Or:
-
-```json
-{
-  "type": "SelectField",
-  "name": "gender",
-  "optionsSource": {
-    "kind": "inline",
-    "options": [
-      { "label": "Male", "value": "M" },
-      { "label": "Female", "value": "F" }
-    ]
-  }
-}
-```
+That contract applies uniformly across widgets and fields.
 
 ---
 
@@ -297,7 +185,7 @@ Or:
 
 ```text
 1. Route activates
-2. useViewMetadata(viewId) fetches schema from edge
+2. useViewMetadata(schemaId) fetches schema from CDN
 3. Runtime reads schema.dataSources
 4. usePageDataGraph hydrates eager graph branches
 5. Condition engine evaluates JSONLogic rules
@@ -319,8 +207,8 @@ Preferred when backend computes multiple downstream changes.
 Semantics:
 
 - invalidate the owning source or sources
-- re-hydrate the affected graph paths from fresh backend responses
-- re-evaluate all conditions whose dependency paths fall under the updated graph subtree
+- re-hydrate affected graph paths from fresh backend responses
+- re-evaluate all conditions depending on the updated graph subtree
 
 ### Patch locally then revalidate
 
@@ -329,7 +217,7 @@ Allowed when the optimistic update is low risk and the server response still bec
 Semantics:
 
 - patch the target graph path optimistically
-- re-evaluate conditions affected by the patched subtree immediately
+- re-evaluate affected conditions immediately
 - revalidate against the backend response afterward
 - if revalidation disagrees, backend state wins and conditions re-evaluate again
 
@@ -341,34 +229,25 @@ Default behavior after successful submit:
 
 - `form.{formId}` persists until route exit, explicit reset, or explicit discard
 - if a page needs reset-on-success behavior, it must declare that intentionally
-- if a successful mutation triggers a fresh data reload, form state is only re-initialized from server data when the page explicitly declares that sync behavior
-
-### Condition re-evaluation after mutation
-
-Any mutation that changes a graph subtree must trigger re-evaluation of all runtime conditions depending on that subtree.
-
-Example:
-
-- if `data.quote` is re-fetched
-- then any condition reading `data.quote.*` must be re-evaluated
+- if a mutation triggers a fresh data reload, form state is only re-initialized from server data when the page explicitly declares that sync behavior
 
 ### Graph path ownership
 
-v0 uses a single-writer rule for graph paths.
+The POC uses a single-writer rule for graph paths.
 
 Rules:
 
 - no two independent data sources may target the same graph path
-- overlapping parent/child target paths from different sources are disallowed in v0 unless treated as one coordinated source definition
+- overlapping parent/child target paths from different sources are disallowed unless treated as one coordinated source definition
 - schema validation should fail if source targets collide
 
 Either way, backend validation remains the enforcement point.
 
 ---
 
-## Why `useFieldConfig()` Is Gone
+## Why Conditions Live In Schema
 
-The earlier system separated field rules into another browser flow. v0 removes that because the product conditions are:
+Conditions live directly in schema because the product conditions are:
 
 - static
 - pre-known from the specs
@@ -376,4 +255,4 @@ The earlier system separated field rules into another browser flow. v0 removes t
 
 That simplifies the runtime and reduces moving parts without weakening backend validation.
 
-It is also the main architectural bet in v0: if condition rules start changing independently of schema publication often enough to become operationally expensive, the system should reintroduce a dedicated dynamic rule layer rather than forcing that churn through schema indefinitely.
+It is also the main architectural bet in v0: if condition rules start changing independently of schema publication often enough to become operationally expensive, the system should reintroduce a dedicated dynamic rule layer rather than force that churn through schema indefinitely.

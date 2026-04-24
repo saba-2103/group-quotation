@@ -2,23 +2,21 @@
 
 **Parent:** [`00-SYSTEM-DESIGN.md`](./00-SYSTEM-DESIGN.md)
 
-This document defines who authors schemas in v0, what tooling they use, and how schema changes are reviewed.
-
-One of the biggest gaps in earlier architecture write-ups was that runtime consumption was described in detail while authoring was barely visible. v0 closes that gap.
+This document defines who authors schemas in the POC, what tooling they use, and how schema changes are reviewed.
 
 ---
 
 ## Who Authors Schemas
 
-In v0, schema authoring is engineering-owned.
+In the POC, schema authoring is engineering-owned.
 
 Typical authors:
 
 - frontend platform engineers for shared schema patterns and primitives
 - module engineers for page-specific widget trees and conditions
-- tenant implementation engineers for tenant-specific variants when justified
+- engineers introducing justified schema variants with separate `schemaId`s
 
-Business users do not author widget trees or runtime conditions directly in v0.
+Business users do not author widget trees or runtime conditions directly.
 
 They influence schemas through:
 
@@ -36,7 +34,6 @@ They influence schemas through:
 Authored in source-managed schema files:
 
 - widget tree structure
-- `$show` / `$hide` edge conditions
 - `visibleWhen`, `requiredWhen`, `editableWhen` JSONLogic
 - data-source declarations
 - inheritance and value-source definitions
@@ -49,15 +46,12 @@ Authored operationally in admin tooling:
 - labels
 - translations
 - badge/display mappings
-- tenant- and locale-specific display overrides
 
-This split is intentional. Structural UI and behavioral conditions remain engineering-managed. Display semantics remain operationally editable.
+Structural UI and behavioral conditions remain engineering-managed. Display semantics remain operationally editable.
 
 ---
 
 ## Authoring Tooling
-
-v0 assumes the following tooling model.
 
 ### Required tooling
 
@@ -69,18 +63,14 @@ v0 assumes the following tooling model.
 ### Optional tooling
 
 - schema editor UI for engineers
-- tenant diff viewer
+- schema diff viewer
 - condition explorer or dependency visualizer
-
-Optional tooling is useful but not required for the architecture to remain coherent.
 
 ---
 
 ## Authoring Flow
 
-Recommended authoring flow:
-
-1. product and design finalize the required page behavior
+1. product and design finalize required page behavior
 2. engineer authors or updates the widget tree
 3. engineer adds JSONLogic conditions from the product spec
 4. engineer declares data sources and bindings
@@ -98,25 +88,10 @@ Reviewers should explicitly check:
 
 1. Is the widget tree readable and structurally sensible?
 2. Are conditions clearly tied to the product spec?
-3. Are edge `$show` / `$hide` conditions separated correctly from runtime JSONLogic?
-4. Are data-source target paths explicit and collision-free?
-5. Is inheritance shallow and understandable?
-6. If a variant exists, is there a real justification for not using conditions?
-7. Does the schema remain within size and accessibility guardrails?
-
----
-
-## Tenant-Specific Authoring
-
-Tenant-specific schema differences are allowed, but they should still follow the same discipline.
-
-Preference order:
-
-1. display override in Config System
-2. schema condition
-3. schema variant
-
-This order helps keep tenant customization from fragmenting the architecture too early.
+3. Are data-source target paths explicit and collision-free?
+4. Is inheritance shallow and understandable?
+5. If a variant exists, is there a real justification for not using conditions?
+6. Does the schema remain within size and accessibility guardrails?
 
 ---
 
@@ -126,6 +101,7 @@ A variant should not be merged without answering:
 
 - what exact UX difference requires the variant?
 - why is a condition-based approach less maintainable?
+- what route or configuration selects this variant `schemaId`?
 - is this truly structural, or just a few conditional nodes?
 - how will this variant stay in sync with the base schema over time?
 
@@ -134,8 +110,6 @@ If those answers are weak, the change should probably be conditions-first instea
 ---
 
 ## Ownership Model
-
-Recommended ownership split:
 
 | Concern | Owner |
 |---|---|

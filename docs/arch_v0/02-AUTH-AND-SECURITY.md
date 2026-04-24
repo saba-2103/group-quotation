@@ -2,7 +2,7 @@
 
 **Parent:** [`00-SYSTEM-DESIGN.md`](./00-SYSTEM-DESIGN.md)
 
-This document describes the browser-side security assumptions and operating rules for v0.
+This document describes the browser-side security assumptions and operating rules for the initial on-prem POC.
 
 ---
 
@@ -13,8 +13,10 @@ The browser talks directly to backend APIs. There is no BFF proxy. Security come
 - short-lived JWT access tokens in memory only
 - refresh token in an `HttpOnly` cookie
 - backend JWT validation on every API request
-- tenant guards and permission checks in backend middleware
+- permission checks in backend middleware
 - schema treated as a display contract, never a security boundary
+
+Schema delivery itself is simplified in the POC and is not used as an auth decision point.
 
 ---
 
@@ -37,16 +39,13 @@ The browser talks directly to backend APIs. There is no BFF proxy. Security come
 
 Browser code decodes JWT claims into `AppContext`.
 
-Relevant claims:
+Relevant claims for the POC:
 
-- `tenantId`
+- `userId`
 - `role`
-- `lob`
-- `locale`
-- `portalType`
 - `permissions[]`
 
-These claims drive view context and condition evaluation inputs. They do not replace backend validation for writes.
+Optional claims such as `lob`, `locale`, or deployment-specific context may still exist, but they are not part of schema delivery in this POC.
 
 ---
 
@@ -71,8 +70,8 @@ Direct `fetch()` to application APIs is banned except inside the fetch wrapper i
 The browser knows backend URLs. This is acceptable because:
 
 - the security boundary is JWT validation, not URL obscurity
-- tenant guards and permission checks run in backend middleware
-- cross-tenant reads return `404`, not `403`, to avoid IDOR leakage
+- permission checks run in backend middleware
+- mutation validation remains server-side
 
 ---
 
@@ -84,33 +83,31 @@ Because v0 moves state-shaped UI behavior into schema conditions, one rule must 
 
 If a schema hides a button for a state or role, the backend must still reject any invalid request sent directly.
 
-This applies even though there is no dedicated workflow-capability contract in v0.
+---
+
+## Schema Delivery Security Assumption
+
+In the POC, schema artifacts are assumed to be non-sensitive metadata and are delivered directly from CDN/S3 by `schemaId`.
+
+That means:
+
+- schema delivery does not require JWT-based runtime selection
+- there is no Worker decoding tokens at delivery time
+- there is no auth-dependent default-schema fallback behavior to define
+
+If this assumption changes later, schema delivery will need signed/private access or a resolver layer.
 
 ---
 
 ## CORS
 
-All backend services called by the browser must allow the frontend origin via the shared platform middleware.
+All backend services called by the browser must allow the frontend origin via the shared platform middleware or equivalent environment configuration.
 
 If a service is missing CORS configuration, the fix belongs in that service, not in frontend workarounds.
 
 ---
 
-## Schema Endpoint Auth Behavior
-
-The schema endpoint follows authenticated access rules.
-
-- missing Bearer token -> `401 SCHEMA_UNAUTHORIZED`
-- malformed or undecodable JWT -> `401 SCHEMA_UNAUTHORIZED`
-- valid token with no matching artifact -> normal schema lookup and possible `404 SCHEMA_NOT_FOUND`
-
-The Worker should not serve an anonymous default schema when auth is missing.
-
----
-
 ## Audit Logging and Rate Limiting
-
-The architecture review called out missing coverage here. v0 makes the backend responsibilities explicit.
 
 ### Audit logging
 
@@ -124,7 +121,6 @@ The backend must audit at least:
 Each audit event should capture:
 
 - `userId`
-- `tenantId`
 - endpoint or config key
 - action type
 - timestamp
@@ -138,14 +134,12 @@ Direct browser access means rate limiting belongs at API gateway and backend mid
 Minimum expectations:
 
 - auth endpoints rate-limited per IP and per user
-- mutation endpoints rate-limited by tenant and user
-- schema endpoint rate-limited only for abuse protection, not normal page navigation
+- mutation endpoints rate-limited per user and endpoint class
+- schema delivery path protected against abuse at CDN level if necessary
 
 ---
 
 ## Compliance And Data Handling
-
-The review also called out regulator-facing concerns. v0 defines the following rules.
 
 ### PII in schema
 
@@ -168,19 +162,17 @@ Not allowed in schema:
 
 ### JWT scope minimisation
 
-Only claims needed for frontend context and backend auth checks should be present. Avoid adding business-sensitive case state or large entitlement payloads to the token.
+Only claims needed for frontend context and backend auth checks should be present.
 
 ### Logging retention
 
 - client contract violations may include only truncated payload excerpts
 - raw full payloads containing possible PII must not be stored in browser telemetry
-- retention should follow the platform security standard, not ad hoc frontend policy
+- retention should follow platform policy, not ad hoc frontend policy
 
 ---
 
 ## Browser Security Rules
-
-These rules are mandatory.
 
 | Rule | Why |
 |---|---|
@@ -195,10 +187,6 @@ These rules are mandatory.
 
 ## Residual Risk Acknowledgement
 
-The Worker decodes JWT claims without verifying signature. This is acceptable only because:
+The POC assumes schema artifacts are safe to deliver directly over CDN because they contain metadata, not customer data.
 
-- backend APIs re-validate JWTs
-- schema delivery is read-only
-- stale schema delivery is a lower-severity failure than unauthorized data access
-
-This should still be documented for auditors and operators as an intentional design choice.
+This must remain true. If schema contents ever become sensitive, the delivery model must change.

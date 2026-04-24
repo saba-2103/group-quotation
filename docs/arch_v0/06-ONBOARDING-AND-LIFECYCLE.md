@@ -1,34 +1,29 @@
-# Onboarding And Lifecycle
+# Deployment Onboarding And Lifecycle
 
 **Parent:** [`00-SYSTEM-DESIGN.md`](./00-SYSTEM-DESIGN.md)
 
-This document covers tenant onboarding, schema lifecycle, and rollout policy.
+This document covers environment onboarding, schema lifecycle, and rollout policy for the on-prem POC.
 
 ---
 
-## Tenant Onboarding Checklist
+## Environment Onboarding Checklist
 
-The architecture review called out the absence of an onboarding checklist. v0 defines one.
+### Auth and backend setup
 
-### Identity and auth
-
-- tenant ID issued and normalized
-- JWT contains required claims for frontend context
-- backend middleware recognizes tenant
-- frontend origin whitelisted in backend CORS middleware
+- auth flow operational in target environment
+- backend middleware recognizes required roles and permissions
+- frontend origin whitelisted in backend CORS configuration
 
 ### Schema setup
 
-- `default.json` exists for required views
-- tenant-specific schema artifact created where needed
-- schema conditions reviewed against product spec
+- required `schemaId` artifacts exist
+- schema conditions reviewed against product specs
 - any introduced variant is justified in review
 
 ### Config setup
 
 - required config keys created
-- base blobs populated
-- tenant overrides populated where needed
+- base values populated
 - bindings validated against registered keys
 
 ### Publication and runtime checks
@@ -36,12 +31,12 @@ The architecture review called out the absence of an onboarding checklist. v0 de
 - materialisation run completed
 - schema artifact passes contract validation
 - smoke render passes
-- CDN pre-warm run completed for critical views
+- CDN pre-warm run completed for critical schemas
 
 ### Operational readiness
 
-- tenant-specific dashboards and alerts visible
-- schema freshness monitoring shows healthy state
+- delivery and materialisation dashboards visible
+- schema freshness monitoring healthy
 - rollback owner and incident path known
 
 ---
@@ -91,9 +86,9 @@ Because variants are allowed only as a fallback, they need explicit discipline.
 Before introducing a variant, document:
 
 - why a condition-based approach is insufficient
-- what audience or state the variant serves
+- what route or configuration chooses this variant `schemaId`
 - whether the difference is structural or only presentational
-- how the variant will be tested and kept in sync with the base page
+- how the variant will be tested and kept in sync with the base schema
 
 When a variant is no longer needed, it should be removed rather than left as dormant complexity.
 
@@ -112,9 +107,9 @@ Do not begin with heavy workbench-style modules. They are outside v0 scope by de
 
 Rollout guardrail:
 
-- do not onboard a second tenant until the first tenant has completed a full config-change cycle in a real environment, including materialisation, CDN purge, freshness verification, and alert-path validation
+- do not expand to additional environments or larger schema families until the first environment has completed a full config-change cycle, including materialisation, CDN purge, freshness verification, and alert-path validation
 
-The materialisation and freshness path is the highest operational-risk part of the architecture and should be proven before scaling tenant count.
+The materialisation and freshness path is the highest operational-risk part of the POC and should be proven before scale.
 
 ---
 
@@ -122,11 +117,9 @@ The materialisation and freshness path is the highest operational-risk part of t
 
 On deploy or major schema publish:
 
-- pre-fetch critical views through the Worker for major tenants
-- warm CDN and KV for top traffic pages
+- pre-fetch critical schema URLs through CDN
+- warm top traffic pages
 - verify `resolvedAt` freshness after purge
-
-This reduces the cold-path latency spike after publication.
 
 ---
 
@@ -139,4 +132,4 @@ v0 is considered healthy when:
 - pages render from one runtime graph
 - conditions stay static and spec-driven
 - variant count remains low and justified
-- no hidden reintroduction of workbench or field-rule fetch complexity occurs
+- no hidden reintroduction of resolver/worker or field-rule fetch complexity occurs

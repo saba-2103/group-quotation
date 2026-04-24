@@ -2,49 +2,62 @@
 
 **Parent:** [`00-SYSTEM-DESIGN.md`](./00-SYSTEM-DESIGN.md)
 
-This document defines how schemas are stored, selected, filtered, cached, versioned, and recovered in v0.
-
-The delivery mechanism intentionally remains aligned with the existing edge-resolution architecture.
+This document defines how schemas are stored, published, cached, versioned, and recovered in the initial on-prem POC.
 
 ---
 
 ## Overview
 
-Schema delivery is an edge concern, not an application-server concern.
+Schema delivery is static and direct.
 
 The path is:
 
-1. browser requests `/schemas/:viewId`
-2. Cloudflare Worker decodes JWT claims
-3. Worker reads the resolved schema artifact from storage
-4. Worker applies inline `$show` / `$hide` filtering where required
-5. Worker returns the clean schema with CDN cache headers
+1. browser requests schema by `schemaId`
+2. CDN serves `keystone-resolved-schemas/{schemaId}.json`
+3. on cache miss, CDN fetches that object from storage
+4. browser receives the resolved schema artifact as-is
 
-The Worker is a selector and filter. It does not materialise config bindings and does not assemble schemas from fragments.
+There is no Worker, no edge resolver, no JWT-based schema selection, and no delivery-time filtering.
 
 ---
 
 ## Storage Layout
 
-Storage layout remains compatible with the current browser-arch design.
-
 ```text
 keystone-resolved-schemas/
-  {viewId}/
-    default.json
-    {tenantId}.json
+  {schemaId}.json
 
 keystone-schema-bindings/
-  {viewId}/
+  {schemaId}/
     config-bindings.json
 ```
 
 Rules:
 
-- `keystone-resolved-schemas` is CDN-accessible through the Worker
+- `keystone-resolved-schemas` is CDN-backed and browser-fetchable
 - `keystone-schema-bindings` is private to the materialisation service
-- Worker never reads binding declarations
 - browser never sees binding declarations or config keys
+
+---
+
+## Fetch Contract
+
+The browser fetches schema by unique identifier.
+
+Recommended path:
+
+```text
+GET /schemas/{schemaId}.json
+```
+
+`schemaId` is the complete lookup key for the POC.
+
+There is no:
+
+- tenant-specific lookup
+- default tenant fallback
+- role/LOB/locale context matching
+- edge condition filter
 
 ---
 
@@ -52,13 +65,13 @@ Rules:
 
 A resolved schema contains:
 
-- metadata like `viewId`, `version`, and `resolvedAt`
+- metadata like `schemaId`, `version`, and `resolvedAt`
 - widget tree definition
 - resolved display semantics
-- inline `$show` / `$hide` conditions where needed
-- optional variants if a UX difference cannot be expressed cleanly as a condition
+- runtime JSONLogic conditions such as `visibleWhen`, `requiredWhen`, and `editableWhen`
+- optional variants, if the route/config explicitly points to another schema artifact
 
-The browser receives the post-filtered schema response, not the authoring-time inputs.
+The browser receives the published artifact directly.
 
 ---
 
@@ -68,9 +81,9 @@ This is the primary v0 rule.
 
 ### Use conditions by default
 
-Use inline conditions when the UX difference is:
+Use conditions when the UX difference is:
 
-- tied to known state, role, LOB, locale, portal type, or fetched data
+- tied to known business state or user context already available in the runtime graph
 - readable in JSONLogic
 - localized to widgets, fields, actions, or small subtrees
 
@@ -78,114 +91,84 @@ Use inline conditions when the UX difference is:
 
 Use a variant only when the UX difference cannot be expressed cleanly and maintainably as a condition.
 
+For the POC, a variant is a separate resolved schema artifact with its own `schemaId`.
+
 Examples that may justify a variant:
 
-- a substantially different subtree shape that would require many inverse conditions
-- a tenant-specific UX divergence that is structural rather than conditional
-- a page with two materially different layouts that are clearer as separate artifacts
+- a materially different widget subtree
+- a page with two clearly different layouts that would become unreadable through conditions alone
 
 Non-examples:
 
-- a field shown only for underwriters
+- a field shown only for a role
 - a section visible only when `data.quote.state = PENDING_APPROVAL`
-- a button hidden for a broker role
+- a button hidden for a given state
 
 ### Variant guardrail
 
-If a variant is introduced, the schema author must be able to explain why a condition-based approach would be less maintainable.
-
----
-
-## Worker Behavior
-
-The Worker performs these steps:
-
-1. read `Authorization: Bearer <token>`
-2. decode JWT claims without re-validating the signature
-3. build schema context from claims
-4. check KV or CDN hot cache
-5. attempt `GetObject {viewId}/{tenantId}.json`
-6. if missing, attempt `GetObject {viewId}/default.json`
-7. apply inline `$show` / `$hide` filters using the JWT-derived context
-8. strip condition keys from returned output
-9. return with cache headers and surrogate tags
-
-This preserves the existing delivery path while narrowing the runtime model.
-
-### Missing or malformed JWT handling
-
-Schema delivery is authenticated in v0.
-
-- missing `Authorization` header -> return `401 SCHEMA_UNAUTHORIZED`
-- malformed or unreadable JWT payload -> return `401 SCHEMA_UNAUTHORIZED`
-- validly decoded JWT with no matching artifact -> continue normal lookup and possible `404 SCHEMA_NOT_FOUND`
-
-The Worker should not serve an anonymous default schema when auth is missing or malformed.
+If a variant is introduced, the schema author must explain why a condition-based approach would be less maintainable.
 
 ---
 
 ## Cache Headers
 
-Worker responses should use:
+Schema responses should use headers like:
 
 ```text
 Cache-Control: public, max-age=300, stale-while-revalidate=3600
-Surrogate-Key: schema-{viewId} tenant-{tenantId}
-Vary: Authorization
 ETag: {object-etag}
+```
+
+Optional CDN tagging:
+
+```text
+Surrogate-Key: schema-{schemaId}
 ```
 
 Rationale:
 
 - `max-age=300`: five-minute fresh cache window
-- `stale-while-revalidate=3600`: one-hour stale serving during background revalidation
-- `Surrogate-Key`: enables grouped purge by view or tenant
-- `Vary: Authorization`: prevents context crossover at the CDN layer
+- `stale-while-revalidate=3600`: one-hour stale serving while origin refresh happens
+- `Surrogate-Key`: allows targeted purge per schema artifact
+
+There is no `Vary: Authorization` because schema delivery is not auth-context-sensitive in the POC.
 
 ---
 
 ## Failure Modes
 
-The original review called out missing edge failure planning. v0 defines explicit behavior.
+The review called out missing delivery failure planning. The POC defines explicit behavior.
 
 ### Schema not found
 
-If neither tenant file nor default file exists:
+If `{schemaId}.json` does not exist:
 
-- Worker returns `404 SCHEMA_NOT_FOUND`
+- return `404 SCHEMA_NOT_FOUND`
 - browser does not retry infinitely
 - page renders a schema-level error state
-- alert is emitted to platform monitoring because this is a publication failure, not a transient backend failure
+- alert is emitted because this is a publication failure, not an API/data failure
 
-### Missing or malformed JWT
-
-If the request has no Bearer token or the JWT cannot be decoded into the minimum required claims shape:
-
-- Worker returns `401 SCHEMA_UNAUTHORIZED`
-- browser treats this as an auth/session failure rather than a schema publication failure
-- normal token refresh or login redirect flow applies
-
-### Storage unavailable
+### Storage or CDN origin unavailable
 
 If storage is unavailable:
 
 - serve stale cached response where available
 - otherwise return `503 SCHEMA_UNAVAILABLE`
 - include `Retry-After: 30`
-- emit edge error metric and alert if sustained
+- emit delivery error metric and alert if sustained
 
 ### Corrupt schema artifact
 
-If the stored object is not valid against the resolved-schema Zod contract:
+If the object is not valid against the resolved-schema Zod contract:
 
-- Worker returns `503 SCHEMA_INVALID`
-- current object version is marked unhealthy
+- return `503 SCHEMA_INVALID`
+- mark current object version unhealthy
 - platform alert fires immediately
 - rollback or break-glass hotfix procedure is triggered
 
 ### Materialisation lag
 
-If config was saved but fresh schema artifacts are delayed:
+If config was saved but the fresh schema artifact is delayed:
 
 - last-known-good schema remains served from CDN and object versioning
 - watchdog checks `resolvedAt` age against expected freshness windows
@@ -205,8 +188,6 @@ Rules:
 - rollback creates a new current version from a prior object version rather than deleting history
 
 ### Rollback sources
-
-There are three rollback mechanisms:
 
 1. **Normal rollback:** re-run materialisation from corrected source inputs
 2. **Fast rollback:** restore a previous object version in the resolved schema bucket
@@ -235,8 +216,6 @@ Every hotfix must produce:
 
 ## Object Size Guardrails
 
-The review raised concern about excessive artifact size. v0 defines budgets.
-
 Budgets:
 
 - resolved schema target: <= 250 KB compressed, <= 1 MB uncompressed
@@ -264,13 +243,20 @@ Accessibility is not only a component concern. Since schema controls UI composit
 
 ---
 
-## What Changes From the Earlier Delivery Story
+## What Changed From the Earlier Delivery Story
 
-The edge delivery mechanism stays.
+What stays:
 
-What changes is what the browser does after schema arrives:
+- CDN-backed schema delivery
+- resolved schema artifacts
+- materialisation and purge model
 
-- no `useFieldConfig()` fetch path
-- no workbench/bootstrap runtime
-- conditions are evaluated from schema against local runtime graph
-- variants are secondary to conditions, not the primary strategy
+What changes:
+
+- no Worker
+- no JWT-based schema resolution
+- no tenant-specific schema files
+- no delivery-time filtering
+- no active edge condition system in the POC
+
+The only active condition system in the POC is runtime JSONLogic in the browser.

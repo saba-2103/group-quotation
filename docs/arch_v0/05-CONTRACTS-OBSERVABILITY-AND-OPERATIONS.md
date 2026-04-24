@@ -2,13 +2,13 @@
 
 **Parent:** [`00-SYSTEM-DESIGN.md`](./00-SYSTEM-DESIGN.md)
 
-This document closes the operational and governance gaps identified in the system-design review.
+This document defines contract enforcement, observability, release controls, and operational policy for the architecture.
 
 ---
 
 ## Contract Enforcement
 
-v0 keeps the existing two-layer contract model.
+v0 keeps the same two-layer contract model.
 
 ### 1. Pact in CI
 
@@ -24,35 +24,31 @@ v0 keeps the existing two-layer contract model.
 
 ### 3. Resolved schema validation
 
-Resolved schemas also need contract validation, not just API responses.
+Resolved schemas also need contract validation.
 
-v0 therefore requires:
+v0 requires:
 
 - a Zod schema for resolved schema artifacts
 - validation at schema fetch time
-- publication-time validation before a resolved schema object is written
+- publication-time validation before a resolved schema artifact is written
 
 ### 4. Smoke rendering
 
-The review asked for validation beyond Pact. v0 adds smoke rendering:
+The architecture includes smoke rendering:
 
-- fetch latest resolved schemas from a staging bucket
+- fetch latest resolved schemas from a staging bucket or staging artifact store
 - render them in a headless smoke harness
 - fail CI if render contract breaks
-
-This catches problems that are structurally valid JSON but no longer render correctly in the UI.
 
 ---
 
 ## Observability Model
 
-The review asked for clearer metrics. v0 defines them explicitly.
-
-### Edge and schema delivery
+### Schema delivery
 
 - schema fetch latency
 - CDN hit ratio
-- Worker cache source (`cdn`, `kv`, `origin`)
+- origin fetch latency on cache miss
 - schema `404` count
 - schema `503` count
 - stale schema served count
@@ -84,8 +80,6 @@ The review asked for clearer metrics. v0 defines them explicitly.
 
 ## Release Pipeline
 
-The review explicitly asked for a release pipeline diagram.
-
 There are two publication paths in v0:
 
 1. **Source-managed path** for schema, binding, and application changes
@@ -99,25 +93,13 @@ flowchart TB
     D --> E["API Pact verification"]
     E --> F["Smoke render latest schemas"]
     F --> G["Publish source changes"]
-    G --> H["Materialisation Service writes resolved schemas"]
-    H --> I["CDN purge by surrogate tags"]
+    G --> H["Materialisation Service writes resolved schema artifacts"]
+    H --> I["CDN purge by schema tags"]
     I --> J["Post-publish monitors check freshness and error rate"]
 
     K["Admin config edit"] --> L["Config key / value validation"]
     L --> H
 ```
-
-### Path differences
-
-**Source-managed path:**
-
-- runs full CI validation
-- covers schema source, bindings, and code changes
-
-**Admin-managed config path:**
-
-- does not run repo CI
-- must still pass Config System validation, materialisation validation, resolved-schema validation, and post-publish freshness checks
 
 ### Deployment gates
 
@@ -135,13 +117,11 @@ Do not publish if any of these fail:
 
 ## Disaster Recovery
 
-The review asked for an explicit DR answer.
-
-### If Worker or storage fails
+### If CDN or storage fails
 
 - serve stale schema where available
 - return `503` only when no stale response exists
-- monitor edge error rate and stale-serving rate
+- monitor schema fetch error rate and stale-serving rate
 
 ### If materialisation lags or fails
 
@@ -154,7 +134,7 @@ The review asked for an explicit DR answer.
 Recovery order:
 
 1. fast rollback to prior object version
-2. purge affected surrogate tags
+2. purge affected schema tags
 3. back-port source correction
 4. re-materialise and republish
 
@@ -172,13 +152,9 @@ Requirements:
 - audit trail captured
 - source back-port within one working day
 
-This policy answers the review question about whether direct bucket hotfixes are tolerated: yes, but only under controlled incident procedure.
-
 ---
 
 ## Audit And Compliance Notes
-
-The review asked for regulator-facing considerations.
 
 ### Required controls
 
@@ -190,22 +166,24 @@ The review asked for regulator-facing considerations.
 
 ### Retention and evidence
 
-Retention belongs to platform policy, but this architecture requires that:
+The architecture requires that:
 
 - schema publication events are traceable
 - config changes are attributable
 - break-glass actions are separately marked
 
+### Delivery assumption
+
+Because schema delivery is direct, this architecture assumes schema artifacts are non-sensitive metadata. If that assumption breaks, the delivery model must change.
+
 ---
 
-## Explicit v0 Scope Notes
+## Scope Notes
 
-The earlier review mentioned bootstrap payload budgets. In v0, this is out of scope because workbench/bootstrap architecture is not part of the initial version.
+This architecture does not include workbench/bootstrap runtime.
 
-The equivalent v0 concern is instead:
+The relevant delivery/runtime budgets are instead:
 
 - resolved schema artifact size
 - data-source count per page
 - eager versus deferred source budgets
-
-Those are the budgets this document governs.

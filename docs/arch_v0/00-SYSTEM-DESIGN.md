@@ -9,20 +9,22 @@
 
 ## What This System Is
 
-Keystone UI is a metadata-driven insurance platform. Every page is described by a schema. The browser fetches that schema from the CDN edge, fetches data directly from backend APIs, evaluates schema-authored JSONLogic conditions against loaded state, and renders a widget tree.
+Keystone UI is a metadata-driven UI architecture for the initial on-prem deployment.
 
-This v0 architecture keeps the strong parts of the existing system design:
+Every page is described by a resolved schema identified by a unique `schemaId`. The browser fetches that schema directly from CDN/S3, fetches domain data directly from backend APIs, evaluates schema-authored JSONLogic conditions against a unified runtime data graph, and renders a widget tree.
 
-- browser-based schema delivery
-- CDN edge schema selection and filtering
-- pre-materialised display semantics from the Config System
+This architecture uses:
+
+- browser-based UI assembly
+- pre-materialised display semantics in schema
 - direct backend integration from the browser
 - contract validation and observability around API responses
 
-It intentionally removes two parts of the previous architecture from v0:
+It intentionally excludes:
 
 - no `useFieldConfig()` flow because conditions are static and pre-known
 - no `useWorkbenchBootstrap()` flow because workbench pages are out of scope
+- no context-based schema selection service because schemas are fetched directly by unique `schemaId`
 
 ---
 
@@ -32,13 +34,13 @@ The architecture has three browser-side flows and one server-side publication fl
 
 ### Browser flows
 
-1. **Schema delivery** via `useViewMetadata(viewId)`
+1. **Schema delivery** via `useViewMetadata(schemaId)`
 2. **Page data loading** into one unified runtime data graph
 3. **Mutations** against backend APIs, with backend validation on every write
 
 ### Server-side publication flow
 
-4. **Config save -> materialisation -> CDN purge -> new resolved schema**
+4. **Config save -> materialisation -> CDN purge -> fresh resolved schema artifact**
 
 ---
 
@@ -48,7 +50,7 @@ The architecture has three browser-side flows and one server-side publication fl
 flowchart TB
     subgraph Browser["Browser"]
         direction TB
-        UVM["useViewMetadata()"]
+        UVM["useViewMetadata(schemaId)"]
         UDG["usePageDataGraph()"]
         SR["SchemaRenderer"]
         CE["JSONLogic Condition Engine"]
@@ -63,13 +65,12 @@ flowchart TB
         CE --> SR
     end
 
-    subgraph Edge["CDN Edge"]
-        Worker["Cloudflare Worker\nSchema Resolver"]
-        CDN["CDN Cache\nmax-age + stale-while-revalidate"]
+    subgraph CDN["CDN"]
+        Cache["CDN Cache\nmax-age + stale-while-revalidate"]
     end
 
     subgraph SchemaStore["Schema Storage"]
-        RS[("keystone-resolved-schemas\nresolved schema artifacts")]
+        RS[("keystone-resolved-schemas\n{schemaId}.json")]
         SB[("keystone-schema-bindings\nprivate binding declarations")]
     end
 
@@ -86,9 +87,8 @@ flowchart TB
         MS["Materialisation Service"]
     end
 
-    UVM -->|"GET /schemas/:viewId + JWT"| Worker
-    Worker --> CDN
-    Worker -->|"GetObject"| RS
+    UVM -->|"GET /schemas/{schemaId}.json"| Cache
+    Cache -->|"origin fetch on miss"| RS
     UDG -->|"Bearer JWT"| APIs
     SR -->|"submit / mutate"| Mut
 
@@ -97,7 +97,7 @@ flowchart TB
     Queue --> MS
     MS --> SB
     MS --> RS
-    MS -->|"purge tags"| CDN
+    MS -->|"purge schema-{schemaId}"| Cache
 ```
 
 ---
@@ -106,26 +106,26 @@ flowchart TB
 
 ### Step 1 — The browser fetches the resolved schema
 
-The browser calls `useViewMetadata(viewId)`. The request goes to the Cloudflare Worker at the CDN edge. The Worker decodes JWT claims, selects the correct resolved schema artifact from storage, applies inline `$show` and `$hide` filtering where required, strips condition markers from the response, and returns the schema with long-lived cache headers.
+The browser calls `useViewMetadata(schemaId)`. The request goes directly to CDN. On a cache miss, CDN fetches `keystone-resolved-schemas/{schemaId}.json` from storage and returns it to the browser.
 
-The delivery mechanism stays the same as the existing design:
+There is no Worker in the delivery path, no JWT decode at schema-fetch time, and no runtime schema-selection service.
 
-- schema files live in `keystone-resolved-schemas`
-- config bindings live in `keystone-schema-bindings`
-- the Worker is a selector and filter, not an assembler
-- the browser never sees raw binding declarations or config keys
+The delivery mechanism is intentionally simple:
+
+- one resolved schema artifact per `schemaId`
+- one CDN path per artifact
+- no delivery-time filtering or context matching
+- browser never sees raw binding declarations or config keys
 
 ### Step 2 — The runtime builds one data graph for the page
 
 The schema declares named data sources. The runtime hydrates those sources into one unified runtime data graph. Widgets do not read directly from raw endpoint responses. They bind to graph paths.
 
-That means the UI has one read contract even if many API calls are needed.
+That gives the page one read contract even if many API calls are needed.
 
 ### Step 3 — Schema conditions are evaluated locally
 
 Conditions are static JSONLogic rules authored in schema from the product specs. They are evaluated locally against the runtime data graph.
-
-This replaces the earlier `useFieldConfig()` model.
 
 Conditions may shape:
 
@@ -159,32 +159,33 @@ The rule is:
 
 ### Step 6 — Display semantics are still pre-materialised
 
-Labels, translations, badge variants, and other display mappings remain in the Config System. When config changes, the materialisation service re-writes affected resolved schemas and purges CDN cache tags.
+Labels, translations, badge variants, and other display mappings remain in the Config System. When config changes, the materialisation service rewrites affected resolved schema artifacts and purges CDN cache tags.
 
-This part of the original architecture remains intact.
+This is how display semantics are delivered in the architecture.
 
 ---
 
 ## What Is In Scope
 
-v0 is designed for:
+This architecture is designed for:
 
 - dashboards
 - queues
 - admin pages
 - list-detail pages
 - lightweight and medium-complexity forms
-- tenant-specific or role-specific UX shaped mainly by conditions
+- schema-driven UX shaped mainly by static conditions
 
 ## What Is Out of Scope
 
-v0 does not include:
+This architecture does not include:
 
 - dedicated workbench runtime
 - bootstrap APIs for coherent multi-panel screens
 - field-rule fetch APIs
 - backend-driven workflow capability contracts
 - dynamic rule authoring by business users
+- multi-tenant schema selection and filtering
 
 ---
 
@@ -193,6 +194,8 @@ v0 does not include:
 **Schema is the page contract.** It declares the widget tree, data bindings, conditions, inheritance rules, and variants where necessary.
 
 **Conditions first, variants second.** If a UX difference can be expressed cleanly as a condition, use a condition. Introduce a variant only when the difference cannot be expressed cleanly and maintainably that way.
+
+**Variants are explicit schema artifacts in the POC.** If a variant exists, it has its own `schemaId` and is selected explicitly by route or configuration rather than by a runtime resolver.
 
 **Display semantics are server-resolved.** The browser receives ready-to-render labels and display mappings.
 
@@ -206,13 +209,13 @@ v0 does not include:
 
 ## Operational Guarantees
 
-The review of the previous system design called out missing operational guarantees. v0 adopts the following targets.
+This architecture adopts the following operating targets for the deployment model.
 
 | Area | Target | Notes |
 |---|---|---|
-| Schema fetch, warm edge | p95 < 50ms | CDN hit or KV hit path |
-| Schema fetch, cold edge | p95 < 250ms | Worker + storage read + filtering |
-| Schema availability | 99.9% monthly | Last-known-good schema is served where possible |
+| Schema fetch, warm CDN | p95 < 30ms | CDN hit path |
+| Schema fetch, cold origin | p95 < 150ms | CDN miss plus S3 fetch |
+| Schema availability | 99.9% monthly | Last-known-good schema served where possible |
 | Config save to fresh schema availability | p95 < 120s | Includes materialisation and CDN purge |
 | Unknown config gap alerting | < 1 min | Gap event to monitoring pipeline |
 | Contract violation alerting | < 5 min | Sentry/Datadog/PagerDuty path |
@@ -234,6 +237,8 @@ These are targets, not guarantees of zero incidents. They are the basis for moni
 
 **Static conditions are the principal architectural bet.** v0 assumes most condition logic is stable, known from specs, and can move through the schema publication cycle. If that assumption breaks and rule changes begin happening frequently and independently of schema publication, the next step should be a narrowly scoped dynamic rule layer rather than stretching schema conditions indefinitely.
 
+**Direct schema delivery assumes schemas are non-sensitive metadata.** If that assumption changes, schema delivery will need signed or otherwise protected access rather than a static CDN path.
+
 ---
 
 ## Documents In This Set
@@ -248,6 +253,7 @@ docs/arch_v0/
   04-RUNTIME-AND-CONDITIONS.md
   05-CONTRACTS-OBSERVABILITY-AND-OPERATIONS.md
   06-ONBOARDING-AND-LIFECYCLE.md
-  07-REVIEW-COVERAGE.md
+  07-ARCHITECTURE-COMPLETENESS.md
   08-SCHEMA-AUTHORING-AND-REVIEW.md
+  09-DECISIONS-SUMMARY.md
 ```
