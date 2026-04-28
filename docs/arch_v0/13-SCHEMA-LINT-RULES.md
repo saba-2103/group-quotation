@@ -192,6 +192,22 @@ At least one of:
 - `initialValue`
 - `initialValueFrom`
 
+Implementation note:
+
+- the validator should enforce this with a cross-field refinement, not only with a TypeScript discriminated union
+
+### `namespace-local-dual-init-explicit`
+
+**Severity:** warning  
+If a `kind: "local"` namespace declares both `initialValue` and `initialValueFrom`, treat that as an explicit fallback pattern and flag it for review.
+
+Interpretation:
+
+- `initialValue` is the temporary fallback
+- `initialValueFrom` is the one-time seed source once the referenced value becomes available
+
+This is valid authoring, but it should be intentional rather than accidental.
+
 Disallowed:
 
 - `endpoint`
@@ -217,6 +233,76 @@ Disallowed:
 - `dependsOn`
 - `initialValue`
 - `initialValueFrom`
+
+### `namespace-dependsOn-declared`
+
+**Severity:** error  
+Every `dependsOn` entry must reference a declared namespace name.
+
+Good:
+
+```json
+{
+  "quoteSummary": {
+    "kind": "api",
+    "endpoint": "/v1/quotes/:quoteId/summary",
+    "dependsOn": ["quote"]
+  }
+}
+```
+
+Bad if `quote` is not declared:
+
+```json
+{
+  "quoteSummary": {
+    "kind": "api",
+    "endpoint": "/v1/quotes/:quoteId/summary",
+    "dependsOn": ["quote"]
+  }
+}
+```
+
+### `namespace-dependsOn-system-disallowed`
+
+**Severity:** error  
+`dependsOn` may reference only declared namespace names, not `system.*` paths.
+
+Bad:
+
+```json
+{
+  "quote": {
+    "kind": "api",
+    "endpoint": "/v1/quotes/:quoteId",
+    "dependsOn": ["system.routeParams.quoteId"]
+  }
+}
+```
+
+### `namespace-dependsOn-cycle`
+
+**Severity:** error  
+Namespace dependency cycles are disallowed and must fail validation.
+
+Bad:
+
+```json
+{
+  "graphNamespaces": {
+    "quote": {
+      "kind": "api",
+      "endpoint": "/v1/quotes/:quoteId",
+      "dependsOn": ["quoteSummary"]
+    },
+    "quoteSummary": {
+      "kind": "api",
+      "endpoint": "/v1/quotes/:quoteId/summary",
+      "dependsOn": ["quote"]
+    }
+  }
+}
+```
 
 ---
 
@@ -346,7 +432,7 @@ Warn if:
 - nesting depth exceeds agreed threshold
 - operator count exceeds agreed threshold
 
-Suggested initial warning thresholds:
+Locked warning thresholds for v0:
 
 - depth > 4
 - total operators > 10
@@ -386,7 +472,7 @@ Minimum justification should answer:
 **Severity:** warning  
 Warn if the number of variants for one page family exceeds the agreed threshold.
 
-Suggested initial threshold:
+Locked initial warning threshold:
 
 - > 3 variants for one page family
 

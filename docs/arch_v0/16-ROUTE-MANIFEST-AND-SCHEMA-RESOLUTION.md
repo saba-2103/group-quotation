@@ -64,6 +64,7 @@ interface RouteManifestEntry {
   schemaId: string;
   routeParams?: Record<string, string>;
   priority?: number;
+  runtime?: 'legacy' | 'v0';
 }
 ```
 
@@ -73,6 +74,7 @@ Where:
 - `schemaId` is the exact resolved schema artifact to fetch
 - `routeParams` maps URL params into `system.routeParams` keys if aliasing is needed
 - `priority` is optional and only needed when simple path specificity is not enough
+- `runtime` is an optional migration-only field used during dual-runtime cutover; if omitted, default to `v0`
 
 Example:
 
@@ -244,6 +246,7 @@ Recommended v0 starting point:
 - keep the manifest source-controlled
 - validate it in CI
 - move it to a managed artifact only if operational needs justify it later
+- if the migration still runs legacy and v0 routes in parallel, require `runtime: "legacy"` explicitly and treat missing `runtime` as `v0`
 
 This is the same general `arch_v0` principle used elsewhere:
 
@@ -287,11 +290,21 @@ This is invalid because `quoteNumber` is not a path parameter in the route patte
 
 - return `404`
 - do not fall back to an arbitrary default schema
+- this is an application-route failure, not a schema-publication failure
+- recommended app error code: `ROUTE_NOT_FOUND`
 
 ### Route match references missing `schemaId`
 
 - fail validation before deployment where possible
 - if it still reaches runtime, return a schema-level error state and alert
+
+### Route match succeeds but schema artifact is missing
+
+- this is not the same as `ROUTE_NOT_FOUND`
+- the route manifest matched successfully, but schema delivery failed
+- surface the schema-level failure from `useViewMetadata(schemaId)`
+- recommended behavior is the same schema error handling defined in [`01-SCHEMA-DELIVERY.md`](./01-SCHEMA-DELIVERY.md), for example `404 SCHEMA_NOT_FOUND` or `503 SCHEMA_INVALID`
+- emit delivery/publication alerts rather than route-manifest alerts
 
 ### Ambiguous match
 

@@ -70,6 +70,23 @@ Reserved roots:
 - `system`: runtime-managed read-only context
 - `graph`: schema-declared namespaces for all page state
 
+### How `system.*` is populated
+
+`system.*` is runtime-managed context, not schema-authored state.
+
+For v0, populate it from these sources:
+
+- `system.routeParams`: from route-manifest resolution
+- `system.userId`: from auth context or decoded JWT claims
+- `system.role`: from auth context or decoded JWT claims
+- `system.permissions`: from auth context or decoded JWT claims
+
+Rules:
+
+- `system.*` must be populated before `graph.*` API namespace hydration starts
+- `system.*` is read-only from the perspective of schema-authored widgets
+- if early development uses mocked auth, the mock must still satisfy the same `system.*` contract
+
 ### Schema-declared namespaces
 
 The schema declares the branches it needs under `graph`.
@@ -127,6 +144,38 @@ Rules:
 - `kind: "local"` namespaces may provide only `usage`, `initialValue`, and `initialValueFrom`
 - `kind: "inline"` namespaces must provide `value` and may provide only `usage` and `value`
 - `usage` is optional metadata, but when present it should use the bounded set above
+
+### Namespace dependency model
+
+`dependsOn` applies only to `kind: "api"` namespaces.
+
+Rules:
+
+- `dependsOn` values reference declared namespace names only, not arbitrary graph paths
+- `dependsOn` does not reference `system.*`; runtime-managed `system.*` context is assumed available before namespace hydration
+- the runtime must topologically order `api` namespace hydration based on `dependsOn`
+- cycle detection is mandatory
+- dependency cycles and unknown dependency names should fail validation before runtime where possible
+
+Example:
+
+```json
+{
+  "graphNamespaces": {
+    "quote": {
+      "kind": "api",
+      "endpoint": "/v1/quotes/:quoteId"
+    },
+    "quoteSummary": {
+      "kind": "api",
+      "endpoint": "/v1/quotes/:quoteId/summary",
+      "dependsOn": ["quote"]
+    }
+  }
+}
+```
+
+Here `quoteSummary` depends on the namespace named `quote`, not on a path such as `graph.quote.id`.
 
 Recommended defaults:
 
@@ -188,6 +237,31 @@ The schema and conditions then bind to:
 - schema authors get a declared naming contract
 - validation can detect namespace collisions early
 - paths are derived from namespace names instead of repeated manually
+
+### Local namespace initialization model
+
+`initialValueFrom` is a one-time seed, not an ongoing mirror.
+
+Rules:
+
+- if a local namespace declares `initialValueFrom`, the runtime seeds that namespace from the referenced path once
+- after that seed, later changes to the source path do not automatically overwrite the local namespace
+- if a page needs re-sync behavior later, that behavior must be declared explicitly and should not be implied by `initialValueFrom`
+
+Initialization timing:
+
+- if `initialValueFrom` points at a namespace that is already available, seed immediately
+- if `initialValueFrom` points at an eager `api` namespace that is still hydrating, wait for that namespace's first successful hydration, then seed once
+- if both `initialValue` and `initialValueFrom` are present, `initialValue` acts as the temporary fallback until the referenced source becomes available
+- if the referenced source never resolves successfully, keep the fallback or uninitialized local state and emit a runtime hydration warning
+
+Example:
+
+- `graph.quote` hydrates from `/v1/quotes/:quoteId`
+- `graph.quoteDraft.initialValueFrom = "graph.quote"`
+- runtime waits for the first successful `graph.quote` hydration
+- runtime copies that value into `graph.quoteDraft`
+- later changes to `graph.quote` do not silently replace user edits in `graph.quoteDraft`
 
 ---
 
@@ -515,13 +589,42 @@ The system behavior  stay explicit:
 ```text
 1. Route activates
 2. useViewMetadata(schemaId) fetches schema from CDN
-3. Runtime reads schema-declared graph namespaces and sources
-4. usePageDataGraph hydrates eager graph branches under `graph.*`
-5. Condition engine evaluates JSONLogic rules
-6. SchemaRenderer mounts visible widget nodes
-7. Deferred sources hydrate later as needed
-8. Mutations patch or revalidate graph branches
+3. Runtime populates `system.*` from route resolution and auth context
+4. Runtime reads schema-declared graph namespaces and sources
+5. usePageDataGraph initializes `local` and `inline` namespaces and topologically hydrates eager `api` namespaces under `graph.*`
+6. local namespaces using `initialValueFrom` seed after their referenced source becomes available
+7. Condition engine evaluates JSONLogic rules
+8. SchemaRenderer mounts visible widget nodes
+9. Deferred sources hydrate later as needed
+10. Mutations patch or revalidate graph branches
 ```
+
+---
+
+## Reactivity Model
+
+The runtime uses a pull model for condition re-evaluation.
+
+Rules:
+
+- the runtime graph store is the source of truth
+- any change to relevant `system.*` or `graph.*` values causes subscribed React consumers to re-render
+- conditions are re-evaluated during render against the latest graph snapshot
+- `SchemaRenderer` performs visibility and condition checks on each render for the affected subtree
+
+Why this model is preferred in v0:
+
+- it keeps the condition engine stateless
+- it avoids introducing a separate event system just for condition evaluation
+- it fits React's normal subscription and re-render model
+
+That means:
+
+- updating `graph.filters.status` causes consumers bound to that graph slice to re-render
+- any `visibleWhen`, `editableWhen`, or `requiredWhen` using that path re-evaluates on render
+- mutation-driven namespace revalidation follows the same rule once the graph store updates
+
+If performance later proves this too coarse for large pages, optimize subscription granularity or memoization deliberately rather than introducing a second condition-event system by default.
 
 ---
 

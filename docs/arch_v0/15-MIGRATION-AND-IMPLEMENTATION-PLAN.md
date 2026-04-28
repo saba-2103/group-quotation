@@ -92,6 +92,166 @@ The exact extraction can wait until the contracts stabilize, but implementation 
 
 ---
 
+## Pre-Sprint Decisions
+
+These decisions should be assigned owners and resolved before the first implementation sprint begins.
+
+### 1. Runtime graph store backing
+
+Decision required:
+
+- what concrete store backs the new runtime graph in early v0?
+
+Recommended v0 decision:
+
+- use a small runtime provider abstraction backed by Zustand initially
+- keep Zustand behind runtime-owned interfaces so the public contract is `RuntimeGraph`, not Zustand APIs
+
+Why this is the recommended default:
+
+- the repo already uses Zustand successfully
+- migrated pages need graph state that survives across many widget renders
+- the runtime may still want to swap backing implementation later without rewriting widgets
+
+Owner:
+
+- frontend/platform runtime owner
+
+Deadline:
+
+- before Workstream 2 implementation starts
+
+### 2. Auth backend readiness
+
+Decision required:
+
+- does Workstream 3 integrate with a real JWT backend immediately, or does early runtime work use a mocked auth context?
+
+Recommended v0 decision:
+
+- build the shared API client against the real auth contract if available
+- if backend auth is not ready, provide a mocked auth-context provider that satisfies the same client/runtime interfaces
+
+Guardrail:
+
+- the runtime should depend on an auth abstraction, not directly on today’s temporary mock or backend implementation
+
+Owner:
+
+- frontend/platform plus auth/backend owner
+
+Deadline:
+
+- before the first migrated page consumes authenticated APIs
+
+### 3. Backend readiness matrix for pilot pages
+
+Decision required:
+
+- for `test-dashboard`, `claims`, and `quotations`, which namespaces point to real endpoints and which stay mocked initially?
+
+Required output:
+
+- one readiness matrix listing page, namespace, endpoint, owner, and readiness state
+
+Owner:
+
+- module team plus backend owner for each pilot surface
+
+Deadline:
+
+- before the first Phase 3 pilot-page migration begins
+
+### 4. `schemaId` naming convention
+
+Decision required:
+
+- what exact stable naming format do we bless for `schemaId`s?
+
+Recommended v0 decision:
+
+- use lowercase kebab-case page-family identifiers matching the lint rules, for example:
+  - `quotations-list`
+  - `quotation-details`
+  - `claims-list`
+
+Do not:
+
+- encode deployment environment into `schemaId`
+- encode file paths into `schemaId`
+- mix dotted and path-like naming forms in the same system
+
+Owner:
+
+- schema contract owner
+
+Deadline:
+
+- before route manifest and artifact publication are used for real pages
+
+### 5. Schema bucket and CDN ownership
+
+Decision required:
+
+- who provisions and owns the schema artifact bucket and CDN path?
+
+Required output:
+
+- named platform owner
+- target bucket/path naming
+- environment list
+- deployment and rollback access model
+
+Owner:
+
+- platform/infrastructure owner
+
+Deadline:
+
+- before Phase 5
+
+### 6. Runtime governance during concurrent migrations
+
+Decision required:
+
+- if multiple teams expose missing runtime capabilities at the same time, who decides whether to add capability to the shared runtime or allow a temporary bridge?
+
+Required output:
+
+- one named runtime arbiter or review group
+- one rule that all temporary bridges require owner plus removal milestone
+
+Owner:
+
+- frontend/platform lead
+
+Deadline:
+
+- before more than one page family migrates concurrently, and no later than the end of Phase 2
+
+---
+
+## Parallelism Rules
+
+The migration should not be scheduled as if every workstream were sequential.
+
+Recommended concurrency:
+
+- Workstream 1 and Workstream 3 start in parallel on day one
+- Workstream 2 can begin with:
+  - `useViewMetadata(schemaId)` stub
+  - runtime graph container
+  - JSONLogic condition engine
+  even while Workstream 1 contracts are still stabilizing
+- Workstream 4 page conversion starts only after the condition engine, route manifest, and minimum runtime graph path exist
+- Workstream 5 publication can begin with local filesystem or `public/` artifacts in parallel with runtime development
+
+Guardrail:
+
+- contract modules must stabilize before multiple page families migrate concurrently
+
+---
+
 ## Workstreams
 
 ### 1. Contract Foundation
@@ -126,6 +286,7 @@ Implementation tasks:
   - single-writer graph ownership
   - route-manifest ambiguity
 - define one canonical widget node contract for the new runtime instead of allowing each widget family to invent local shapes
+- implement the JSONLogic subset evaluator and test harness early enough that existing JSONLogic-authored schemas can be validated before the new renderer is finished
 - add a validation script such as `validate:schema-contracts` that can be run locally and in CI against source schemas, published artifacts, and route manifests
 - add fixture schemas covering:
   - valid page
@@ -145,6 +306,7 @@ Concrete outputs:
 - `src/schema/lint/*`
 - `scripts/validate_schemas.*` or equivalent package script
 - schema test fixtures under `src/tests/schemas` or `schemas/__fixtures__`
+- JSONLogic evaluator tests against real pilot-schema examples
 
 Exit criteria:
 
@@ -166,8 +328,9 @@ Deliverables:
 Implementation tasks:
 
 - create a runtime state container that exposes one `RuntimeGraph` with `system` and `graph` roots
-- decide whether the graph store is backed by React state, Zustand, or a small runtime provider abstraction, but keep the public interface graph-first
+- use the Zustand-backed runtime provider abstraction decided in Pre-Sprint Decision #1, and keep the public interface graph-first
 - implement `useViewMetadata(schemaId)` against a local artifact path first so the call site stays stable before CDN cutover
+- provide a filesystem-backed or `public/`-backed schema loader that satisfies the same `useViewMetadata(schemaId)` interface used later for CDN/S3 fetches
 - implement `usePageDataGraph(schema, context)` in this order:
   - read declared namespaces
   - seed `system.routeParams`, `system.role`, and other runtime-managed values
@@ -192,6 +355,7 @@ Implementation tasks:
   - namespace hydration failure
   - unsupported widget type
 - keep the current renderer alive as `legacy` while the new runtime is being proven
+- keep the condition engine separately testable from the renderer so schema logic can be proven before full page rendering is complete
 
 Implementation guidance:
 
@@ -358,6 +522,10 @@ Implementation tasks:
   - stamps metadata such as `schemaId`, `version`, and `resolvedAt`
   - validates the final artifact
   - writes the artifact to a local publish directory or S3 target
+- provide a single developer command from day one, for example `yarn schemas:dev`, that:
+  - rebuilds resolved artifacts on source-schema changes
+  - writes them to the local fetch path used by `useViewMetadata(schemaId)`
+  - keeps the local development loop aligned with the eventual publication contract
 - define the published artifact path contract, for example `dist/resolved-schemas/{schemaId}.json`
 - add a manifest or index of published `schemaId`s for validation and deployment checks
 - document the manual/operator flow for early v0 publication, including:
@@ -366,6 +534,10 @@ Implementation tasks:
   - verify fetch
   - rollback
 - treat the current form registry generator as input to the build if useful, but not as the browser-facing delivery contract
+- define the exit trigger for manual curation of display semantics:
+  - once more than 3 page families are live on published artifacts, or
+  - once one display-semantics change requires more than 1 working day to republish,
+  manual curation is no longer acceptable and explicit bindings plus repeatable materialisation become mandatory backlog work
 
 Phase 2 deliverables:
 
@@ -411,10 +583,16 @@ Deliverables:
 - generic schema page shell that resolves the current path and renders the runtime
 - injection of resolved params into `system.routeParams`
 
+Temporary migration extension:
+
+- route manifest may also carry a temporary `runtime: "legacy" | "v0"` field during the dual-runtime period so cutover state is explicit and testable
+- if the field is omitted during the migration window, default to `"v0"`; `"legacy"` must be explicit
+
 Implementation tasks:
 
 - add a source-controlled route manifest file and validator
 - choose one route matching implementation and keep it deterministic and testable
+- if dual runtime support is needed, validate that every manifest entry declares which runtime owns it during the migration window
 - add route tests covering:
   - static path precedence
   - parameterized path precedence
@@ -426,6 +604,8 @@ Implementation tasks:
   - optional host-app extras such as breadcrumbs or auth guards
 - replace manual route-specific schema imports with route manifest entries as pages migrate
 - explicitly list which routes remain custom host pages because they are not fully schema-driven yet
+- add a route-cutover rollback rule for migrated pages:
+  - if a route is switched to the generic shell and the resolved artifact is missing or invalid in a target environment, revert the manifest entry to `legacy` or restore the prior route mapping as the first rollback option before editing runtime code
 
 Implementation guidance:
 
@@ -439,6 +619,7 @@ Concrete outputs:
 - `src/routes/resolveRoute.*`
 - `src/app/[[...slug]]/page.tsx` or equivalent generic shell
 - route-manifest tests
+- optional dual-runtime manifest flag during migration
 
 Exit criteria:
 
@@ -569,6 +750,10 @@ Every page-family migration should follow the same implementation sequence.
 
 This prevents each team from inventing its own conversion path.
 
+Canonical reusable template:
+
+- `docs/templates/PAGE_MIGRATION_CHECKLIST.md`
+
 ### Required inputs before starting
 
 - current route or routes
@@ -649,16 +834,21 @@ Key actions:
 - identify which current routes can collapse into a generic schema route shell
 - classify all `src/app/api/*` routes as mock, proxy, or keeper
 - mark old architecture docs as superseded where appropriate
+- automate the inventory generation instead of maintaining it by hand
+- annotate current `src/app/api/*` files with a machine-checkable route class comment or equivalent metadata if the team chooses that convention
 
 Concrete implementation outputs:
 
 - one inventory table listing every current schema-driven route and its source schema file
 - one inventory table listing every `src/app/api/*` route and its classification
 - one decision record that marks `arch_v0` as the implementation target over the older browser-arch docs
+- one inventory script that regenerates both tables from the repo
 
 Definition of done:
 
 - team agreement that Worker resolution, field-config APIs, and workbench bootstrap are out of v0 scope
+- old architecture docs are marked as superseded or explicitly non-target for implementation
+- generated inventory artifacts are committed to the repo
 
 ### Phase 1 - Add New Contracts And Validation
 
@@ -672,6 +862,7 @@ Key actions:
 - add JSONLogic subset validation
 - add lint rules for namespace, path, and condition integrity
 - add route manifest contract and validation rules
+- land the standalone JSONLogic evaluator and tests before page migration begins
 
 Concrete implementation outputs:
 
@@ -702,6 +893,7 @@ Concrete implementation outputs:
 - one generic schema shell route in the app
 - one pilot runtime path that does not use legacy `WidgetRenderer`
 - one pilot page fetching a locally published resolved artifact
+- one filesystem-backed schema loader satisfying the same interface as the future CDN-backed loader
 
 Definition of done:
 
@@ -742,6 +934,11 @@ Concrete migration order inside each pilot page:
 7. publish resolved artifact
 8. switch route to generic schema shell
 
+Optional migration control during the dual-runtime window:
+
+- mark the manifest entry `runtime: "legacy"` before conversion
+- change it to `runtime: "v0"` only after artifact validation and smoke render pass
+
 Definition of done:
 
 - first page family uses `schemaId`, runtime graph namespaces, JSONLogic, and the shared API client
@@ -763,6 +960,7 @@ Concrete implementation outputs:
 - one form runtime pattern for draft initialization, submit, and revalidation
 - one detail-page pattern for large tabbed schemas resolved before fetch time
 - one documented mutation pattern for re-fetch versus patch-plus-revalidate
+- one rollback pattern for switching a detail route back to legacy if the published artifact fails post-cutover
 
 Definition of done:
 
@@ -786,6 +984,8 @@ Concrete implementation outputs:
 - CDN path and cache-header configuration
 - rollback runbook tested against at least one pilot artifact
 - post-publish verification check for critical `schemaId`s
+- tested route rollback procedure for one page switched from generic shell back to legacy ownership
+- packaging open questions from `14-PACKAGING-AND-ADOPTION-STRATEGY.md` resolved and assigned owners before WS9 starts
 
 Definition of done:
 
@@ -808,6 +1008,7 @@ Concrete implementation outputs:
 - workspace package boundaries in the repo
 - smoke-render CI job against published artifacts
 - onboarding checklist updated for the new runtime and publication path
+- packaging gate decision recorded after at least 2 page families have run on the new runtime for 2 weeks in staging without rollback
 
 Definition of done:
 
@@ -858,26 +1059,40 @@ Mitigation:
 - do not try to keep page graph hydration and widget-owned fetches permanently mixed
 - allow a temporary bridge, but migrated pages should have one page-owned data graph
 
-### Risk 3 - Temporary mock or proxy routes become accidental long-term architecture
+### Risk 3 - Runtime graph store decision blocks Workstream 2
+
+Mitigation:
+
+- assign one owner and deadline in the Pre-Sprint Decisions section
+- use the recommended provider abstraction backed by Zustand unless a contrary decision is made before runtime work starts
+
+### Risk 4 - Temporary mock or proxy routes become accidental long-term architecture
 
 Mitigation:
 
 - label each Next API route as dev-only, compatibility-only, or permanent
 - set a removal milestone for compatibility proxies
 
-### Risk 4 - Page migration starts with the hardest content
+### Risk 5 - Page migration starts with the hardest content
 
 Mitigation:
 
 - start with dashboard and list pages
 - leave quotation detail, accounting, and payout until the runtime contracts are proven
 
-### Risk 5 - Config/materialisation is deferred too long
+### Risk 6 - Config/materialisation is deferred too long
 
 Mitigation:
 
 - build a thin CLI materialiser early
 - do not wait for a full admin UI before fixing the browser contract
+
+### Risk 7 - Partially migrated route has no rollback path
+
+Mitigation:
+
+- keep route ownership explicit during the dual-runtime window
+- test both artifact rollback and route rollback before production cutover of a pilot page
 
 ---
 

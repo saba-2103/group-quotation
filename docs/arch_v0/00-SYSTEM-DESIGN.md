@@ -100,6 +100,14 @@ flowchart TB
     MS -->|"purge schema-{schemaId}"| Cache
 ```
 
+For the current repo implementation, the recommended interpretation of the store layer is:
+
+- React Query for API fetch/cache concerns
+- a Zustand-backed runtime graph store behind a runtime provider abstraction
+- AppContext for auth/session-derived browser context
+
+The architectural contract is the unified runtime graph, not direct dependence on a specific store library API from widgets.
+
 ---
 
 ## Walking Through the System
