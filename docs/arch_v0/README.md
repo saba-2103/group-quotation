@@ -143,3 +143,4 @@ Supporting resources
 - [`11-API-TEAM-CONTRACT.md`](./11-API-TEAM-CONTRACT.md): what the frontend needs from backend/API teams to support this architecture
 - [`12-PAGE-AUTHORING-MANUAL.md`](./12-PAGE-AUTHORING-MANUAL.md): practical manual for creating pages, with a full worked schema example
 - [`13-SCHEMA-LINT-RULES.md`](./13-SCHEMA-LINT-RULES.md): machine-checkable validation rules for schema authoring
+- [`14-PACKAGING-AND-ADOPTION-STRATEGY.md`](./14-PACKAGING-AND-ADOPTION-STRATEGY.md): recommended package boundaries, workspace shape, and product-team adoption model for Keystone UI

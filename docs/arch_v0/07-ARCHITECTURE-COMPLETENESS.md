@@ -18,6 +18,7 @@ This file makes the architecture self-auditable without relying on any external 
 | Contracts, observability, DR, release model, and hotfixes | [`05-CONTRACTS-OBSERVABILITY-AND-OPERATIONS.md`](./05-CONTRACTS-OBSERVABILITY-AND-OPERATIONS.md) |
 | Environment onboarding and lifecycle | [`06-ONBOARDING-AND-LIFECYCLE.md`](./06-ONBOARDING-AND-LIFECYCLE.md) |
 | Schema authoring and review process | [`08-SCHEMA-AUTHORING-AND-REVIEW.md`](./08-SCHEMA-AUTHORING-AND-REVIEW.md) |
+| Packaging and product-team adoption model | [`14-PACKAGING-AND-ADOPTION-STRATEGY.md`](./14-PACKAGING-AND-ADOPTION-STRATEGY.md) |
 | Locked decisions, assumptions, tradeoffs, and FAQ | [`09-DECISIONS-SUMMARY.md`](./09-DECISIONS-SUMMARY.md) |
 
 ---
