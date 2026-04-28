@@ -19,6 +19,7 @@ This file makes the architecture self-auditable without relying on any external 
 | Environment onboarding and lifecycle | [`06-ONBOARDING-AND-LIFECYCLE.md`](./06-ONBOARDING-AND-LIFECYCLE.md) |
 | Schema authoring and review process | [`08-SCHEMA-AUTHORING-AND-REVIEW.md`](./08-SCHEMA-AUTHORING-AND-REVIEW.md) |
 | Packaging and product-team adoption model | [`14-PACKAGING-AND-ADOPTION-STRATEGY.md`](./14-PACKAGING-AND-ADOPTION-STRATEGY.md) |
+| Route-to-schema mapping model | [`16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md`](./16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md) |
 | Locked decisions, assumptions, tradeoffs, and FAQ | [`09-DECISIONS-SUMMARY.md`](./09-DECISIONS-SUMMARY.md) |
 
 ---
@@ -77,5 +78,6 @@ This architecture set answers all of these directly:
 - how delivery failures recover
 - how hotfixes and rollbacks work
 - what assumptions the architecture depends on
+- how browser routes resolve to explicit `schemaId`s
 
 If a question is not answered by this set, it should either be added as a new architecture concern or explicitly declared out of scope.

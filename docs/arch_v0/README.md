@@ -144,3 +144,5 @@ Supporting resources
 - [`12-PAGE-AUTHORING-MANUAL.md`](./12-PAGE-AUTHORING-MANUAL.md): practical manual for creating pages, with a full worked schema example
 - [`13-SCHEMA-LINT-RULES.md`](./13-SCHEMA-LINT-RULES.md): machine-checkable validation rules for schema authoring
 - [`14-PACKAGING-AND-ADOPTION-STRATEGY.md`](./14-PACKAGING-AND-ADOPTION-STRATEGY.md): recommended package boundaries, workspace shape, and product-team adoption model for Keystone UI
+- [`15-MIGRATION-AND-IMPLEMENTATION-PLAN.md`](./15-MIGRATION-AND-IMPLEMENTATION-PLAN.md): current-state gap analysis and phased migration plan into `arch_v0`
+- [`16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md`](./16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md): explicit route-to-`schemaId` mapping using a route manifest and generic schema page shell
