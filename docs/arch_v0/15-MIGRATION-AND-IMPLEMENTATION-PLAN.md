@@ -136,6 +136,10 @@ Recommended v0 decision:
 - build the shared API client against the real auth contract if available
 - if backend auth is not ready, provide a mocked auth-context provider that satisfies the same client/runtime interfaces
 
+Resolved by ADR:
+
+- [`../decisions/ADR-runtime-auth-context-source.md`](../decisions/ADR-runtime-auth-context-source.md)
+
 Guardrail:
 
 - the runtime should depend on an auth abstraction, not directly on today’s temporary mock or backend implementation
