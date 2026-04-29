@@ -107,6 +107,10 @@ Recommended v0 decision:
 - use a small runtime provider abstraction backed by Zustand initially
 - keep Zustand behind runtime-owned interfaces so the public contract is `RuntimeGraph`, not Zustand APIs
 
+Resolved by ADR:
+
+- [`../decisions/ADR-runtime-graph-store-boundary.md`](../decisions/ADR-runtime-graph-store-boundary.md)
+
 Why this is the recommended default:
 
 - the repo already uses Zustand successfully
