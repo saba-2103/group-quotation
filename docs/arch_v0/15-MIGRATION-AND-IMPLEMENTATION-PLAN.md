@@ -162,6 +162,10 @@ Required output:
 
 - one readiness matrix listing page, namespace, endpoint, owner, and readiness state
 
+Resolved by readiness matrix:
+
+- [`../planning/BACKEND-READINESS.md`](../planning/BACKEND-READINESS.md)
+
 Owner:
 
 - module team plus backend owner for each pilot surface
