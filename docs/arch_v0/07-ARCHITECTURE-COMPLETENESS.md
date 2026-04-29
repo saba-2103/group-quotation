@@ -20,6 +20,7 @@ This file makes the architecture self-auditable without relying on any external 
 | Schema authoring and review process | [`08-SCHEMA-AUTHORING-AND-REVIEW.md`](./08-SCHEMA-AUTHORING-AND-REVIEW.md) |
 | Packaging and product-team adoption model | [`14-PACKAGING-AND-ADOPTION-STRATEGY.md`](./14-PACKAGING-AND-ADOPTION-STRATEGY.md) |
 | Route-to-schema mapping model | [`16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md`](./16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md) |
+| Runtime governance and bridge decision process | [`17-RUNTIME-GOVERNANCE-AND-BRIDGE-RUNBOOK.md`](./17-RUNTIME-GOVERNANCE-AND-BRIDGE-RUNBOOK.md) |
 | Locked decisions, assumptions, tradeoffs, and FAQ | [`09-DECISIONS-SUMMARY.md`](./09-DECISIONS-SUMMARY.md) |
 
 ---

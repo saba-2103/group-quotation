@@ -236,6 +236,7 @@ Required output:
 
 - one named runtime arbiter or review group
 - one rule that all temporary bridges require owner plus removal milestone
+- runtime governance decisions should follow [`17-RUNTIME-GOVERNANCE-AND-BRIDGE-RUNBOOK.md`](./17-RUNTIME-GOVERNANCE-AND-BRIDGE-RUNBOOK.md)
 
 Owner:
 

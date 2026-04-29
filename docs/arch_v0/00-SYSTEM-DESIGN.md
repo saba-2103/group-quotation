@@ -215,6 +215,28 @@ This architecture does not include:
 
 ---
 
+## Decision Index
+
+This section is the one-line summary of the main implementation decisions in `arch_v0`.
+
+- **Schema delivery is direct by `schemaId`.** The browser fetches one resolved artifact directly from CDN/S3 with no Worker or runtime selector. Detail: [`01-SCHEMA-DELIVERY.md`](./01-SCHEMA-DELIVERY.md)
+- **Route-to-schema mapping is explicit.** Browser paths resolve to `schemaId`s through a route manifest and generic schema page shell, not identity-based delivery logic. Detail: [`16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md`](./16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md)
+- **Resolved artifacts are the browser contract.** Source schemas may be composed however we like, but the browser fetches an already resolved artifact. Detail: [`01-SCHEMA-DELIVERY.md`](./01-SCHEMA-DELIVERY.md)
+- **The UI reads one runtime graph.** The runtime contract is one graph with reserved `system.*` and schema-declared `graph.*` namespaces. Detail: [`04-RUNTIME-AND-CONDITIONS.md`](./04-RUNTIME-AND-CONDITIONS.md)
+- **`system.*` is runtime-managed context.** Route params come from route resolution; user identity and permissions come from auth context. Detail: [`04-RUNTIME-AND-CONDITIONS.md`](./04-RUNTIME-AND-CONDITIONS.md), [`02-AUTH-AND-SECURITY.md`](./02-AUTH-AND-SECURITY.md)
+- **Conditions use JSONLogic only.** Active UI conditions are schema-authored JSONLogic in the allowed subset; legacy condition DSLs are not part of v0. Detail: [`04-RUNTIME-AND-CONDITIONS.md`](./04-RUNTIME-AND-CONDITIONS.md), [`13-SCHEMA-LINT-RULES.md`](./13-SCHEMA-LINT-RULES.md)
+- **Forms are widgets, not a separate runtime class.** Mutable form state lives in explicit draft namespaces such as `graph.quoteDraft`. Detail: [`04-RUNTIME-AND-CONDITIONS.md`](./04-RUNTIME-AND-CONDITIONS.md), [`12-PAGE-AUTHORING-MANUAL.md`](./12-PAGE-AUTHORING-MANUAL.md)
+- **Conditions come before variants.** Variants are allowed only when a structural difference is less maintainable as conditions, and each variant has its own `schemaId`. Detail: [`08-SCHEMA-AUTHORING-AND-REVIEW.md`](./08-SCHEMA-AUTHORING-AND-REVIEW.md), [`09-DECISIONS-SUMMARY.md`](./09-DECISIONS-SUMMARY.md)
+- **Backend validation remains authoritative.** Schema shapes UX, but reads and writes still depend on backend auth and validation. Detail: [`02-AUTH-AND-SECURITY.md`](./02-AUTH-AND-SECURITY.md), [`11-API-TEAM-CONTRACT.md`](./11-API-TEAM-CONTRACT.md)
+- **Display semantics are delivered pre-materialised.** The browser receives display-ready schema artifacts; manual/scripted publication is acceptable before the full Config System exists. Detail: [`03-CONFIG-AND-MATERIALISATION.md`](./03-CONFIG-AND-MATERIALISATION.md), [`15-MIGRATION-AND-IMPLEMENTATION-PLAN.md`](./15-MIGRATION-AND-IMPLEMENTATION-PLAN.md)
+- **All browser API access goes through one shared client path.** Direct raw `fetch()` is not the steady-state contract for migrated runtime code. Detail: [`02-AUTH-AND-SECURITY.md`](./02-AUTH-AND-SECURITY.md), [`11-API-TEAM-CONTRACT.md`](./11-API-TEAM-CONTRACT.md)
+- **The runtime graph store is Zustand-backed behind an abstraction.** Consumers depend on `RuntimeGraph` and runtime hooks, not raw Zustand APIs. Detail: [`../decisions/ADR-runtime-graph-store-boundary.md`](../decisions/ADR-runtime-graph-store-boundary.md)
+- **Early runtime auth uses a mocked provider behind an abstraction.** Runtime code depends on an auth contract now and swaps to the real JWT/cookie implementation later. Detail: [`../decisions/ADR-runtime-auth-context-source.md`](../decisions/ADR-runtime-auth-context-source.md)
+- **`schemaId`s use lowercase kebab-case semantic names.** New IDs are approved through the schema contract ownership path, not invented ad hoc. Detail: [`../decisions/ADR-schemaid-naming-and-registration.md`](../decisions/ADR-schemaid-naming-and-registration.md)
+- **Migration exceptions follow a runbook.** Shared-runtime additions and temporary bridges are decided through a runtime governance process, not individual preference. Detail: [`17-RUNTIME-GOVERNANCE-AND-BRIDGE-RUNBOOK.md`](./17-RUNTIME-GOVERNANCE-AND-BRIDGE-RUNBOOK.md)
+
+---
+
 ## Operational Guarantees
 
 This architecture adopts the following operating targets for the deployment model.
