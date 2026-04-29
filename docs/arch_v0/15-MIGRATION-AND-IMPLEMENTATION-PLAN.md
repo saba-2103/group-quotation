@@ -187,6 +187,10 @@ Recommended v0 decision:
   - `quotation-details`
   - `claims-list`
 
+Resolved by ADR:
+
+- [`../decisions/ADR-schemaid-naming-and-registration.md`](../decisions/ADR-schemaid-naming-and-registration.md)
+
 Do not:
 
 - encode deployment environment into `schemaId`
