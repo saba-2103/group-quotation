@@ -539,7 +539,7 @@ Implementation tasks:
   - stamps metadata such as `schemaId`, `version`, and `resolvedAt`
   - validates the final artifact
   - writes the artifact to a local publish directory or S3 target
-- provide a single developer command from day one, for example `yarn schemas:dev`, that:
+- provide a single developer command from day one, for example `npm run schemas:dev`, that:
   - rebuilds resolved artifacts on source-schema changes
   - writes them to the local fetch path used by `useViewMetadata(schemaId)`
   - keeps the local development loop aligned with the eventual publication contract
