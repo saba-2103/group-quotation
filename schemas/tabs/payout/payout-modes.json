@@ -14,7 +14,8 @@
                 "api": {
                     "endpoint": "/api/moneyout/config/payout-mode-policies",
                     "method": "GET"
-                }
+                },
+                "fallbackData": []
             },
             "props": {
                 "title": "Payout Modes",
@@ -46,25 +47,41 @@
                         "id": "is_digital",
                         "accessorKey": "is_digital",
                         "label": "Digital Payout",
-                        "type": "text"
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
                     },
                     {
                         "id": "require_bankaccount",
                         "accessorKey": "require_bankaccount",
                         "label": "Bank Account Details",
-                        "type": "text"
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
                     },
                     {
                         "id": "require_ifsc",
                         "accessorKey": "require_ifsc",
                         "label": "IFSC Details",
-                        "type": "text"
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
                     },
                     {
                         "id": "require_swift",
                         "accessorKey": "require_swift",
                         "label": "SWIFT Details",
-                        "type": "text"
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
                     },
                     {
                         "id": "settlement_days",
@@ -76,7 +93,11 @@
                         "id": "is_active",
                         "accessorKey": "is_active",
                         "label": "Active",
-                        "type": "text"
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
                     }
                 ],
                 "rowActions": [
@@ -106,7 +127,7 @@
                         },
                         "refreshKey": "/api/moneyout/config/payout-mode-policies",
                         "api": {
-                            "endpoint": "/api/moneyout/config/payout-mode-policies/:payout_mode",
+                            "endpoint": "/api/moneyout/config/payout-mode-policies/:id",
                             "method": "DELETE"
                         }
                     }
