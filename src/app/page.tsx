@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
+
+// Creates new Branch for accounting and payout module changes.
 export default function Home() {
 	return (
 		<div className="min-h-screen bg-background p-8 font-[family-name:var(--font-geist-sans)]">
