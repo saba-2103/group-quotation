@@ -1,0 +1,93 @@
+{
+    "id": "file-field-validation-rules-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "file-field-validation-rules",
+        "label": "File Field Validation Rules",
+        "icon": "ShieldCheck"
+    },
+    "children": [
+        {
+            "id": "file-field-validation-rules-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/config/payout-field-validation-rules",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "File Field Validation Rules",
+                "rowIdKey": "id",
+                "headerActions": [
+                    {
+                        "id": "add-file-field-validation-rule-btn",
+                        "label": "Add New",
+                        "icon": "Plus",
+                        "type": "open-modal",
+                        "target": "add-file-field-validation-rule-form",
+                        "variant": "outline"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "validationRuleCode",
+                        "accessorKey": "validationRuleCode",
+                        "label": "Validation Rule Code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "validationRuleDesc",
+                        "accessorKey": "validationRuleDesc",
+                        "label": "Rule Description",
+                        "type": "text"
+                    },
+                    {
+                        "id": "ruleType",
+                        "accessorKey": "ruleType",
+                        "label": "Rule Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "isActive",
+                        "accessorKey": "isActive",
+                        "label": "Is Active",
+                        "type": "text"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "edit-file-field-validation-rule-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-modal",
+                        "target": "edit-file-field-validation-rule-form"
+                    },
+                    {
+                        "id": "enquire-file-field-validation-rule-btn",
+                        "label": "Enquire",
+                        "icon": "Eye",
+                        "type": "open-modal",
+                        "target": "enquire-file-field-validation-rule-form"
+                    },
+                    {
+                        "id": "delete-file-field-validation-rule-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Validation Rule",
+                            "message": "Are you sure you want to delete this validation rule? This action cannot be undone."
+                        },
+                        "refreshKey": "/api/moneyout/config/payout-field-validation-rules",
+                        "api": {
+                            "endpoint": "/api/moneyout/config/payout-field-validation-rules/:id",
+                            "method": "DELETE"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

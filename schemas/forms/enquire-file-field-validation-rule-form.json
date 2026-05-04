@@ -1,0 +1,74 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Validation Rule Details",
+        "description": "View validation rule details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "validationRuleCode",
+                "name": "validationRuleCode",
+                "label": "Validation Rule Code",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "ruleType",
+                "name": "ruleType",
+                "label": "Rule Type",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "regexPattern",
+                "name": "regexPattern",
+                "label": "Regular Expression Pattern",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "javaValidatorClass",
+                "name": "javaValidatorClass",
+                "label": "Validator Class",
+                "type": "text",
+                "order": 4,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "validationScript",
+                "name": "validationScript",
+                "label": "Validation Script",
+                "type": "textarea",
+                "order": 5,
+                "size": "sm",
+                "span": 2,
+                "disabled": true
+            },
+            {
+                "id": "isActive",
+                "name": "isActive",
+                "label": "Is Active",
+                "type": "text",
+                "order": 6,
+                "size": "sm",
+                "disabled": true
+            }
+        ],
+        "actions": [
+            {
+                "id": "close-enquire-file-field-validation-rule",
+                "label": "Close",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

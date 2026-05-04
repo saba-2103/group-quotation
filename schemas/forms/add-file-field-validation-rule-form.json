@@ -1,0 +1,92 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Add File Field Validation Rule",
+        "description": "Enter validation rule details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "validationRuleCode",
+                "name": "validationRuleCode",
+                "label": "Validation Rule Code",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Validation Rule Code is required"
+                    }
+                ]
+            },
+            {
+                "id": "ruleType",
+                "name": "ruleType",
+                "label": "Rule Type",
+                "type": "select",
+                "order": 2,
+                "size": "sm",
+                "options": [
+                    { "value": "REGEX", "label": "REGEX" },
+                    { "value": "JAVACLASS", "label": "JAVA CLASS" },
+                    { "value": "JAVASCRIPT", "label": "JAVASCRIPT" },
+                    { "value": "RTCBA", "label": "RTCBA" }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Rule Type is required"
+                    }
+                ]
+            },
+            {
+                "id": "regexPattern",
+                "name": "regexPattern",
+                "label": "Regular Expression Pattern",
+                "type": "text",
+                "order": 3,
+                "size": "sm"
+            },
+            {
+                "id": "javaValidatorClass",
+                "name": "javaValidatorClass",
+                "label": "Validator Class",
+                "type": "text",
+                "order": 4,
+                "size": "sm"
+            },
+            {
+                "id": "validationScript",
+                "name": "validationScript",
+                "label": "Validation Script",
+                "type": "textarea",
+                "order": 5,
+                "size": "sm",
+                "span": 2
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-add-file-field-validation-rule",
+                "label": "Add Rule",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/payout-field-validation-rules",
+                "api": {
+                    "endpoint": "/api/moneyout/config/payout-field-validation-rules",
+                    "method": "POST"
+                },
+                "successMessage": "Validation Rule added successfully!"
+            },
+            {
+                "id": "cancel-add-file-field-validation-rule",
+                "label": "Cancel",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}
