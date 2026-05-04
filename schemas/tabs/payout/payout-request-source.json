@@ -78,7 +78,7 @@
                     {
                         "id": "amount_in_gl_currency",
                         "accessorKey": "amount_in_gl_currency",
-                        "label": "Amount in GL Currency",
+                        "label": "Amount in General Ledger Currency",
                         "type": "number"
                     },
                     {

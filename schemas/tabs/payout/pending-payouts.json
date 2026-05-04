@@ -129,7 +129,10 @@
                         "label": "Edit",
                         "icon": "Pencil",
                         "type": "navigate",
-                        "target": "/payout/payout-request-maintenance/:id"
+                        "target": "/payout/payout-request-maintenance/:id",
+                        "visible": {
+                            "==": [{ "var": "transaction_status" }, "DR"]
+                        }
                     }
                 ]
             }
