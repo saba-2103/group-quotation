@@ -6,8 +6,8 @@
         "columns": 2,
         "fields": [
             {
-                "id": "validation_rule_code",
-                "name": "validation_rule_code",
+                "id": "validationRuleCode",
+                "name": "validationRuleCode",
                 "label": "Validation Rule Code",
                 "type": "text",
                 "order": 1,
@@ -15,58 +15,50 @@
                 "disabled": true
             },
             {
-                "id": "validation_rule_description",
-                "name": "validation_rule_description",
-                "label": "Validation Rule Description",
-                "type": "text",
-                "order": 2,
-                "size": "sm"
-            },
-            {
-                "id": "rule_type",
-                "name": "rule_type",
+                "id": "ruleType",
+                "name": "ruleType",
                 "label": "Rule Type",
                 "type": "select",
-                "order": 3,
+                "order": 2,
                 "size": "sm",
                 "options": [
                     { "value": "REGEX", "label": "REGEX" },
-                    { "value": "JAVA CLASS", "label": "JAVA CLASS" },
+                    { "value": "JAVACLASS", "label": "JAVA CLASS" },
                     { "value": "JAVASCRIPT", "label": "JAVASCRIPT" },
                     { "value": "RTCBA", "label": "RTCBA" }
                 ]
             },
             {
-                "id": "regular_expression",
-                "name": "regular_expression",
-                "label": "Regular Expression Pattern to match with",
+                "id": "regexPattern",
+                "name": "regexPattern",
+                "label": "Regular Expression Pattern",
+                "type": "text",
+                "order": 3,
+                "size": "sm"
+            },
+            {
+                "id": "javaValidatorClass",
+                "name": "javaValidatorClass",
+                "label": "Validator Class",
                 "type": "text",
                 "order": 4,
                 "size": "sm"
             },
             {
-                "id": "validator_class",
-                "name": "validator_class",
-                "label": "Validator Class for the attribute",
-                "type": "text",
-                "order": 5,
-                "size": "sm"
-            },
-            {
-                "id": "validator_script",
-                "name": "validator_script",
-                "label": "Validation Script code",
+                "id": "validationScript",
+                "name": "validationScript",
+                "label": "Validation Script",
                 "type": "textarea",
-                "order": 6,
+                "order": 5,
                 "size": "sm",
                 "span": 2
             },
             {
-                "id": "is_active",
-                "name": "is_active",
-                "label": "Valid Flag",
+                "id": "isActive",
+                "name": "isActive",
+                "label": "Is Active",
                 "type": "select",
-                "order": 7,
+                "order": 6,
                 "size": "sm",
                 "options": [
                     { "value": "Y", "label": "Yes" },
@@ -82,9 +74,9 @@
                 "type": "api-mutation",
                 "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/file-field-validation-rules",
+                "refreshKey": "/api/moneyout/config/payout-field-validation-rules",
                 "api": {
-                    "endpoint": "/api/moneyout/config/file-field-validation-rules/:validation_rule_code",
+                    "endpoint": "/api/moneyout/config/payout-field-validation-rules/:id",
                     "method": "PUT"
                 },
                 "successMessage": "Validation Rule updated successfully!"

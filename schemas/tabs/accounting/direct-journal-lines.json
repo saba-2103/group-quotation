@@ -127,7 +127,7 @@
                         "id": "edit-direct-journal-line-btn",
                         "label": "Edit",
                         "icon": "Pencil",
-                        "type": "open-modal",
+                        "type": "open-sheet",
                         "target": "edit-direct-journal-line-form"
                     },
                     {

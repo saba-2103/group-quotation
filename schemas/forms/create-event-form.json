@@ -80,6 +80,7 @@
         "actions": [
             {
                 "id": "submit-event",
+                "type": "api-mutation",
                 "label": "Create Event",
                 "submitAction": true,
                 "variant": "primary",

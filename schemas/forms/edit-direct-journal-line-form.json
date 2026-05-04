@@ -90,7 +90,7 @@
                 "submitAction": true,
                 "variant": "default",
                 "api": {
-                    "endpoint": "/api/accounting/direct-journals/lines/:id",
+                    "endpoint": "/api/accounting/direct-journals/{{id}}/lines/:id",
                     "method": "PUT"
                 }
             }

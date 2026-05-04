@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, ListFilter, X } from "lucide-react";
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 interface FilterOption {
   value: string;
   label: string;
@@ -67,18 +69,24 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   );
 
   const activeFilterValues = getValue(stateKey, {});
+  const externalSearchValue = (activeFilterValues[searchKey] as string) ?? "";
 
-  const SEARCH_DEBOUNCE_MS = 300;
-  const [searchInputValue, setSearchInputValue] = useState<string>((activeFilterValues[searchKey] as string) ?? "");
+  const [searchInputValue, setSearchInputValue] = useState<string>(externalSearchValue);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Sync local input when external state is cleared (e.g. "Clear all")
   useEffect(() => {
-    const externalValue = (activeFilterValues[searchKey] as string) ?? "";
-    if (externalValue !== searchInputValue) {
-      setSearchInputValue(externalValue);
-    }
-  }, [activeFilterValues[searchKey]]);
+    setSearchInputValue((currentValue) =>
+      currentValue === externalSearchValue ? currentValue : externalSearchValue
+    );
+  }, [externalSearchValue]);
+
+  // Cancel any pending debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
 
   const handleSearchInputChange = (value: string) => {
     setSearchInputValue(value);
@@ -106,6 +114,8 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   };
 
   const resetFilters = () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    setSearchInputValue("");
     handleAction({
       type: "update-widget-state",
       props: { key: stateKey, operation: "set", value: {} }
@@ -122,7 +132,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
         const matchedOption = filterDef.options.find((option) => option.value === filterStateValue);
         chipDisplayLabel = matchedOption?.label ?? String(filterStateValue);
       }
-      return { key: filterStateKey, label: filterStateValue === "true" ? filterDef.label : `${filterDef.label}: ${chipDisplayLabel}` };
+      return { key: filterStateKey, label: `${filterDef.label}: ${chipDisplayLabel}` };
     })
     .filter((appliedChip): appliedChip is { key: string; label: string } => appliedChip !== null);
 
@@ -130,13 +140,15 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   const textFilters = filters.filter((filter) => filter.type === "text");
 
   const renderTextFilter = (filter: FilterConfig) => (
-    <DropdownMenuCheckboxItem
-      key={filter.id}
-      checked={!!activeFilterValues[filter.id]}
-      onCheckedChange={(checked) => handleFilterChange(filter.id, checked ? "true" : "")}
-    >
-      {filter.label}
-    </DropdownMenuCheckboxItem>
+    <div key={filter.id} className="px-2 py-1.5 flex flex-col gap-1">
+      <span className="text-xs text-muted-foreground font-medium">{filter.label}</span>
+      <Input
+        value={(activeFilterValues[filter.id] as string) ?? ""}
+        onChange={(e) => handleFilterChange(filter.id, e.target.value)}
+        placeholder={filter.placeholder ?? `Enter ${filter.label.toLowerCase()}`}
+        className="h-8 text-sm"
+      />
+    </div>
   );
 
   const renderSelectFilter = (filter: FilterConfig) => {
@@ -192,6 +204,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
               <DropdownMenuLabel>{filterByLabel}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {textFilters.map(renderTextFilter)}
+              {textFilters.length > 0 && selectFilters.length > 0 && <DropdownMenuSeparator />}
               {selectFilters.map(renderSelectFilter)}
             </DropdownMenuContent>
           </DropdownMenu>

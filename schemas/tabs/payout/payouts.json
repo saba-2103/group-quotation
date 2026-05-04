@@ -29,53 +29,63 @@
                 "columns": [
                     {
                         "id": "id",
+                        "accessorKey": "id",
                         "label": "Payout ID",
                         "type": "text"
                     },
                     {
                         "id": "payoutDate",
+                        "accessorKey": "payoutDate",
                         "label": "Date",
                         "type": "date"
                     },
                     {
                         "id": "lob",
+                        "accessorKey": "lob",
                         "label": "LOB",
                         "type": "badge"
                     },
                     {
                         "id": "component",
+                        "accessorKey": "component",
                         "label": "Component",
                         "type": "text"
                     },
                     {
                         "id": "reason",
+                        "accessorKey": "reason",
                         "label": "Reason",
                         "type": "text"
                     },
                     {
                         "id": "entityType",
+                        "accessorKey": "entityType",
                         "label": "Entity Type",
                         "type": "badge"
                     },
                     {
                         "id": "entityId",
+                        "accessorKey": "entityId",
                         "label": "Entity ID",
                         "type": "text"
                     },
                     {
                         "id": "transactionAmount.amount",
+                        "accessorKey": "transactionAmount.amount",
                         "label": "Tx Amount",
                         "type": "number",
                         "format": "currency"
                     },
                     {
                         "id": "glAmount.amount",
+                        "accessorKey": "glAmount.amount",
                         "label": "GL Amount",
                         "type": "number",
                         "format": "currency"
                     },
                     {
                         "id": "payoutState",
+                        "accessorKey": "payoutState",
                         "label": "Status",
                         "type": "badge"
                     }
@@ -114,13 +124,15 @@
                         },
                         "api": {
                             "endpoint": "/api/moneyout/payouts/:id/reject",
-                            "method": "POST"
+                            "method": "POST",
+                            "body": {
+                                "reason": "Rejected via UI"
+                            }
                         },
                         "refreshKey": "/api/moneyout/payouts/search?page=0&size=50",
-                        "requireConfirmation": true,
-                        "confirmationMessage": "Are you sure you want to reject this payout?",
-                        "payload": {
-                            "reason": "Rejected via UI"
+                        "confirm": {
+                            "title": "Reject Payout",
+                            "message": "Are you sure you want to reject this payout?"
                         }
                     },
                     {
@@ -143,8 +155,33 @@
                             "endpoint": "/api/moneyout/payouts/:id/disburse",
                             "method": "POST"
                         },
-                        "requireConfirmation": true,
-                        "confirmationMessage": "This will disburse the payout and create accounting entries. Continue?"
+                        "confirm": {
+                            "title": "Disburse Payout",
+                            "message": "This will disburse the payout and create accounting entries. Continue?"
+                        }
+                    },
+                    {
+                        "id": "reverse-payout",
+                        "label": "Reverse",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "visible": {
+                            "==": [
+                                {
+                                    "var": "payoutState"
+                                },
+                                "DISBURSED"
+                            ]
+                        },
+                        "api": {
+                            "endpoint": "/api/moneyout/payouts/:id/reverse",
+                            "method": "POST"
+                        },
+                        "refreshKey": "/api/moneyout/payouts/search?page=0&size=50",
+                        "confirm": {
+                            "title": "Reverse Payout",
+                            "message": "Are you sure you want to reverse this disbursed payout? This action cannot be undone."
+                        }
                     }
                 ]
             }

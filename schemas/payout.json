@@ -16,7 +16,9 @@
     {
       "id": "payout-tabs",
       "type": "tabs-container",
-      "props": {},
+      "props": {
+        "defaultValue": "payouts"
+      },
       "children": [
         {
           "$ref": "schemas/tabs/payout/payouts.json"

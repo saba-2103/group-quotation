@@ -94,6 +94,7 @@
         "actions": [
             {
                 "id": "submit-posting-rule",
+                "type": "api-mutation",
                 "label": "Create Rule",
                 "submitAction": true,
                 "variant": "primary",

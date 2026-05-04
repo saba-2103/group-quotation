@@ -18,6 +18,7 @@
             },
             "props": {
                 "title": "Accounting Events",
+                "rowIdKey": "accountingEventId",
                 "headerActions": [
                     {
                         "id": "create-event-btn",
@@ -29,6 +30,12 @@
                 ],
                 "columns": [
                     {
+                        "id": "businessKey",
+                        "accessorKey": "businessKey",
+                        "label": "Business Key",
+                        "type": "text"
+                    },
+                    {
                         "id": "component",
                         "accessorKey": "component",
                         "label": "Component",
@@ -37,37 +44,13 @@
                     {
                         "id": "lob",
                         "accessorKey": "lob",
-                        "label": "Line of Business",
+                        "label": "LOB",
                         "type": "text"
-                    },
-                    {
-                        "id": "businessKey",
-                        "accessorKey": "businessKey",
-                        "label": "Business Key",
-                        "type": "text"
-                    },
-                    {
-                        "id": "tranno",
-                        "accessorKey": "tranno",
-                        "label": "Transaction Number",
-                        "type": "number"
                     },
                     {
                         "id": "businessProcessCode",
                         "accessorKey": "businessProcessCode",
-                        "label": "Business Process Code",
-                        "type": "text"
-                    },
-                    {
-                        "id": "businessProcessDescription",
-                        "accessorKey": "businessProcessDescription",
-                        "label": "Business Process Description",
-                        "type": "text"
-                    },
-                    {
-                        "id": "accountingEventId",
-                        "accessorKey": "accountingEventId",
-                        "label": "Accounting Event Id",
+                        "label": "Process Code",
                         "type": "text"
                     },
                     {
@@ -77,25 +60,26 @@
                         "type": "date"
                     },
                     {
-                        "id": "reversalFlag",
-                        "accessorKey": "reversalFlag",
-                        "label": "Reversal Flag",
-                        "type": "text"
-                    },
-                    {
-                        "id": "eventStatus",
-                        "accessorKey": "eventStatus",
-                        "label": "Event Status",
+                        "id": "state",
+                        "accessorKey": "state",
+                        "label": "State",
                         "type": "badge"
                     },
                     {
-                        "id": "eventStatusDate",
-                        "accessorKey": "eventStatusDate",
-                        "label": "Event Status Date",
-                        "type": "date"
+                        "id": "detailCount",
+                        "accessorKey": "detailCount",
+                        "label": "Details",
+                        "type": "number"
                     }
                 ],
                 "rowActions": [
+                    {
+                        "id": "view-event-btn",
+                        "label": "View",
+                        "icon": "ExternalLink",
+                        "type": "navigate",
+                        "target": "/accounting/events/:id"
+                    },
                     {
                         "id": "post-event-btn",
                         "label": "Post Event",
@@ -103,7 +87,7 @@
                         "visible": {
                             "==": [
                                 {
-                                    "var": "eventStatus"
+                                    "var": "state"
                                 },
                                 "PENDING"
                             ]
@@ -122,7 +106,7 @@
                         "visible": {
                             "==": [
                                 {
-                                    "var": "eventStatus"
+                                    "var": "state"
                                 },
                                 "POSTED"
                             ]

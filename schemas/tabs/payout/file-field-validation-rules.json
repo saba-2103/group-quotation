@@ -12,13 +12,13 @@
             "type": "data-table",
             "dataSource": {
                 "api": {
-                    "endpoint": "/api/moneyout/config/file-field-validation-rules",
+                    "endpoint": "/api/moneyout/config/payout-field-validation-rules",
                     "method": "GET"
                 }
             },
             "props": {
                 "title": "File Field Validation Rules",
-                "rowIdKey": "validation_rule_code",
+                "rowIdKey": "id",
                 "headerActions": [
                     {
                         "id": "add-file-field-validation-rule-btn",
@@ -31,26 +31,26 @@
                 ],
                 "columns": [
                     {
-                        "id": "validation_rule_code",
-                        "accessorKey": "validation_rule_code",
+                        "id": "validationRuleCode",
+                        "accessorKey": "validationRuleCode",
                         "label": "Validation Rule Code",
                         "type": "text"
                     },
                     {
-                        "id": "validation_rule_desc",
-                        "accessorKey": "validation_rule_desc",
+                        "id": "validationRuleDesc",
+                        "accessorKey": "validationRuleDesc",
                         "label": "Rule Description",
                         "type": "text"
                     },
                     {
-                        "id": "rule_type",
-                        "accessorKey": "rule_type",
+                        "id": "ruleType",
+                        "accessorKey": "ruleType",
                         "label": "Rule Type",
                         "type": "text"
                     },
                     {
-                        "id": "is_active",
-                        "accessorKey": "is_active",
+                        "id": "isActive",
+                        "accessorKey": "isActive",
                         "label": "Is Active",
                         "type": "text"
                     }
@@ -80,9 +80,9 @@
                             "title": "Delete Validation Rule",
                             "message": "Are you sure you want to delete this validation rule? This action cannot be undone."
                         },
-                        "refreshKey": "/api/moneyout/config/file-field-validation-rules",
+                        "refreshKey": "/api/moneyout/config/payout-field-validation-rules",
                         "api": {
-                            "endpoint": "/api/moneyout/config/file-field-validation-rules/:validation_rule_code",
+                            "endpoint": "/api/moneyout/config/payout-field-validation-rules/:id",
                             "method": "DELETE"
                         }
                     }
