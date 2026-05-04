@@ -20,7 +20,7 @@
                 "title": "Periods",
                 "headerActions": [
                     {
-                        "id": "add-period-btn",
+                        "id": "create-period-btn",
                         "label": "Add New Entry",
                         "icon": "Plus",
                         "type": "open-sheet",

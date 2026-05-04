@@ -17,6 +17,29 @@
                 ]
             },
             {
+                "id": "genType",
+                "name": "genType",
+                "label": "Gen Type",
+                "type": "select",
+                "defaultValue": "USER",
+                "options": [
+                    {
+                        "label": "User",
+                        "value": "USER"
+                    },
+                    {
+                        "label": "System",
+                        "value": "SYSTEM"
+                    }
+                ],
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Gen type is required"
+                    }
+                ]
+            },
+            {
                 "id": "lob",
                 "name": "lob",
                 "label": "Line of Business",
@@ -232,6 +255,18 @@
                 ]
             },
             {
+                "id": "payeeRole",
+                "name": "payeeRole",
+                "label": "Payee Role",
+                "type": "text",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payee role is required"
+                    }
+                ]
+            },
+            {
                 "id": "payeeBankAccount",
                 "name": "payeeBankAccount",
                 "label": "Bank Account Number",
@@ -359,33 +394,7 @@
                 "refreshKey": "/api/moneyout/payouts/search?page=0&size=50",
                 "api": {
                     "endpoint": "/api/moneyout/payouts",
-                    "method": "POST",
-                    "payloadMapping": {
-                        "payoutDate": "{{form.payoutDate}}",
-                        "lob": "{{form.lob}}",
-                        "component": "{{form.component}}",
-                        "genType": "USER",
-                        "reason": "{{form.reason}}",
-                        "primaryEntityType": "{{form.primaryEntityType}}",
-                        "primaryEntityId": "{{form.primaryEntityId}}",
-                        "transactionAmount": {
-                            "amount": "{{form.amount}}",
-                            "currency": "{{form.currency}}"
-                        },
-                        "tender": {
-                            "payoutMode": "{{form.payoutMode}}",
-                            "isDigital": true,
-                            "transactionAmount": {
-                                "amount": "{{form.amount}}",
-                                "currency": "{{form.currency}}"
-                            },
-                            "payeeName": "{{form.payeeName}}",
-                            "payeeRole": "CLAIMANT",
-                            "payeeBankAccount": "{{form.payeeBankAccount}}",
-                            "payeeIfscCode": "{{form.payeeIfscCode}}"
-                        },
-                        "sources": []
-                    }
+                    "method": "POST"
                 }
             }
         ]

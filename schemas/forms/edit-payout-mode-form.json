@@ -1,4 +1,5 @@
 {
+    "id": "edit-payout-mode-form",
     "type": "form-container",
     "props": {
         "title": "Edit Payout Mode",
@@ -27,19 +28,25 @@
                 "id": "is_digital",
                 "name": "is_digital",
                 "label": "Digital Payout",
-                "type": "text",
+                "type": "select",
                 "order": 3,
                 "size": "sm",
-                "disabled": true
+                "options": [
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
+                ]
             },
             {
                 "id": "require_bankaccount",
                 "name": "require_bankaccount",
                 "label": "Bank Account Details",
-                "type": "text",
+                "type": "select",
                 "order": 4,
                 "size": "sm",
-                "disabled": true
+                "options": [
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
+                ]
             },
             {
                 "id": "require_ifsc",
@@ -49,8 +56,8 @@
                 "order": 5,
                 "size": "sm",
                 "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
                 ]
             },
             {
@@ -61,8 +68,8 @@
                 "order": 6,
                 "size": "sm",
                 "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
                 ]
             },
             {
@@ -81,8 +88,8 @@
                 "order": 8,
                 "size": "sm",
                 "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
                 ]
             }
         ],
@@ -92,11 +99,10 @@
                 "label": "Save Changes",
                 "variant": "default",
                 "type": "api-mutation",
-                "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/payout-modes",
+                "refreshKey": "/api/moneyout/config/payout-mode-policies",
                 "api": {
-                    "endpoint": "/api/moneyout/config/payout-modes/:payout_mode",
+                    "endpoint": "/api/moneyout/config/payout-mode-policies",
                     "method": "PUT"
                 },
                 "successMessage": "Payout Mode updated successfully!"
@@ -105,7 +111,6 @@
                 "id": "cancel-edit-payout-mode",
                 "label": "Cancel",
                 "variant": "outline",
-                "actionType": "action",
                 "submitAction": false
             }
         ]
