@@ -1,0 +1,91 @@
+{
+    "id": "enquire-payout-mode-form",
+    "type": "form-container",
+    "props": {
+        "title": "Payout Mode Details",
+        "description": "View payout mode details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "payout_mode",
+                "name": "payout_mode",
+                "label": "Payout Mode",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payout_mode_desc",
+                "name": "payout_mode_desc",
+                "label": "Payout Mode Description",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "is_digital",
+                "name": "is_digital",
+                "label": "Digital Payout",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "require_bankaccount",
+                "name": "require_bankaccount",
+                "label": "Bank Account Details",
+                "type": "text",
+                "order": 4,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "require_ifsc",
+                "name": "require_ifsc",
+                "label": "IFSC Details",
+                "type": "text",
+                "order": 5,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "require_swift",
+                "name": "require_swift",
+                "label": "SWIFT Details",
+                "type": "text",
+                "order": 6,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "settlement_days",
+                "name": "settlement_days",
+                "label": "Settlement Days",
+                "type": "text",
+                "order": 7,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "is_active",
+                "name": "is_active",
+                "label": "Active",
+                "type": "text",
+                "order": 8,
+                "size": "sm",
+                "disabled": true
+            }
+        ],
+        "actions": [
+            {
+                "id": "close-enquire-payout-mode",
+                "label": "Close",
+                "variant": "outline",
+                "submitAction": false
+            }
+        ]
+    }
+}

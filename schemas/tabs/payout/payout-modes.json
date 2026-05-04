@@ -1,0 +1,138 @@
+{
+    "id": "payout-modes-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "payout-modes",
+        "label": "Payout Modes",
+        "icon": "CreditCard"
+    },
+    "children": [
+        {
+            "id": "payout-modes-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/config/payout-mode-policies",
+                    "method": "GET"
+                },
+                "fallbackData": []
+            },
+            "props": {
+                "title": "Payout Modes",
+                "rowIdKey": "payout_mode",
+                "headerActions": [
+                    {
+                        "id": "add-payout-mode-btn",
+                        "label": "Add New",
+                        "icon": "Plus",
+                        "type": "open-modal",
+                        "target": "add-payout-mode-form",
+                        "variant": "outline"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "payout_mode",
+                        "accessorKey": "payout_mode",
+                        "label": "Payout Mode",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_mode_desc",
+                        "accessorKey": "payout_mode_desc",
+                        "label": "Payout Mode Description",
+                        "type": "text"
+                    },
+                    {
+                        "id": "is_digital",
+                        "accessorKey": "is_digital",
+                        "label": "Digital Payout",
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
+                    },
+                    {
+                        "id": "require_bankaccount",
+                        "accessorKey": "require_bankaccount",
+                        "label": "Bank Account Details",
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
+                    },
+                    {
+                        "id": "require_ifsc",
+                        "accessorKey": "require_ifsc",
+                        "label": "IFSC Details",
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
+                    },
+                    {
+                        "id": "require_swift",
+                        "accessorKey": "require_swift",
+                        "label": "SWIFT Details",
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
+                    },
+                    {
+                        "id": "settlement_days",
+                        "accessorKey": "settlement_days",
+                        "label": "Settlement Days",
+                        "type": "text"
+                    },
+                    {
+                        "id": "is_active",
+                        "accessorKey": "is_active",
+                        "label": "Active",
+                        "type": "badge",
+                        "valueMapping": [
+                            { "value": "Yes", "label": "Yes", "variant": "success" },
+                            { "value": "No", "label": "No", "variant": "destructive" }
+                        ]
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "edit-payout-mode-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-modal",
+                        "target": "edit-payout-mode-form"
+                    },
+                    {
+                        "id": "enquire-payout-mode-btn",
+                        "label": "Enquire",
+                        "icon": "Eye",
+                        "type": "open-modal",
+                        "target": "enquire-payout-mode-form"
+                    },
+                    {
+                        "id": "delete-payout-mode-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Payout Mode",
+                            "message": "Are you sure you want to delete this payout mode? This action cannot be undone."
+                        },
+                        "refreshKey": "/api/moneyout/config/payout-mode-policies",
+                        "api": {
+                            "endpoint": "/api/moneyout/config/payout-mode-policies/:id",
+                            "method": "DELETE"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

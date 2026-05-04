@@ -1,0 +1,118 @@
+{
+    "id": "edit-payout-mode-form",
+    "type": "form-container",
+    "props": {
+        "title": "Edit Payout Mode",
+        "description": "Update payout mode details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "payout_mode",
+                "name": "payout_mode",
+                "label": "Payout Mode",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payout_mode_desc",
+                "name": "payout_mode_desc",
+                "label": "Payout Mode Description",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "is_digital",
+                "name": "is_digital",
+                "label": "Digital Payout",
+                "type": "select",
+                "order": 3,
+                "size": "sm",
+                "options": [
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
+                ]
+            },
+            {
+                "id": "require_bankaccount",
+                "name": "require_bankaccount",
+                "label": "Bank Account Details",
+                "type": "select",
+                "order": 4,
+                "size": "sm",
+                "options": [
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
+                ]
+            },
+            {
+                "id": "require_ifsc",
+                "name": "require_ifsc",
+                "label": "IFSC Details",
+                "type": "select",
+                "order": 5,
+                "size": "sm",
+                "options": [
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
+                ]
+            },
+            {
+                "id": "require_swift",
+                "name": "require_swift",
+                "label": "SWIFT Details",
+                "type": "select",
+                "order": 6,
+                "size": "sm",
+                "options": [
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
+                ]
+            },
+            {
+                "id": "settlement_days",
+                "name": "settlement_days",
+                "label": "Settlement Days",
+                "type": "number",
+                "order": 7,
+                "size": "sm"
+            },
+            {
+                "id": "is_active",
+                "name": "is_active",
+                "label": "Active",
+                "type": "select",
+                "order": 8,
+                "size": "sm",
+                "options": [
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-edit-payout-mode",
+                "label": "Save Changes",
+                "variant": "default",
+                "type": "api-mutation",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/payout-mode-policies",
+                "api": {
+                    "endpoint": "/api/moneyout/config/payout-mode-policies",
+                    "method": "PUT"
+                },
+                "successMessage": "Payout Mode updated successfully!"
+            },
+            {
+                "id": "cancel-edit-payout-mode",
+                "label": "Cancel",
+                "variant": "outline",
+                "submitAction": false
+            }
+        ]
+    }
+}
