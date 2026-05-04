@@ -1,4 +1,5 @@
 {
+    "id": "add-payout-file-form",
     "type": "form-container",
     "props": {
         "title": "Add Payout File Format",
@@ -12,12 +13,12 @@
                 "type": "select",
                 "order": 1,
                 "size": "sm",
-                "dataSource": {
-                    "api": {
-                        "endpoint": "/api/moneyout/config/bank-file-templates",
-                        "method": "GET"
-                    }
-                },
+                "options": [
+                    { "value": "NEFT_TEMPLATE", "label": "NEFT Template" },
+                    { "value": "RTGS_TEMPLATE", "label": "RTGS Template" },
+                    { "value": "IMPS_TEMPLATE", "label": "IMPS Template" },
+                    { "value": "CHEQUE_TEMPLATE", "label": "Cheque Template" }
+                ],
                 "validations": [
                     {
                         "rule": "required",
@@ -80,12 +81,15 @@
                 "type": "select",
                 "order": 6,
                 "size": "sm",
-                "dataSource": {
-                    "api": {
-                        "endpoint": "/api/moneyout/config/payout-field-validation-rules",
-                        "method": "GET"
-                    }
-                }
+                "options": [
+                    { "value": "NUMERIC", "label": "Numeric" },
+                    { "value": "ALPHA", "label": "Alpha" },
+                    { "value": "ALPHANUMERIC", "label": "Alphanumeric" },
+                    { "value": "DATE", "label": "Date" },
+                    { "value": "AMOUNT", "label": "Amount" },
+                    { "value": "IFSC", "label": "IFSC Code" },
+                    { "value": "ACCOUNT_NO", "label": "Account Number" }
+                ]
             },
             {
                 "id": "defaultValue",
@@ -110,7 +114,6 @@
                 "label": "Add File Format",
                 "variant": "default",
                 "type": "api-mutation",
-                "actionType": "action",
                 "submitAction": true,
                 "refreshKey": "/api/moneyout/config/bank-file-field-formats",
                 "api": {
@@ -123,7 +126,6 @@
                 "id": "cancel-add-payout-file-format",
                 "label": "Cancel",
                 "variant": "outline",
-                "actionType": "action",
                 "submitAction": false
             }
         ]

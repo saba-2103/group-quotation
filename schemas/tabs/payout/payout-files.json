@@ -18,7 +18,7 @@
             },
             "props": {
                 "title": "Payout File Formats",
-                "rowIdKey": "id",
+                "rowIdKey": "seqNo",
                 "headerActions": [
                     {
                         "id": "add-payout-file-format-btn",
