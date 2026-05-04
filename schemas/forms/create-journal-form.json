@@ -92,6 +92,7 @@
         "actions": [
             {
                 "id": "submit-journal",
+                "type": "api-mutation",
                 "label": "Create Journal",
                 "submitAction": true,
                 "variant": "primary",

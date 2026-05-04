@@ -1,0 +1,141 @@
+{
+    "id": "journal-detail-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-6"
+    },
+    "children": [
+        {
+            "id": "journal-detail-header",
+            "type": "page-header",
+            "props": {
+                "title": "Accounting Journal Enquiry",
+                "description": "View journal header and line details",
+                "breadcrumbs": [
+                    {
+                        "label": "Home",
+                        "href": "/"
+                    },
+                    {
+                        "label": "Accounting",
+                        "href": "/accounting"
+                    },
+                    {
+                        "label": "Accounting Journals",
+                        "href": "/accounting"
+                    },
+                    {
+                        "label": "Journal Enquiry"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "journal-summary-grid",
+            "type": "key-value-grid",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/journals/{{id}}",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "fields": [
+                    {
+                        "id": "journal-number",
+                        "label": "Journal Number",
+                        "accessorKey": "journal_number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal-date",
+                        "label": "Journal Date",
+                        "accessorKey": "journal_date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "account-year",
+                        "label": "Accounting Year",
+                        "accessorKey": "account_year",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account-month",
+                        "label": "Accounting Month",
+                        "accessorKey": "account_month",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal-status",
+                        "label": "Journal Status",
+                        "accessorKey": "journal_status",
+                        "type": "text"
+                    },
+                    {
+                        "id": "reversed-journal-number",
+                        "label": "Reversed Journal Number",
+                        "accessorKey": "reversed_journal_number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "balance-error-flag",
+                        "label": "Balance Error (Y/N)",
+                        "accessorKey": "balance_error_flag",
+                        "type": "text"
+                    },
+                    {
+                        "id": "component",
+                        "label": "Component Id",
+                        "accessorKey": "component",
+                        "type": "text"
+                    },
+                    {
+                        "id": "lob",
+                        "label": "Line of Business",
+                        "accessorKey": "lob",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business-key",
+                        "label": "Business Key",
+                        "accessorKey": "business_key",
+                        "type": "text"
+                    },
+                    {
+                        "id": "tranno",
+                        "label": "Transaction Number",
+                        "accessorKey": "tranno",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business-process-code",
+                        "label": "Business Process Code",
+                        "accessorKey": "business_process_code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accounting-event-id",
+                        "label": "Accounting Event Id",
+                        "accessorKey": "accounting_event_id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account-group",
+                        "label": "Account Group",
+                        "accessorKey": "account_group",
+                        "type": "text"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "journal-detail-tabs",
+            "type": "tabs-container",
+            "children": [
+                {
+                    "$ref": "schemas/tabs/accounting/journal-lines.json"
+                }
+            ]
+        }
+    ]
+}
