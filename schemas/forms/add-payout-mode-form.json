@@ -1,4 +1,5 @@
 {
+    "id": "add-payout-mode-form",
     "type": "form-container",
     "props": {
         "title": "Add Payout Mode",
@@ -12,12 +13,15 @@
                 "type": "select",
                 "order": 1,
                 "size": "sm",
-                "dataSource": {
-                    "api": {
-                        "endpoint": "/api/moneyout/config/valid-values?variable_code=payout_mode",
-                        "method": "GET"
-                    }
-                },
+                "options": [
+                    { "value": "BANK", "label": "Bank Transfer" },
+                    { "value": "CASH", "label": "Cash" },
+                    { "value": "WALLET", "label": "Wallet" },
+                    { "value": "CHEQUE", "label": "Cheque" },
+                    { "value": "NEFT", "label": "NEFT" },
+                    { "value": "RTGS", "label": "RTGS" },
+                    { "value": "IMPS", "label": "IMPS" }
+                ],
                 "validations": [
                     {
                         "rule": "required",
@@ -42,8 +46,8 @@
                 "order": 3,
                 "size": "sm",
                 "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
                 ]
             },
             {
@@ -54,8 +58,8 @@
                 "order": 4,
                 "size": "sm",
                 "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
                 ]
             },
             {
@@ -66,8 +70,8 @@
                 "order": 5,
                 "size": "sm",
                 "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
                 ]
             },
             {
@@ -78,8 +82,8 @@
                 "order": 6,
                 "size": "sm",
                 "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
                 ]
             },
             {
@@ -98,8 +102,8 @@
                 "order": 8,
                 "size": "sm",
                 "options": [
-                    { "value": "Y", "label": "Yes" },
-                    { "value": "N", "label": "No" }
+                    { "value": "Yes", "label": "Yes" },
+                    { "value": "No", "label": "No" }
                 ]
             }
         ],
@@ -109,11 +113,10 @@
                 "label": "Add Payout Mode",
                 "variant": "default",
                 "type": "api-mutation",
-                "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/payout-modes",
+                "refreshKey": "/api/moneyout/config/payout-mode-policies",
                 "api": {
-                    "endpoint": "/api/moneyout/config/payout-modes",
+                    "endpoint": "/api/moneyout/config/payout-mode-policies",
                     "method": "POST"
                 },
                 "successMessage": "Payout Mode added successfully!"
@@ -122,7 +125,6 @@
                 "id": "cancel-add-payout-mode",
                 "label": "Cancel",
                 "variant": "outline",
-                "actionType": "action",
                 "submitAction": false
             }
         ]

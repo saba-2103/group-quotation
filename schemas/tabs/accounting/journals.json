@@ -39,7 +39,7 @@
             "type": "data-table",
             "dataSource": {
                 "api": {
-                    "endpoint": "/api/accounting/journals/search?page=0&size=50",
+                    "endpoint": "/api/accounting/journals/search",
                     "method": "GET"
                 },
                 "fallbackData": [],
@@ -47,6 +47,7 @@
             },
             "props": {
                 "title": "Accounting Journals",
+                "rowIdKey": "journal_number",
                 "headerActions": [
                     {
                         "id": "create-journal-btn",
@@ -99,13 +100,7 @@
                         "label": "Balance Error (Y/N)",
                         "type": "text"
                     },
-                    {
-                        "id": "component",
-                        "accessorKey": "component",
-                        "label": "Component Id",
-                        "type": "text"
-                    },
-                    {
+{
                         "id": "lob",
                         "accessorKey": "lob",
                         "label": "Line of Business",
