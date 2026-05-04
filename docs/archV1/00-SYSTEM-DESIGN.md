@@ -43,29 +43,8 @@ It is for:
 - approval-heavy operational workflows
 - policy-aware and role-aware servicing portals
 
-It is **not** a dynamic arbitrary-code execution system.
+**It is not** a dynamic arbitrary-code execution system.
 
-## What the Baseline Approach Leaves Out
-
-The baseline schema-driven approach already solves part of the problem well:
-
-- route-to-schema mapping
-- namespaced runtime state
-- JSONLogic conditions
-- server-resolved display semantics
-
-But that baseline under-solves the actual workflow pressure.
-
-The policy workspace build already required:
-
-- global active policy context
-- persisted shell state
-- request-header plumbing outside schema
-- structural tab pruning
-- derived view-model transforms
-- imperative action sequencing
-
-Those are not edge cases. They are normal for this product.
 
 ## Core Design Principles
 
@@ -166,7 +145,6 @@ This is defined concretely in [`01-SCHEMA-LANGUAGE.md`](./01-SCHEMA-LANGUAGE.md)
 
 ## Example: Why This Matters
 
-The policy switcher problem from `PROP-0004` is a good example.
 
 Without declarative action pipelines, this requires custom code to:
 
@@ -195,7 +173,7 @@ The language remains bounded, typed, validated, and reviewable.
 
 The architecture is successful when:
 
-- new Tier 1 and Tier 2 screens need little or no custom wrapper orchestration
+- new screens need little or no custom wrapper orchestration
 - global shell behavior is represented as schema/runtime contracts rather than bespoke page logic
 - action and workflow semantics are reusable across features
 - engineers can inspect and debug runtime decisions without reverse-engineering React wrappers
