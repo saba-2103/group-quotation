@@ -1,0 +1,109 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Payout Template Details",
+        "description": "View payout template details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "templateId",
+                "name": "templateId",
+                "label": "Template Id",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payoutMode",
+                "name": "payoutMode",
+                "label": "Payout Mode",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "outputFilePath",
+                "name": "outputFilePath",
+                "label": "Output File Path",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "outputFormat",
+                "name": "outputFormat",
+                "label": "Output Format",
+                "type": "text",
+                "order": 4,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "outputFileNamePattern",
+                "name": "outputFileNamePattern",
+                "label": "Output File Name Pattern",
+                "type": "text",
+                "order": 5,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "csvDelimiter",
+                "name": "csvDelimiter",
+                "label": "Delimiter Character (CSV)",
+                "type": "text",
+                "order": 6,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "recordSeparator",
+                "name": "recordSeparator",
+                "label": "Line Feed Character",
+                "type": "text",
+                "order": 7,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "enclosureChar",
+                "name": "enclosureChar",
+                "label": "Quote Character",
+                "type": "text",
+                "order": 8,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "headerTemplate",
+                "name": "headerTemplate",
+                "label": "Optional Header Template",
+                "type": "text",
+                "order": 9,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "footerTemplate",
+                "name": "footerTemplate",
+                "label": "Optional Footer Template",
+                "type": "text",
+                "order": 10,
+                "size": "sm",
+                "disabled": true
+            }
+        ],
+        "actions": [
+            {
+                "id": "close-enquire-payout-template",
+                "label": "Close",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

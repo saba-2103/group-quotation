@@ -1,0 +1,119 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Edit Payout Template",
+        "description": "Update payout template details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "templateId",
+                "name": "templateId",
+                "label": "Template Id",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payoutMode",
+                "name": "payoutMode",
+                "label": "Payout Mode",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "outputFilePath",
+                "name": "outputFilePath",
+                "label": "Output File Path",
+                "type": "text",
+                "order": 3,
+                "size": "sm"
+            },
+            {
+                "id": "outputFormat",
+                "name": "outputFormat",
+                "label": "Output Format",
+                "type": "select",
+                "order": 4,
+                "size": "sm",
+                "options": [
+                    { "value": "CSV", "label": "CSV" },
+                    { "value": "FIXED", "label": "Fixed Width" }
+                ]
+            },
+            {
+                "id": "outputFileNamePattern",
+                "name": "outputFileNamePattern",
+                "label": "Output File Name Pattern",
+                "type": "text",
+                "order": 5,
+                "size": "sm"
+            },
+            {
+                "id": "csvDelimiter",
+                "name": "csvDelimiter",
+                "label": "Delimiter Character (CSV)",
+                "type": "text",
+                "order": 6,
+                "size": "sm"
+            },
+            {
+                "id": "recordSeparator",
+                "name": "recordSeparator",
+                "label": "Line Feed Character",
+                "type": "text",
+                "order": 7,
+                "size": "sm"
+            },
+            {
+                "id": "enclosureChar",
+                "name": "enclosureChar",
+                "label": "Quote Character",
+                "type": "text",
+                "order": 8,
+                "size": "sm"
+            },
+            {
+                "id": "headerTemplate",
+                "name": "headerTemplate",
+                "label": "Optional Header Template",
+                "type": "text",
+                "order": 9,
+                "size": "sm"
+            },
+            {
+                "id": "footerTemplate",
+                "name": "footerTemplate",
+                "label": "Optional Footer Template",
+                "type": "text",
+                "order": 10,
+                "size": "sm"
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-edit-payout-template",
+                "label": "Save Changes",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/bank-file-templates",
+                "api": {
+                    "endpoint": "/api/moneyout/config/bank-file-templates",
+                    "method": "PUT"
+                },
+                "successMessage": "Payout Template updated successfully!"
+            },
+            {
+                "id": "cancel-edit-payout-template",
+                "label": "Cancel",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}
