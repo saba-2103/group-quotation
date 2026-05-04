@@ -6,8 +6,8 @@
         "columns": 2,
         "fields": [
             {
-                "id": "bankcode",
-                "name": "bankcode",
+                "id": "bankCode",
+                "name": "bankCode",
                 "label": "Bank Code",
                 "type": "text",
                 "order": 1,
@@ -15,8 +15,8 @@
                 "disabled": true
             },
             {
-                "id": "payout_mode",
-                "name": "payout_mode",
+                "id": "payoutMode",
+                "name": "payoutMode",
                 "label": "Payout Mode",
                 "type": "text",
                 "order": 2,
@@ -24,8 +24,8 @@
                 "disabled": true
             },
             {
-                "id": "template_id",
-                "name": "template_id",
+                "id": "templateId",
+                "name": "templateId",
                 "label": "Template Id",
                 "type": "text",
                 "order": 3,
@@ -33,8 +33,8 @@
                 "disabled": true
             },
             {
-                "id": "effective_date",
-                "name": "effective_date",
+                "id": "effectiveDate",
+                "name": "effectiveDate",
                 "label": "Effective Date",
                 "type": "text",
                 "order": 4,
@@ -42,16 +42,16 @@
                 "disabled": true
             },
             {
-                "id": "end_date",
-                "name": "end_date",
+                "id": "endDate",
+                "name": "endDate",
                 "label": "End Date",
                 "type": "date",
                 "order": 5,
                 "size": "sm"
             },
             {
-                "id": "is_active",
-                "name": "is_active",
+                "id": "isActive",
+                "name": "isActive",
                 "label": "Valid Flag",
                 "type": "select",
                 "order": 6,
@@ -70,9 +70,9 @@
                 "type": "api-mutation",
                 "actionType": "action",
                 "submitAction": true,
-                "refreshKey": "/api/moneyout/config/bank-file-template-map",
+                "refreshKey": "/api/moneyout/config/bank-file-template-assignments",
                 "api": {
-                    "endpoint": "/api/moneyout/config/bank-file-template-map/:id",
+                    "endpoint": "/api/moneyout/config/bank-file-template-assignments/:id",
                     "method": "PUT"
                 },
                 "successMessage": "Bank File Template Map updated successfully!"

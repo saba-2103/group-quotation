@@ -6,8 +6,8 @@
         "columns": 2,
         "fields": [
             {
-                "id": "template_id",
-                "name": "template_id",
+                "id": "templateId",
+                "name": "templateId",
                 "label": "Template Id",
                 "type": "text",
                 "order": 1,
@@ -15,92 +15,83 @@
                 "disabled": true
             },
             {
-                "id": "template_desc",
-                "name": "template_desc",
-                "label": "Template Description",
+                "id": "payoutMode",
+                "name": "payoutMode",
+                "label": "Payout Mode",
                 "type": "text",
                 "order": 2,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "payout_mode",
-                "name": "payout_mode",
-                "label": "Payout Mode",
+                "id": "outputFilePath",
+                "name": "outputFilePath",
+                "label": "Output File Path",
                 "type": "text",
                 "order": 3,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "output_file_path",
-                "name": "output_file_path",
-                "label": "Output File Path",
+                "id": "outputFormat",
+                "name": "outputFormat",
+                "label": "Output Format",
                 "type": "text",
                 "order": 4,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "output_format",
-                "name": "output_format",
-                "label": "Output Format",
+                "id": "outputFileNamePattern",
+                "name": "outputFileNamePattern",
+                "label": "Output File Name Pattern",
                 "type": "text",
                 "order": 5,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "output_file_name_pattern",
-                "name": "output_file_name_pattern",
-                "label": "Regular Expression for Output File Name Pattern",
+                "id": "csvDelimiter",
+                "name": "csvDelimiter",
+                "label": "Delimiter Character (CSV)",
                 "type": "text",
                 "order": 6,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "csv_delimiter",
-                "name": "csv_delimiter",
-                "label": "Delimiter Character in case of CSV Files",
+                "id": "recordSeparator",
+                "name": "recordSeparator",
+                "label": "Line Feed Character",
                 "type": "text",
                 "order": 7,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "record_separator",
-                "name": "record_separator",
-                "label": "Line Feed Character",
+                "id": "enclosureChar",
+                "name": "enclosureChar",
+                "label": "Quote Character",
                 "type": "text",
                 "order": 8,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "enclosure_char",
-                "name": "enclosure_char",
-                "label": "Quote Character (Single or Double Quote)",
+                "id": "headerTemplate",
+                "name": "headerTemplate",
+                "label": "Optional Header Template",
                 "type": "text",
                 "order": 9,
                 "size": "sm",
                 "disabled": true
             },
             {
-                "id": "header_template",
-                "name": "header_template",
-                "label": "Optional Header Template",
-                "type": "text",
-                "order": 10,
-                "size": "sm",
-                "disabled": true
-            },
-            {
-                "id": "footer_template",
-                "name": "footer_template",
+                "id": "footerTemplate",
+                "name": "footerTemplate",
                 "label": "Optional Footer Template",
                 "type": "text",
-                "order": 11,
+                "order": 10,
                 "size": "sm",
                 "disabled": true
             }

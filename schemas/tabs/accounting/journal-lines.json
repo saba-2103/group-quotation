@@ -1,35 +1,23 @@
 {
-    "id": "direct-journal-lines-tab",
+    "id": "journal-lines-tab",
     "type": "tab-panel",
     "props": {
-        "value": "direct-journal-lines",
+        "value": "journal-lines",
         "label": "Journal Lines",
         "icon": "List"
     },
     "children": [
         {
-            "id": "direct-journal-lines-table",
+            "id": "journal-lines-table",
             "type": "data-table",
             "dataSource": {
                 "api": {
-                    "endpoint": "/api/accounting/direct-journals/{{id}}/lines?page=0&size=50",
+                    "endpoint": "/api/accounting/journals/{{id}}/lines",
                     "method": "GET"
-                },
-                "fallbackData": []
+                }
             },
             "props": {
                 "title": "Journal Lines",
-                "rowIdKey": "acct_seqno",
-                "headerActions": [
-                    {
-                        "id": "add-direct-journal-line-btn",
-                        "label": "Add Line",
-                        "icon": "Plus",
-                        "type": "open-sheet",
-                        "target": "add-direct-journal-line-form",
-                        "variant": "default"
-                    }
-                ],
                 "columns": [
                     {
                         "id": "journal_number",
@@ -88,7 +76,7 @@
                     {
                         "id": "effective_date",
                         "accessorKey": "effective_date",
-                        "label": "Effective Date",
+                        "label": "From Date",
                         "type": "date"
                     },
                     {
@@ -107,44 +95,79 @@
                         "id": "amount_in_trans_currency",
                         "accessorKey": "amount_in_trans_currency",
                         "label": "Amount in Transaction Currency",
-                        "type": "number"
+                        "type": "text"
                     },
                     {
                         "id": "gl_currency",
                         "accessorKey": "gl_currency",
-                        "label": "GL Currency",
+                        "label": "General Ledger Currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "exchange_rate",
+                        "accessorKey": "exchange_rate",
+                        "label": "Exchange Rate",
                         "type": "text"
                     },
                     {
                         "id": "amount_in_gl_currency",
                         "accessorKey": "amount_in_gl_currency",
-                        "label": "Amount in GL Currency",
-                        "type": "number"
-                    }
-                ],
-                "rowActions": [
-                    {
-                        "id": "edit-direct-journal-line-btn",
-                        "label": "Edit",
-                        "icon": "Pencil",
-                        "type": "open-sheet",
-                        "target": "edit-direct-journal-line-form"
+                        "label": "Amount in General Ledger Currency",
+                        "type": "text"
                     },
                     {
-                        "id": "delete-direct-journal-line-btn",
-                        "label": "Delete",
-                        "icon": "Trash2",
-                        "type": "api-mutation",
-                        "variant": "destructive",
-                        "confirm": {
-                            "title": "Delete Journal Line",
-                            "message": "Are you sure you want to delete this journal line? This action cannot be undone."
-                        },
-                        "api": {
-                            "endpoint": "/api/accounting/direct-journals/{{id}}/lines/:id",
-                            "method": "DELETE"
-                        },
-                        "refreshKey": "/api/accounting/direct-journals/{{id}}/lines?page=0&size=50"
+                        "id": "summary_flag",
+                        "accessorKey": "summary_flag",
+                        "label": "Summary Flag Y/N",
+                        "type": "text"
+                    },
+                    {
+                        "id": "dc_ind",
+                        "accessorKey": "dc_ind",
+                        "label": "Debit Credit Indicator",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_year",
+                        "accessorKey": "account_year",
+                        "label": "Accounting Year",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_month",
+                        "accessorKey": "account_month",
+                        "label": "Accounting Month",
+                        "type": "text"
+                    },
+                    {
+                        "id": "gl_pseudo_name",
+                        "accessorKey": "gl_pseudo_name",
+                        "label": "GL Code Pseudo Name",
+                        "type": "text"
+                    },
+                    {
+                        "id": "gl_extract_jobno",
+                        "accessorKey": "gl_extract_jobno",
+                        "label": "GL Extract Job Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "gl_extract_date",
+                        "accessorKey": "gl_extract_date",
+                        "label": "GL Extract Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "remarks",
+                        "accessorKey": "remarks",
+                        "label": "Remarks",
+                        "type": "text"
+                    },
+                    {
+                        "id": "created_user_id",
+                        "accessorKey": "created_user_id",
+                        "label": "Created by User Id",
+                        "type": "text"
                     }
                 ]
             }

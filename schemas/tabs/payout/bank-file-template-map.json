@@ -12,7 +12,7 @@
             "type": "data-table",
             "dataSource": {
                 "api": {
-                    "endpoint": "/api/moneyout/config/bank-file-template-map",
+                    "endpoint": "/api/moneyout/config/bank-file-template-assignments",
                     "method": "GET"
                 }
             },
@@ -31,44 +31,44 @@
                 ],
                 "columns": [
                     {
-                        "id": "bankcode",
-                        "accessorKey": "bankcode",
+                        "id": "bankCode",
+                        "accessorKey": "bankCode",
                         "label": "Bank Code",
                         "type": "text"
                     },
                     {
-                        "id": "payout_mode",
-                        "accessorKey": "payout_mode",
+                        "id": "payoutMode",
+                        "accessorKey": "payoutMode",
                         "label": "Payout Mode",
                         "type": "text"
                     },
                     {
-                        "id": "payout_mode_desc",
-                        "accessorKey": "payout_mode_desc",
+                        "id": "payoutModeDesc",
+                        "accessorKey": "payoutModeDesc",
                         "label": "Payout Mode Description",
                         "type": "text"
                     },
                     {
-                        "id": "template_id",
-                        "accessorKey": "template_id",
+                        "id": "templateId",
+                        "accessorKey": "templateId",
                         "label": "Template Id",
                         "type": "text"
                     },
                     {
-                        "id": "effective_date",
-                        "accessorKey": "effective_date",
+                        "id": "effectiveDate",
+                        "accessorKey": "effectiveDate",
                         "label": "Effective Date",
                         "type": "text"
                     },
                     {
-                        "id": "end_date",
-                        "accessorKey": "end_date",
+                        "id": "endDate",
+                        "accessorKey": "endDate",
                         "label": "End Date",
                         "type": "text"
                     },
                     {
-                        "id": "is_active",
-                        "accessorKey": "is_active",
+                        "id": "isActive",
+                        "accessorKey": "isActive",
                         "label": "Valid Flag",
                         "type": "text"
                     }
@@ -98,9 +98,9 @@
                             "title": "Delete Bank File Template Map",
                             "message": "Are you sure you want to delete this bank file template map? This action cannot be undone."
                         },
-                        "refreshKey": "/api/moneyout/config/bank-file-template-map",
+                        "refreshKey": "/api/moneyout/config/bank-file-template-assignments",
                         "api": {
-                            "endpoint": "/api/moneyout/config/bank-file-template-map/:id",
+                            "endpoint": "/api/moneyout/config/bank-file-template-assignments/:id",
                             "method": "DELETE"
                         }
                     }

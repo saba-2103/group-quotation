@@ -91,7 +91,7 @@
                         "id": "journal_status",
                         "accessorKey": "journal_status",
                         "label": "Journal Status",
-                        "type": "text"
+                        "type": "badge"
                     },
                     {
                         "id": "reversed_journal_number",
