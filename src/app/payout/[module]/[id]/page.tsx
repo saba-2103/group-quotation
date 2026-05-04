@@ -22,11 +22,28 @@ async function loadSchema(moduleSlug: string): Promise<WidgetConfig> {
     }
 }
 
+type ActionEntry = { api?: { endpoint?: string }; refreshKey?: string };
+const ACTION_ARRAY_PROPS = ['headerActions', 'rowActions', 'actions'] as const;
+
+// TODO: Move {{id}} under actionHandler or smartQuery or at somewhere correct function,
+// Currently there is no support id resolution at runtime.
 function replaceEndpointIds(node: WidgetConfig, id: string): void {
-    if (node.dataSource?.api?.endpoint?.includes('{{id}}')) {
-        node.dataSource.api.endpoint = node.dataSource.api.endpoint.replace('{{id}}', id);
+    const substitute = (s: string) => s.replace(/\{\{id\}\}/g, id);
+
+    if (node.dataSource?.api?.endpoint) {
+        node.dataSource.api.endpoint = substitute(node.dataSource.api.endpoint);
     }
-    node.children?.forEach(child => replaceEndpointIds(child, id));
+
+    for (const propKey of ACTION_ARRAY_PROPS) {
+        const actionList = node.props?.[propKey] as ActionEntry[] | undefined;
+        if (!Array.isArray(actionList)) continue;
+        for (const action of actionList) {
+            if (action.api?.endpoint) action.api.endpoint = substitute(action.api.endpoint);
+            if (action.refreshKey) action.refreshKey = substitute(action.refreshKey);
+        }
+    }
+
+    node.children?.forEach((child) => replaceEndpointIds(child, id));
 }
 
 export default async function PayoutModuleDetailPage(
