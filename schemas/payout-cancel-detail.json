@@ -50,8 +50,10 @@
                             "endpoint": "/api/moneyout/payouts/{{id}}/cancel",
                             "method": "POST"
                         },
-                        "requireConfirmation": true,
-                        "confirmationMessage": "Are you sure you want to cancel this payout? This action cannot be undone.",
+                        "confirm": {
+                            "title": "Cancel Payout",
+                            "message": "Are you sure you want to cancel this payout? This action cannot be undone."
+                        },
                         "refreshKey": "/api/moneyout/payouts/{{id}}"
                     }
                 ],

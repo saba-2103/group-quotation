@@ -150,8 +150,8 @@
                 "rowActions": [
                     {
                         "id": "cancel-payout-request",
-                        "label": "Edit",
-                        "icon": "ExternalLink",
+                        "label": "Cancel",
+                        "icon": "XCircle",
                         "type": "navigate",
                         "target": "/payout/payout-cancel-detail/:id"
                     }
