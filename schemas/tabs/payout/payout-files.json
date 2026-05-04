@@ -25,7 +25,7 @@
                         "label": "Add New",
                         "icon": "Plus",
                         "type": "open-modal",
-                        "target": "add-payout-file-format-form",
+                        "target": "add-payout-file-form",
                         "variant": "outline"
                     }
                 ],
@@ -67,14 +67,14 @@
                         "label": "Edit",
                         "icon": "Pencil",
                         "type": "open-modal",
-                        "target": "edit-payout-file-format-form"
+                        "target": "edit-payout-file-form"
                     },
                     {
                         "id": "enquire-payout-file-format-btn",
                         "label": "Enquire",
                         "icon": "Eye",
                         "type": "open-modal",
-                        "target": "enquire-payout-file-format-form"
+                        "target": "enquire-payout-file-form"
                     },
                     {
                         "id": "delete-payout-file-format-btn",
