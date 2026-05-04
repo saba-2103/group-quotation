@@ -1,0 +1,121 @@
+{
+    "id": "direct-journals-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "direct-journals",
+        "label": "Direct Journals Listing",
+        "icon": "BookMarked"
+    },
+    "children": [
+        {
+            "id": "direct-journals-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/direct-journals?page=0&size=50",
+                    "method": "GET"
+                },
+                "fallbackData": []
+            },
+            "props": {
+                "title": "Direct Journals Listing",
+                "rowIdKey": "journal_number",
+                "rowActions": [
+                    {
+                        "id": "view-direct-journal-btn",
+                        "label": "View",
+                        "icon": "Eye",
+                        "type": "navigate",
+                        "target": "/accounting/direct-journals/:id"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "lob",
+                        "accessorKey": "lob",
+                        "label": "Line of Business",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business_key",
+                        "accessorKey": "business_key",
+                        "label": "Business Key",
+                        "type": "text"
+                    },
+                    {
+                        "id": "tranno",
+                        "accessorKey": "tranno",
+                        "label": "Transaction Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business_process_code",
+                        "accessorKey": "business_process_code",
+                        "label": "Business Process Code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "business_process_description",
+                        "accessorKey": "business_process_description",
+                        "label": "Business Process Description",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accounting_event_id",
+                        "accessorKey": "accounting_event_id",
+                        "label": "Accounting Event Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_group",
+                        "accessorKey": "account_group",
+                        "label": "Account Group",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_number",
+                        "accessorKey": "journal_number",
+                        "label": "Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_date",
+                        "accessorKey": "journal_date",
+                        "label": "Journal Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "account_year",
+                        "accessorKey": "account_year",
+                        "label": "Account Year",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_month",
+                        "accessorKey": "account_month",
+                        "label": "Account Month",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_status",
+                        "accessorKey": "journal_status",
+                        "label": "Journal Status",
+                        "type": "text"
+                    },
+                    {
+                        "id": "reversed_journal_number",
+                        "accessorKey": "reversed_journal_number",
+                        "label": "Reversed Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "balance_error_flag",
+                        "accessorKey": "balance_error_flag",
+                        "label": "Balance Error Flag",
+                        "type": "text"
+                    }
+                ]
+            }
+        }
+    ]
+}
