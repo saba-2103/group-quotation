@@ -1,4 +1,5 @@
 {
+    "id": "edit-payout-source-type-form",
     "type": "form-container",
     "props": {
         "title": "Edit Payout Source Type",
@@ -26,7 +27,7 @@
             {
                 "id": "sourceTypeDesc",
                 "name": "sourceTypeDesc",
-                "label": "Payout Source Type Desc",
+                "label": "Payout Source Type Description",
                 "type": "text",
                 "order": 3,
                 "size": "sm",

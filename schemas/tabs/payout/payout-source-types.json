@@ -45,7 +45,7 @@
                     {
                         "id": "sourceTypeDesc",
                         "accessorKey": "sourceTypeDesc",
-                        "label": "Payout Source Type Desc",
+                        "label": "Payout Source Type Description",
                         "type": "text"
                     },
                     {

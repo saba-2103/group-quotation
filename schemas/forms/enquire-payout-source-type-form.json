@@ -1,7 +1,8 @@
 {
+    "id": "enquire-payout-source-type-form",
     "type": "form-container",
     "props": {
-        "title": "Enquire Payout Source Type",
+        "title": "Payout Source Type Details",
         "description": "View payout source type details",
         "columns": 2,
         "fields": [
@@ -26,7 +27,7 @@
             {
                 "id": "sourceTypeDesc",
                 "name": "sourceTypeDesc",
-                "label": "Payout Source Type Desc",
+                "label": "Payout Source Type Description",
                 "type": "text",
                 "order": 3,
                 "size": "sm",
