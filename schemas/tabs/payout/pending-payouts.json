@@ -111,8 +111,8 @@
                         "type": "text"
                     },
                     {
-                        "id": "payout_intiated_date",
-                        "accessorKey": "payout_intiated_date",
+                        "id": "payout_initiated_date",
+                        "accessorKey": "payout_initiated_date",
                         "label": "Payout Initiated Date",
                         "type": "date"
                     },
