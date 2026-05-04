@@ -3,6 +3,7 @@
     "type": "tab-panel",
     "props": {
         "label": "Payouts",
+        "value": "payouts",
         "icon": "Banknotes"
     },
     "children": [

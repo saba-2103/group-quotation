@@ -1,0 +1,106 @@
+{
+    "id": "payout-enquiry-source-tab",
+    "type": "tab-panel",
+    "props": {
+        "label": "Payout Allocation",
+        "value": "payout-allocation",
+        "icon": "GitBranch"
+    },
+    "children": [
+        {
+            "id": "payout-enquiry-source-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/payouts/{{id}}/sources",
+                    "method": "GET"
+                },
+                "fallbackData": []
+            },
+            "props": {
+                "title": "Payout Allocation",
+                "rowIdKey": "payout_source_seqno",
+                "columns": [
+                    {
+                        "id": "payout_source_seqno",
+                        "accessorKey": "payout_source_seqno",
+                        "label": "Payout Source Number",
+                        "type": "number"
+                    },
+                    {
+                        "id": "entity1_type",
+                        "accessorKey": "entity1_type",
+                        "label": "Entity 1 Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1",
+                        "accessorKey": "entity1",
+                        "label": "Entity 1",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity2_type",
+                        "accessorKey": "entity2_type",
+                        "label": "Entity 2 Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity2",
+                        "accessorKey": "entity2",
+                        "label": "Entity 2",
+                        "type": "text"
+                    },
+                    {
+                        "id": "transaction_currency",
+                        "accessorKey": "transaction_currency",
+                        "label": "Transaction Currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "amount_in_trans_currency",
+                        "accessorKey": "amount_in_trans_currency",
+                        "label": "Amount in Transaction Currency",
+                        "type": "number"
+                    },
+                    {
+                        "id": "gl_currency",
+                        "accessorKey": "gl_currency",
+                        "label": "General Ledger Currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "exchange_rate",
+                        "accessorKey": "exchange_rate",
+                        "label": "Exchange Rate",
+                        "type": "number"
+                    },
+                    {
+                        "id": "amount_in_gl_currency",
+                        "accessorKey": "amount_in_gl_currency",
+                        "label": "Amount in General Ledger Currency",
+                        "type": "number"
+                    },
+                    {
+                        "id": "payout_source_type",
+                        "accessorKey": "payout_source_type",
+                        "label": "Payout Source Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "source_document_id",
+                        "accessorKey": "source_document_id",
+                        "label": "Reference Document Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "remarks",
+                        "accessorKey": "remarks",
+                        "label": "Remarks",
+                        "type": "text"
+                    }
+                ]
+            }
+        }
+    ]
+}

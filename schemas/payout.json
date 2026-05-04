@@ -27,6 +27,9 @@
           "$ref": "schemas/tabs/payout/pending-payouts.json"
         },
         {
+          "$ref": "schemas/tabs/payout/payouts-search.json"
+        },
+        {
           "$ref": "schemas/tabs/payout/payout-modes.json"
         },
         {

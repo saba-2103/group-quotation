@@ -1,0 +1,115 @@
+{
+    "id": "payout-enquiry-tender-tab",
+    "type": "tab-panel",
+    "props": {
+        "label": "Tender Details",
+        "value": "tender-details",
+        "icon": "CreditCard"
+    },
+    "children": [
+        {
+            "id": "payout-enquiry-tender-grid",
+            "type": "key-value-grid",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/payouts/{{id}}/tender",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "fields": [
+                    {
+                        "id": "payout_tender_seqno",
+                        "label": "Payee Number",
+                        "accessorKey": "payout_tender_seqno",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_role",
+                        "label": "Payee Role",
+                        "accessorKey": "payee_role",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_client_id",
+                        "label": "Payee Client",
+                        "accessorKey": "payee_client_id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_name",
+                        "label": "Payee Name",
+                        "accessorKey": "payee_name",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_mode",
+                        "label": "Payout Mode",
+                        "accessorKey": "payout_mode",
+                        "type": "text"
+                    },
+                    {
+                        "id": "is_digital",
+                        "label": "Digital Payout",
+                        "accessorKey": "is_digital",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_bank_account",
+                        "label": "Payee Bank",
+                        "accessorKey": "payee_bank_account",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_ifsc_code",
+                        "label": "Payee IFSC",
+                        "accessorKey": "payee_ifsc_code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payee_swift_code",
+                        "label": "Payee Swift",
+                        "accessorKey": "payee_swift_code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "transaction_currency",
+                        "label": "Transaction Currency",
+                        "accessorKey": "transaction_currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "amount_in_trans_currency",
+                        "label": "Amount in Transaction Currency",
+                        "accessorKey": "amount_in_trans_currency",
+                        "type": "number"
+                    },
+                    {
+                        "id": "gl_currency",
+                        "label": "General Ledger Currency",
+                        "accessorKey": "gl_currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "exchange_rate",
+                        "label": "Exchange Rate",
+                        "accessorKey": "exchange_rate",
+                        "type": "number"
+                    },
+                    {
+                        "id": "amount_in_gl_currency",
+                        "label": "Amount in General Ledger Currency",
+                        "accessorKey": "amount_in_gl_currency",
+                        "type": "number"
+                    },
+                    {
+                        "id": "remarks",
+                        "label": "Remarks",
+                        "accessorKey": "remarks",
+                        "type": "text"
+                    }
+                ]
+            }
+        }
+    ]
+}
