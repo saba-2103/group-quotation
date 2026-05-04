@@ -1,0 +1,65 @@
+{
+    "id": "enquire-payout-source-type-form",
+    "type": "form-container",
+    "props": {
+        "title": "Payout Source Type Details",
+        "description": "View payout source type details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "lob",
+                "name": "lob",
+                "label": "Line of Business",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "sourceType",
+                "name": "sourceType",
+                "label": "Payout Source Type",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "sourceTypeDesc",
+                "name": "sourceTypeDesc",
+                "label": "Payout Source Type Description",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "accountGroup",
+                "name": "accountGroup",
+                "label": "Account Group",
+                "type": "text",
+                "order": 4,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "accountSubgroup",
+                "name": "accountSubgroup",
+                "label": "Account Sub Group",
+                "type": "text",
+                "order": 5,
+                "size": "sm",
+                "disabled": true
+            }
+        ],
+        "actions": [
+            {
+                "id": "close-enquire-payout-source-type",
+                "label": "Close",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

@@ -1,0 +1,99 @@
+{
+    "id": "payout-source-types-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "payout-source-types",
+        "label": "Payout Source Types",
+        "icon": "Layers"
+    },
+    "children": [
+        {
+            "id": "payout-source-types-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/config/source-type-account-mappings",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Payout Source Types",
+                "rowIdKey": "id",
+                "headerActions": [
+                    {
+                        "id": "add-payout-source-type-btn",
+                        "label": "Add New",
+                        "icon": "Plus",
+                        "type": "open-modal",
+                        "target": "add-payout-source-type-form",
+                        "variant": "outline"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "lob",
+                        "accessorKey": "lob",
+                        "label": "Line of Business",
+                        "type": "text"
+                    },
+                    {
+                        "id": "sourceType",
+                        "accessorKey": "sourceType",
+                        "label": "Payout Source Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "sourceTypeDesc",
+                        "accessorKey": "sourceTypeDesc",
+                        "label": "Payout Source Type Description",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accountGroup",
+                        "accessorKey": "accountGroup",
+                        "label": "Account Group",
+                        "type": "text"
+                    },
+                    {
+                        "id": "accountSubgroup",
+                        "accessorKey": "accountSubgroup",
+                        "label": "Account Sub Group",
+                        "type": "text"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "edit-payout-source-type-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-modal",
+                        "target": "edit-payout-source-type-form"
+                    },
+                    {
+                        "id": "enquire-payout-source-type-btn",
+                        "label": "Enquire",
+                        "icon": "Eye",
+                        "type": "open-modal",
+                        "target": "enquire-payout-source-type-form"
+                    },
+                    {
+                        "id": "delete-payout-source-type-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Payout Source Type",
+                            "message": "Are you sure you want to delete this payout source type? This action cannot be undone."
+                        },
+                        "refreshKey": "/api/moneyout/config/source-type-account-mappings",
+                        "api": {
+                            "endpoint": "/api/moneyout/config/source-type-account-mappings/:id",
+                            "method": "DELETE"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

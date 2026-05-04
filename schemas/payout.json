@@ -46,6 +46,9 @@
         },
         {
           "$ref": "schemas/tabs/payout/payout-cancellation.json"
+        },
+        {
+          "$ref": "schemas/tabs/payout/payout-source-types.json"
         }
       ]
     }
