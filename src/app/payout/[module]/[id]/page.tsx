@@ -1,12 +1,25 @@
 import { Suspense } from 'react';
 export const dynamic = 'force-dynamic';
+import { notFound } from 'next/navigation';
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 import { WidgetConfig } from '@/types/widget';
 import { resolveSchemaRefs } from '@/lib/schemaResolver';
 
+type SchemaLoader = () => Promise<{ default: WidgetConfig }>;
+
+const SUPPORTED_PAYOUT_DETAIL_SCHEMAS: Record<string, SchemaLoader> = {
+    'payout-enquiry-detail': () => import('../../../../../schemas/payout-enquiry-detail.json') as Promise<{ default: WidgetConfig }>,
+};
+
 async function loadSchema(moduleSlug: string): Promise<WidgetConfig> {
-    const schemaModule = await import(`../../../../../schemas/${moduleSlug}.json`);
-    return schemaModule.default ?? schemaModule;
+    const schemaLoader = SUPPORTED_PAYOUT_DETAIL_SCHEMAS[moduleSlug];
+    if (!schemaLoader) notFound();
+    try {
+        const schemaModule = await schemaLoader();
+        return schemaModule.default;
+    } catch {
+        notFound();
+    }
 }
 
 function replaceEndpointIds(node: WidgetConfig, id: string): void {

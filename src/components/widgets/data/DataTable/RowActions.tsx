@@ -8,7 +8,8 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ActionRenderer } from "../../controls/ActionRenderer";
+import { ActionButton } from "../../controls/ActionButton";
+import { useActionHandler } from "@/hooks/useActionHandler";
 import { MAX_INLINE_ACTIONS } from "./constants";
 import { RowActionsProps, RowActionConfig } from "./types";
 import { ActionConfig } from "@/types/widget";
@@ -28,6 +29,7 @@ export const RowActions: React.FC<RowActionsProps> = ({
   rowActions,
   rowIdKey,
 }) => {
+  const handleAction = useActionHandler();
   const rowId = String(row[rowIdKey] ?? "");
 
   const visibleActions = rowActions
@@ -38,9 +40,10 @@ export const RowActions: React.FC<RowActionsProps> = ({
     return (
       <div className="flex items-center justify-end gap-1">
         {visibleActions.map((action) => (
-          <ActionRenderer
+          <ActionButton
             key={action.id}
             action={{ ...action, display: "icon" } as ActionConfig}
+            onClick={() => { void handleAction(action, row); }}
           />
         ))}
       </div>
@@ -57,9 +60,10 @@ export const RowActions: React.FC<RowActionsProps> = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {visibleActions.map((action) => (
-          <ActionRenderer
+          <ActionButton
             key={action.id}
             action={{ ...action, display: "menu-item" } as ActionConfig}
+            onClick={() => { void handleAction(action, row); }}
           />
         ))}
       </DropdownMenuContent>
