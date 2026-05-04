@@ -102,7 +102,7 @@
                 "submitAction": true,
                 "refreshKey": "/api/moneyout/config/bank-file-templates",
                 "api": {
-                    "endpoint": "/api/moneyout/config/bank-file-templates/:id",
+                    "endpoint": "/api/moneyout/config/bank-file-templates",
                     "method": "PUT"
                 },
                 "successMessage": "Payout Template updated successfully!"
