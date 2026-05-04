@@ -1,0 +1,115 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Add Bank File Template Map",
+        "description": "Enter bank file template mapping details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "bankCode",
+                "name": "bankCode",
+                "label": "Bank Code",
+                "type": "select",
+                "order": 1,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/bank-accounts",
+                        "method": "GET"
+                    }
+                },
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Bank Code is required"
+                    }
+                ]
+            },
+            {
+                "id": "payoutMode",
+                "name": "payoutMode",
+                "label": "Payout Mode",
+                "type": "select",
+                "order": 2,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/payout-mode-policies",
+                        "method": "GET"
+                    }
+                },
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payout Mode is required"
+                    }
+                ]
+            },
+            {
+                "id": "templateId",
+                "name": "templateId",
+                "label": "Template Id",
+                "type": "select",
+                "order": 3,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/bank-file-templates",
+                        "method": "GET"
+                    }
+                },
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Template Id is required"
+                    }
+                ]
+            },
+            {
+                "id": "effectiveDate",
+                "name": "effectiveDate",
+                "label": "Effective Date",
+                "type": "date",
+                "order": 4,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Effective Date is required"
+                    }
+                ]
+            },
+            {
+                "id": "endDate",
+                "name": "endDate",
+                "label": "End Date",
+                "type": "date",
+                "order": 5,
+                "size": "sm"
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-add-bank-file-template-map",
+                "label": "Add Mapping",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/bank-file-template-assignments",
+                "api": {
+                    "endpoint": "/api/moneyout/config/bank-file-template-assignments",
+                    "method": "POST"
+                },
+                "successMessage": "Bank File Template Map added successfully!"
+            },
+            {
+                "id": "cancel-add-bank-file-template-map",
+                "label": "Cancel",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

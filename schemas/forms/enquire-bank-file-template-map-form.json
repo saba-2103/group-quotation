@@ -1,0 +1,73 @@
+{
+    "type": "form-container",
+    "props": {
+        "title": "Bank File Template Map Details",
+        "description": "View bank file template mapping details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "bankCode",
+                "name": "bankCode",
+                "label": "Bank Code",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payoutMode",
+                "name": "payoutMode",
+                "label": "Payout Mode",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "templateId",
+                "name": "templateId",
+                "label": "Template Id",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "effectiveDate",
+                "name": "effectiveDate",
+                "label": "Effective Date",
+                "type": "text",
+                "order": 4,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "endDate",
+                "name": "endDate",
+                "label": "End Date",
+                "type": "text",
+                "order": 5,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "isActive",
+                "name": "isActive",
+                "label": "Valid Flag",
+                "type": "text",
+                "order": 6,
+                "size": "sm",
+                "disabled": true
+            }
+        ],
+        "actions": [
+            {
+                "id": "close-enquire-bank-file-template-map",
+                "label": "Close",
+                "variant": "outline",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

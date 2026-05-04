@@ -31,6 +31,9 @@
         },
         {
           "$ref": "schemas/tabs/payout/payout-templates.json"
+        },
+        {
+          "$ref": "schemas/tabs/payout/bank-file-template-map.json"
         }
       ]
     }
