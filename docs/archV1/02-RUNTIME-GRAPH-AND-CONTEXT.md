@@ -24,6 +24,7 @@ interface RuntimeGraph {
     userId: string;
     role: string;
     permissions: string[];
+    locale: string;
     routeParams: Record<string, string>;
     queryParams: Record<string, string>;
     featureFlags?: Record<string, boolean>;

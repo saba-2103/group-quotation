@@ -1,6 +1,6 @@
 # Page Migration Checklist
 
-Use this file as a copyable checklist for one page family migrating from the legacy runtime to `arch_v0`.
+Use this file as a copyable checklist for one page family migrating from the legacy runtime to `archV1`.
 
 Do not edit this canonical template for page-specific work. Copy it into a page-family-specific location and check off the copied version.
 
@@ -19,7 +19,7 @@ Do not edit this canonical template for page-specific work. Copy it into a page-
 - Backend owner(s):
 - Auth requirement: mock / real
 - Current runtime owner: `legacy`
-- Target runtime owner: `v0`
+- Target runtime owner: `v1`
 
 ---
 
@@ -40,7 +40,7 @@ Do not edit this canonical template for page-specific work. Copy it into a page-
 - [ ] Final `schemaId` assigned
 - [ ] `schemaId` matches naming convention
 - [ ] Route params mapped into `system.routeParams`
-- [ ] If dual-runtime period is active, route manifest entry marked with `runtime: "legacy"`
+- [ ] If dual-runtime period is active, route manifest entry marked with `runtime: "legacy"` pending v1 cutover
 
 Notes:
 
@@ -160,7 +160,7 @@ Artifact details:
 ## Cutover
 
 - [ ] Generic schema shell enabled for the route
-- [ ] If dual-runtime period is active, route manifest entry switched to `runtime: "v0"`
+- [ ] If dual-runtime period is active, route manifest entry switched to `runtime: "v1"`
 - [ ] Legacy route/schema path removed or explicitly retained for rollback only
 - [ ] Post-cutover verification run completed
 

@@ -92,7 +92,7 @@ The runtime logs a development-mode warning when it encounters minor-version fea
 
 ### Backward incompatibility across major versions
 
-The runtime is not backward-compatible across major versions. A v2 runtime cannot render a v1 schema. Major version bumps require coordinated runtime and schema upgrades, with a defined cutover window.
+The runtime does not render schemas outside its declared `minMajor`–`maxMajor` range. A runtime configured with only v2 support (i.e. `minMajor: 2, maxMajor: 2`) cannot render a v1 schema. Cross-major backward compatibility requires explicitly lowering `minMajor` — it is never implicit. Major version bumps therefore require a coordinated runtime update, even when multi-major support is declared.
 
 ## Persisted State Versioning
 

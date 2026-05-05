@@ -8,7 +8,7 @@
 
 ## Purpose
 
-This document is the backend-readiness matrix required by Pre-Sprint Decision #3 in `docs/arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md`.
+This document is the backend-readiness matrix required by Phase 3 planning in [`docs/archV1/08-MIGRATION-PLAN.md`](../archV1/08-MIGRATION-PLAN.md).
 
 It records, for each pilot page and each target runtime namespace:
 

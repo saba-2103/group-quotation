@@ -7,16 +7,15 @@
 
 **Related Docs:**
 
-- [`../arch_v0/02-AUTH-AND-SECURITY.md`](../arch_v0/02-AUTH-AND-SECURITY.md)
-- [`../arch_v0/11-API-TEAM-CONTRACT.md`](../arch_v0/11-API-TEAM-CONTRACT.md)
-- [`../arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md`](../arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md)
+- [`../archV1/05-AUTH-API-AND-CONTRACT-BOUNDARY.md`](../archV1/05-AUTH-API-AND-CONTRACT-BOUNDARY.md)
+- [`../archV1/08-MIGRATION-PLAN.md`](../archV1/08-MIGRATION-PLAN.md)
 - [`ADR-runtime-graph-store-boundary.md`](./ADR-runtime-graph-store-boundary.md)
 
 ---
 
 ## Decision
 
-Early `arch_v0` runtime development will use a mocked auth provider behind a runtime auth abstraction.
+Early `archV1` runtime development will use a mocked auth provider behind a runtime auth abstraction.
 
 The runtime must depend only on the auth abstraction, not on:
 
@@ -42,7 +41,7 @@ Those values are required before:
 - authenticated API calls through the shared API client
 - realistic page runtime testing
 
-The architecture target is clear in `arch_v0`:
+The architecture target is clear in `archV1`:
 
 - short-lived JWT access token
 - `HttpOnly` refresh cookie
@@ -72,7 +71,7 @@ That means the runtime code should not care whether auth comes from:
 
 ## Public Contract
 
-The runtime-facing auth contract should expose the minimum values needed for `arch_v0` runtime behavior.
+The runtime-facing auth contract should expose the minimum values needed for `archV1` runtime behavior.
 
 Recommended shape:
 
@@ -187,7 +186,7 @@ In both cases, the path into runtime state must be identical from the perspectiv
 This decision is complete when all of the following are true:
 
 - this decision record is committed
-- `docs/arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #2 links to it
+- `docs/archV1/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #2 links to it
 - the mocked auth interface is defined and matches the runtime-facing contract expected by the future real implementation
 - early runtime code reads auth only through the abstraction
 - the real auth integration target date is recorded as 2026-05-29

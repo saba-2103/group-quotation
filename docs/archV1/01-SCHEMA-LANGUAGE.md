@@ -51,6 +51,7 @@ interface PageSchemaV1 {
   metadata?: SchemaMetadata;
   runtime: RuntimeDeclaration;
   access?: AccessPolicy;
+  requestPolicies?: Record<string, RequestPolicyDefinition>;
   workflows?: Record<string, WorkflowDefinition>;
   actions?: Record<string, ActionPipeline>;
   widgetTree: WidgetNode;

@@ -6,15 +6,15 @@
 
 **Related Docs:**
 
-- [`../arch_v0/00-SYSTEM-DESIGN.md`](../arch_v0/00-SYSTEM-DESIGN.md)
-- [`../arch_v0/04-RUNTIME-AND-CONDITIONS.md`](../arch_v0/04-RUNTIME-AND-CONDITIONS.md)
-- [`../arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md`](../arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md)
+- [`../archV1/00-SYSTEM-DESIGN.md`](../archV1/00-SYSTEM-DESIGN.md)
+- [`../archV1/02-RUNTIME-GRAPH-AND-CONTEXT.md`](../archV1/02-RUNTIME-GRAPH-AND-CONTEXT.md)
+- [`../archV1/08-MIGRATION-PLAN.md`](../archV1/08-MIGRATION-PLAN.md)
 
 ---
 
 ## Decision
 
-The `arch_v0` runtime graph store will be implemented using Zustand behind a `RuntimeProvider` abstraction.
+The `archV1` runtime graph store will be implemented using Zustand behind a `RuntimeProvider` abstraction.
 
 The public contract for consumers is the runtime graph model and runtime hooks, not raw Zustand APIs.
 
@@ -26,7 +26,7 @@ Direct Zustand usage is allowed only inside runtime infrastructure and explicitl
 
 ## Context
 
-`arch_v0` is built around one unified runtime graph:
+`archV1` is built around one unified runtime graph:
 
 - `system.*`
 - `graph.*`
@@ -131,7 +131,7 @@ Direct Zustand usage is not allowed in these places:
 - page-specific feature logic that should depend on `RuntimeGraph`
 - condition evaluation consumers
 - binding resolution consumers
-- form widgets that are part of the `arch_v0` runtime path
+- form widgets that are part of the `archV1` runtime path
 - route-level schema-driven screens
 
 Examples of disallowed behavior:
@@ -240,7 +240,7 @@ The architecture should not hide the fact that Zustand exists. It should simply 
 
 ## Migration Guidance
 
-During the legacy-to-v0 migration, the repo will temporarily have both old and new patterns.
+During the legacy-to-v1 migration, the repo will temporarily have both old and new patterns.
 
 The rule during migration is:
 
@@ -312,7 +312,7 @@ The runtime owner is responsible for:
 
 ## Accepted Default
 
-The accepted default for `arch_v0` is:
+The accepted default for `archV1` is:
 
 - Zustand-backed runtime store
 - `RuntimeProvider` abstraction
@@ -326,7 +326,7 @@ The accepted default for `arch_v0` is:
 This decision is complete when all of the following are true:
 
 - this decision record is committed
-- `docs/arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #1 links to it
+- `docs/archV1/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #1 links to it
 - runtime implementation uses Zustand behind a provider abstraction
 - runtime hooks are the only supported graph access path for migrated widgets and pages
 - direct Zustand imports are disallowed outside runtime infrastructure unless explicitly approved

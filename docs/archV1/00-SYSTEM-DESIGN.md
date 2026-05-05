@@ -137,6 +137,7 @@ A v1 resolved schema should have these conceptual sections:
 - namespaces / sources
 - derived values
 - access policy
+- request policies
 - workflow declarations
 - action definitions
 - widget tree

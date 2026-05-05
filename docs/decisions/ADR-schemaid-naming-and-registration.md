@@ -6,16 +6,15 @@
 
 **Related Docs:**
 
-- [`../arch_v0/01-SCHEMA-DELIVERY.md`](../arch_v0/01-SCHEMA-DELIVERY.md)
-- [`../arch_v0/12-PAGE-AUTHORING-MANUAL.md`](../arch_v0/12-PAGE-AUTHORING-MANUAL.md)
-- [`../arch_v0/13-SCHEMA-LINT-RULES.md`](../arch_v0/13-SCHEMA-LINT-RULES.md)
-- [`../arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md`](../arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md)
+- [`../archV1/01-SCHEMA-LANGUAGE.md`](../archV1/01-SCHEMA-LANGUAGE.md)
+- [`../archV1/06-AUTHORING-LINT-AND-REVIEW.md`](../archV1/06-AUTHORING-LINT-AND-REVIEW.md)
+- [`../archV1/08-MIGRATION-PLAN.md`](../archV1/08-MIGRATION-PLAN.md)
 
 ---
 
 ## Decision
 
-All `schemaId`s in `arch_v0` must use lowercase kebab-case semantic page-family names.
+All `schemaId`s in `archV1` must use lowercase kebab-case semantic page-family names.
 
 Canonical examples:
 
@@ -35,7 +34,7 @@ The frontend/platform schema contract owner is the approver for new `schemaId` r
 
 ## Why This Decision Exists
 
-In `arch_v0`, `schemaId` is not just a schema label.
+In `archV1`, `schemaId` is not just a schema label.
 
 It is part of:
 
@@ -239,4 +238,4 @@ This decision is complete when all of the following are true:
 - the canonical convention is documented with examples
 - forbidden patterns are explicitly listed with examples
 - the approval owner for new `schemaId`s is named
-- `docs/arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #4 links to this ADR
+- `docs/archV1/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #4 links to this ADR
