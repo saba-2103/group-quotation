@@ -134,11 +134,11 @@ Page readiness summary:
 
 ## Cross-Page Summary
 
-| Page | API-backed namespaces | Ready | Mocked | Pending | Notes |
+| Page | Total namespaces | Ready | Mocked | Pending | Notes |
 |---|---:|---:|---:|---:|---|
-| `test-dashboard` | 8 | 3 | 8 | 0 | Fully mockable from current in-repo routes |
-| `claims` | 1 | 3 | 1 | 0 | Normalize external dummy source into internal mock route |
-| `quotations-list` | 1 | 3 | 1 | 0 | Uses existing in-repo quotations list route |
+| `test-dashboard` | 11 | 3 | 8 | 0 | Fully mockable from current in-repo routes |
+| `claims` | 4 | 3 | 1 | 0 | Normalize external dummy source into internal mock route |
+| `quotations-list` | 4 | 3 | 1 | 0 | Uses existing in-repo quotations list route |
 
 Overall conclusion:
 

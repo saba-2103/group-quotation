@@ -8,7 +8,7 @@
 
 ## What Is This?
 
-Keystone UI is a **schema-driven portal framework** — a runtime that converts JSON configuration into fully functional pages, tables, forms, and dashboards. The core idea is that business logic and UI layout are expressed as data (JSON schemas) rather than code. You can build an entire multi-page insurance or claims management portal by writing JSON and API endpoints, with no custom React code required.
+Keystone UI is a **schema-driven portal framework** — a runtime that converts JSON configuration into fully functional pages, tables, forms, and dashboards. The core idea is that business logic and UI layout are expressed as data (JSON schemas) rather than code. Pages, tables, and forms are configured through JSON schemas rather than authored as bespoke React components. Custom React is added when the schema language is intentionally not expressive enough — see `docs/archV1/00-SYSTEM-DESIGN.md` for the boundary.
 
 ---
 

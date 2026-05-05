@@ -1,0 +1,46 @@
+import { SetupCase } from '../types';
+
+export const setupCases: SetupCase[] = [
+  {
+    id: 'setup-001',
+    organizationId: 'org-001',
+    caseRef: 'SETUP-2024-001',
+    productLine: 'GTL',
+    status: 'Completed',
+    steps: [
+      { id: 'step-1', name: 'Proposal Submission', status: 'Completed', completedAt: '2024-02-15T10:00:00Z' },
+      { id: 'step-2', name: 'Underwriting Review', status: 'Completed', completedAt: '2024-03-01T14:00:00Z' },
+      { id: 'step-3', name: 'Quote Acceptance', status: 'Completed', completedAt: '2024-03-10T11:00:00Z' },
+      { id: 'step-4', name: 'KYC & Document Submission', status: 'Completed', completedAt: '2024-03-20T10:00:00Z' },
+      { id: 'step-5', name: 'Policy Issuance', status: 'Completed', completedAt: '2024-04-01T00:00:00Z' },
+      { id: 'step-6', name: 'CD Account Setup', status: 'Completed', completedAt: '2024-04-01T00:00:00Z' },
+      { id: 'step-7', name: 'Census Upload & Member Enrollment', status: 'Completed', completedAt: '2024-04-15T10:00:00Z' },
+    ],
+    assignedPolicyId: 'pol-gtl-001',
+    makerId: 'usr-002',
+    approverId: 'usr-004',
+    createdAt: '2024-02-10T10:00:00Z',
+    updatedAt: '2024-04-15T10:00:00Z',
+    completedAt: '2024-04-15T10:00:00Z',
+  },
+  {
+    id: 'setup-002',
+    organizationId: 'org-001',
+    caseRef: 'SETUP-2026-002',
+    productLine: 'Savings',
+    status: 'In Progress',
+    steps: [
+      { id: 'step-1', name: 'Proposal Submission', status: 'Completed', completedAt: '2026-03-01T10:00:00Z' },
+      { id: 'step-2', name: 'Actuarial Valuation', status: 'Completed', completedAt: '2026-03-20T14:00:00Z' },
+      { id: 'step-3', name: 'Quote Acceptance', status: 'Completed', completedAt: '2026-03-25T11:00:00Z' },
+      { id: 'step-4', name: 'Trust Deed Amendment', status: 'In Progress', note: 'Legal review pending — expected completion 2026-05-15' },
+      { id: 'step-5', name: 'IT Approval Renewal', status: 'Pending' },
+      { id: 'step-6', name: 'Policy Renewal Issuance', status: 'Pending' },
+      { id: 'step-7', name: 'Fund Contribution', status: 'Pending' },
+    ],
+    assignedPolicyId: 'pol-sav-003',
+    makerId: 'usr-002',
+    createdAt: '2026-02-20T10:00:00Z',
+    updatedAt: '2026-04-20T10:00:00Z',
+  },
+];

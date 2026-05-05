@@ -29,7 +29,8 @@ Direct Zustand usage is allowed only inside runtime infrastructure and explicitl
 `archV1` is built around one unified runtime graph:
 
 - `system.*`
-- `graph.*`
+- `app.*`
+- `page.*`
 
 That graph is the architectural contract the UI should depend on.
 
@@ -71,10 +72,10 @@ This is what the rest of the system should depend on:
 Examples of architectural-level usage:
 
 - read `system.routeParams.quoteId`
-- read `graph.quote`
-- read `graph.quoteDraft`
-- patch `graph.filters`
-- revalidate `graph.quote`
+- read `page.policy`
+- read `page.policyDraft`
+- patch `page.filters`
+- revalidate `page.policy`
 
 ### 2. Implementation detail
 
@@ -326,7 +327,7 @@ The accepted default for `archV1` is:
 This decision is complete when all of the following are true:
 
 - this decision record is committed
-- `docs/archV1/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #1 links to it
+- `docs/archV1/08-MIGRATION-PLAN.md` Phase 1 deliverables reference this decision
 - runtime implementation uses Zustand behind a provider abstraction
 - runtime hooks are the only supported graph access path for migrated widgets and pages
 - direct Zustand imports are disallowed outside runtime infrastructure unless explicitly approved

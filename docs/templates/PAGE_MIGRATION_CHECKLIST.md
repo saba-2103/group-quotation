@@ -84,7 +84,7 @@ Current widget fetch inventory:
 ## Widget Tree Conversion
 
 - [ ] Widget tree converted to new page schema contract
-- [ ] Absolute binds updated to `system.*` or `graph.*`
+- [ ] Absolute binds updated to `system.*`, `app.*`, or `page.*`
 - [ ] Relative binds reviewed against parent scope
 - [ ] Options sources point at declared namespaces
 - [ ] Inline values kept inline where appropriate
@@ -109,7 +109,7 @@ Condition notes:
 
 ## Form And Mutation Conversion
 
-- [ ] Form state moved to draft namespace such as `graph.*Draft`
+- [ ] Form state moved to draft namespace such as `page.*Draft`
 - [ ] Field bindings rebased relative to draft scope
 - [ ] Submit path uses shared API client
 - [ ] Mutation refresh semantics chosen:

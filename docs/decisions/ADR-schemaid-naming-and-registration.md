@@ -208,7 +208,7 @@ The PR adding a new `schemaId` should include:
 - the page schema using the ID
 - any variant rationale if applicable
 
-No separate registry system is required in early v0 as long as PR review ownership is explicit.
+No separate registry system is required in early v1 as long as PR review ownership is explicit.
 
 ---
 
@@ -238,4 +238,4 @@ This decision is complete when all of the following are true:
 - the canonical convention is documented with examples
 - forbidden patterns are explicitly listed with examples
 - the approval owner for new `schemaId`s is named
-- `docs/archV1/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #4 links to this ADR
+- `docs/archV1/08-MIGRATION-PLAN.md` Phase 1 deliverables reference this decision

@@ -112,7 +112,7 @@ Keeping these three scopes separate prevents shell-level state from leaking into
 Each namespace declares how a branch is hydrated and who owns it.
 
 ```ts
-type NamespaceKind = "api" | "local" | "inline" | "derived";
+type NamespaceKind = "api" | "local" | "inline";
 type NamespaceScope = "app" | "page";
 type NamespaceUsage = "domain" | "draft" | "state" | "options" | "workflow";
 

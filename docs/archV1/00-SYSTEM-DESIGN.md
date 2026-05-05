@@ -146,6 +146,7 @@ This is defined concretely in [`01-SCHEMA-LANGUAGE.md`](./01-SCHEMA-LANGUAGE.md)
 
 ## Example: Why This Matters
 
+Consider a workspace switcher that lets a user select a different active policy from a shared portfolio. When the user selects a policy, the UI must:
 
 Without declarative action pipelines, this requires custom code to:
 

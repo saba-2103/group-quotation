@@ -1,7 +1,7 @@
-# Keystone UI — arch_v0 Implementation Tickets
+# Keystone UI — archV1 Implementation Tickets
 
 **Generated:** 2026-04-29  
-**Source:** `docs/arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` and full arch_v0 set  
+**Source:** `docs/archV1/08-MIGRATION-PLAN.md`  
 **Format:** Each ticket is self-contained and loadable into Linear.
 
 ---
@@ -55,13 +55,13 @@
 | **Deadline** | Before WS2 implementation starts |
 
 **Description**  
-Confirm that the runtime graph store will be backed by Zustand behind a `RuntimeProvider` abstraction, as recommended in `docs/arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #1. The public contract must be `RuntimeGraph`, not raw Zustand APIs, so the backing can be swapped without touching widgets. The repo already uses Zustand in `useOverlayStore.ts`, confirming it is an accepted dependency.
+Confirm that the runtime graph store will be backed by Zustand behind a `RuntimeProvider` abstraction, as recommended in `docs/archV1/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #1. The public contract must be `RuntimeGraph`, not raw Zustand APIs, so the backing can be swapped without touching widgets. The repo already uses Zustand in `useOverlayStore.ts`, confirming it is an accepted dependency.
 
 **Acceptance criteria**
 - [ ] Decision record written and committed (owner, rationale, consequences)
 - [ ] Confirms: Zustand-backed `RuntimeProvider` abstraction
 - [ ] Confirms: widgets access graph through runtime hooks only, never Zustand directly
-- [ ] Decision record linked from `docs/arch_v0/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #1
+- [ ] Decision record linked from `docs/archV1/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #1
 
 ---
 
@@ -76,7 +76,7 @@ Confirm that the runtime graph store will be backed by Zustand behind a `Runtime
 | **Deadline** | Before the first migrated page consumes authenticated APIs |
 
 **Description**  
-Determine whether the auth backend (short-lived JWT + HttpOnly refresh cookie per `docs/arch_v0/11-API-TEAM-CONTRACT.md`) is ready for integration now, or whether early runtime work uses a mocked auth context. Either way the runtime must depend on an auth abstraction, not on a specific mock or backend implementation. The decision shapes how `system.userId`, `system.role`, and `system.permissions` are populated in KUI-030.
+Determine whether the auth backend (short-lived JWT + HttpOnly refresh cookie per `docs/archV1/11-API-TEAM-CONTRACT.md`) is ready for integration now, or whether early runtime work uses a mocked auth context. Either way the runtime must depend on an auth abstraction, not on a specific mock or backend implementation. The decision shapes how `system.userId`, `system.role`, and `system.permissions` are populated in KUI-030.
 
 **Acceptance criteria**
 - [ ] Decision record written: real backend auth or mocked auth, with owner and target integration date
@@ -247,17 +247,17 @@ Add a machine-readable `@route-class` comment to every file under `src/app/api/*
 | **Depends on** | — |
 
 **Description**  
-Add a `> **Status: Superseded** — arch_v0 is the implementation target. See docs/arch_v0/README.md.` banner to `docs/ARCHITECTURE.md` and `docs/KEYSTONE-UI-SYSTEM-DESIGN.md`. These documents describe the Worker-based, `useFieldConfig()`, and `useWorkbenchBootstrap()` architecture that is explicitly out of v0 scope. Leaving them unmarked risks confusing new contributors.
+Add a `> **Status: Superseded** — archV1 is the implementation target. See docs/archV1/README.md.` banner to `docs/ARCHITECTURE.md` and `docs/KEYSTONE-UI-SYSTEM-DESIGN.md`. These documents describe the Worker-based, `useFieldConfig()`, and `useWorkbenchBootstrap()` architecture that is explicitly out of v0 scope. Leaving them unmarked risks confusing new contributors.
 
 **Acceptance criteria**
 - [ ] `docs/ARCHITECTURE.md` has a superseded banner at the top
 - [ ] `docs/KEYSTONE-UI-SYSTEM-DESIGN.md` has a superseded banner at the top
-- [ ] Both banners link to `docs/arch_v0/README.md`
+- [ ] Both banners link to `docs/archV1/README.md`
 - [ ] No content is deleted — the docs remain for historical reference
 
 ---
 
-### KUI-011 — Commit decision record: arch_v0 is the implementation target
+### KUI-011 — Commit decision record: archV1 is the implementation target
 
 | | |
 |---|---|
@@ -267,7 +267,7 @@ Add a `> **Status: Superseded** — arch_v0 is the implementation target. See do
 | **Depends on** | KUI-001 – KUI-006 |
 
 **Description**  
-Write and commit a short decision record (`docs/planning/DECISION-ARCH-V0-TARGET.md`) that formally declares `arch_v0` as the only implementation target, lists the scope exclusions (Worker, `useFieldConfig()`, `useWorkbenchBootstrap()`), and confirms Phase 0 is complete. This is the "team agreement" artifact called for in the Phase 0 definition of done.
+Write and commit a short decision record (`docs/planning/DECISION-ARCH-V0-TARGET.md`) that formally declares `archV1` as the only implementation target, lists the scope exclusions (Worker, `useFieldConfig()`, `useWorkbenchBootstrap()`), and confirms Phase 0 is complete. This is the "team agreement" artifact called for in the Phase 0 definition of done.
 
 **Acceptance criteria**
 - [ ] Decision record committed with: date, signatories, scope statement, exclusion list
@@ -367,7 +367,7 @@ Implement the Zod validator for `PageSchema` in `src/schema/validators/PageSchem
 - [ ] `kind: "local"` with both passes (dual-init warning in lint, not Zod)
 - [ ] `dependsOn: ["undeclaredNamespace"]` fails
 - [ ] Circular `dependsOn` (`a→b→a`) fails
-- [ ] Valid example from `docs/arch_v0/12-PAGE-AUTHORING-MANUAL.md` passes
+- [ ] Valid example from `docs/archV1/12-PAGE-AUTHORING-MANUAL.md` passes
 
 ---
 
@@ -402,7 +402,7 @@ Implement the Zod validator for `ResolvedSchemaArtifact` in `src/schema/validato
 | **Depends on** | KUI-012 |
 
 **Description**  
-Implement Zod validators for `RouteManifestEntry` and `RouteManifest` (array of entries) in `src/schema/validators/RouteManifest.zod.ts`. Per `docs/arch_v0/16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md`: every entry requires non-empty `path` and `schemaId`, `routeParams` aliases must reference actual path params in the `path` pattern, no duplicate path patterns, no ambiguous effective matches. The `runtime` field defaults to `"v0"` and accepts `"legacy" | "v0"`.
+Implement Zod validators for `RouteManifestEntry` and `RouteManifest` (array of entries) in `src/schema/validators/RouteManifest.zod.ts`. Per `docs/archV1/16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md`: every entry requires non-empty `path` and `schemaId`, `routeParams` aliases must reference actual path params in the `path` pattern, no duplicate path patterns, no ambiguous effective matches. The `runtime` field defaults to `"v0"` and accepts `"legacy" | "v0"`.
 
 **Acceptance criteria**
 - [ ] Entry with empty `schemaId` fails
@@ -591,7 +591,7 @@ Wire all schema validators into a single script invokable as `yarn validate:sche
 | **Depends on** | KUI-015, KUI-016, KUI-017 |
 
 **Description**  
-Add fixture schemas in `src/tests/schemas/fixtures/` covering: a valid complete `PageSchema`, a schema with a namespace collision, a schema with an invalid condition var path (`data.quote.state`), a schema with a `dependsOn` cycle, and an invalid `RouteManifest` with an ambiguous alias. These fixtures serve as regression tests for all validators. At least one fixture should be the worked example from `docs/arch_v0/12-PAGE-AUTHORING-MANUAL.md`.
+Add fixture schemas in `src/tests/schemas/fixtures/` covering: a valid complete `PageSchema`, a schema with a namespace collision, a schema with an invalid condition var path (`data.quote.state`), a schema with a `dependsOn` cycle, and an invalid `RouteManifest` with an ambiguous alias. These fixtures serve as regression tests for all validators. At least one fixture should be the worked example from `docs/archV1/12-PAGE-AUTHORING-MANUAL.md`.
 
 **Acceptance criteria**
 - [ ] 5+ fixture files created
@@ -1191,7 +1191,7 @@ Wire the output of `resolveRoute` into the `system.*` population step. The `Reso
 | **Depends on** | KUI-050 |
 
 **Description**  
-Write unit tests for `resolveRoute` and the manifest validator covering all cases from `docs/arch_v0/16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md`: static path precedence, parameterized path precedence, ambiguity rejection without priority, alias mapping, ROUTE_NOT_FOUND for unmatched paths, and the distinction between ROUTE_NOT_FOUND vs SCHEMA_NOT_FOUND.
+Write unit tests for `resolveRoute` and the manifest validator covering all cases from `docs/archV1/16-ROUTE-MANIFEST-AND-SCHEMA-RESOLUTION.md`: static path precedence, parameterized path precedence, ambiguity rejection without priority, alias mapping, ROUTE_NOT_FOUND for unmatched paths, and the distinction between ROUTE_NOT_FOUND vs SCHEMA_NOT_FOUND.
 
 **Acceptance criteria**
 - [ ] `/quotations/new` beats `/quotations/:id` test
@@ -1324,7 +1324,7 @@ Write `docs/planning/PUBLICATION-RUNBOOK.md` documenting the early v0 manual pub
 **Acceptance criteria**
 - [ ] Runbook covers the full loop: validate → publish → verify → upload → confirm → rollback
 - [ ] Each step has an exact command or UI action
-- [ ] Rollback step references the versioned S3 restore procedure from `docs/arch_v0/01-SCHEMA-DELIVERY.md`
+- [ ] Rollback step references the versioned S3 restore procedure from `docs/archV1/01-SCHEMA-DELIVERY.md`
 - [ ] Runbook reviewed and walkthrough-tested by at least one engineer who did not write it
 
 ---
@@ -1536,7 +1536,7 @@ Add a smoke render CI job that mounts `SchemaRenderer` with each published artif
 | **Depends on** | KUI-056 |
 
 **Description**  
-Add size budget enforcement to the publish script. Per `docs/arch_v0/01-SCHEMA-DELIVERY.md`: warn at > 250 KB compressed equivalent, error (block publish) at > 1 MB uncompressed, warn at > 250 widget nodes. The publish script should emit these as warnings/errors before writing the artifact.
+Add size budget enforcement to the publish script. Per `docs/archV1/01-SCHEMA-DELIVERY.md`: warn at > 250 KB compressed equivalent, error (block publish) at > 1 MB uncompressed, warn at > 250 widget nodes. The publish script should emit these as warnings/errors before writing the artifact.
 
 **Acceptance criteria**
 - [ ] Artifact > 1 MB uncompressed → publish script exits non-zero
@@ -1556,7 +1556,7 @@ Add size budget enforcement to the publish script. Per `docs/arch_v0/01-SCHEMA-D
 | **Depends on** | KUI-056 |
 
 **Description**  
-Add schema-level accessibility checks to the publish script. Per `docs/arch_v0/01-SCHEMA-DELIVERY.md`: icon-only actions without `ariaLabel` or equivalent accessible label are errors; interactive form widgets without labels are errors; unsupported design-token references are warnings. These checks run against the resolved artifact before write.
+Add schema-level accessibility checks to the publish script. Per `docs/archV1/01-SCHEMA-DELIVERY.md`: icon-only actions without `ariaLabel` or equivalent accessible label are errors; interactive form widgets without labels are errors; unsupported design-token references are warnings. These checks run against the resolved artifact before write.
 
 **Acceptance criteria**
 - [ ] Icon-only action widget with no accessible label → publish error
@@ -1617,12 +1617,12 @@ Add telemetry for two more runtime events: (1) condition evaluation failures —
 | **Depends on** | KUI-072, KUI-073 |
 
 **Description**  
-Write `docs/planning/ALERT-OWNERSHIP.md` defining who owns each category of alert: schema delivery failures (platform/infra), namespace hydration failures (module team + backend owner), condition evaluation errors (schema author), API contract violations (API team + frontend platform). Include the escalation path and the expected SLA from `docs/arch_v0/00-SYSTEM-DESIGN.md` (contract violation alerting < 5 min; hotfix rollback < 15 min).
+Write `docs/planning/ALERT-OWNERSHIP.md` defining who owns each category of alert: schema delivery failures (platform/infra), namespace hydration failures (module team + backend owner), condition evaluation errors (schema author), API contract violations (API team + frontend platform). Include the escalation path and the expected SLA from `docs/archV1/00-SYSTEM-DESIGN.md` (contract violation alerting < 5 min; hotfix rollback < 15 min).
 
 **Acceptance criteria**
 - [ ] Document covers all four alert categories
 - [ ] Each category has: owner, escalation path, target response time
-- [ ] References SLOs from `docs/arch_v0/00-SYSTEM-DESIGN.md`
+- [ ] References SLOs from `docs/archV1/00-SYSTEM-DESIGN.md`
 - [ ] Document reviewed by platform lead and backend lead
 
 ---
@@ -1653,7 +1653,7 @@ Add the route manifest entry for `test-dashboard`. Assign `schemaId: "test-dashb
 
 ---
 
-### KUI-076 — test-dashboard: convert schema to arch_v0 format
+### KUI-076 — test-dashboard: convert schema to archV1 format
 
 | | |
 |---|---|
@@ -1761,7 +1761,7 @@ Add manifest entry for the claims list page. Assign `schemaId: "claims-list"`. C
 
 ---
 
-### KUI-081 — claims: convert schema to arch_v0 format
+### KUI-081 — claims: convert schema to archV1 format
 
 | | |
 |---|---|
@@ -1867,7 +1867,7 @@ Add manifest entry for `quotations-list`. Assign `schemaId: "quotations-list"`. 
 
 ---
 
-### KUI-086 — quotations-list: convert schema to arch_v0 format
+### KUI-086 — quotations-list: convert schema to archV1 format
 
 | | |
 |---|---|
@@ -2003,7 +2003,7 @@ Adapt `src/components/widgets/forms/FormContainer.tsx` so it reads its form stat
 | **Depends on** | KUI-047, KUI-032 |
 
 **Description**  
-Extend `useActionHandler` to support namespace revalidation as the post-mutation refresh mechanism. When a schema action declares `revalidate: ["quote"]`, the handler calls `refetchNamespace("quote")` after a successful mutation rather than invalidating a `refreshKey` string. For schemas that still use `refreshKey`, the old behavior is preserved. This enables the re-fetch mutation pattern from `docs/arch_v0/04-RUNTIME-AND-CONDITIONS.md`.
+Extend `useActionHandler` to support namespace revalidation as the post-mutation refresh mechanism. When a schema action declares `revalidate: ["quote"]`, the handler calls `refetchNamespace("quote")` after a successful mutation rather than invalidating a `refreshKey` string. For schemas that still use `refreshKey`, the old behavior is preserved. This enables the re-fetch mutation pattern from `docs/archV1/04-RUNTIME-AND-CONDITIONS.md`.
 
 **Acceptance criteria**
 - [ ] Action with `revalidate: ["quote"]` triggers re-fetch of `graph.quote` after success
@@ -2033,7 +2033,7 @@ For all pages migrated in EPIC-9–11 that still use `refreshKey` strings in the
 
 ---
 
-### KUI-094 — quotation-details: convert schema to arch_v0 format
+### KUI-094 — quotation-details: convert schema to archV1 format
 
 | | |
 |---|---|
@@ -2131,7 +2131,7 @@ Document the rollback procedure specific to detail routes (which have `routePara
 | **Depends on** | KUI-089 |
 
 **Description**  
-Resolve the five open questions from `docs/arch_v0/14-PACKAGING-AND-ADOPTION-STRATEGY.md` before WS9 begins: (1) what the CLI scaffold generates, (2) whether auth/API client stays app-local or becomes a shared package, (3) which current widgets are stable enough for `@keystone/widgets`, (4) whether a strict public API review gate is needed per package, (5) which internal package registry and versioning model to use. Each answer committed as a decision record.
+Resolve the five open questions from `docs/archV1/14-PACKAGING-AND-ADOPTION-STRATEGY.md` before WS9 begins: (1) what the CLI scaffold generates, (2) whether auth/API client stays app-local or becomes a shared package, (3) which current widgets are stable enough for `@keystone/widgets`, (4) whether a strict public API review gate is needed per package, (5) which internal package registry and versioning model to use. Each answer committed as a decision record.
 
 **Acceptance criteria**
 - [ ] All five questions answered in a committed decision record
@@ -2262,7 +2262,7 @@ Create a supported reference app based on `apps/keystone-demo` (or a simplified 
 - [ ] `create-keystone-app my-app` generates a runnable Next application
 - [ ] Generated app includes: `RuntimeProvider`, mock auth, one example schema-driven route, `yarn schemas:dev` command
 - [ ] Generated app validates with `yarn validate:schema-contracts`
-- [ ] Reference app and scaffolder documented in `docs/arch_v0/14-PACKAGING-AND-ADOPTION-STRATEGY.md`
+- [ ] Reference app and scaffolder documented in `docs/archV1/14-PACKAGING-AND-ADOPTION-STRATEGY.md`
 - [ ] Reviewed by at least one module team building a new screen
 
 ---

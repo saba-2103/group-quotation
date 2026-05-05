@@ -24,7 +24,7 @@ async function walk(dir) {
 function appFileToRoutePath(filePath) {
   const relative = path.relative(appDir, filePath);
   const normalized = relative.replace(/\\/g, '/');
-  const withoutPage = normalized.replace(/\/page\.tsx$/, '').replace(/\/page\.ts$/, '').replace(/page\.tsx$/, '').replace(/page\.ts$/, '');
+  const withoutPage = normalized.replace(/(?:^|\/)page\.tsx?$/, '');
 
   if (!withoutPage) {
     return '/';
@@ -102,7 +102,14 @@ function hasManifestEntry(routePath, manifestText) {
 }
 
 async function collectInventory() {
-  const files = await walk(appDir);
+  let files;
+  try {
+    files = await walk(appDir);
+  } catch (err) {
+    console.error(`Error: could not walk ${appDir}. Is this a Next.js project?`);
+    process.exitCode = 1;
+    return [];
+  }
   const routeFiles = files.filter((file) => /page\.tsx?$/.test(file));
   const manifestText = await readManifestText();
   const importPattern = /import\s+[\s\S]*?from\s+['\"]([^'\"]+\.json)['\"];?/g;

@@ -1,0 +1,46 @@
+import { BankProfile } from '../types';
+
+export const bankProfiles: BankProfile[] = [
+  {
+    id: 'bank-001',
+    organizationId: 'org-001',
+    policyIds: ['pol-gtl-001', 'pol-gcl-002'],
+    accountName: 'Acme Technologies Ltd — Premium Account',
+    accountNumber: '001234567890',
+    bankName: 'HDFC Bank',
+    branchName: 'BKC Branch',
+    ifsc: 'HDFC0001234',
+    accountType: 'Current',
+    status: 'Verified',
+    isPrimary: true,
+    verifiedAt: '2024-04-01T00:00:00Z',
+    verifiedBy: 'usr-008',
+    documents: [
+      { name: 'Cancelled Cheque', type: 'cancelled-cheque', uploadedAt: '2024-03-28T10:00:00Z' },
+      { name: 'Bank Verification Letter', type: 'bank-letter', uploadedAt: '2024-04-01T00:00:00Z' },
+    ],
+    createdAt: '2024-03-28T10:00:00Z',
+    updatedAt: '2024-04-01T00:00:00Z',
+  },
+  {
+    id: 'bank-002',
+    organizationId: 'org-001',
+    policyIds: ['pol-sav-003'],
+    accountName: 'Acme Tech Gratuity Trust — Fund Account',
+    accountNumber: '009876543210',
+    bankName: 'State Bank of India',
+    branchName: 'Nariman Point Branch',
+    ifsc: 'SBIN0000123',
+    accountType: 'Current',
+    status: 'Verified',
+    isPrimary: false,
+    verifiedAt: '2020-05-01T00:00:00Z',
+    verifiedBy: 'usr-008',
+    documents: [
+      { name: 'Cancelled Cheque — Trust Account', type: 'cancelled-cheque', uploadedAt: '2020-04-20T10:00:00Z' },
+      { name: 'Trust Bank Account Opening Letter', type: 'bank-letter', uploadedAt: '2020-05-01T00:00:00Z' },
+    ],
+    createdAt: '2020-04-20T10:00:00Z',
+    updatedAt: '2020-05-01T00:00:00Z',
+  },
+];

@@ -186,7 +186,7 @@ In both cases, the path into runtime state must be identical from the perspectiv
 This decision is complete when all of the following are true:
 
 - this decision record is committed
-- `docs/archV1/15-MIGRATION-AND-IMPLEMENTATION-PLAN.md` Pre-Sprint Decision #2 links to it
+- `docs/archV1/08-MIGRATION-PLAN.md` Phase 1 deliverables reference this decision
 - the mocked auth interface is defined and matches the runtime-facing contract expected by the future real implementation
 - early runtime code reads auth only through the abstraction
 - the real auth integration target date is recorded as 2026-05-29
