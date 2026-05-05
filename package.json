@@ -16,7 +16,6 @@
     "test:schemas": "jest --selectProjects schemas",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "inventory:routes": "node scripts/inventory_routes.mjs",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview --ip 0.0.0.0 --port 8787",
