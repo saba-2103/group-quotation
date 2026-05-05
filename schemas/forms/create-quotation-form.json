@@ -61,9 +61,12 @@
                 "size": "sm",
                 "placeholder": "Enter master policy number",
                 "visibleWhen": {
-                    "field": "isMasterPolicy",
-                    "operator": "eq",
-                    "value": "yes"
+                    "==": [
+                        {
+                            "var": "isMasterPolicy"
+                        },
+                        "yes"
+                    ]
                 }
             },
             {
@@ -187,7 +190,6 @@
                 "label": "Create Quotation",
                 "variant": "default",
                 "type": "api-mutation",
-                "actionType": "action",
                 "submitAction": true,
                 "api": {
                     "endpoint": "/api/quotations",
@@ -199,7 +201,6 @@
                 "id": "cancel",
                 "label": "Cancel",
                 "variant": "outline",
-                "actionType": "action",
                 "submitAction": false
             }
         ]

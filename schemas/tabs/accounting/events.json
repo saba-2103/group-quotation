@@ -18,6 +18,7 @@
             },
             "props": {
                 "title": "Accounting Events",
+                "rowIdKey": "accountingEventId",
                 "headerActions": [
                     {
                         "id": "create-event-btn",
@@ -73,13 +74,23 @@
                 ],
                 "rowActions": [
                     {
+                        "id": "view-event-btn",
+                        "label": "View",
+                        "icon": "ExternalLink",
+                        "type": "navigate",
+                        "target": "/accounting/events/:id"
+                    },
+                    {
                         "id": "post-event-btn",
                         "label": "Post Event",
                         "type": "api-mutation",
                         "visible": {
-                            "field": "state",
-                            "operator": "eq",
-                            "value": "PENDING"
+                            "==": [
+                                {
+                                    "var": "state"
+                                },
+                                "PENDING"
+                            ]
                         },
                         "refreshKey": "/api/accounting/events/list?page=0&size=50",
                         "api": {
@@ -93,9 +104,12 @@
                         "type": "open-modal",
                         "target": "reverse-event-form",
                         "visible": {
-                            "field": "state",
-                            "operator": "eq",
-                            "value": "POSTED"
+                            "==": [
+                                {
+                                    "var": "state"
+                                },
+                                "POSTED"
+                            ]
                         }
                     }
                 ]

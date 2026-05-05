@@ -18,6 +18,7 @@
             },
             "props": {
                 "title": "Posting Rules",
+                "rowIdKey": "ruleId",
                 "headerActions": [
                     {
                         "id": "create-posting-rule-btn",
@@ -37,13 +38,13 @@
                     {
                         "id": "lob",
                         "accessorKey": "lob",
-                        "label": "LOB",
+                        "label": "Line of Business",
                         "type": "text"
                     },
                     {
                         "id": "businessProcessCode",
                         "accessorKey": "businessProcessCode",
-                        "label": "Process Code",
+                        "label": "Business Process Code",
                         "type": "text"
                     },
                     {
@@ -51,30 +52,20 @@
                         "accessorKey": "accountGroup",
                         "label": "Account Group",
                         "type": "text"
-                    },
-                    {
-                        "id": "accountSubgroup",
-                        "accessorKey": "accountSubgroup",
-                        "label": "Account Subgroup",
-                        "type": "text"
-                    },
-                    {
-                        "id": "debitCreditIndicator",
-                        "accessorKey": "debitCreditIndicator",
-                        "label": "D/C Indicator",
-                        "type": "text"
-                    },
-                    {
-                        "id": "glPseudoName",
-                        "accessorKey": "glPseudoName",
-                        "label": "GL Pseudo Name",
-                        "type": "text"
                     }
                 ],
                 "rowActions": [
                     {
+                        "id": "view-posting-rule-btn",
+                        "label": "View",
+                        "icon": "ExternalLink",
+                        "type": "navigate",
+                        "target": "/accounting/posting-rules/:id"
+                    },
+                    {
                         "id": "delete-posting-rule-btn",
                         "label": "Delete",
+                        "icon": "Trash2",
                         "type": "api-mutation",
                         "variant": "destructive",
                         "api": {

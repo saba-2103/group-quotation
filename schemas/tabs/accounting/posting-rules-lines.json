@@ -1,0 +1,50 @@
+{
+    "id": "posting-rules-lines-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "posting-rules-lines",
+        "label": "Posting Rules Lines",
+        "icon": "List"
+    },
+    "children": [
+        {
+            "id": "posting-rules-lines-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/posting-rules/{{id}}/lines",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Posting Rules Lines",
+                "columns": [
+                    {
+                        "id": "acct_seqno",
+                        "accessorKey": "acct_seqno",
+                        "label": "Sequence Number",
+                        "type": "number"
+                    },
+                    {
+                        "id": "account_sub_group",
+                        "accessorKey": "account_sub_group",
+                        "label": "Account Sub Group",
+                        "type": "text"
+                    },
+                    {
+                        "id": "dc_ind",
+                        "accessorKey": "dc_ind",
+                        "label": "Debit Credit Indicator",
+                        "type": "text"
+                    },
+                    {
+                        "id": "gl_pseudo_name",
+                        "accessorKey": "gl_pseudo_name",
+                        "label": "GL Code Pseudo Name",
+                        "type": "text"
+                    }
+                ]
+            }
+        }
+    ]
+}

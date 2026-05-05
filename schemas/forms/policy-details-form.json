@@ -91,9 +91,12 @@
         }
       ],
       "visibleWhen": {
-        "field": "isItTakeover",
-        "operator": "eq",
-        "value": "yes"
+        "==": [
+          {
+            "var": "isItTakeover"
+          },
+          "yes"
+        ]
       }
     },
     {
@@ -115,9 +118,12 @@
       ],
       "defaultValue": "no",
       "visibleWhen": {
-        "field": "isItTakeover",
-        "operator": "eq",
-        "value": "yes"
+        "==": [
+          {
+            "var": "isItTakeover"
+          },
+          "yes"
+        ]
       }
     },
     {
@@ -314,9 +320,12 @@
         }
       ],
       "visibleWhen": {
-        "field": "isCoInsurance",
-        "operator": "eq",
-        "value": "yes"
+        "==": [
+          {
+            "var": "isCoInsurance"
+          },
+          "yes"
+        ]
       }
     },
     {
@@ -364,9 +373,12 @@
         }
       ],
       "visibleWhen": {
-        "field": "isRIApplicable",
-        "operator": "eq",
-        "value": "yes"
+        "==": [
+          {
+            "var": "isRIApplicable"
+          },
+          "yes"
+        ]
       }
     },
     {

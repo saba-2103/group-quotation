@@ -32,6 +32,7 @@
         "actions": [
             {
                 "id": "submit-period",
+                "type": "api-mutation",
                 "label": "Create Period",
                 "submitAction": true,
                 "variant": "default",

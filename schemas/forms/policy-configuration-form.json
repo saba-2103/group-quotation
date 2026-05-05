@@ -525,9 +525,12 @@
         }
       ],
       "visibleWhen": {
-        "field": "autoLapseRule",
-        "operator": "eq",
-        "value": "yes"
+        "==": [
+          {
+            "var": "autoLapseRule"
+          },
+          "yes"
+        ]
       }
     },
     {
@@ -630,9 +633,12 @@
       ],
       "defaultValue": "no",
       "visibleWhen": {
-        "field": "subsidiariesEnabled",
-        "operator": "eq",
-        "value": "yes"
+        "==": [
+          {
+            "var": "subsidiariesEnabled"
+          },
+          "yes"
+        ]
       }
     },
     {
@@ -662,9 +668,12 @@
         }
       ],
       "visibleWhen": {
-        "field": "subsidiariesEnabled",
-        "operator": "eq",
-        "value": "yes"
+        "==": [
+          {
+            "var": "subsidiariesEnabled"
+          },
+          "yes"
+        ]
       }
     },
     {
@@ -927,9 +936,12 @@
       "placeholder": "Search address",
       "icon": "Search",
       "visibleWhen": {
-        "field": "correspondenceAddressRule",
-        "operator": "eq",
-        "value": "Personal"
+        "==": [
+          {
+            "var": "correspondenceAddressRule"
+          },
+          "Personal"
+        ]
       }
     },
     {
@@ -943,9 +955,12 @@
       "placeholder": "Search address",
       "icon": "Search",
       "visibleWhen": {
-        "field": "correspondenceAddressRule",
-        "operator": "eq",
-        "value": "Corporate"
+        "==": [
+          {
+            "var": "correspondenceAddressRule"
+          },
+          "Corporate"
+        ]
       }
     },
     {

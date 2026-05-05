@@ -2,16 +2,8 @@ import React from 'react';
 import { WidgetConfig } from '@/types/widget';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-// Need to map strings to LucideIcons manually in keystone if there isn't a global mapper
-import * as Icons from 'lucide-react';
 import { useActionHandler } from '@/hooks/useActionHandler';
-
-// Basic LucideIcon mapper for keystone
-const LucideIcon = ({ name, className }: { name: string, className?: string }) => {
-    const IconComponent = (Icons as any)[name];
-    if (!IconComponent) return null;
-    return <IconComponent className={className} />;
-};
+import { LucideIcon } from '@/components/ui/lucide-icon';
 
 interface QuickLinksWidgetProps {
     config: WidgetConfig;
