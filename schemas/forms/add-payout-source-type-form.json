@@ -93,6 +93,8 @@
                 "id": "cancel-add-payout-source-type",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "add-payout-source-type-form",
                 "actionType": "action",
                 "submitAction": false
             }

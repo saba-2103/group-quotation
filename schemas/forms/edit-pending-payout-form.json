@@ -201,6 +201,8 @@
                 "id": "cancel-edit-pending-payout",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-pending-payout-form",
                 "submitAction": false
             }
         ]

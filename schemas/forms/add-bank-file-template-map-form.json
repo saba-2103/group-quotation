@@ -1,4 +1,5 @@
 {
+    "id": "add-bank-file-template-map-form",
     "type": "form-container",
     "props": {
         "title": "Add Bank File Template Map",
@@ -107,6 +108,8 @@
                 "id": "cancel-add-bank-file-template-map",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "add-bank-file-template-map-form",
                 "actionType": "action",
                 "submitAction": false
             }

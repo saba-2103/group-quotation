@@ -1,4 +1,5 @@
 {
+    "id": "add-payout-template-form",
     "type": "form-container",
     "props": {
         "title": "Add Payout Template",

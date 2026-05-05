@@ -1,4 +1,5 @@
 {
+    "id": "add-file-field-validation-rule-form",
     "type": "form-container",
     "props": {
         "title": "Add File Field Validation Rule",
@@ -84,6 +85,8 @@
                 "id": "cancel-add-file-field-validation-rule",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "add-file-field-validation-rule-form",
                 "actionType": "action",
                 "submitAction": false
             }

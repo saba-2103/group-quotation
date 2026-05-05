@@ -1,4 +1,5 @@
 {
+    "id": "edit-payout-template-form",
     "type": "form-container",
     "props": {
         "title": "Edit Payout Template",
@@ -111,6 +112,8 @@
                 "id": "cancel-edit-payout-template",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-payout-template-form",
                 "actionType": "action",
                 "submitAction": false
             }
