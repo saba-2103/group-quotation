@@ -1,0 +1,96 @@
+{
+    "id": "edit-file-field-validation-rule-form",
+    "type": "form-container",
+    "props": {
+        "title": "Edit File Field Validation Rule",
+        "description": "Update validation rule details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "validationRuleCode",
+                "name": "validationRuleCode",
+                "label": "Validation Rule Code",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "ruleType",
+                "name": "ruleType",
+                "label": "Rule Type",
+                "type": "select",
+                "order": 2,
+                "size": "sm",
+                "options": [
+                    { "value": "REGEX", "label": "REGEX" },
+                    { "value": "JAVACLASS", "label": "JAVA CLASS" },
+                    { "value": "JAVASCRIPT", "label": "JAVASCRIPT" },
+                    { "value": "RTCBA", "label": "RTCBA" }
+                ]
+            },
+            {
+                "id": "regexPattern",
+                "name": "regexPattern",
+                "label": "Regular Expression Pattern",
+                "type": "text",
+                "order": 3,
+                "size": "sm"
+            },
+            {
+                "id": "javaValidatorClass",
+                "name": "javaValidatorClass",
+                "label": "Validator Class",
+                "type": "text",
+                "order": 4,
+                "size": "sm"
+            },
+            {
+                "id": "validationScript",
+                "name": "validationScript",
+                "label": "Validation Script",
+                "type": "textarea",
+                "order": 5,
+                "size": "sm",
+                "span": 2
+            },
+            {
+                "id": "isActive",
+                "name": "isActive",
+                "label": "Is Active",
+                "type": "select",
+                "order": 6,
+                "size": "sm",
+                "options": [
+                    { "value": "Y", "label": "Yes" },
+                    { "value": "N", "label": "No" }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-edit-file-field-validation-rule",
+                "label": "Save Changes",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/payout-field-validation-rules",
+                "api": {
+                    "endpoint": "/api/moneyout/config/payout-field-validation-rules/:id",
+                    "method": "PUT"
+                },
+                "successMessage": "Validation Rule updated successfully!"
+            },
+            {
+                "id": "cancel-edit-file-field-validation-rule",
+                "label": "Cancel",
+                "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-file-field-validation-rule-form",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

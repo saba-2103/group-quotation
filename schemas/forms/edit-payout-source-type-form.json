@@ -1,0 +1,91 @@
+{
+    "id": "edit-payout-source-type-form",
+    "type": "form-container",
+    "props": {
+        "title": "Edit Payout Source Type",
+        "description": "Update payout source type details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "lob",
+                "name": "lob",
+                "label": "Line of Business",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "sourceType",
+                "name": "sourceType",
+                "label": "Payout Source Type",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "sourceTypeDesc",
+                "name": "sourceTypeDesc",
+                "label": "Payout Source Type Description",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "accountGroup",
+                "name": "accountGroup",
+                "label": "Account Group",
+                "type": "select",
+                "order": 4,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/valid-values?variable_code=account_group",
+                        "method": "GET"
+                    }
+                }
+            },
+            {
+                "id": "accountSubgroup",
+                "name": "accountSubgroup",
+                "label": "Account Sub Group",
+                "type": "select",
+                "order": 5,
+                "size": "sm",
+                "dataSource": {
+                    "api": {
+                        "endpoint": "/api/moneyout/config/valid-values?variable_code=account_subgroup",
+                        "method": "GET"
+                    }
+                }
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-edit-payout-source-type",
+                "label": "Save Changes",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/source-type-account-mappings",
+                "api": {
+                    "endpoint": "/api/moneyout/config/source-type-account-mappings/:id",
+                    "method": "PUT"
+                },
+                "successMessage": "Payout Source Type updated successfully!"
+            },
+            {
+                "id": "cancel-edit-payout-source-type",
+                "label": "Cancel",
+                "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-payout-source-type-form",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

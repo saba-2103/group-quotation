@@ -34,6 +34,9 @@
                 },
                 {
                     "$ref": "schemas/tabs/accounting/system-journals.json"
+                },
+                {
+                    "$ref": "schemas/tabs/accounting/direct-journals.json"
                 }
             ]
         }

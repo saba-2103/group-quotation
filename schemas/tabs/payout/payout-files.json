@@ -1,0 +1,99 @@
+{
+    "id": "payout-file-formats-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "payout-files",
+        "label": "Payout Files",
+        "icon": "FileText"
+    },
+    "children": [
+        {
+            "id": "payout-file-formats-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/config/bank-file-field-formats",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Payout File Formats",
+                "rowIdKey": "seqNo",
+                "headerActions": [
+                    {
+                        "id": "add-payout-file-format-btn",
+                        "label": "Add New",
+                        "icon": "Plus",
+                        "type": "open-modal",
+                        "target": "add-payout-file-form",
+                        "variant": "outline"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "templateId",
+                        "accessorKey": "templateId",
+                        "label": "Template Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "seqNo",
+                        "accessorKey": "seqNo",
+                        "label": "Seq No.",
+                        "type": "text"
+                    },
+                    {
+                        "id": "inputFieldName",
+                        "accessorKey": "inputFieldName",
+                        "label": "Input Field Name",
+                        "type": "text"
+                    },
+                    {
+                        "id": "outputFieldName",
+                        "accessorKey": "outputFieldName",
+                        "label": "Output Field Name",
+                        "type": "text"
+                    },
+                    {
+                        "id": "isMandatory",
+                        "accessorKey": "isMandatory",
+                        "label": "Is it Mandatory",
+                        "type": "text"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "edit-payout-file-format-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-modal",
+                        "target": "edit-payout-file-form"
+                    },
+                    {
+                        "id": "enquire-payout-file-format-btn",
+                        "label": "Enquire",
+                        "icon": "Eye",
+                        "type": "open-modal",
+                        "target": "enquire-payout-file-form"
+                    },
+                    {
+                        "id": "delete-payout-file-format-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Payout File Format",
+                            "message": "Are you sure you want to delete this payout file format? This action cannot be undone."
+                        },
+                        "refreshKey": "/api/moneyout/config/bank-file-field-formats",
+                        "api": {
+                            "endpoint": "/api/moneyout/config/bank-file-field-formats/:id",
+                            "method": "DELETE"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

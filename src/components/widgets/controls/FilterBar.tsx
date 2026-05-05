@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { WidgetConfig } from "@/types/widget";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { useWidgetState } from "@/hooks/useWidgetState";
@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Search, ListFilter, X } from "lucide-react";
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 interface FilterOption {
   value: string;
@@ -67,6 +69,35 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   );
 
   const activeFilterValues = getValue(stateKey, {});
+  const externalSearchValue = (activeFilterValues[searchKey] as string) ?? "";
+
+  const [searchInputValue, setSearchInputValue] = useState<string>(externalSearchValue);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync local input when external state is cleared (e.g. "Clear all")
+  useEffect(() => {
+    setSearchInputValue((currentValue) =>
+      currentValue === externalSearchValue ? currentValue : externalSearchValue
+    );
+  }, [externalSearchValue]);
+
+  // Cancel any pending debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchInputValue(value);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      handleAction({
+        type: "update-widget-state",
+        props: { key: stateKey, operation: "patch", value: { [searchKey]: value } }
+      });
+    }, SEARCH_DEBOUNCE_MS);
+  };
 
   const handleFilterChange = (filterStateKey: string, filterStateValue: string) => {
     handleAction({
@@ -83,6 +114,8 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   };
 
   const resetFilters = () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    setSearchInputValue("");
     handleAction({
       type: "update-widget-state",
       props: { key: stateKey, operation: "set", value: {} }
@@ -104,6 +137,19 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     .filter((appliedChip): appliedChip is { key: string; label: string } => appliedChip !== null);
 
   const selectFilters = filters.filter((filter) => filter.type === "select");
+  const textFilters = filters.filter((filter) => filter.type === "text");
+
+  const renderTextFilter = (filter: FilterConfig) => (
+    <div key={filter.id} className="px-2 py-1.5 flex flex-col gap-1">
+      <span className="text-xs text-muted-foreground font-medium">{filter.label}</span>
+      <Input
+        value={(activeFilterValues[filter.id] as string) ?? ""}
+        onChange={(e) => handleFilterChange(filter.id, e.target.value)}
+        placeholder={filter.placeholder ?? `Enter ${filter.label.toLowerCase()}`}
+        className="h-8 text-sm"
+      />
+    </div>
+  );
 
   const renderSelectFilter = (filter: FilterConfig) => {
     const selectedOptionValue = activeFilterValues[filter.id];
@@ -139,14 +185,14 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
         <div className="relative flex-1 min-w-[220px]">
           <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            value={activeFilterValues[searchKey] || ""}
-            onChange={(e) => handleFilterChange(searchKey, e.target.value)}
+            value={searchInputValue}
+            onChange={(e) => handleSearchInputChange(e.target.value)}
             placeholder={searchPlaceholder}
             className="bg-card pl-8"
           />
         </div>
 
-        {selectFilters.length > 0 && (
+        {(selectFilters.length > 0 || textFilters.length > 0) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-1">
@@ -157,6 +203,8 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
             <DropdownMenuContent align="end" className="min-w-[220px]">
               <DropdownMenuLabel>{filterByLabel}</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {textFilters.map(renderTextFilter)}
+              {textFilters.length > 0 && selectFilters.length > 0 && <DropdownMenuSeparator />}
               {selectFilters.map(renderSelectFilter)}
             </DropdownMenuContent>
           </DropdownMenu>

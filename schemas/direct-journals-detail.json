@@ -1,0 +1,121 @@
+{
+    "id": "direct-journal-detail-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-6"
+    },
+    "children": [
+        {
+            "id": "direct-journal-page-header",
+            "type": "page-header",
+            "props": {
+                "title": "Direct Journal",
+                "description": "Direct journal entry details and lines",
+                "breadcrumbs": [
+                    {
+                        "label": "Accounting",
+                        "href": "/accounting"
+                    },
+                    {
+                        "label": "Direct Journals",
+                        "href": "/accounting"
+                    },
+                    {
+                        "label": "Details"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "direct-journal-header-grid",
+            "type": "key-value-grid",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/direct-journals/{{id}}",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "fields": [
+                    {
+                        "id": "journal_number",
+                        "label": "Journal Number",
+                        "accessorKey": "journal_number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_date",
+                        "label": "Journal Date",
+                        "accessorKey": "journal_date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "account_year",
+                        "label": "Accounting Year",
+                        "accessorKey": "account_year",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_month",
+                        "label": "Accounting Month",
+                        "accessorKey": "account_month",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_status",
+                        "label": "Journal Status",
+                        "accessorKey": "journal_status",
+                        "type": "text"
+                    },
+                    {
+                        "id": "reversed_journal_number",
+                        "label": "Reversed Journal Number",
+                        "accessorKey": "reversed_journal_number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "balance_error_flag",
+                        "label": "Balance Error Flag",
+                        "accessorKey": "balance_error_flag",
+                        "type": "text"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "direct-journal-lines-container",
+            "type": "tabs-container",
+            "children": [
+                {
+                    "$ref": "schemas/tabs/accounting/direct-journal-lines.json"
+                }
+            ]
+        },
+        {
+            "id": "direct-journal-footer-grid",
+            "type": "key-value-grid",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/direct-journals/{{id}}",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "fields": [
+                    {
+                        "id": "journal_total",
+                        "label": "Journal Total",
+                        "accessorKey": "journal_total",
+                        "type": "text"
+                    },
+                    {
+                        "id": "journal_message",
+                        "label": "Journal Message",
+                        "accessorKey": "journal_message",
+                        "type": "text"
+                    }
+                ]
+            }
+        }
+    ]
+}

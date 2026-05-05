@@ -1,0 +1,99 @@
+{
+    "id": "payout-templates-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "payout-templates",
+        "label": "Payout Templates",
+        "icon": "FileText"
+    },
+    "children": [
+        {
+            "id": "payout-templates-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/config/bank-file-templates",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Payout Templates",
+                "rowIdKey": "id",
+                "headerActions": [
+                    {
+                        "id": "add-payout-template-btn",
+                        "label": "Add New",
+                        "icon": "Plus",
+                        "type": "open-modal",
+                        "target": "add-payout-template-form",
+                        "variant": "outline"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "templateId",
+                        "accessorKey": "templateId",
+                        "label": "Template Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payoutMode",
+                        "accessorKey": "payoutMode",
+                        "label": "Payout Mode",
+                        "type": "text"
+                    },
+                    {
+                        "id": "outputFormat",
+                        "accessorKey": "outputFormat",
+                        "label": "Output Format",
+                        "type": "text"
+                    },
+                    {
+                        "id": "outputFilePath",
+                        "accessorKey": "outputFilePath",
+                        "label": "Output File Path",
+                        "type": "text"
+                    },
+                    {
+                        "id": "outputFileNamePattern",
+                        "accessorKey": "outputFileNamePattern",
+                        "label": "File Name Pattern",
+                        "type": "text"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "edit-payout-template-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-modal",
+                        "target": "edit-payout-template-form"
+                    },
+                    {
+                        "id": "enquire-payout-template-btn",
+                        "label": "Enquire",
+                        "icon": "Eye",
+                        "type": "open-modal",
+                        "target": "enquire-payout-template-form"
+                    },
+                    {
+                        "id": "delete-payout-template-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Payout Template",
+                            "message": "Are you sure you want to delete this payout template? This action cannot be undone."
+                        },
+                        "refreshKey": "/api/moneyout/config/bank-file-templates",
+                        "api": {
+                            "endpoint": "/api/moneyout/config/bank-file-templates/:id",
+                            "method": "DELETE"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

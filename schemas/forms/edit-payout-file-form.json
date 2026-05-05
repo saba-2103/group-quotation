@@ -1,0 +1,114 @@
+{
+    "id": "edit-payout-file-form",
+    "type": "form-container",
+    "props": {
+        "title": "Edit Payout File Format",
+        "description": "Update payout file format details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "templateId",
+                "name": "templateId",
+                "label": "Template Id",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "seqNo",
+                "name": "seqNo",
+                "label": "Seq No.",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "inputFieldName",
+                "name": "inputFieldName",
+                "label": "Input Field Name",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "outputFieldName",
+                "name": "outputFieldName",
+                "label": "Output Field Name",
+                "type": "text",
+                "order": 4,
+                "size": "sm"
+            },
+            {
+                "id": "isMandatory",
+                "name": "isMandatory",
+                "label": "Is it Mandatory",
+                "type": "select",
+                "order": 5,
+                "size": "sm",
+                "options": [
+                    { "value": "Y", "label": "Yes" },
+                    { "value": "N", "label": "No" }
+                ]
+            },
+            {
+                "id": "validationRuleCode",
+                "name": "validationRuleCode",
+                "label": "Validation Rule Code",
+                "type": "select",
+                "order": 6,
+                "size": "sm",
+                "options": [
+                    { "value": "NUMERIC", "label": "Numeric" },
+                    { "value": "ALPHA", "label": "Alpha" },
+                    { "value": "ALPHANUMERIC", "label": "Alphanumeric" },
+                    { "value": "DATE", "label": "Date" },
+                    { "value": "AMOUNT", "label": "Amount" },
+                    { "value": "IFSC", "label": "IFSC Code" },
+                    { "value": "ACCOUNT_NO", "label": "Account Number" }
+                ]
+            },
+            {
+                "id": "defaultValue",
+                "name": "defaultValue",
+                "label": "Default Value",
+                "type": "text",
+                "order": 7,
+                "size": "sm"
+            },
+            {
+                "id": "formatExpression",
+                "name": "formatExpression",
+                "label": "Formatting Regular Expression",
+                "type": "text",
+                "order": 8,
+                "size": "sm"
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-edit-payout-file-format",
+                "label": "Save Changes",
+                "variant": "default",
+                "type": "api-mutation",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/bank-file-field-formats",
+                "api": {
+                    "endpoint": "/api/moneyout/config/bank-file-field-formats",
+                    "method": "PUT"
+                },
+                "successMessage": "Payout File Format updated successfully!"
+            },
+            {
+                "id": "cancel-edit-payout-file-format",
+                "label": "Cancel",
+                "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-payout-file-form",
+                "submitAction": false
+            }
+        ]
+    }
+}
