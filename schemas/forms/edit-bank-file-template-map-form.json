@@ -81,6 +81,8 @@
                 "id": "cancel-edit-bank-file-template-map",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-bank-file-template-map-form",
                 "actionType": "action",
                 "submitAction": false
             }

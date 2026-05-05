@@ -87,6 +87,7 @@
             {
                 "id": "submit-edit-journal-line",
                 "label": "Save Changes",
+                "type": "api-mutation",
                 "submitAction": true,
                 "variant": "default",
                 "api": {

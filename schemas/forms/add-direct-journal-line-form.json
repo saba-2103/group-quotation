@@ -87,6 +87,7 @@
             {
                 "id": "submit-add-journal-line",
                 "label": "Add Line",
+                "type": "api-mutation",
                 "submitAction": true,
                 "variant": "default",
                 "api": {

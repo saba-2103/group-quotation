@@ -139,6 +139,8 @@
                 "id": "cancel-add-payout-template",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "add-payout-template-form",
                 "actionType": "action",
                 "submitAction": false
             }

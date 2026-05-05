@@ -85,6 +85,8 @@
                 "id": "cancel-edit-file-field-validation-rule",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-file-field-validation-rule-form",
                 "actionType": "action",
                 "submitAction": false
             }
