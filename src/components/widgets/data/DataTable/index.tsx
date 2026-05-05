@@ -33,6 +33,7 @@ import { RowActions } from "./RowActions";
 import { useDataTable } from "@/hooks/useDataTable";
 import { useTableExport } from "@/hooks/useTableExport";
 import { getFrozenColumnClasses, getActionsColumnClasses, getCheckboxColumnClasses } from "./utils";
+import { substituteEndpointParams } from "@/lib/endpointUtils";
 import { DataTableProps, ColumnConfig, TableRow as DataRow } from "./types";
 import { ActionConfig } from "@/types/widget";
 import { ActionRenderer } from "../../controls/ActionRenderer";
@@ -59,7 +60,6 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     totalCount,
     colSpan,
     selectedCount,
-    rowIdKey,
     pagination,
     isQueryLoading,
     queryError
@@ -85,7 +85,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   const error = propError || queryError;
 
   const resolveLinkAndNavigate = (route: string, rowId: string) => {
-    handleAction({ type: "navigate", target: route.replace(":id", rowId) });
+    handleAction({ type: "navigate", target: substituteEndpointParams(route, { id: rowId }) });
   };
 
   if (error) {
@@ -337,7 +337,6 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                           <RowActions
                             row={rowData}
                             rowActions={rowActions}
-                            rowIdKey={rowIdKey}
                           />
                         </TableCell>
                       )}

@@ -65,6 +65,8 @@
                 "id": "close-enquire-bank-file-template-map",
                 "label": "Close",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "enquire-bank-file-template-map-form",
                 "actionType": "action",
                 "submitAction": false
             }

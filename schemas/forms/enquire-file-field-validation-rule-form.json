@@ -66,6 +66,8 @@
                 "id": "close-enquire-file-field-validation-rule",
                 "label": "Close",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "enquire-file-field-validation-rule-form",
                 "actionType": "action",
                 "submitAction": false
             }

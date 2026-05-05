@@ -1,25 +1,19 @@
 import { Suspense } from 'react';
 export const dynamic = 'force-dynamic';
 import { notFound } from 'next/navigation';
+import { existsSync, readFileSync } from 'fs';
+import path from 'path';
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 import { WidgetConfig } from '@/types/widget';
 import { resolveSchemaRefs } from '@/lib/schemaResolver';
 
-type SchemaLoader = () => Promise<{ default: WidgetConfig }>;
-
-const SUPPORTED_PAYOUT_DETAIL_SCHEMAS: Record<string, SchemaLoader> = {
-    'payout-enquiry-detail': () => import('../../../../../schemas/payout-enquiry-detail.json') as Promise<{ default: WidgetConfig }>,
-};
+const VALID_MODULE_SLUG = /^[a-z][a-z0-9-]*$/;
 
 async function loadSchema(moduleSlug: string): Promise<WidgetConfig> {
-    const schemaLoader = SUPPORTED_PAYOUT_DETAIL_SCHEMAS[moduleSlug];
-    if (!schemaLoader) notFound();
-    try {
-        const schemaModule = await schemaLoader();
-        return schemaModule.default;
-    } catch {
-        notFound();
-    }
+    if (!VALID_MODULE_SLUG.test(moduleSlug)) notFound();
+    const schemaFilePath = path.join(process.cwd(), 'schemas', `${moduleSlug}-detail.json`);
+    if (!existsSync(schemaFilePath)) notFound();
+    return JSON.parse(readFileSync(schemaFilePath, 'utf-8')) as WidgetConfig;
 }
 
 type ActionEntry = { api?: { endpoint?: string }; refreshKey?: string };

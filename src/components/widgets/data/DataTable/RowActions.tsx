@@ -14,9 +14,10 @@ import { MAX_INLINE_ACTIONS } from "./constants";
 import { RowActionsProps, RowActionConfig } from "./types";
 import { ActionConfig } from "@/types/widget";
 import { evaluateCondition } from "@/lib/conditions";
+import { substituteEndpointParams } from "@/lib/endpointUtils";
 
-const injectRowId = (action: RowActionConfig, rowId: string): RowActionConfig => {
-  const sub = (s: string) => s.replace(/:id\b/g, rowId);
+const injectRowDataIntoAction = (action: RowActionConfig, row: Record<string, unknown>): RowActionConfig => {
+  const sub = (s: string) => substituteEndpointParams(s, row);
   return {
     ...action,
     ...("target" in action && { target: sub(action.target) }),
@@ -27,14 +28,12 @@ const injectRowId = (action: RowActionConfig, rowId: string): RowActionConfig =>
 export const RowActions: React.FC<RowActionsProps> = ({
   row,
   rowActions,
-  rowIdKey,
 }) => {
   const handleAction = useActionHandler();
-  const rowId = String(row[rowIdKey] ?? "");
 
   const visibleActions = rowActions
     .filter((act) => evaluateCondition(act.visible, row))
-    .map((act) => injectRowId(act, rowId));
+    .map((act) => injectRowDataIntoAction(act, row));
 
   if (visibleActions.length <= MAX_INLINE_ACTIONS) {
     return (

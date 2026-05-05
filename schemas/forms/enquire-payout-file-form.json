@@ -83,6 +83,8 @@
                 "id": "close-enquire-payout-file-format",
                 "label": "Close",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "enquire-payout-file-form",
                 "actionType": "action",
                 "submitAction": false
             }

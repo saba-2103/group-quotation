@@ -3,15 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 import { WidgetConfig } from '@/types/widget';
 import { useOverlayStore } from '@/hooks/useOverlayStore';
+import { substituteEndpointParams } from '@/lib/endpointUtils';
 
 interface OverlaidFormProps {
     formId: string;
 }
 
 type FieldConfig = { name: string; defaultValue?: unknown; [key: string]: unknown };
+type SubmitActionConfig = { api?: { endpoint?: string; [key: string]: unknown }; [key: string]: unknown };
 
 function injectRowData(node: WidgetConfig, rowData: Record<string, unknown>): WidgetConfig {
-    const enrichedProps = node.props?.fields
+    const propsWithFields = node.props?.fields
         ? {
               ...node.props,
               fields: (node.props.fields as FieldConfig[]).map((field) => ({
@@ -20,6 +22,17 @@ function injectRowData(node: WidgetConfig, rowData: Record<string, unknown>): Wi
               })),
           }
         : node.props;
+
+    const enrichedProps = propsWithFields?.actions
+        ? {
+              ...propsWithFields,
+              actions: (propsWithFields.actions as SubmitActionConfig[]).map((action) =>
+                  action.api?.endpoint
+                      ? { ...action, api: { ...action.api, endpoint: substituteEndpointParams(action.api.endpoint, rowData) } }
+                      : action
+              ),
+          }
+        : propsWithFields;
 
     return {
         ...node,
