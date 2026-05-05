@@ -1,4 +1,5 @@
 {
+    "id": "enquire-bank-file-template-map-form",
     "type": "form-container",
     "props": {
         "title": "Bank File Template Map Details",

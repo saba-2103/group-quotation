@@ -57,6 +57,8 @@
                 "id": "close-enquire-payout-source-type",
                 "label": "Close",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "enquire-payout-source-type-form",
                 "actionType": "action",
                 "submitAction": false
             }

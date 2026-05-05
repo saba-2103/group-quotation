@@ -1,4 +1,5 @@
 {
+    "id": "enquire-file-field-validation-rule-form",
     "type": "form-container",
     "props": {
         "title": "Validation Rule Details",

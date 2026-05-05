@@ -111,6 +111,8 @@
                 "id": "cancel-edit-payout-mode",
                 "label": "Cancel",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-payout-mode-form",
                 "submitAction": false
             }
         ]

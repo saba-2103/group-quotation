@@ -1,4 +1,5 @@
 {
+    "id": "edit-bank-file-template-map-form",
     "type": "form-container",
     "props": {
         "title": "Edit Bank File Template Map",

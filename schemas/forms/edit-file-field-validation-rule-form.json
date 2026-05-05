@@ -1,4 +1,5 @@
 {
+    "id": "edit-file-field-validation-rule-form",
     "type": "form-container",
     "props": {
         "title": "Edit File Field Validation Rule",

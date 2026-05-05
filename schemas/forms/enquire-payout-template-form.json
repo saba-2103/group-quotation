@@ -1,4 +1,5 @@
 {
+    "id": "enquire-payout-template-form",
     "type": "form-container",
     "props": {
         "title": "Payout Template Details",
@@ -101,6 +102,8 @@
                 "id": "close-enquire-payout-template",
                 "label": "Close",
                 "variant": "outline",
+                "type": "trigger-event",
+                "target": "enquire-payout-template-form",
                 "actionType": "action",
                 "submitAction": false
             }

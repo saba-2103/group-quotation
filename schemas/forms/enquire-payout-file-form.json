@@ -1,4 +1,5 @@
 {
+    "id": "enquire-payout-file-form",
     "type": "form-container",
     "props": {
         "title": "Payout File Format Details",
