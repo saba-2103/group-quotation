@@ -1,0 +1,100 @@
+{
+    "id": "add-direct-journal-line-form",
+    "type": "form-container",
+    "props": {
+        "title": "Add Journal Line",
+        "fields": [
+            {
+                "id": "event_seq",
+                "name": "event_seq",
+                "label": "Event Sequence",
+                "type": "text"
+            },
+            {
+                "id": "account_group",
+                "name": "account_group",
+                "label": "Account Group",
+                "type": "text"
+            },
+            {
+                "id": "account_subgroup",
+                "name": "account_subgroup",
+                "label": "Account SubGroup",
+                "type": "text"
+            },
+            {
+                "id": "entity1_type",
+                "name": "entity1_type",
+                "label": "Entity 1 Type",
+                "type": "text"
+            },
+            {
+                "id": "entity1",
+                "name": "entity1",
+                "label": "Entity 1",
+                "type": "text"
+            },
+            {
+                "id": "entity2_type",
+                "name": "entity2_type",
+                "label": "Entity 2 Type",
+                "type": "text"
+            },
+            {
+                "id": "entity2",
+                "name": "entity2",
+                "label": "Entity 2",
+                "type": "text"
+            },
+            {
+                "id": "effective_date",
+                "name": "effective_date",
+                "label": "Effective Date",
+                "type": "date"
+            },
+            {
+                "id": "transaction_date",
+                "name": "transaction_date",
+                "label": "Transaction Date",
+                "type": "date"
+            },
+            {
+                "id": "transaction_currency",
+                "name": "transaction_currency",
+                "label": "Transaction Currency",
+                "type": "text"
+            },
+            {
+                "id": "amount_in_trans_currency",
+                "name": "amount_in_trans_currency",
+                "label": "Amount in Transaction Currency",
+                "type": "number"
+            },
+            {
+                "id": "gl_currency",
+                "name": "gl_currency",
+                "label": "GL Currency",
+                "type": "text"
+            },
+            {
+                "id": "amount_in_gl_currency",
+                "name": "amount_in_gl_currency",
+                "label": "Amount in GL Currency",
+                "type": "number"
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-add-journal-line",
+                "label": "Add Line",
+                "type": "api-mutation",
+                "submitAction": true,
+                "variant": "default",
+                "api": {
+                    "endpoint": "/api/accounting/direct-journals/{{id}}/lines",
+                    "method": "POST"
+                }
+            }
+        ]
+    }
+}

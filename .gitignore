@@ -67,3 +67,9 @@ keystone-ui.code-workspace
 
 *storybook.log
 storybook-static
+
+# Claude Code session data
+.claude/
+
+# Local planning and spec docs not intended for version control
+docs/SPECS/

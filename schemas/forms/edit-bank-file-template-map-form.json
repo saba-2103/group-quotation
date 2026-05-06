@@ -1,0 +1,92 @@
+{
+    "id": "edit-bank-file-template-map-form",
+    "type": "form-container",
+    "props": {
+        "title": "Edit Bank File Template Map",
+        "description": "Update bank file template mapping details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "bankCode",
+                "name": "bankCode",
+                "label": "Bank Code",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payoutMode",
+                "name": "payoutMode",
+                "label": "Payout Mode",
+                "type": "text",
+                "order": 2,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "templateId",
+                "name": "templateId",
+                "label": "Template Id",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "effectiveDate",
+                "name": "effectiveDate",
+                "label": "Effective Date",
+                "type": "text",
+                "order": 4,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "endDate",
+                "name": "endDate",
+                "label": "End Date",
+                "type": "date",
+                "order": 5,
+                "size": "sm"
+            },
+            {
+                "id": "isActive",
+                "name": "isActive",
+                "label": "Valid Flag",
+                "type": "select",
+                "order": 6,
+                "size": "sm",
+                "options": [
+                    { "value": "Y", "label": "Yes" },
+                    { "value": "N", "label": "No" }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-edit-bank-file-template-map",
+                "label": "Save Changes",
+                "variant": "default",
+                "type": "api-mutation",
+                "actionType": "action",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/config/bank-file-template-assignments",
+                "api": {
+                    "endpoint": "/api/moneyout/config/bank-file-template-assignments/:id",
+                    "method": "PUT"
+                },
+                "successMessage": "Bank File Template Map updated successfully!"
+            },
+            {
+                "id": "cancel-edit-bank-file-template-map",
+                "label": "Cancel",
+                "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-bank-file-template-map-form",
+                "actionType": "action",
+                "submitAction": false
+            }
+        ]
+    }
+}

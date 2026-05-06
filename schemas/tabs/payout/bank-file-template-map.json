@@ -1,0 +1,111 @@
+{
+    "id": "bank-file-template-map-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "bank-file-template-map",
+        "label": "Bank File Template Map",
+        "icon": "FileText"
+    },
+    "children": [
+        {
+            "id": "bank-file-template-map-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/config/bank-file-template-assignments",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "title": "Bank File Template Map",
+                "rowIdKey": "id",
+                "headerActions": [
+                    {
+                        "id": "add-bank-file-template-map-btn",
+                        "label": "Add New",
+                        "icon": "Plus",
+                        "type": "open-modal",
+                        "target": "add-bank-file-template-map-form",
+                        "variant": "outline"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "bankCode",
+                        "accessorKey": "bankCode",
+                        "label": "Bank Code",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payoutMode",
+                        "accessorKey": "payoutMode",
+                        "label": "Payout Mode",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payoutModeDesc",
+                        "accessorKey": "payoutModeDesc",
+                        "label": "Payout Mode Description",
+                        "type": "text"
+                    },
+                    {
+                        "id": "templateId",
+                        "accessorKey": "templateId",
+                        "label": "Template Id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "effectiveDate",
+                        "accessorKey": "effectiveDate",
+                        "label": "Effective Date",
+                        "type": "text"
+                    },
+                    {
+                        "id": "endDate",
+                        "accessorKey": "endDate",
+                        "label": "End Date",
+                        "type": "text"
+                    },
+                    {
+                        "id": "isActive",
+                        "accessorKey": "isActive",
+                        "label": "Valid Flag",
+                        "type": "text"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "edit-bank-file-template-map-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-modal",
+                        "target": "edit-bank-file-template-map-form"
+                    },
+                    {
+                        "id": "enquire-bank-file-template-map-btn",
+                        "label": "Enquire",
+                        "icon": "Eye",
+                        "type": "open-modal",
+                        "target": "enquire-bank-file-template-map-form"
+                    },
+                    {
+                        "id": "delete-bank-file-template-map-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Bank File Template Map",
+                            "message": "Are you sure you want to delete this bank file template map? This action cannot be undone."
+                        },
+                        "refreshKey": "/api/moneyout/config/bank-file-template-assignments",
+                        "api": {
+                            "endpoint": "/api/moneyout/config/bank-file-template-assignments/:id",
+                            "method": "DELETE"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

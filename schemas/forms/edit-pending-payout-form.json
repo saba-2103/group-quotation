@@ -1,0 +1,210 @@
+{
+    "id": "edit-pending-payout-form",
+    "type": "form-container",
+    "props": {
+        "title": "Edit Pending Payout",
+        "description": "Update pending payout details",
+        "columns": 2,
+        "fields": [
+            {
+                "id": "payout_request_id",
+                "name": "payout_request_id",
+                "label": "Payout Request ID",
+                "type": "text",
+                "order": 1,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payout_date",
+                "name": "payout_date",
+                "label": "Payout Date",
+                "type": "date",
+                "order": 2,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payout Date is required"
+                    }
+                ]
+            },
+            {
+                "id": "lob",
+                "name": "lob",
+                "label": "Line of Business",
+                "type": "text",
+                "order": 3,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "component",
+                "name": "component",
+                "label": "Component",
+                "type": "text",
+                "order": 4,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payout_gen_type",
+                "name": "payout_gen_type",
+                "label": "Payout Generation Type",
+                "type": "text",
+                "order": 5,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payout_status",
+                "name": "payout_status",
+                "label": "Payout Status",
+                "type": "text",
+                "order": 6,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payout_reason",
+                "name": "payout_reason",
+                "label": "Payout Reason",
+                "type": "text",
+                "order": 7,
+                "size": "sm",
+                "span": 2,
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Payout Reason is required"
+                    }
+                ]
+            },
+            {
+                "id": "entity1_type",
+                "name": "entity1_type",
+                "label": "Entity Type",
+                "type": "text",
+                "order": 8,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "entity1",
+                "name": "entity1",
+                "label": "Entity",
+                "type": "text",
+                "order": 9,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "transaction_currency",
+                "name": "transaction_currency",
+                "label": "Transaction Currency",
+                "type": "text",
+                "order": 10,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "amount_in_trans_currency",
+                "name": "amount_in_trans_currency",
+                "label": "Amount in Transaction Currency",
+                "type": "number",
+                "order": 11,
+                "size": "sm",
+                "validations": [
+                    {
+                        "rule": "required",
+                        "message": "Amount is required"
+                    },
+                    {
+                        "rule": "min",
+                        "value": 1,
+                        "message": "Amount must be greater than 0"
+                    }
+                ]
+            },
+            {
+                "id": "gl_currency",
+                "name": "gl_currency",
+                "label": "GL Currency",
+                "type": "text",
+                "order": 12,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "exchange_rate",
+                "name": "exchange_rate",
+                "label": "Exchange Rate",
+                "type": "number",
+                "order": 13,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "amount_in_gl_currency",
+                "name": "amount_in_gl_currency",
+                "label": "Amount in GL Currency",
+                "type": "number",
+                "order": 14,
+                "size": "sm",
+                "span": 2,
+                "disabled": true
+            },
+            {
+                "id": "payout_initiated_by",
+                "name": "payout_initiated_by",
+                "label": "Initiated By",
+                "type": "text",
+                "order": 15,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "payout_initiated_date",
+                "name": "payout_initiated_date",
+                "label": "Initiated Date",
+                "type": "date",
+                "order": 16,
+                "size": "sm",
+                "disabled": true
+            },
+            {
+                "id": "transaction_status",
+                "name": "transaction_status",
+                "label": "Transaction Status",
+                "type": "text",
+                "order": 17,
+                "size": "sm",
+                "span": 2,
+                "disabled": true
+            }
+        ],
+        "actions": [
+            {
+                "id": "submit-edit-pending-payout",
+                "label": "Save Changes",
+                "variant": "default",
+                "type": "api-mutation",
+                "submitAction": true,
+                "refreshKey": "/api/moneyout/payouts/pending",
+                "api": {
+                    "endpoint": "/api/moneyout/payouts/:payout_request_id",
+                    "method": "PUT"
+                },
+                "successMessage": "Pending Payout updated successfully!"
+            },
+            {
+                "id": "cancel-edit-pending-payout",
+                "label": "Cancel",
+                "variant": "outline",
+                "type": "trigger-event",
+                "target": "edit-pending-payout-form",
+                "submitAction": false
+            }
+        ]
+    }
+}

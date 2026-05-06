@@ -45,7 +45,7 @@ export const useActionHandler = () => {
     }
   });
 
-  return async (action: ActionConfig) => {
+  return async (action: ActionConfig, rowData?: Record<string, unknown>) => {
     switch (action.type) {
       case "navigate":
         if (action.target) router.push(action.target);
@@ -75,10 +75,10 @@ export const useActionHandler = () => {
         }
         break;
       case "open-modal":
-        if (action.target) open(action.target, "modal");
+        if (action.target) open(action.target, "modal", rowData);
         break;
       case "open-sheet":
-        if (action.target) open(action.target, "sheet");
+        if (action.target) open(action.target, "sheet", rowData);
         break;
       case "api-download":
         if (action.api) {

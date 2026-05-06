@@ -8,34 +8,16 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ActionRenderer } from "../../controls/ActionRenderer";
+import { ActionButton } from "../../controls/ActionButton";
+import { useActionHandler } from "@/hooks/useActionHandler";
 import { MAX_INLINE_ACTIONS } from "./constants";
-import { RowActionsProps, RowActionConfig, TableRow as DataRow } from "./types";
+import { RowActionsProps, RowActionConfig } from "./types";
 import { ActionConfig } from "@/types/widget";
 import { evaluateCondition } from "@/lib/conditions";
+import { substituteEndpointParams } from "@/lib/endpointUtils";
 
-// Substitutes path tokens like ":id", ":referenceNo", ":taskRoute" with
-// values from the row. Falls back to `rowId` for ":id" when the row has
-// no explicit `id` field. Unknown tokens are left as-is so missing data
-// is visible rather than silently producing a malformed URL.
-const SUB_TOKEN = /:([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
-
-const substituteRowTokens = (input: string, row: DataRow, rowId: string): string =>
-  input.replace(SUB_TOKEN, (match, key: string) => {
-    const value = row[key];
-    if (value !== undefined && value !== null && value !== "") {
-      return String(value);
-    }
-    if (key === "id" && rowId) return rowId;
-    return match;
-  });
-
-const injectRowTokens = (
-  action: RowActionConfig,
-  row: DataRow,
-  rowId: string,
-): RowActionConfig => {
-  const sub = (s: string) => substituteRowTokens(s, row, rowId);
+const injectRowDataIntoAction = (action: RowActionConfig, row: Record<string, unknown>): RowActionConfig => {
+  const sub = (s: string) => substituteEndpointParams(s, row);
   return {
     ...action,
     ...("target" in action && { target: sub(action.target) }),
@@ -48,21 +30,21 @@ const injectRowTokens = (
 export const RowActions: React.FC<RowActionsProps> = ({
   row,
   rowActions,
-  rowIdKey,
 }) => {
-  const rowId = String(row[rowIdKey] ?? "");
+  const handleAction = useActionHandler();
 
   const visibleActions = rowActions
     .filter((act) => evaluateCondition(act.visible, row))
-    .map((act) => injectRowTokens(act, row, rowId));
+    .map((act) => injectRowDataIntoAction(act, row));
 
   if (visibleActions.length <= MAX_INLINE_ACTIONS) {
     return (
       <div className="flex items-center justify-end gap-1 opacity-60 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100 group-data-[state=selected]/row:opacity-100">
         {visibleActions.map((action) => (
-          <ActionRenderer
+          <ActionButton
             key={action.id}
             action={{ ...action, display: "icon" } as ActionConfig}
+            onClick={() => { void handleAction(action, row); }}
           />
         ))}
       </div>
@@ -80,9 +62,10 @@ export const RowActions: React.FC<RowActionsProps> = ({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {visibleActions.map((action) => (
-            <ActionRenderer
+            <ActionButton
               key={action.id}
               action={{ ...action, display: "menu-item" } as ActionConfig}
+              onClick={() => { void handleAction(action, row); }}
             />
           ))}
         </DropdownMenuContent>

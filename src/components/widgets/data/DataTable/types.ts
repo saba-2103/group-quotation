@@ -106,5 +106,4 @@ export interface TablePaginationProps {
 export interface RowActionsProps {
   row: TableRow;
   rowActions: RowActionConfig[];
-  rowIdKey: string;
 }

@@ -1,0 +1,185 @@
+{
+    "id": "payout-cancel-detail-page",
+    "type": "stack-layout",
+    "props": {
+        "className": "p-6 gap-6"
+    },
+    "children": [
+        {
+            "id": "payout-cancel-page-header",
+            "type": "page-header",
+            "props": {
+                "title": "Payout Cancel",
+                "description": "Cancel an approved payout request",
+                "breadcrumbs": [
+                    {
+                        "label": "Home",
+                        "href": "/"
+                    },
+                    {
+                        "label": "Money Out",
+                        "href": "/payout"
+                    },
+                    {
+                        "label": "Payout Cancellation",
+                        "href": "/payout"
+                    },
+                    {
+                        "label": "Cancel"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "payout-cancel-header-grid",
+            "type": "key-value-grid",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/moneyout/payouts/{{id}}",
+                    "method": "GET"
+                }
+            },
+            "props": {
+                "headerActions": [
+                    {
+                        "id": "cancel-payout-action",
+                        "label": "Cancel Payout",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "api": {
+                            "endpoint": "/api/moneyout/payouts/{{id}}/cancel",
+                            "method": "POST"
+                        },
+                        "confirm": {
+                            "title": "Cancel Payout",
+                            "message": "Are you sure you want to cancel this payout? This action cannot be undone."
+                        },
+                        "refreshKey": "/api/moneyout/payouts/{{id}}"
+                    }
+                ],
+                "fields": [
+                    {
+                        "id": "payout_request_id",
+                        "label": "Payout Request Id",
+                        "accessorKey": "payout_request_id",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_date",
+                        "label": "Payout Date",
+                        "accessorKey": "payout_date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "lob",
+                        "label": "Line of Business",
+                        "accessorKey": "lob",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_reason",
+                        "label": "Payout Reason",
+                        "accessorKey": "payout_reason",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1_type",
+                        "label": "Entity 1 Type",
+                        "accessorKey": "entity1_type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1",
+                        "label": "Entity 1",
+                        "accessorKey": "entity1",
+                        "type": "text"
+                    },
+                    {
+                        "id": "amount_in_trans_currency",
+                        "label": "Amount in Transaction Currency",
+                        "accessorKey": "amount_in_trans_currency",
+                        "type": "number"
+                    },
+                    {
+                        "id": "gl_currency",
+                        "label": "General Ledger Currency",
+                        "accessorKey": "gl_currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "exchange_rate",
+                        "label": "Exchange Rate",
+                        "accessorKey": "exchange_rate",
+                        "type": "number"
+                    },
+                    {
+                        "id": "amount_in_gl_currency",
+                        "label": "Amount in General Ledger Currency",
+                        "accessorKey": "amount_in_gl_currency",
+                        "type": "number"
+                    },
+                    {
+                        "id": "transaction_status",
+                        "label": "Transaction Status",
+                        "accessorKey": "transaction_status",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_status",
+                        "label": "Payout Status",
+                        "accessorKey": "payout_status",
+                        "type": "text"
+                    },
+                    {
+                        "id": "status_update_date",
+                        "label": "Payout Status Update Date",
+                        "accessorKey": "status_update_date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "payout_initiated_by",
+                        "label": "Initiated By",
+                        "accessorKey": "payout_initiated_by",
+                        "type": "text"
+                    },
+                    {
+                        "id": "payout_initiated_date",
+                        "label": "Initiated Date",
+                        "accessorKey": "payout_initiated_date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "final_approval_by",
+                        "label": "Final Approved By",
+                        "accessorKey": "final_approval_by",
+                        "type": "text"
+                    },
+                    {
+                        "id": "final_approval_date",
+                        "label": "Approved Date",
+                        "accessorKey": "final_approval_date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "remarks",
+                        "label": "Remarks",
+                        "accessorKey": "remarks",
+                        "type": "text"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "payout-cancel-sections-container",
+            "type": "tabs-container",
+            "children": [
+                {
+                    "$ref": "schemas/tabs/payout/payout-cancel-tender.json"
+                },
+                {
+                    "$ref": "schemas/tabs/payout/payout-cancel-source.json"
+                }
+            ]
+        }
+    ]
+}

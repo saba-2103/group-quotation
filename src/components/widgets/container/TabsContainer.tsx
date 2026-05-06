@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { ActionRenderer } from "@/components/widgets/controls/ActionRenderer";
+import { LucideIcon } from "@/components/ui/lucide-icon";
 
 const WidgetRenderer = React.lazy(() =>
     import("@/components/registry/WidgetRenderer").then((m) => ({ default: m.WidgetRenderer }))
@@ -99,6 +100,9 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                         <TabsList className="inline-flex w-max">
                             {children.map((tab) => (
                                 <TabsTrigger key={tab.id} value={tab.id}>
+                                    {tab.props?.icon && (
+                                        <LucideIcon name={tab.props.icon as string} size={14} className="mr-1.5 shrink-0" />
+                                    )}
                                     <span className="whitespace-nowrap">{tab.props?.label || tab.id}</span>
                                 </TabsTrigger>
                             ))}

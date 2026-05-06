@@ -1,0 +1,153 @@
+{
+    "id": "direct-journal-lines-tab",
+    "type": "tab-panel",
+    "props": {
+        "value": "direct-journal-lines",
+        "label": "Journal Lines",
+        "icon": "List"
+    },
+    "children": [
+        {
+            "id": "direct-journal-lines-table",
+            "type": "data-table",
+            "dataSource": {
+                "api": {
+                    "endpoint": "/api/accounting/direct-journals/{{id}}/lines?page=0&size=50",
+                    "method": "GET"
+                },
+                "fallbackData": []
+            },
+            "props": {
+                "title": "Journal Lines",
+                "rowIdKey": "acct_seqno",
+                "headerActions": [
+                    {
+                        "id": "add-direct-journal-line-btn",
+                        "label": "Add Line",
+                        "icon": "Plus",
+                        "type": "open-sheet",
+                        "target": "add-direct-journal-line-form",
+                        "variant": "default"
+                    }
+                ],
+                "columns": [
+                    {
+                        "id": "journal_number",
+                        "accessorKey": "journal_number",
+                        "label": "Journal Number",
+                        "type": "text"
+                    },
+                    {
+                        "id": "acct_seqno",
+                        "accessorKey": "acct_seqno",
+                        "label": "Accounting Seqno",
+                        "type": "text"
+                    },
+                    {
+                        "id": "event_seq",
+                        "accessorKey": "event_seq",
+                        "label": "Event Sequence",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_group",
+                        "accessorKey": "account_group",
+                        "label": "Account Group",
+                        "type": "text"
+                    },
+                    {
+                        "id": "account_subgroup",
+                        "accessorKey": "account_subgroup",
+                        "label": "Account SubGroup",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1_type",
+                        "accessorKey": "entity1_type",
+                        "label": "Entity 1 Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity1",
+                        "accessorKey": "entity1",
+                        "label": "Entity 1",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity2_type",
+                        "accessorKey": "entity2_type",
+                        "label": "Entity 2 Type",
+                        "type": "text"
+                    },
+                    {
+                        "id": "entity2",
+                        "accessorKey": "entity2",
+                        "label": "Entity 2",
+                        "type": "text"
+                    },
+                    {
+                        "id": "effective_date",
+                        "accessorKey": "effective_date",
+                        "label": "Effective Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "transaction_date",
+                        "accessorKey": "transaction_date",
+                        "label": "Transaction Date",
+                        "type": "date"
+                    },
+                    {
+                        "id": "transaction_currency",
+                        "accessorKey": "transaction_currency",
+                        "label": "Transaction Currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "amount_in_trans_currency",
+                        "accessorKey": "amount_in_trans_currency",
+                        "label": "Amount in Transaction Currency",
+                        "type": "number"
+                    },
+                    {
+                        "id": "gl_currency",
+                        "accessorKey": "gl_currency",
+                        "label": "GL Currency",
+                        "type": "text"
+                    },
+                    {
+                        "id": "amount_in_gl_currency",
+                        "accessorKey": "amount_in_gl_currency",
+                        "label": "Amount in GL Currency",
+                        "type": "number"
+                    }
+                ],
+                "rowActions": [
+                    {
+                        "id": "edit-direct-journal-line-btn",
+                        "label": "Edit",
+                        "icon": "Pencil",
+                        "type": "open-sheet",
+                        "target": "edit-direct-journal-line-form"
+                    },
+                    {
+                        "id": "delete-direct-journal-line-btn",
+                        "label": "Delete",
+                        "icon": "Trash2",
+                        "type": "api-mutation",
+                        "variant": "destructive",
+                        "confirm": {
+                            "title": "Delete Journal Line",
+                            "message": "Are you sure you want to delete this journal line? This action cannot be undone."
+                        },
+                        "api": {
+                            "endpoint": "/api/accounting/direct-journals/{{id}}/lines/:id",
+                            "method": "DELETE"
+                        },
+                        "refreshKey": "/api/accounting/direct-journals/{{id}}/lines?page=0&size=50"
+                    }
+                ]
+            }
+        }
+    ]
+}
