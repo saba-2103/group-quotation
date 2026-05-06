@@ -82,12 +82,12 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   const [searchInputValue, setSearchInputValue] = useState<string>((activeFilterValues[searchKey] as string) ?? "");
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Sync local input when external state is cleared (e.g. "Clear all")
   const inputRef = useRef<HTMLInputElement>(null);
   const activeFilterValuesRef = useRef(activeFilterValues);
   activeFilterValuesRef.current = activeFilterValues;
 
   useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     const currentValues = activeFilterValuesRef.current;
     const newValue = focusedFilterId
       ? ((currentValues[focusedFilterId] as string) ?? "")
@@ -110,33 +110,23 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     };
   }, []);
 
-  const commitInputToState = useCallback(
-    (value: string) => {
-      const targetKey = focusedFilterId ?? searchKey;
+  const handleSearchInputChange = (value: string) => {
+    setSearchInputValue(value);
+    const targetKey = focusedFilterId ?? searchKey;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
       handleAction({
         type: "update-widget-state",
         props: { key: stateKey, operation: "patch", value: { [targetKey]: value } }
       });
-    },
-    [focusedFilterId, searchKey, handleAction, stateKey]
-  );
-
-  const commitInputToStateRef = useRef(commitInputToState);
-  useEffect(() => {
-    commitInputToStateRef.current = commitInputToState;
-  }, [commitInputToState]);
-
-  const handleSearchInputChange = (value: string) => {
-    setSearchInputValue(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => commitInputToStateRef.current(value), INPUT_DEBOUNCE_MS);
+    }, INPUT_DEBOUNCE_MS);
   };
 
   const handleActivateTextFilter = (filterId: string) => {
     if (!activatedTextFilterIds.includes(filterId)) {
       setActivatedTextFilterIds((prev) => [...prev, filterId]);
     }
-    setFocusedFilterId(filterId);
+    setFocusedFilterId((prev) => (prev === filterId ? null : filterId));
   };
 
   const handleRemoveTextFilterPill = useCallback(
@@ -290,18 +280,18 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
             return (
               <div
                 key={filter.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => setFocusedFilterId(filter.id)}
-                onKeyDown={(e) => e.key === "Enter" && setFocusedFilterId(filter.id)}
-                className={`inline-flex items-center rounded-full border h-7 overflow-hidden transition-all cursor-pointer select-none ${
+                className={`inline-flex items-center rounded-full border h-7 overflow-hidden transition-all ${
                   isFocused
                     ? "border-primary/60 bg-primary/5 shadow-sm"
                     : "border-border bg-background hover:border-muted-foreground/40"
                 }`}
               >
-                <span
-                  className={`flex items-center px-2.5 h-full text-[11px] font-medium whitespace-nowrap shrink-0 transition-colors ${
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-pressed={isFocused}
+                  onClick={() => setFocusedFilterId((prev) => (prev === filter.id ? null : filter.id))}
+                  className={`h-full px-2.5 rounded-none text-[11px] font-medium whitespace-nowrap transition-colors hover:bg-transparent ${
                     isFocused ? "text-primary" : "text-muted-foreground"
                   }`}
                 >
@@ -311,7 +301,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                       {filterValue}
                     </span>
                   )}
-                </span>
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
