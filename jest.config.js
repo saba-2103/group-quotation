@@ -1,4 +1,4 @@
-import type { Config } from 'jest'
+/** @type {import('jest').Config} */
 
 const sharedConfig = {
   preset: 'ts-jest',
@@ -18,7 +18,8 @@ const sharedConfig = {
   },
 }
 
-const config: Config = {
+/** @type {import('jest').Config} */
+const config = {
   projects: [
     {
       ...sharedConfig,
@@ -33,4 +34,4 @@ const config: Config = {
   ],
 }
 
-export default config
+module.exports = config

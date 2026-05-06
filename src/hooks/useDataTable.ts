@@ -101,11 +101,11 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
   // ── Derived values ────────────────────────────────────────────────────────
   const isScrollable = (columns?.length ?? 0) > SCROLLABLE_COLUMN_THRESHOLD;
   const hasRowActions = Boolean(rowActions && rowActions.length > 0);
-  const isPaginationEnabled = pagination?.enabled ?? false;
   const hasFilters = Boolean((columns as ColumnConfig[])?.some((col) => col.filterable));
   const { pageIndex, pageSize } = table.getState().pagination;
   const selectedCount = table.getSelectedRowModel().rows.length;
   const totalCount = table.getFilteredRowModel().rows.length;
+  const isPaginationEnabled = (pagination?.enabled ?? false) && totalCount > pageSize;
   const colSpan = (columns?.length ?? 0) + (selectable ? 1 : 0) + (hasRowActions ? 1 : 0);
 
   return {
