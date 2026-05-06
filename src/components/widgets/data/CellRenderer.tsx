@@ -50,11 +50,20 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
     case "currency": {
       const num = Number(value);
       if (isNaN(num)) return <span>{String(value)}</span>;
-      return <span>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(num)}</span>;
+      const currency = (column as { currency?: string }).currency ?? "USD";
+      return (
+        <span>
+          {new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency,
+            maximumFractionDigits: 0,
+          }).format(num)}
+        </span>
+      );
     }
 
     case "date":
-      return <span>{String(value)}</span>;
+      return <DateDisplay value={String(value)} />;
 
     default:
       return <span>{String(value)}</span>;

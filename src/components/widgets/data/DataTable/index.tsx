@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useActionHandler } from "@/hooks/useActionHandler";
@@ -44,18 +44,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   const handleAction = useActionHandler();
   const downloadRef = useRef<HTMLAnchorElement>(null);
-  const [isMobileViewport, setIsMobileViewport] = useState(
-    typeof window !== "undefined" ? window.innerWidth < 768 : false,
-  );
-
-  useEffect(() => {
-    const syncViewport = () => setIsMobileViewport(window.innerWidth < 768);
-
-    syncViewport();
-    window.addEventListener("resize", syncViewport);
-
-    return () => window.removeEventListener("resize", syncViewport);
-  }, []);
 
   const {
     table,
@@ -97,9 +85,16 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   const isLoading = propLoading || isQueryLoading;
   const error = propError || queryError;
 
-  const resolveLinkAndNavigate = (route: string, rowId: string) => {
-    handleAction({ type: "navigate", target: substituteEndpointParams(route, { id: rowId }) });
-  };
+  // Returns a CellRenderer onLinkClick handler bound to a specific row, so
+  // multi-param routes (e.g. `/orgs/:orgId/quotes/:id`) resolve all tokens —
+  // not just `:id`.
+  const buildLinkHandler = (rowData: DataRow) =>
+    (route: string, rowId: string) => {
+      handleAction({
+        type: "navigate",
+        target: substituteEndpointParams(route, { ...rowData, id: rowId }),
+      });
+    };
 
   if (error) {
     return <ErrorState message="Error loading data" />;
@@ -215,8 +210,9 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
             </DropdownMenu>
           </div>
 
-          {isMobileViewport ? (
-            isLoading ? (
+          {/* Mobile card view — visible only below md breakpoint */}
+          <div className="md:hidden">
+            {isLoading ? (
               <div className="divide-y">
                 {Array.from({ length: 4 }).map((_, idx) => (
                   <div key={`skel-mobile-${idx}`} className="space-y-3 p-4">
@@ -264,7 +260,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                                 column={col}
                                 value={rowData[col.accessorKey]}
                                 rowId={rowId}
-                                onLinkClick={resolveLinkAndNavigate}
+                                onLinkClick={buildLinkHandler(rowData)}
                               />
                             </dd>
                           </div>
@@ -273,15 +269,18 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
 
                       {hasRowActions && (
                         <div className="border-t pt-3">
-                          <RowActions row={rowData} rowActions={rowActions} />
+                          <RowActions row={rowData} rowActions={rowActions} rowId={rowId} />
                         </div>
                       )}
                     </div>
                   );
                 })}
               </div>
-            )
-          ) : (
+            )}
+          </div>
+
+          {/* Desktop table view — visible at md and above */}
+          <div className="hidden md:block">
           <Table className={cn("relative", isScrollable && "w-max min-w-full")}>
             <TableHeader>
               {/* Column header row */}
@@ -438,7 +437,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                               column={col}
                               value={rowData[col.accessorKey]}
                               rowId={rowId}
-                              onLinkClick={resolveLinkAndNavigate}
+                              onLinkClick={buildLinkHandler(rowData)}
                             />
                           </TableCell>
                         );
@@ -448,6 +447,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                           <RowActions
                             row={rowData}
                             rowActions={rowActions}
+                            rowId={rowId}
                           />
                         </TableCell>
                       )}
@@ -457,7 +457,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
               )}
             </TableBody>
           </Table>
-          )}
+          </div>
         </div>
 
         {isPaginationEnabled && (

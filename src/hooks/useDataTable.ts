@@ -105,7 +105,10 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
   const { pageIndex, pageSize } = table.getState().pagination;
   const selectedCount = table.getSelectedRowModel().rows.length;
   const totalCount = table.getFilteredRowModel().rows.length;
-  const isPaginationEnabled = (pagination?.enabled ?? false) && totalCount > pageSize;
+  // Trust the schema-driven `pagination.enabled` flag. The previous
+  // `totalCount > pageSize` guard hid pagination on server-paginated tables
+  // where the API returns exactly pageSize rows per page (totalCount == pageSize).
+  const isPaginationEnabled = pagination?.enabled ?? false;
   const colSpan = (columns?.length ?? 0) + (selectable ? 1 : 0) + (hasRowActions ? 1 : 0);
 
   return {

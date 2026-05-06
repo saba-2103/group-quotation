@@ -16,8 +16,11 @@ import { ActionConfig } from "@/types/widget";
 import { evaluateCondition } from "@/lib/conditions";
 import { substituteEndpointParams } from "@/lib/endpointUtils";
 
-const injectRowDataIntoAction = (action: RowActionConfig, row: Record<string, unknown>): RowActionConfig => {
-  const sub = (s: string) => substituteEndpointParams(s, row);
+const injectRowDataIntoAction = (
+  action: RowActionConfig,
+  substitutionInput: Record<string, unknown>,
+): RowActionConfig => {
+  const sub = (s: string) => substituteEndpointParams(s, substitutionInput);
   return {
     ...action,
     ...("target" in action && { target: sub(action.target) }),
@@ -30,12 +33,17 @@ const injectRowDataIntoAction = (action: RowActionConfig, row: Record<string, un
 export const RowActions: React.FC<RowActionsProps> = ({
   row,
   rowActions,
+  rowId,
 }) => {
   const handleAction = useActionHandler();
 
+  // Substitute against row + the resolved rowId so `:id` works on tables whose
+  // rowIdKey points to a non-`id` field (e.g. rowIdKey: "payout_mode").
+  const substitutionInput = { ...row, id: rowId ?? row.id };
+
   const visibleActions = rowActions
     .filter((act) => evaluateCondition(act.visible, row))
-    .map((act) => injectRowDataIntoAction(act, row));
+    .map((act) => injectRowDataIntoAction(act, substitutionInput));
 
   if (visibleActions.length <= MAX_INLINE_ACTIONS) {
     return (
