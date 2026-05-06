@@ -12,6 +12,14 @@ This is the single entry point for project context. It links to the standing mem
 4. Check `git status` and recent commits to understand workspace drift.
 5. Only then continue the active task or ask the user a clarifying question.
 
+## Local environment
+
+Backend specs live in a separate `group-pas` repo (sibling to this one). Path references below use `<group-pas-repo>` as a placeholder — resolve it to wherever you've checked out `group-pas` locally.
+
+- **Expected default layout:** `group-pas` is checked out at the same workspace level as this repo. Example: if this repo is at `<workspace>/sandbox/keystone-ui/`, then `group-pas` is at `<workspace>/group-pas/` and references below resolve via `../../group-pas/`.
+- **Override:** set the `GROUP_PAS_REPO` env var to the absolute path of your local `group-pas` checkout if your layout differs.
+- **AI agents:** if you cannot resolve `<group-pas-repo>`, ask the user for the path rather than guessing.
+
 ## Canonical Context Files
 
 - Core memory: [context/CORE_MEMORY.md](CORE_MEMORY.md)
@@ -20,8 +28,8 @@ This is the single entry point for project context. It links to the standing mem
 - V1 implementation plan: [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md)
 - Module-creation walkthrough: [docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md](../docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md)
 - State patterns: [docs/STATE_MANAGEMENT_GUIDE.md](../docs/STATE_MANAGEMENT_GUIDE.md)
-- Backend specs (read-only reference): `/Users/seriousblack/dev_anaira/group-pas/spec/`
-- Backend blueprint: `/Users/seriousblack/dev_anaira/group-pas/plans/team_nb_blueprint_v3.md`
+- Backend specs (read-only reference): `<group-pas-repo>/spec/`
+- Backend blueprint: `<group-pas-repo>/plans/team_nb_blueprint_v3.md`
 - Proposal directory: [proposals/](../proposals/)
 - Active build-feature designs: [context/build-feature/](build-feature/)
 - Active build-feature logs: `agent_logs/build-feature/`
@@ -49,8 +57,8 @@ The pipeline skills under [.claude/skills/](../.claude/skills/) are the canonica
 
 - `/propose` — file a structured change proposal under `proposals/`.
 - `/review-proposals` — triage drafts, decide approve/reject/defer.
-- `/build-feature` — multi-stage CLARIFY → DESIGN → BUILD pipeline with user gates. Accepts a `PROP-NNNN` id or a free-form ask.
-- `/execute-proposal PROP-NNNN` — pick up an approved proposal, branch, implement, PR.
+- `/build-feature` — multi-stage CLARIFY → DESIGN → BUILD pipeline with user gates. Accepts a `PROP-NNNN` id or a free-form ask. **Default choice for any feature work.**
+- `/execute-proposal PROP-NNNN` — pick up an approved proposal, branch, implement, PR. **Use only when the proposal's design is fully locked and CLARIFY would be a no-op** (mechanical, tightly-scoped change). Otherwise prefer `/build-feature`.
 - `/build-backend` — backend-only execution path (mirrors execute-proposal for FastAPI work).
 - `/specs-to-draft` / `/refine-specs-to-draft` — turn a spec into a proposal draft.
 - `/specs-to-tests` — derive test plan from a spec.

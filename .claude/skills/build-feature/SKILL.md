@@ -124,9 +124,15 @@ Run-id format: `<YYYY-MM-DD>-<short-slug>` derived from the ask (e.g. `2026-05-0
 
 If the feature requires a real backend implementation (and the user explicitly asks for the backend to be built instead of mocked), hand off the backend generation to `/build-backend`. Do not attempt to build a real Python backend within `/build-feature`. `/build-backend` is specifically designed to run autonomously and generate production-ready backend code based on the frontend schemas and proposals.
 
-## Note on overlap with other skills
+## When to use this vs `/execute-proposal` (decision rule)
 
-This skill makes `execute-proposal` redundant for most cases — the only situation where `execute-proposal` is still simpler is a proposal whose design is already fully locked and uncontested, where CLARIFY would be a no-op. If that case rarely occurs, consider deprecating `execute-proposal` in favor of `build-feature`.
+Default to `/build-feature`. Reach for `/execute-proposal` only when **all** of the following hold:
+
+- A `proposals/PROP-NNNN-*.md` exists with `status: approved`.
+- The proposal's design section is fully locked — no open questions, no ambiguity that would benefit from CLARIFY.
+- The change is mechanical enough that going through CLARIFY → DESIGN gates would be a no-op.
+
+Anything else — fresh asks, partially-scoped proposals, anything where the design might evolve under questioning — goes through `/build-feature`. The same rule appears in `context/HANDOFF.md` Skill catalogue so callers don't have to read this file to decide.
 
 `specs-to-draft` remains separate: it scaffolds an entire PRD's UI surface in one autonomous pass with minimal user gating. `build-feature` is the opposite shape — one feature, lots of user gates.
 

@@ -30,7 +30,7 @@ Run an autonomous, end-to-end pipeline to generate a real (unmocked) Python back
 - Output: `agent_logs/build-backend/<run-id>/discover.log` detailing the parsed database entities, endpoints, and authentication constraints.
 
 ### 2. RESEARCH — Best Practices & Unblocking
-- If the implementation requires interacting with an unknown library, complex algorithm, or cloud service, immediately use `search_web` to research Python best practices.
+- If the implementation requires interacting with an unknown library, complex algorithm, or cloud service, use `WebSearch` (or `WebFetch` / `Bash` with `curl` for direct API docs) to research Python best practices.
 - Do not guess library usage. Research the exact syntax for the required Python libraries.
 - Output: `agent_logs/build-backend/<run-id>/research.log` summarizing findings and the chosen architectural approach.
 

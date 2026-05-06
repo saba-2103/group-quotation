@@ -1,6 +1,6 @@
 # Group PAS V1 — Frontend Implementation Plan
 
-Demo target: internal demo by Friday. AI-assisted coding. Plan is dependency-ordered; same-numbered tasks within a phase run in parallel. Every task carries its own context (inputs, outputs, acceptance) so it can be picked up cold.
+Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). AI-assisted coding. Plan is dependency-ordered; same-numbered tasks within a phase run in parallel. Every task carries its own context (inputs, outputs, acceptance) so it can be picked up cold.
 
 ## Scope (locked)
 
@@ -23,7 +23,7 @@ Every task assumes familiarity with these. Skim before picking up any task:
 - **Schema layout:** schemas live at repo-root `/schemas/`, not `src/schemas/`. Page schemas at `schemas/<module>.json`, tab schemas under `schemas/tabs/<module>/`, form schemas under `schemas/forms/` and exported from [schemas/forms/index.ts](schemas/forms/index.ts).
 - **Mock layer:** [src/mocks/original/group-insurance/](src/mocks/original/group-insurance/) — `config/` (app + page configs), `data/` (fixtures), `index.ts`, `page-config-service.ts`.
 - **Schema resolver:** [src/lib/schemaResolver.ts](src/lib/schemaResolver.ts) resolves `$ref`.
-- **Backend specs (read-only reference):** `/Users/seriousblack/dev_anaira/group-pas/spec/{quotation,issuance,policy-admin,common}/` and `/Users/seriousblack/dev_anaira/group-pas/plans/team_nb_blueprint_v3.md`. The `.api` files are the authoritative endpoint contracts.
+- **Backend specs (read-only reference):** `<group-pas-repo>/spec/{quotation,issuance,policy-admin,common}/` and `<group-pas-repo>/plans/team_nb_blueprint_v3.md`. The `.api` files are the authoritative endpoint contracts. See [context/HANDOFF.md → Local environment](../context/HANDOFF.md#local-environment) for how to resolve `<group-pas-repo>` on your machine.
 - **Reference templates (do NOT delete):** accounting module is the cleanest schema-driven module to mirror — [schemas/accounting.json](schemas/accounting.json), [schemas/tabs/accounting/](schemas/tabs/accounting/), [src/app/accounting/](src/app/accounting/), [src/app/api/accounting/](src/app/api/accounting/).
 
 State-action coding convention (used throughout): every list/detail schema that drives lifecycle UI carries a `stateActions: Record<State, ActionId[]>` block. The new `ActionBar` widget consumes this. See Task 1.3.
@@ -109,10 +109,10 @@ The repo has skills under [.claude/skills/](../.claude/skills/). Use them rather
 ### Task 1.1 — TypeScript domain types
 
 **Context to load:**
-- Domain entities: `/Users/seriousblack/dev_anaira/group-pas/spec/quotation/QuotationDomain.domain` and `QuotationData.data`
-- `/Users/seriousblack/dev_anaira/group-pas/spec/issuance/IssuanceDomain.domain` and `IssuanceData.data`
-- `/Users/seriousblack/dev_anaira/group-pas/spec/policy-admin/PolicyAdminDomain.domain` and `PolicyAdminData.data`
-- `/Users/seriousblack/dev_anaira/group-pas/spec/common/CommonData.data` and `CommonDomain.domain`
+- Domain entities: `<group-pas-repo>/spec/quotation/QuotationDomain.domain` and `QuotationData.data`
+- `<group-pas-repo>/spec/issuance/IssuanceDomain.domain` and `IssuanceData.data`
+- `<group-pas-repo>/spec/policy-admin/PolicyAdminDomain.domain` and `PolicyAdminData.data`
+- `<group-pas-repo>/spec/common/CommonData.data` and `CommonDomain.domain`
 - DTOs in the `.query` files (response shapes).
 
 **Output:**

@@ -17,8 +17,8 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
 **Repo:** keystone-ui
 **Branch:** feat/design-system-pass-a (current; all V1 work happens on this branch unless explicitly branched)
 **Product:** Group PAS — Quotation, Issuance (Proposal + PolicyMember + Census), Policy Admin (Client/Policy/Member)
-**Backend specs:** `/Users/seriousblack/dev_anaira/group-pas/spec/`
-**Backend blueprint:** `/Users/seriousblack/dev_anaira/group-pas/plans/team_nb_blueprint_v3.md`
+**Backend specs:** `<group-pas-repo>/spec/` — see [HANDOFF.md → Local environment](HANDOFF.md#local-environment) for how to resolve `<group-pas-repo>` on your machine.
+**Backend blueprint:** `<group-pas-repo>/plans/team_nb_blueprint_v3.md`
 **V1 implementation plan:** [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md)
 
 ---
