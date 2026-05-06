@@ -175,9 +175,9 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     });
   };
 
-  const activeTextFilterPills = activatedTextFilterIds
-    .map((id) => filters.find((f) => f.id === id && f.type === "text"))
-    .filter((f): f is FilterConfig => f !== undefined);
+  const activeTextFilterPills = filters.filter(
+    (f) => f.type === "text" && (activatedTextFilterIds.includes(f.id) || !!activeFilterValues[f.id])
+  );
 
   const appliedSelectChips = Object.entries(activeFilterValues)
     .map(([filterId, filterValue]) => {
