@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { WidgetConfig } from "@/types/widget";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { useWidgetState } from "@/hooks/useWidgetState";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, ListFilter, X } from "lucide-react";
 
-const SEARCH_DEBOUNCE_MS = 300;
+const INPUT_DEBOUNCE_MS = 300;
 
 interface FilterOption {
   value: string;
@@ -69,87 +69,146 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   );
 
   const activeFilterValues = getValue(stateKey, {});
-  const externalSearchValue = (activeFilterValues[searchKey] as string) ?? "";
 
-  const [searchInputValue, setSearchInputValue] = useState<string>(externalSearchValue);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Pills shown below the search bar (text filters only)
+  const [activatedTextFilterIds, setActivatedTextFilterIds] = useState<string[]>(() =>
+    filters.filter((f) => f.type === "text" && activeFilterValues[f.id]).map((f) => f.id)
+  );
 
+  // Which pill currently owns the search bar input (null = global search)
+  const [focusedFilterId, setFocusedFilterId] = useState<string | null>(null);
+
+  // Single search bar input — routes to focusedFilterId or global searchKey
+  const [searchInputValue, setSearchInputValue] = useState<string>((activeFilterValues[searchKey] as string) ?? "");
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Sync local input when external state is cleared (e.g. "Clear all")
+  const inputRef = useRef<HTMLInputElement>(null);
+  const activeFilterValuesRef = useRef(activeFilterValues);
+  activeFilterValuesRef.current = activeFilterValues;
+
   useEffect(() => {
-    setSearchInputValue((currentValue) =>
-      currentValue === externalSearchValue ? currentValue : externalSearchValue
-    );
-  }, [externalSearchValue]);
+    const currentValues = activeFilterValuesRef.current;
+    const newValue = focusedFilterId
+      ? ((currentValues[focusedFilterId] as string) ?? "")
+      : ((currentValues[searchKey] as string) ?? "");
+    setSearchInputValue(newValue);
+    inputRef.current?.focus();
+  }, [focusedFilterId, searchKey]);
+
+  useEffect(() => {
+    if (!focusedFilterId) {
+      const externalValue = (activeFilterValues[searchKey] as string) ?? "";
+      setSearchInputValue((current) => (current === externalValue ? current : externalValue));
+    }
+  }, [activeFilterValues, focusedFilterId, searchKey]);
 
   // Cancel any pending debounce on unmount
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
 
-  const handleSearchInputChange = (value: string) => {
-    setSearchInputValue(value);
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => {
+  const commitInputToState = useCallback(
+    (value: string) => {
+      const targetKey = focusedFilterId ?? searchKey;
       handleAction({
         type: "update-widget-state",
-        props: { key: stateKey, operation: "patch", value: { [searchKey]: value } }
+        props: { key: stateKey, operation: "patch", value: { [targetKey]: value } }
       });
-    }, SEARCH_DEBOUNCE_MS);
+    },
+    [focusedFilterId, searchKey, handleAction, stateKey]
+  );
+
+  const commitInputToStateRef = useRef(commitInputToState);
+  useEffect(() => {
+    commitInputToStateRef.current = commitInputToState;
+  }, [commitInputToState]);
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchInputValue(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => commitInputToStateRef.current(value), INPUT_DEBOUNCE_MS);
   };
 
-  const handleFilterChange = (filterStateKey: string, filterStateValue: string) => {
-    handleAction({
-      type: "update-widget-state",
-      props: { key: stateKey, operation: "patch", value: { [filterStateKey]: filterStateValue } }
-    });
+  const handleActivateTextFilter = (filterId: string) => {
+    if (!activatedTextFilterIds.includes(filterId)) {
+      setActivatedTextFilterIds((prev) => [...prev, filterId]);
+    }
+    setFocusedFilterId(filterId);
   };
 
-  const handleRemoveFilter = (filterStateKey: string) => {
-    handleAction({
-      type: "update-widget-state",
-      props: { key: stateKey, operation: "patch", value: { [filterStateKey]: "" } }
-    });
-  };
+  const handleRemoveTextFilterPill = useCallback(
+    (filterId: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      setActivatedTextFilterIds((prev) => prev.filter((id) => id !== filterId));
+      if (focusedFilterId === filterId) {
+        setFocusedFilterId(null);
+      }
+      handleAction({
+        type: "update-widget-state",
+        props: { key: stateKey, operation: "patch", value: { [filterId]: "" } }
+      });
+    },
+    [focusedFilterId, handleAction, stateKey]
+  );
+
+  const handleSelectFilterChange = useCallback(
+    (filterId: string, filterValue: string) => {
+      handleAction({
+        type: "update-widget-state",
+        props: { key: stateKey, operation: "patch", value: { [filterId]: filterValue } }
+      });
+    },
+    [handleAction, stateKey]
+  );
+
+  const handleRemoveSelectFilter = useCallback(
+    (filterId: string) => {
+      handleAction({
+        type: "update-widget-state",
+        props: { key: stateKey, operation: "patch", value: { [filterId]: "" } }
+      });
+    },
+    [handleAction, stateKey]
+  );
 
   const resetFilters = () => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setSearchInputValue("");
+    setActivatedTextFilterIds([]);
+    setFocusedFilterId(null);
     handleAction({
       type: "update-widget-state",
       props: { key: stateKey, operation: "set", value: {} }
     });
   };
 
-  const appliedFilterChips = Object.entries(activeFilterValues)
-    .map(([filterStateKey, filterStateValue]) => {
-      if (!filterStateValue || filterStateKey === searchKey) return null;
-      const filterDef = filters.find((filter) => filter.id === filterStateKey);
+  const activeTextFilterPills = activatedTextFilterIds
+    .map((id) => filters.find((f) => f.id === id && f.type === "text"))
+    .filter((f): f is FilterConfig => f !== undefined);
+
+  const appliedSelectChips = Object.entries(activeFilterValues)
+    .map(([filterId, filterValue]) => {
+      if (!filterValue || filterId === searchKey) return null;
+      const filterDef = filters.find((f) => f.id === filterId && f.type === "select");
       if (!filterDef) return null;
-      let chipDisplayLabel = filterStateValue as string;
-      if (filterDef.options) {
-        const matchedOption = filterDef.options.find((option) => option.value === filterStateValue);
-        chipDisplayLabel = matchedOption?.label ?? String(filterStateValue);
-      }
-      return { key: filterStateKey, label: `${filterDef.label}: ${chipDisplayLabel}` };
+      const matchedOption = filterDef.options?.find((o) => o.value === filterValue);
+      const chipDisplayLabel = matchedOption?.label ?? String(filterValue);
+      return { key: filterId, label: `${filterDef.label}: ${chipDisplayLabel}` };
     })
-    .filter((appliedChip): appliedChip is { key: string; label: string } => appliedChip !== null);
+    .filter((chip): chip is { key: string; label: string } => chip !== null);
 
-  const selectFilters = filters.filter((filter) => filter.type === "select");
-  const textFilters = filters.filter((filter) => filter.type === "text");
+  const hasActivePills = activeTextFilterPills.length > 0 || appliedSelectChips.length > 0;
 
-  const renderTextFilter = (filter: FilterConfig) => (
-    <div key={filter.id} className="px-2 py-1.5 flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground font-medium">{filter.label}</span>
-      <Input
-        value={(activeFilterValues[filter.id] as string) ?? ""}
-        onChange={(e) => handleFilterChange(filter.id, e.target.value)}
-        placeholder={filter.placeholder ?? `Enter ${filter.label.toLowerCase()}`}
-        className="h-8 text-sm"
-      />
-    </div>
-  );
+  const textFilters = filters.filter((f) => f.type === "text");
+  const selectFilters = filters.filter((f) => f.type === "select");
+
+  const focusedFilter = focusedFilterId ? filters.find((f) => f.id === focusedFilterId) : null;
+  const activeSearchPlaceholder = focusedFilter
+    ? (focusedFilter.placeholder ?? `Enter ${focusedFilter.label.toLowerCase()}...`)
+    : searchPlaceholder;
 
   const renderSelectFilter = (filter: FilterConfig) => {
     const selectedOptionValue = activeFilterValues[filter.id];
@@ -163,7 +222,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
             <DropdownMenuCheckboxItem
               key={option.value}
               checked={selectedOptionValue === option.value}
-              onCheckedChange={(checked) => handleFilterChange(filter.id, checked ? option.value : "")}
+              onCheckedChange={(checked) => handleSelectFilterChange(filter.id, checked ? option.value : "")}
             >
               {option.label}
             </DropdownMenuCheckboxItem>
@@ -171,7 +230,9 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
           {selectedOptionValue && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => handleRemoveFilter(filter.id)}>Clear {filter.label}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => handleRemoveSelectFilter(filter.id)}>
+                Clear {filter.label}
+              </DropdownMenuItem>
             </>
           )}
         </DropdownMenuSubContent>
@@ -181,18 +242,19 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
+            ref={inputRef}
             value={searchInputValue}
             onChange={(e) => handleSearchInputChange(e.target.value)}
-            placeholder={searchPlaceholder}
+            placeholder={activeSearchPlaceholder}
             className="bg-card pl-8"
           />
         </div>
 
-        {(selectFilters.length > 0 || textFilters.length > 0) && (
+        {(textFilters.length > 0 || selectFilters.length > 0) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="gap-1">
@@ -200,10 +262,18 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                 <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">{filterLabel}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[220px]">
+            <DropdownMenuContent align="end" className="min-w-[200px]">
               <DropdownMenuLabel>{filterByLabel}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {textFilters.map(renderTextFilter)}
+              {textFilters.map((filter) => (
+                <DropdownMenuItem
+                  key={filter.id}
+                  disabled={activatedTextFilterIds.includes(filter.id)}
+                  onSelect={() => handleActivateTextFilter(filter.id)}
+                >
+                  {filter.label}
+                </DropdownMenuItem>
+              ))}
               {textFilters.length > 0 && selectFilters.length > 0 && <DropdownMenuSeparator />}
               {selectFilters.map(renderSelectFilter)}
             </DropdownMenuContent>
@@ -211,20 +281,65 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
         )}
       </div>
 
-      {appliedFilterChips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {appliedFilterChips.map((chip) => (
-            <Badge key={chip.key} variant="secondary" className="gap-1 pr-1 py-1">
+      {hasActivePills && (
+        <div className="flex flex-wrap items-center gap-2 mt-3 mb-2">
+          {activeTextFilterPills.map((filter) => {
+            const filterValue = (activeFilterValues[filter.id] as string) ?? "";
+            const isFocused = focusedFilterId === filter.id;
+
+            return (
+              <div
+                key={filter.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setFocusedFilterId(filter.id)}
+                onKeyDown={(e) => e.key === "Enter" && setFocusedFilterId(filter.id)}
+                className={`inline-flex items-center rounded-full border h-7 overflow-hidden transition-all cursor-pointer select-none ${
+                  isFocused
+                    ? "border-primary/60 bg-primary/5 shadow-sm"
+                    : "border-border bg-background hover:border-muted-foreground/40"
+                }`}
+              >
+                <span
+                  className={`flex items-center px-2.5 h-full text-[11px] font-medium whitespace-nowrap shrink-0 transition-colors ${
+                    isFocused ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  {filter.label}
+                  {filterValue && (
+                    <span className={`ml-1.5 font-semibold ${isFocused ? "text-primary" : "text-foreground"}`}>
+                      {filterValue}
+                    </span>
+                  )}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => handleRemoveTextFilterPill(filter.id, e)}
+                  className="h-5 w-5 mr-0.5 rounded-full shrink-0 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </Button>
+              </div>
+            );
+          })}
+
+          {appliedSelectChips.map((chip) => (
+            <Badge key={chip.key} variant="secondary" className="gap-1 pr-1 py-1 border border-border">
               {chip.label}
-              <button
+              <Button
                 type="button"
-                onClick={() => handleRemoveFilter(chip.key)}
-                className="rounded-full bg-background p-0.5 transition hover:bg-muted"
+                variant="ghost"
+                size="icon"
+                onClick={() => handleRemoveSelectFilter(chip.key)}
+                className="h-5 w-5 rounded-full text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             </Badge>
           ))}
+
           <Button
             variant="ghost"
             className="h-auto p-1.5 text-sm text-muted-foreground hover:bg-transparent"
