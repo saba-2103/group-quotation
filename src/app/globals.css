@@ -4,92 +4,118 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Keystone UI – Premium Design System
+ * Palette: High-Contrast Pure Black & White with Electric Blue
+ * Philosophy: Modern, engaging, high-contrast aesthetic that pops out
+ */
+
 :root {
+  /* ── Surface ── */
   --background: #ffffff;
-  --foreground: #0f172a;
+  --foreground: #09090b;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #09090b;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --popover-foreground: #09090b;
 
-  /* Primary - Tailwind Blue */
-  --primary: #2563eb;
+  /* ── Primary – Vibrant Electric Blue ── */
+  --primary: #0070f3;
   --primary-foreground: #ffffff;
 
-  /* Secondary */
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
+  /* ── Secondary ── */
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
 
-  /* Muted */
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  /* ── Muted ── */
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
 
-  /* Accent */
-  --accent: #eff6ff;
-  --accent-foreground: #1e40af;
+  /* ── Accent ── */
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
 
-  /* Destructive / Error */
-  --destructive: #dc2626;
-  --destructive-foreground: #ffffff;
-
-  /* Border & Input */
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #2563eb;
-
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #0f172a;
-  --sidebar-primary-foreground: #f8fafc;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #2563eb;
-
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --popover: #1e293b;
-  --popover-foreground: #f8fafc;
-
-  /* Primary - Tailwind Blue */
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-
-  /* Secondary */
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-
-  /* Muted */
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-
-  /* Accent */
-  --accent: #1e3a5f;
-  --accent-foreground: #bfdbfe;
-
-  /* Destructive / Error */
+  /* ── Destructive ── */
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  /* Border & Input */
-  --border: #334155;
-  --input: #334155;
+  /* ── Border & Input ── */
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #0070f3;
+
+  /* ── Sidebar ── */
+  --sidebar: #fafafa;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #0070f3;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #0070f3;
+
+  /* ── Radius – Modern rounded edges ── */
+  --radius: 0.75rem;
+
+  /* ── Chart palette ── */
+  --chart-1: #0070f3;
+  --chart-2: #10b981;
+  --chart-3: #8b5cf6;
+  --chart-4: #f59e0b;
+  --chart-5: #0ea5e9;
+}
+
+.dark {
+  /* ── Surface ── */
+  --background: #09090b;
+  --foreground: #fafafa;
+  /* Slightly elevated card/popover so layered surfaces read in dark mode */
+  --card: #0c0c10;
+  --card-foreground: #fafafa;
+  --popover: #111114;
+  --popover-foreground: #fafafa;
+
+  /* ── Primary ── */
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+
+  /* ── Secondary ── */
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+
+  /* ── Muted ── */
+  --muted: #27272a;
+  --muted-foreground: #a1a1aa;
+
+  /* ── Accent ── */
+  --accent: #27272a;
+  --accent-foreground: #fafafa;
+
+  /* ── Destructive ── */
+  --destructive: #f87171;
+  --destructive-foreground: #09090b;
+
+  /* ── Border & Input ── */
+  --border: #27272a;
+  --input: #27272a;
   --ring: #3b82f6;
 
-  --sidebar: #0f172a;
-  --sidebar-foreground: #f8fafc;
+  /* ── Sidebar ── */
+  --sidebar: #09090b;
+  --sidebar-foreground: #fafafa;
   --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #334155;
+  --sidebar-accent: #27272a;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #27272a;
   --sidebar-ring: #3b82f6;
+
+  /* ── Chart palette ── */
+  --chart-1: #3b82f6;
+  --chart-2: #34d399;
+  --chart-3: #a78bfa;
+  --chart-4: #fbbf24;
+  --chart-5: #38bdf8;
 }
 
 @theme inline {
@@ -122,6 +148,12 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
 
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
@@ -133,6 +165,29 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+
+  /* ── Improved scrollbar styling ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+}
+
+/* ── Utility animations ── */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@layer utilities {
+  .animate-fade-in { animation: fade-in 0.3s ease-out both; }
+  .animate-slide-in { animation: slide-in 0.25s ease-out both; }
 }

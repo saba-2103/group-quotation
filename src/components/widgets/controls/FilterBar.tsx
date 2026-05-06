@@ -23,6 +23,47 @@ import { Search, ListFilter, X } from "lucide-react";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
+interface DebouncedTextFilterProps {
+  filter: FilterConfig;
+  value: string;
+  onCommit: (value: string) => void;
+}
+
+// Mirrors the debounce strategy used by the main search input so dropdown text
+// filters don't dispatch state updates on every keystroke.
+const DebouncedTextFilter: React.FC<DebouncedTextFilterProps> = ({ filter, value, onCommit }) => {
+  const [localValue, setLocalValue] = useState<string>(value);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setLocalValue((current) => (current === value ? current : value));
+  }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
+
+  const handleChange = (next: string) => {
+    setLocalValue(next);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => onCommit(next), SEARCH_DEBOUNCE_MS);
+  };
+
+  return (
+    <div className="px-2 py-1.5 flex flex-col gap-1">
+      <span className="text-xs text-muted-foreground font-medium">{filter.label}</span>
+      <Input
+        value={localValue}
+        onChange={(e) => handleChange(e.target.value)}
+        placeholder={filter.placeholder ?? `Enter ${filter.label.toLowerCase()}`}
+        className="h-8 text-sm"
+      />
+    </div>
+  );
+};
+
 interface FilterOption {
   value: string;
   label: string;
@@ -140,15 +181,12 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   const textFilters = filters.filter((filter) => filter.type === "text");
 
   const renderTextFilter = (filter: FilterConfig) => (
-    <div key={filter.id} className="px-2 py-1.5 flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground font-medium">{filter.label}</span>
-      <Input
-        value={(activeFilterValues[filter.id] as string) ?? ""}
-        onChange={(e) => handleFilterChange(filter.id, e.target.value)}
-        placeholder={filter.placeholder ?? `Enter ${filter.label.toLowerCase()}`}
-        className="h-8 text-sm"
-      />
-    </div>
+    <DebouncedTextFilter
+      key={filter.id}
+      filter={filter}
+      value={(activeFilterValues[filter.id] as string) ?? ""}
+      onCommit={(value) => handleFilterChange(filter.id, value)}
+    />
   );
 
   const renderSelectFilter = (filter: FilterConfig) => {

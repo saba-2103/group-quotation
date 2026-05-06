@@ -106,4 +106,7 @@ export interface TablePaginationProps {
 export interface RowActionsProps {
   row: TableRow;
   rowActions: RowActionConfig[];
+  // Resolved TanStack row id (derived from the configured rowIdKey).
+  // Tables where rowIdKey !== "id" rely on this so :id substitutes correctly.
+  rowId?: string;
 }

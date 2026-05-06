@@ -39,6 +39,7 @@ import { ActionConfig } from "@/types/widget";
 import { ActionRenderer } from "../../controls/ActionRenderer";
 import { EXPORT_STYLE_CONFIG } from "./constants";
 import { ErrorState } from "@/components/ui/error-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   const handleAction = useActionHandler();
@@ -84,13 +85,53 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   const isLoading = propLoading || isQueryLoading;
   const error = propError || queryError;
 
-  const resolveLinkAndNavigate = (route: string, rowId: string) => {
-    handleAction({ type: "navigate", target: substituteEndpointParams(route, { id: rowId }) });
-  };
+  // Returns a CellRenderer onLinkClick handler bound to a specific row, so
+  // multi-param routes (e.g. `/orgs/:orgId/quotes/:id`) resolve all tokens —
+  // not just `:id`.
+  const buildLinkHandler = (rowData: DataRow) =>
+    (route: string, rowId: string) => {
+      handleAction({
+        type: "navigate",
+        target: substituteEndpointParams(route, { ...rowData, id: rowId }),
+      });
+    };
 
   if (error) {
     return <ErrorState message="Error loading data" />;
   }
+
+  const renderEmptyState = () => (
+    <div className="flex h-48 flex-col items-center justify-center gap-2 px-4 text-center">
+      <p className="text-lg font-medium text-foreground">{emptyState?.title ?? "No data found"}</p>
+      <p className="text-muted-foreground">
+        {emptyState?.description ?? "There are no records to display."}
+      </p>
+      {emptyState?.action && <ActionRenderer action={emptyState.action as ActionConfig} />}
+    </div>
+  );
+
+  const renderSkeletonRows = (rows = 6) => {
+    const skeletonCols = columns?.length ?? 5;
+    return Array.from({ length: rows }).map((_, rowIdx) => (
+      <TableRow key={`skel-${rowIdx}`} className="hover:bg-transparent">
+        {selectable && (
+          <TableCell className={cn("w-[40px]", getCheckboxColumnClasses(isScrollable, false))}>
+            <Skeleton className="h-4 w-4 rounded" />
+          </TableCell>
+        )}
+        {Array.from({ length: skeletonCols }).map((__, colIdx) => (
+          <TableCell key={`skel-${rowIdx}-${colIdx}`}>
+            <Skeleton className="h-4 w-[70%]" />
+          </TableCell>
+        ))}
+        {hasRowActions && (
+          <TableCell className={cn("w-[80px] text-right", getActionsColumnClasses(isScrollable, false))}>
+            <Skeleton className="ml-auto h-4 w-8 rounded" />
+          </TableCell>
+        )}
+      </TableRow>
+    ));
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -169,6 +210,77 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
             </DropdownMenu>
           </div>
 
+          {/* Mobile card view — visible only below md breakpoint */}
+          <div className="md:hidden">
+            {isLoading ? (
+              <div className="divide-y">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={`skel-mobile-${idx}`} className="space-y-3 p-4">
+                    <Skeleton className="h-4 w-1/3" />
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : table.getRowModel().rows.length === 0 ? (
+              renderEmptyState()
+            ) : (
+              <div className="divide-y">
+                {table.getRowModel().rows.map((row) => {
+                  const rowData: DataRow = row.original;
+                  const rowId = row.id;
+                  const isSelected = row.getIsSelected();
+
+                  return (
+                    <div
+                      key={`mobile-${rowId}`}
+                      data-state={isSelected ? "selected" : undefined}
+                      className={cn("space-y-4 p-4", isSelected && "bg-muted/40")}
+                    >
+                      {selectable && (
+                        <div className="flex items-center justify-end">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 cursor-pointer rounded border-input accent-primary pointer-events-auto"
+                            checked={isSelected}
+                            onChange={row.getToggleSelectedHandler()}
+                            aria-label={`Select row ${rowId}`}
+                          />
+                        </div>
+                      )}
+
+                      <dl className="space-y-3">
+                        {columns?.map((col) => (
+                          <div key={`mobile-${rowId}-${col.accessorKey}`} className="flex items-start justify-between gap-4">
+                            <dt className="max-w-[45%] text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {col.header ?? col.label ?? col.accessorKey}
+                            </dt>
+                            <dd className="min-w-0 flex-1 text-right text-sm text-foreground">
+                              <CellRenderer
+                                column={col}
+                                value={rowData[col.accessorKey]}
+                                rowId={rowId}
+                                onLinkClick={buildLinkHandler(rowData)}
+                              />
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+
+                      {hasRowActions && (
+                        <div className="border-t pt-3">
+                          <RowActions row={rowData} rowActions={rowActions} rowId={rowId} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Desktop table view — visible at md and above */}
+          <div className="hidden md:block">
           <Table className={cn("relative", isScrollable && "w-max min-w-full")}>
             <TableHeader>
               {/* Column header row */}
@@ -177,7 +289,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                   <TableHead className={cn("w-[40px]", getCheckboxColumnClasses(isScrollable, true))}>
                     <input
                       type="checkbox"
-                      className="rounded border-gray-300 pointer-events-auto cursor-pointer"
+                      className="h-4 w-4 cursor-pointer rounded border-input accent-primary pointer-events-auto"
                       checked={table.getIsAllPageRowsSelected()}
                       ref={(input) => {
                         if (input) input.indeterminate = table.getIsSomePageRowsSelected();
@@ -208,9 +320,10 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                             <TooltipTrigger asChild>
                               <span className="flex items-center gap-1.5">
                                 {col.header ?? col.label}
-                                <span className="inline-flex items-center justify-center rounded-full w-4 h-4 bg-muted hover:bg-muted-foreground/20 transition-colors cursor-help">
-                                  <HelpCircle size={11} className="text-muted-foreground" />
-                                </span>
+                                <HelpCircle
+                                  size={12}
+                                  className="text-muted-foreground/60 hover:text-foreground transition-colors cursor-help"
+                                />
                               </span>
                             </TooltipTrigger>
                             <TooltipContent
@@ -227,11 +340,14 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                         )}
                         {header.column.getCanSort() &&
                           (sorted === "asc" ? (
-                            <ArrowUp size={13} className="ml-1 shrink-0" />
+                            <ArrowUp size={13} className="ml-1 shrink-0 text-foreground" />
                           ) : sorted === "desc" ? (
-                            <ArrowDown size={13} className="ml-1 shrink-0" />
+                            <ArrowDown size={13} className="ml-1 shrink-0 text-foreground" />
                           ) : (
-                            <ArrowUpDown size={13} className="ml-1 shrink-0 opacity-40" />
+                            <ArrowUpDown
+                              size={13}
+                              className="ml-1 shrink-0 opacity-0 transition-opacity group-hover:opacity-60"
+                            />
                           ))}
                       </div>
                     </TableHead>
@@ -273,21 +389,16 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
 
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={colSpan} className="h-48 text-center">
-                    <div className="text-muted-foreground">Loading…</div>
-                  </TableCell>
-                </TableRow>
+                <>
+                  <TableRow className="sr-only">
+                    <TableCell colSpan={colSpan}>Loading...</TableCell>
+                  </TableRow>
+                  {renderSkeletonRows()}
+                </>
               ) : table.getRowModel().rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={colSpan} className="h-48 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <p className="text-lg font-medium text-foreground">{emptyState?.title ?? "No data found"}</p>
-                      <p className="text-muted-foreground">
-                        {emptyState?.description ?? "There are no records to display."}
-                      </p>
-                      {emptyState?.action && <ActionRenderer action={emptyState.action as ActionConfig} />}
-                    </div>
+                    {renderEmptyState()}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -299,14 +410,13 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                     <TableRow
                       key={rowId}
                       data-state={isSelected ? "selected" : undefined}
-                      className={isSelected ? "bg-muted/50" : ""}
                       onClick={() => config.props?.onRowClick && handleAction(config.props.onRowClick)}
                     >
                       {selectable && (
                         <TableCell className={cn("w-[40px]", getCheckboxColumnClasses(isScrollable, false))}>
                           <input
                             type="checkbox"
-                            className="rounded border-gray-300 pointer-events-auto cursor-pointer"
+                            className="h-4 w-4 cursor-pointer rounded border-input accent-primary pointer-events-auto"
                             checked={isSelected}
                             onChange={row.getToggleSelectedHandler()}
                             onClick={(e) => e.stopPropagation()}
@@ -327,7 +437,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                               column={col}
                               value={rowData[col.accessorKey]}
                               rowId={rowId}
-                              onLinkClick={resolveLinkAndNavigate}
+                              onLinkClick={buildLinkHandler(rowData)}
                             />
                           </TableCell>
                         );
@@ -337,6 +447,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                           <RowActions
                             row={rowData}
                             rowActions={rowActions}
+                            rowId={rowId}
                           />
                         </TableCell>
                       )}
@@ -346,6 +457,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
               )}
             </TableBody>
           </Table>
+          </div>
         </div>
 
         {isPaginationEnabled && (
