@@ -325,3 +325,38 @@ Unmatched mutation paths (e.g. updatePolicyDetail, addPlan, updateAggregateCensu
   - State-transition simulator: `POST /api/quotation/quotes/QTE-2026-0010/finalize` → 200, then 5s later `GET /api/issuance/proposals/by-quote/QTE-2026-0010` → 200 (auto-Proposal landed).
 
 **Next:** Task 1.2 — API clients (typed wrappers around these endpoints, error-mapper for the Spring default error shape).
+
+### 2026-05-07 (continued) — Task 1.2 — API clients — IN PROGRESS
+
+About to do: typed client functions per endpoint in the three `.api` files, fronted by a thin `request()` wrapper with a bearer-token slot (`configureApiClient({ bearerToken })`) so swapping in real auth later is a config change. Error mapper handles the **Spring default envelope** `{ timestamp, status, error, message, path }` per the locked V1 interim assumption #4 (no field-level errors); on non-OK responses the wrapper throws an `ApiError` carrying the parsed envelope so React Query consumers can render `error.message` directly.
+
+ARCH_TRANSITION's "Error response shape" entry already documents the envelope-upgrade trigger (added in the 2026-05-07 backend-clarifications batch), so no further doc update needed.
+
+Layout:
+- `src/lib/api/client.ts` — fetch wrapper, ApiError class, configure hook.
+- `src/lib/api/error-mapper.ts` — `parseSpringError(res)`.
+- `src/lib/api/quotation.ts` — one function per QuotationApi endpoint.
+- `src/lib/api/issuance.ts` — one function per IssuanceApi endpoint (incl. CensusSubmissionAPI).
+- `src/lib/api/policy-admin.ts` — one function per PolicyAdminApi endpoint, incl. the by-policy-member cross-ref.
+- `src/lib/api/index.ts` — barrel.
+
+Naming: function names mirror the DSL operation names (e.g. `createQuote`, `requestQuotePrice`, `findMembersByPolicy`). Path concatenation is inline; query params built via `URLSearchParams`. All paths are relative — Next.js routes proxy or mock per Task 1.4.
+
+**Files created:**
+- `src/lib/api/error-mapper.ts` — `SpringErrorEnvelope`, `ApiError` class (carries `status`, `spring` envelope, `path`), `parseSpringError(res)`.
+- `src/lib/api/client.ts` — `configureApiClient`, `api.get/post/put/patch/del`, `QueryParams` (loose `Record<string, unknown>` so endpoint-specific param types compose without explicit index signatures), `buildUrl` with empty-skipping.
+- `src/lib/api/quotation.ts` — 26 typed functions covering QuotationCommonAPI, QuoteAPI, MemberQuoteAPI.
+- `src/lib/api/issuance.ts` — 24 typed functions covering ProposalAPI, PolicyMemberAPI, CensusSubmissionAPI.
+- `src/lib/api/policy-admin.ts` — 22 typed functions covering ClientAPI, PolicyAdminCommonAPI, PolicyAPI, MemberAPI (incl. PAM cross-ref `findMemberByPolicyMember` per the 2026-05-07 backend Q&A) + the `getPolicyPendingBreakdown` derived endpoint.
+- `src/lib/api/index.ts` — barrel re-exporting client/error-mapper plus the three module namespaces (`quotation`, `issuance`, `policyAdmin`).
+
+**One small wrapper-ergonomics decision:** `Search*Params` interfaces had to become `type` aliases — TS interfaces don't satisfy `Record<string, unknown>` index signatures structurally even though their fields are compatible. Switching to `type` keeps call sites zero-cast. Documented in the file header comments so the next person doesn't "fix" it back.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- Live server check: `GET /api/quotation/quotes/list` still returns 200 (Task 1.4 routes unaffected).
+- Direct Node smoke skipped — clients call relative paths and require a bundler/TS loader to import. The wire layer was already covered by Task 1.4's smoke tests; the clients are 1:1 thin wrappers around those endpoints, so typecheck is sufficient confidence here.
+
+**ARCH_TRANSITION** "Error response shape" entry already documents the `{ code, message, fieldErrors }` envelope-upgrade trigger — no further docs change needed for V1.
+
+**Next:** Task 1.9 — Role switcher + role-aware action gating (must land before Task 1.3 ActionBar consumes it).
