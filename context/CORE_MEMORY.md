@@ -39,11 +39,38 @@ This is not optional — stale context causes other AIs to redo or contradict co
 - Do NOT create new branches for every change or feature build unless explicitly requested by the user. Stay on the current branch and use sequential commits to save builds and context to avoid excessive branch proliferation.
 - Exception: skills like `/build-feature` and `/execute-proposal` may create a feature branch when the working tree is dirty or when the user is on `main`/`master`. Their branch-hygiene checks are authoritative.
 
+## Reference-doc precedence (Group PAS V1)
+
+When planning, mocking, or coding against the backend contract, resolve disagreements in this order. Higher entries win.
+
+1. **`docs/spec/` (DSL specs) — canon.** Per backend confirmation, all DSL values (enums, struct/data items, API contracts) are stable.
+2. **`docs/planning/team_nb_blueprint_v3.md`** — V1 narrative + scope.
+3. **`docs/planning/GTL Quotation Module (3).md`** — original product spec; long-term direction (V1 is a subset).
+4. **`docs/planning/openapi.json`** — *stale snapshot.* Useful for cross-checking shapes; does not always reflect the latest DSL (e.g. it shows `ProposalMember` while DSL has `PolicyMember`). Trust DSL on disagreement.
+5. **`docs/planning/SAMPLE-WORKFLOW.md`** — future-state W1 (full sanction/medical/actuarial/manager-approval flow). Not what V1 ships.
+
+Never silently follow OpenAPI when DSL diverges. Surface the mismatch in `context/SESSION_LOG.md` and proceed from DSL.
+
 ## Group PAS V1 — scope locks
 
 These are decisions baked into [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md); change them only with explicit user sign-off:
 
 - **Arch:** stay on existing keystone-ui schema-driven arch. Do not port to the PDF spec's `frontendProjection` pattern. State-aware actions handled via per-schema `stateActions` map + `ActionBar` widget.
-- **Out of V1:** auth/roles, GCL MemberQuote (placeholder IA only), maker-checker, PII/Cerbos UI gating, endorsement/renewal/claims, PDF's UW/RI review states.
-- **Existing `/quotations` module:** delete and rebuild from scratch against new backend. Do not preserve.
-- **Demo target:** internal demo by end of current week. Optimize plan ordering for that.
+- **Maker-checker (V1 demo, UI-only):** backend doesn't implement auth/maker-checker. Frontend ships a role-switcher widget and a UI-only "pending approval" overlay so the demo can show maker → checker hand-off without backend changes. Maker prepares; Checker hits the real backend submit/finalize endpoint. See [context/ARCH_TRANSITION.md](ARCH_TRANSITION.md) → "Maker-checker UI overlay".
+- **Out of V1:** real auth (Keycloak), GCL MemberQuote (placeholder IA only), backend-enforced maker-checker, PII/Cerbos UI gating, endorsement/renewal/claims, PDF's UW/RI review states.
+- **Existing `/quotations` module + auth-branch zombie forms:** delete and rebuild from scratch. Do not preserve.
+- **Reference precedence:** DSL → blueprint → GTL spec → OpenAPI (stale) → SAMPLE-WORKFLOW (future). See section above.
+- **Demo target:** internal demo by 2026-05-08 (Friday of plan-locked week).
+
+## Group PAS V1 — interim assumptions (non-blocking)
+
+Backend has not deployed; these are the assumptions we mock against. Each has a corresponding entry in [context/ARCH_TRANSITION.md](ARCH_TRANSITION.md) with risk + convergence trigger. If real backend behaviour differs, replace assumption (one mapper) without rewriting screens.
+
+1. **Async transitions:** 5s polling on relevant `GET` endpoints. Mock route flips entity state on a timer.
+2. **Quote → Proposal handoff:** auto-create Proposal on `POST /quotes/{id}/finalize`. Frontend polls `GET /proposals/by-quote/{quoteId}`.
+3. **Send-for-issuance → PAM Member visibility:** async; poll `GET /policy-admin/members/by-policy-member/{policyMemberId}` until 200.
+4. **Error response shape:** `{ message, errors?: [{ field, message }] }` (Spring-style). Single mapper per module.
+5. **Member-to-Plan Mapping (DMN):** opaque file ref via upload-url flow. UI = "show ref + replace upload"; no authoring tool.
+6. **GCL endpoints:** non-functional / stub. Placeholder tab only; no fixtures or actions.
+7. **Auth:** open API in V1. No bearer required. No multi-tenant header.
+8. **File upload destination:** mock-first via Next.js catch-all route. Real S3/MinIO PUT URL handling deferred until backend deploys with CORS for localhost.

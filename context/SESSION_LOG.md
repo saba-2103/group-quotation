@@ -15,11 +15,13 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
 ## Context
 
 **Repo:** keystone-ui
-**Branch:** feat/design-system-pass-a (current; all V1 work happens on this branch unless explicitly branched)
-**Product:** Group PAS — Quotation, Issuance (Proposal + PolicyMember + Census), Policy Admin (Client/Policy/Member)
-**Backend specs:** `<group-pas-repo>/spec/` — see [HANDOFF.md → Local environment](HANDOFF.md#local-environment) for how to resolve `<group-pas-repo>` on your machine.
-**Backend blueprint:** `<group-pas-repo>/plans/team_nb_blueprint_v3.md`
+**Branch:** check `git branch --show-current`. Recent V1 plan work was on `feat/group-pas-v1-plan`; new build branch may have been cut by user.
+**Product:** Group PAS — Quotation, Issuance (Proposal + PolicyMember + Census), Policy Admin (Client/Policy/Member). UI-only maker-checker overlay for V1 demo.
+**Backend specs:** [docs/spec/](../docs/spec/) (DSL, canon).
+**Backend blueprint:** [docs/planning/team_nb_blueprint_v3.md](../docs/planning/team_nb_blueprint_v3.md).
+**OpenAPI snapshot (stale):** [docs/planning/openapi.json](../docs/planning/openapi.json) — useful for shape cross-check; trust DSL on conflict.
 **V1 implementation plan:** [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md)
+**Reference precedence + interim assumptions:** [context/CORE_MEMORY.md](CORE_MEMORY.md#reference-doc-precedence-group-pas-v1).
 
 ---
 
@@ -34,3 +36,40 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
   - `proposals/TEMPLATE.md` and `proposals/README.md` copied; auth-specific PROP-NNNN files intentionally left out.
   - Fresh `context/HANDOFF.md`, `context/SESSION_LOG.md` (this file), `context/CORE_MEMORY.md`, `context/ARCH_TRANSITION.md` — process preserved, contents reset for group-pas V1.
 - Next: kickoff Phase 0 (teardown of legacy quotations module).
+
+### 2026-05-07 — Plan verification + maker-checker overlay added
+
+User added authoritative reference docs into the repo (`docs/planning/openapi.json`, `docs/planning/team_nb_blueprint_v3.md`, `docs/planning/SAMPLE-WORKFLOW.md`, `docs/planning/GTL Quotation Module (3).md`) and copied DSL specs to `docs/spec/`. Also confirmed maker-checker is needed in V1 demo via UI-only role switcher.
+
+**Backend Q&A absorbed:**
+- `docs/spec/` (DSL) is canon. All DSL values for enums, structs, API contracts are stable.
+- Issuance entity is `PolicyMember` (not `ProposalMember` as OpenAPI suggested) — OpenAPI snapshot is stale on this point.
+- PAM cross-ref is `policyMemberId` (final, not `proposalMemberId`).
+- PAM API delta absorbed: `GET /api/policy-admin/members/by-proposal-member/{...}` → `GET /api/policy-admin/members/by-policy-member/{policyMemberId}`. `MemberDto` adds `pendingReason?`, `voidReason?`, `cancellationReason?`. `MemberSummaryDto` adds `pendingReason?`.
+
+**Reference-doc precedence locked** (now in `context/CORE_MEMORY.md`): DSL → blueprint v3 → GTL Quotation Module (3).md → OpenAPI (stale) → SAMPLE-WORKFLOW.md (future).
+
+**V1 interim assumptions logged** (8 entries in `context/ARCH_TRANSITION.md` + scope-locks summary in `context/CORE_MEMORY.md`):
+1. Async signalling = 5s polling
+2. Quote → Proposal handoff = auto-create on finalize
+3. send-for-issuance → PAM Member visibility = async, poll
+4. Error response shape = Spring-style `{ message, errors? }`
+5. Member-to-Plan DMN = opaque file ref
+6. GCL endpoints = stub
+7. Auth = open API in V1
+8. File upload = mock-first via Next.js routes
+
+**Maker-checker UI overlay** (new ARCH_TRANSITION entry): role switcher widget (Maker / Checker / Ops / Viewer), `roleActions` map alongside `stateActions` on schemas, `awaitingApproval: true` UI-overlay state on Quote/Proposal. Checker's "Approve" calls real backend `submit`. Backend stays unchanged.
+
+**Plan structure changes:**
+- Phase 0 deletion list extended to include auth-branch zombie forms (`add-member-form`, `bulk-upload-form` etc.) bundled in `schemas/forms/index.ts` whose widgets aren't on this branch.
+- Phase 1 gains **Task 1.9 — Role switcher + role-aware action gating**.
+- Tasks 1.1, 1.5, 1.8 updated for `cancellationReason`, summary `pendingReason`, CANCELLED state.
+- Tasks 3.3, 3.4, 5.1 updated for `by-policy-member` endpoint rename + reason badges in member lists.
+- Task 4.4 explicitly drops the auth-branch 5-step add-member wizard; uses single-step `form-container` with the 8 V1 fields.
+- All quote/proposal/member tasks gained `roleActions` gating notes.
+- Conventions section restructured: precedence ranking, frontend conventions, coding conventions.
+
+**Files touched:** `docs/group-pas-v1-plan.md` (full rewrite), `context/HANDOFF.md` (drop Local environment section, list canonical docs with precedence), `context/CORE_MEMORY.md` (add precedence rule + V1 assumptions + maker-checker scope lock), `context/ARCH_TRANSITION.md` (added 7 new interim contracts; total 9 entries now), this log.
+
+**Next:** kickoff Phase 0 teardown.

@@ -12,38 +12,44 @@ This is the single entry point for project context. It links to the standing mem
 4. Check `git status` and recent commits to understand workspace drift.
 5. Only then continue the active task or ask the user a clarifying question.
 
-## Local environment
-
-Backend specs live in a separate `group-pas` repo (sibling to this one). Path references below use `<group-pas-repo>` as a placeholder — resolve it to wherever you've checked out `group-pas` locally.
-
-- **Expected default layout:** `group-pas` is checked out at the same workspace level as this repo. Example: if this repo is at `<workspace>/sandbox/keystone-ui/`, then `group-pas` is at `<workspace>/group-pas/` and references below resolve via `../../group-pas/`.
-- **Override:** set the `GROUP_PAS_REPO` env var to the absolute path of your local `group-pas` checkout if your layout differs.
-- **AI agents:** if you cannot resolve `<group-pas-repo>`, ask the user for the path rather than guessing.
-
 ## Canonical Context Files
 
+**Process & state**
 - Core memory: [context/CORE_MEMORY.md](CORE_MEMORY.md)
 - Architecture transition notes: [context/ARCH_TRANSITION.md](ARCH_TRANSITION.md)
 - Running session history: [context/SESSION_LOG.md](SESSION_LOG.md)
-- V1 implementation plan: [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md)
-- Module-creation walkthrough: [docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md](../docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md)
-- State patterns: [docs/STATE_MANAGEMENT_GUIDE.md](../docs/STATE_MANAGEMENT_GUIDE.md)
-- Backend specs (read-only reference): `<group-pas-repo>/spec/`
-- Backend blueprint: `<group-pas-repo>/plans/team_nb_blueprint_v3.md`
 - Proposal directory: [proposals/](../proposals/)
 - Active build-feature designs: [context/build-feature/](build-feature/)
 - Active build-feature logs: `agent_logs/build-feature/`
+
+**Plan**
+- V1 implementation plan: [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md)
+
+**Reference docs (in `docs/`) — precedence ranked**
+
+When sources disagree, follow this order. Higher entries win. Same rule lives in [CORE_MEMORY.md → Reference-doc precedence](CORE_MEMORY.md#reference-doc-precedence-group-pas-v1).
+
+1. **DSL specs (canon):** [docs/spec/](../docs/spec/) — `quotation/`, `issuance/`, `policy-admin/`, `common/`. Backend has confirmed all DSL values are stable.
+2. **V1 blueprint:** [docs/planning/team_nb_blueprint_v3.md](../docs/planning/team_nb_blueprint_v3.md)
+3. **Original product spec (long-term direction):** [docs/planning/GTL Quotation Module (3).md](../docs/planning/GTL%20Quotation%20Module%20(3).md)
+4. **OpenAPI snapshot (stale):** [docs/planning/openapi.json](../docs/planning/openapi.json) — useful for shape cross-check, but disagrees with DSL in places (e.g. `ProposalMember` vs DSL's `PolicyMember`). Trust DSL.
+5. **Future-state workflow:** [docs/planning/SAMPLE-WORKFLOW.md](../docs/planning/SAMPLE-WORKFLOW.md) — full GTL workflow (sanction/medical/actuarial/manager-approval). V1 ships a simpler subset.
+
+**Frontend conventions (in repo)**
+- Module-creation walkthrough: [docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md](../docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md)
+- State patterns: [docs/STATE_MANAGEMENT_GUIDE.md](../docs/STATE_MANAGEMENT_GUIDE.md)
+- Codebase overview: [docs/CODEBASE_OVERVIEW.md](../docs/CODEBASE_OVERVIEW.md)
 
 ## Active Workstreams
 
 ### Group PAS V1 — Frontend (in progress)
 
-Demo target: internal demo by end of week. Plan in [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md).
+Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md).
 
 | Phase | Status |
 |-------|--------|
-| Phase 0 — Teardown of legacy quotations module | not started |
-| Phase 1 — Shared infrastructure (8 parallel tasks) | not started |
+| Phase 0 — Teardown of legacy quotations + auth-branch zombies | not started |
+| Phase 1 — Shared infrastructure (9 parallel tasks, includes role switcher) | not started |
 | Phase 2 — Quotation module | blocked on Phase 1 |
 | Phase 3 — Policy Admin read views | blocked on Phase 1 |
 | Phase 4 — Issuance module | blocked on Phase 3 detail routes |
