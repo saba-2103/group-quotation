@@ -187,3 +187,159 @@ How do we save user choices?
 - **Namespace Religiously**: Use `page:slug:key` for local state and `global:key` for shared cross-page state.
 - **Avoid Over-Subscription**: Only add keys to `stateDependencies` that actually change the output of the widget.
 - **Snapshot State**: When persisting large forms, use the `set` operation on a dedicated object (e.g., `form:quotation:edit`) rather than updating individual top-level keys.
+
+---
+
+## 8. Patterns the schema-driven engine supports verbosely (V1)
+
+The current widget engine doesn't natively express a couple of patterns the Group PAS V1 plan needs. They work today via composition + `useWidgetState` + jsonLogic conditions, with a verbosity tax. A future widget-engine pass (or `frontendProjection` arch) would make them implicit. Until then, follow the patterns below consistently so every screen reads the same way.
+
+### 8.1 Polling until an async backend computation completes
+
+**Use case:** "Request price" on a Quote, "classify member" on a PolicyMember, "activate policy" — backend kicks off a workflow that populates fields asynchronously. Frontend should keep refetching until the result lands.
+
+**Engine support:** `useSmartQuery` accepts `refreshInterval: number` plus `stopWhen: jsonLogicCondition` on `DataSourceConfig`. When `stopWhen` evaluates truthy against the latest response, polling stops. No component-level timer needed for the stop case.
+
+**Schema example — Pricing tab on Quote detail:**
+
+```json
+{
+  "id": "quote-pricing",
+  "type": "stack-layout",
+  "dataSource": {
+    "api": {
+      "endpoint": "/api/quotation/quotes/{{id}}",
+      "method": "GET"
+    },
+    "refreshInterval": 5000,
+    "stopWhen": { "!=": [{ "var": "premium" }, null] }
+  },
+  "children": [ /* premium summary card consumes the data */ ]
+}
+```
+
+**Belt-and-braces timeout:** `stopWhen` halts on success. For a hard timeout (e.g. "stop polling after 30s and show a 'still working' banner"), use a component-level `setTimeout` that flips `enabled: false` on the query — out of scope for the schema engine itself.
+
+### 8.2 State-driven detail page (sibling widgets gated by entity state)
+
+**Use case:** PolicyMember detail renders **different sibling widgets** depending on the member's lifecycle state — read-only banner during `CREATED`/`MAF_PENDING`/`CLASSIFYING`, an editable form during `REPAIR_PENDING`, an action bar during `APPROVED`, terminal copy during `ADDED`/`REJECTED`. Same route, same fetch, different sub-views.
+
+**Pattern:**
+
+1. **Parent widget** fetches the entity once via `useSmartQuery`.
+2. **Parent publishes** the field that drives gating (e.g. `state`) to `useWidgetState` under a known key — typically via a small wrapper widget that reads from its own dataSource and writes to widget state on data change. Convention: `page:<slug>:entity-state` (e.g. `page:policy-member-detail:state`).
+3. **Each sibling sub-view** declares `stateDependencies: ["page:policy-member-detail:state"]` so it re-evaluates when the parent re-fetches, and uses `visibleWhen` jsonLogic against that key to render itself only in the right state.
+
+**Schema example — PolicyMember detail (abridged):**
+
+```json
+{
+  "id": "policy-member-detail",
+  "type": "stack-layout",
+  "children": [
+    {
+      "id": "fetch-and-publish",
+      "type": "state-publisher",
+      "props": { "writeKey": "page:policy-member-detail:state", "valuePath": "state" },
+      "dataSource": { "api": { "endpoint": "/api/issuance/policy-members/{{id}}", "method": "GET" } }
+    },
+    {
+      "id": "in-progress-banner",
+      "type": "page-header",
+      "props": { "title": "Member processing — please wait" },
+      "stateDependencies": ["page:policy-member-detail:state"],
+      "layout": { "hidden": false },
+      "visibleWhen": {
+        "in": [
+          { "var": "page:policy-member-detail:state" },
+          ["CREATED", "MAF_PENDING", "CLASSIFYING"]
+        ]
+      }
+    },
+    {
+      "id": "repair-edit-form",
+      "type": "form-container",
+      "stateDependencies": ["page:policy-member-detail:state"],
+      "visibleWhen": {
+        "==": [{ "var": "page:policy-member-detail:state" }, "REPAIR_PENDING"]
+      },
+      "props": { /* edit form schema */ }
+    },
+    {
+      "id": "approved-actions",
+      "type": "action-bar",
+      "stateDependencies": ["page:policy-member-detail:state"],
+      "visibleWhen": {
+        "==": [{ "var": "page:policy-member-detail:state" }, "APPROVED"]
+      },
+      "props": { /* sendForIssuance action */ }
+    }
+  ]
+}
+```
+
+**Note:** the `state-publisher` widget shown here is a tiny convenience — it reads `dataSource` and writes one field to `useWidgetState`. If a `state-publisher` doesn't already exist in the registry, build it as part of the first task that needs it (PolicyMember detail) and reuse it.
+
+**Verbosity cost:** every state-driven detail screen repeats the publish-then-gate pattern. Acceptable for V1 (3–4 screens). A future cleanup is a `state-conditional-section` widget that takes `cases: Record<State, WidgetConfig>` and routes internally.
+
+### 8.3 Form fields disabled by parent entity state or current role
+
+**Use case:** Quote Key Data tab is editable only when `status === 'DRAFT'` AND `role === 'maker'`. Otherwise read-only. Same for the repair edit form, plan editing, etc.
+
+**Engine support today:** field-level `disabled` works for form-state-driven disable, but not for "disable based on parent entity state or current role". V1 uses two sibling widgets and switches via `visibleWhen`:
+
+1. An **editable** `form-container` wrapped in `visibleWhen: <editable condition>`.
+2. A **read-only** `key-value-grid` wrapped in `visibleWhen: <not editable>`.
+
+Both consume the same fetched entity data, but only one renders at a time.
+
+**Schema example — Quote Key Data tab:**
+
+```json
+{
+  "id": "quote-key-data",
+  "type": "stack-layout",
+  "children": [
+    {
+      "id": "key-data-edit",
+      "type": "form-container",
+      "stateDependencies": [
+        "page:quote-detail:state",
+        "page:quote-detail:awaitingApproval",
+        "global:current-role"
+      ],
+      "visibleWhen": {
+        "and": [
+          { "==": [{ "var": "page:quote-detail:state" }, "DRAFT"] },
+          { "==": [{ "var": "page:quote-detail:awaitingApproval" }, false] },
+          { "==": [{ "var": "global:current-role" }, "maker"] }
+        ]
+      },
+      "props": { /* editable form */ }
+    },
+    {
+      "id": "key-data-readonly",
+      "type": "key-value-grid",
+      "stateDependencies": [
+        "page:quote-detail:state",
+        "page:quote-detail:awaitingApproval",
+        "global:current-role"
+      ],
+      "visibleWhen": {
+        "or": [
+          { "!=": [{ "var": "page:quote-detail:state" }, "DRAFT"] },
+          { "==": [{ "var": "page:quote-detail:awaitingApproval" }, true] },
+          { "!=": [{ "var": "global:current-role" }, "maker"] }
+        ]
+      },
+      "props": { /* read-only grid */ }
+    }
+  ]
+}
+```
+
+**Why two siblings instead of a single form with `disabledWhen`:** the engine doesn't yet thread parent-context (state, role) into form fields' disable evaluation. Adding a `disabledWhen` field config + a context plumbing change in `WidgetRenderer` is a future ~50 LOC simplification — see [context/ARCH_TRANSITION.md](../context/ARCH_TRANSITION.md) → "Form-level disable via dual sibling widgets".
+
+### 8.4 Role context as a global state key
+
+**Convention:** the `RoleContext` provider (Task 1.9) writes the current role to `useWidgetState` under `global:current-role` whenever it changes. This makes role available to any schema via `stateDependencies` + `visibleWhen` without each widget having to consume the React context directly. Keep this convention so role-gated visibility uses the same plumbing as state-driven visibility.
