@@ -160,7 +160,7 @@ Auth-branch zombies (bundled into [schemas/forms/index.ts](../schemas/forms/inde
 - `src/lib/api/quotation.ts` — function per endpoint in `QuotationApi.api`. Typed via Task 1.1 types.
 - `src/lib/api/issuance.ts` — function per endpoint in `IssuanceApi.api` (including `CensusSubmissionAPI` endpoints).
 - `src/lib/api/policy-admin.ts` — function per endpoint in `PolicyAdminApi.api`. Note PAM cross-ref endpoint is `/members/by-policy-member/:policyMemberId`.
-- `src/lib/api/error-mapper.ts` — single mapper for the assumed Spring-style error shape `{ message, errors?: [{ field, message }] }`. See [context/ARCH_TRANSITION.md](../context/ARCH_TRANSITION.md) → "Error response shape".
+- `src/lib/api/error-mapper.ts` — handles the **Spring default error shape** `{ timestamp, status, error, message, path }` (confirmed by backend for V1). Maps `message` to a top-level form/banner error. **No field-level errors in V1** — backend can add a `{ code, message, fieldErrors: [...] }` envelope on request when frontend forms need richer validation feedback. Document the envelope-upgrade trigger in [context/ARCH_TRANSITION.md](../context/ARCH_TRANSITION.md) → "Error response shape".
 - All three call relative paths (`/api/quotation/*` etc.); the Next API routes (Task 1.4) proxy to the real backend or return mocks.
 
 **Done when:** every endpoint in the three `.api` files has a typed client function; clients can be imported and called from a sample page.
@@ -404,9 +404,9 @@ Sub-tasks 2.4.x are parallel after the shell (2.3) lands.
 - **Polling pattern:** [docs/STATE_MANAGEMENT_GUIDE.md §8.1](STATE_MANAGEMENT_GUIDE.md#81-polling-until-an-async-backend-computation-completes). Use `dataSource.refreshInterval` + `dataSource.stopWhen` (already supported by `useSmartQuery`).
 
 **Output:**
-- `schemas/tabs/quote/pricing.json` — "Request price" button (Maker only, DRAFT only). On click: trigger the action, then poll the Quote endpoint every 5s with `stopWhen: { "!=": [{ "var": "premium" }, null] }`. Component-level 30s hard timeout flips a "still working" banner. Display total + per-plan breakdown card.
+- `schemas/tabs/quote/pricing.json` — "Request price" button (Maker only, DRAFT only). On click: trigger the action, then poll the Quote endpoint using the **standard backend-suggested cadence** (2s for the first 10s, then 5s out to 60s) via `dataSource.pollSchedule = STANDARD_POLL_SCHEDULE` from [`src/lib/polling.ts`](../src/lib/polling.ts), with `stopWhen: { "!=": [{ "var": "premium" }, null] }`. Banner: show "still working…" once initial-cadence phase ends (≥10s elapsed). Display total + per-plan breakdown card when premium lands.
 
-**Done when:** action triggers refetch loop; polling stops when premium populates; mock route flips a quote's premium after first refetch to validate.
+**Done when:** action triggers backoff loop; polling stops when premium populates; mock route flips a quote's premium after the first slow-phase refetch to validate the schedule transition.
 
 ### Task 2.4.6 — Member Quotes (GCL) placeholder tab
 
@@ -449,21 +449,20 @@ Sub-tasks 2.4.x are parallel after the shell (2.3) lands.
 ### Task 3.3 — Policy detail
 
 **Context to load:**
-- Endpoints: `/policies/:policyId`, `/policies/:policyId/members`, `GetPolicyPendingBreakdownQuery`.
-- Pending breakdown semantics: [docs/spec/policy-admin/PolicyAdminQuery.query](spec/policy-admin/PolicyAdminQuery.query) → counts grouped by `pendingReason`.
+- Endpoints: `/policies/:policyId`, `/policies/:policyId/members`. **No dedicated `pending-breakdown` endpoint in V1** — backend confirmed the breakdown is derived **client-side** by grouping the members list by `pendingReason`. Single fetch + groupBy.
 - Workflow: [docs/spec/policy-admin/PolicyActivationFlow.workflow](spec/policy-admin/PolicyActivationFlow.workflow) to understand when/why members are pending.
-- New: `MemberSummaryDto.pendingReason?` is now exposed — surface it in the members list inline.
+- `MemberSummaryDto.pendingReason?` is now exposed — both the breakdown card and the members tab consume it.
 
 **Output:**
 - `schemas/policy-detail.json` — tabs:
   - Overview: state, threshold, dates, premium, links to source proposal & quote.
-  - Pending breakdown card showing `Map<pendingReason, count>`.
+  - **Pending breakdown card** — derives `Map<pendingReason, count>` client-side from the members list response. One shared dataSource feeds both this card and the Members tab; no second API call. If the same fetch can't be ergonomically shared via `useWidgetState`, file a `useMemberPendingBreakdown` selector hook in `src/lib/group-pas/` that takes the list and returns the grouped counts.
   - Members tab embedding `schemas/tabs/policy/members.json` (next).
 - `schemas/tabs/policy/members.json` — list of members for this policy with state filter, saved-view chips: Pending, Active, Void, **Cancelled**. Render `state` and `pendingReason` as **two separate columns** (per V1 convention — composite cell type is deferred; see Open items). PENDING rows show both badges side by side; non-PENDING rows leave the reason column empty.
 - `ActionBar` with `stateActions`: PENDING/ACTIVE → `cancel` (Checker only). Otherwise none.
 - `src/app/policy-admin/policies/[id]/page.tsx`.
 
-**Done when:** detail renders, pending breakdown card matches fixtures, member tab filters work (incl. CANCELLED chip), reason badges visible on pending rows, cancel action wired (Checker only).
+**Done when:** detail renders, pending breakdown card matches the fixture's `pendingReason` distribution (verify visually that grouping is correct), member tab filters work (incl. CANCELLED chip), reason badges visible on pending rows, cancel action wired (Checker only).
 
 ### Task 3.4 — Member detail (PAM)
 

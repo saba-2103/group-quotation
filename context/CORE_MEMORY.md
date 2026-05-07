@@ -66,11 +66,12 @@ These are decisions baked into [docs/group-pas-v1-plan.md](../docs/group-pas-v1-
 
 Backend has not deployed; these are the assumptions we mock against. Each has a corresponding entry in [context/ARCH_TRANSITION.md](ARCH_TRANSITION.md) with risk + convergence trigger. If real backend behaviour differs, replace assumption (one mapper) without rewriting screens.
 
-1. **Async transitions:** 5s polling on relevant `GET` endpoints. Mock route flips entity state on a timer.
+1. **Async transitions:** backend-suggested cadence — 2s for the first 10s, then 5s out to 60s, then stop. Exported as `STANDARD_POLL_SCHEDULE` from `src/lib/polling.ts`. `useSmartQuery` consumes it via `dataSource.pollSchedule` + `stopWhen`. Mock route flips entity state on a timer.
 2. **Quote → Proposal handoff:** auto-create Proposal on `POST /quotes/{id}/finalize`. Frontend polls `GET /proposals/by-quote/{quoteId}`.
 3. **Send-for-issuance → PAM Member visibility:** async; poll `GET /policy-admin/members/by-policy-member/{policyMemberId}` until 200.
-4. **Error response shape:** `{ message, errors?: [{ field, message }] }` (Spring-style). Single mapper per module.
-5. **Member-to-Plan Mapping (DMN):** opaque file ref via upload-url flow. UI = "show ref + replace upload"; no authoring tool.
-6. **GCL endpoints:** non-functional / stub. Placeholder tab only; no fixtures or actions.
-7. **Auth:** open API in V1. No bearer required. No multi-tenant header.
-8. **File upload destination:** mock-first via Next.js catch-all route. Real S3/MinIO PUT URL handling deferred until backend deploys with CORS for localhost.
+4. **Error response shape:** Spring default for V1 — `{ timestamp, status, error, message, path }`. Top-level `message` only; **no field-level errors**. Backend can ship a richer `{ code, message, fieldErrors: [...] }` envelope on request — defer until a V1 form actually needs per-field validation feedback.
+5. **Pending-breakdown:** no dedicated endpoint in V1; derive client-side by grouping `MemberSummaryDto.pendingReason` from the members list response. Server-side aggregate added later if it becomes hot.
+6. **Member-to-Plan Mapping (DMN):** opaque file ref via upload-url flow. UI = "show ref + replace upload"; no authoring tool.
+7. **GCL endpoints:** non-functional / stub. Placeholder tab only; no fixtures or actions.
+8. **Auth:** open API in V1. No bearer required. No multi-tenant header.
+9. **File upload destination:** mock-first via Next.js catch-all route. Real S3/MinIO PUT URL handling deferred until backend deploys with CORS for localhost.

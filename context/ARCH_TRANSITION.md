@@ -35,17 +35,18 @@ Once backend is live, the catch-all routes pass through to real backend. Fixture
 
 ---
 
-## Async transition signalling — polling with stop-condition
+## Async transition signalling — polling with backoff + stop-condition
 
 **Interim contract (V1):**
-`RequestQuotePrice`, PolicyMember classification, and policy/member activation all run async on the backend. Frontend polls the relevant `GET` endpoint on a 5s interval after triggering the action, with a 30s component-level hard timeout. Polling stops automatically when the response satisfies a jsonLogic `stopWhen` condition declared on `dataSource` (e.g. `{ "!=": [{ "var": "premium" }, null] }`). Mock routes flip state on a timer to simulate completion.
+`RequestQuotePrice`, PolicyMember classification, and policy/member activation all run async on the backend. Frontend polls the relevant `GET` endpoint after triggering the action using the **backend-suggested cadence**: 2s for the first 10s, then 5s out to 60s, then stop. Polling also halts early when the response satisfies a jsonLogic `stopWhen` condition declared on `dataSource` (e.g. `{ "!=": [{ "var": "premium" }, null] }`). Mock routes flip state on a timer to simulate completion.
 
-`useSmartQuery` was extended to support `stopWhen` (uses TanStack's function-form `refetchInterval`). See [docs/STATE_MANAGEMENT_GUIDE.md §8.1](../docs/STATE_MANAGEMENT_GUIDE.md#81-polling-until-an-async-backend-computation-completes).
+The cadence is exported as `STANDARD_POLL_SCHEDULE` from [`src/lib/polling.ts`](../src/lib/polling.ts) so all consumers reference one constant. `useSmartQuery` supports `pollSchedule` (backoff with hard cap) + `stopWhen` (early halt) + `refreshInterval` (fixed-interval alternative). Schema example in [docs/STATE_MANAGEMENT_GUIDE.md §8.1](../docs/STATE_MANAGEMENT_GUIDE.md#81-polling-until-an-async-backend-computation-completes).
 
 **Risk:**
-- Stale UI between transitions (up to 5s).
+- Stale UI between transitions (up to 5s in the slow phase).
 - Many concurrent polls if a user opens multiple list/detail tabs.
-- `stopWhen` is jsonLogic — typo in the condition leads to silent forever-polling.
+- `stopWhen` is jsonLogic — typo in the condition leads to silent polling-until-cap.
+- Cadence isn't visible to the user; the "still working…" banner appears only after the initial-phase boundary (~10s) so quick completions feel instant.
 
 **Future architecture (target):**
 SSE or webhook channel that pushes state-changed events. React Query subscribes; polling drops to 0.
@@ -85,18 +86,21 @@ Real backend integration confirms timing; if sync, drop the poll. If failure mod
 
 ---
 
-## Error response shape — Spring-style assumption
+## Error response shape — Spring default for V1
 
 **Interim contract (V1):**
-We assume backend returns 4xx errors as `{ message: string, errors?: [{ field: string, message: string }] }`. Forms use the `errors[]` array to render per-field validation; toplevel `message` shown in a banner. Single error-mapper module per API client (`src/lib/api/error-mapper.ts`).
+PAM (and likely the other modules) returns Spring's default error envelope on 4xx: `{ timestamp, status, error, message, path }`. `message` carries the validation reason; **there is no field-level error array in V1**. The single error-mapper module (`src/lib/api/error-mapper.ts`) maps `message` to a top-level form/banner error; per-field hints aren't surfaced.
+
+Backend has offered to add a richer envelope (`{ code, message, fieldErrors: [{ field, code, message }] }`) on request — small lift on the controller-advice side. We hold off on requesting it until a V1 form actually needs field-level feedback (e.g. forms with many validation rules where top-level message is too coarse).
 
 **Risk:**
-- If backend returns a different shape (RFC 7807 problem-details, plain text, custom envelope), forms render generic errors.
+- Forms with multiple required fields show only the first/most-recent error message at the top, not which field is wrong. Acceptable for the V1 demo where all forms are short and the field is usually obvious from the message text.
+- If we ask for the envelope mid-V1, we have to update the mapper + form-error rendering — not painful but adds churn.
 
 **Future architecture (target):**
-Confirmed shape on first integration. Mapper updated once; consumers untouched.
+Backend ships the standardized envelope; mapper + forms use `fieldErrors[]` to render per-field validation messages. Single change in the mapper; consumers untouched if the form-error rendering already accepts an optional `fieldErrors` shape.
 
-**Convergence trigger:** first 4xx response seen against real backend.
+**Convergence trigger:** first V1 form where Spring's top-level `message` is too coarse for usable validation UX → ask backend for the envelope.
 
 ---
 
@@ -190,6 +194,22 @@ Forms that should be editable only under specific entity-state × role condition
 Add `disabledWhen: VisibilityCondition` to `FieldConfig` (and/or `FormContainerConfig`) and thread parent context (entity state + current role) into children via `WidgetRenderer`. ~50 LOC + a context-injection wrapper.
 
 **Convergence trigger:** widget-engine cleanup pass, post-V1.
+
+---
+
+## Pending-breakdown derived client-side
+
+**Interim contract (V1):**
+The Policy detail "Pending breakdown" card (`Map<pendingReason, count>`) has **no dedicated backend endpoint in V1**. Frontend derives it client-side by grouping `MemberSummaryDto.pendingReason` from the members list response. Single fetch (`/api/policy-admin/policies/:policyId/members`) feeds both the breakdown card and the Members tab — share via `useWidgetState` or a small selector hook (`useMemberPendingBreakdown` in `src/lib/group-pas/`).
+
+**Risk:**
+- Breaks down for very large member lists where the page only renders a subset (we'd be grouping the slice, not the universe). V1 demo uses small fixtures so this isn't visible, but as soon as backend pagination is consumed, the breakdown number drifts from the real count.
+- Reason values could change between the list and detail endpoints if their cache TTLs differ — improbable since both come from the same store, but worth noting if drift surfaces.
+
+**Future architecture (target):**
+Backend adds `GET /policies/:policyId/pending-breakdown` (or includes the count map on the Policy DTO). Frontend swaps the client-side groupBy for the server-side number.
+
+**Convergence trigger:** breakdown card shown over a paginated list, OR backend opts to add the aggregate ahead of UX requests because it becomes hot.
 
 ---
 

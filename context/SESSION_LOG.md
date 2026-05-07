@@ -108,3 +108,33 @@ Audited current widget engine vs V1 plan needs. Verdict: existing arch supports 
 **Files touched:** `src/hooks/useSmartQuery.ts`, `src/types/widget.ts`, `docs/STATE_MANAGEMENT_GUIDE.md`, `docs/group-pas-v1-plan.md`, `context/ARCH_TRANSITION.md`, this log.
 
 **Next:** Phase 0 teardown.
+
+### 2026-05-07 (continued) — Three more backend clarifications absorbed
+
+Backend confirmed:
+
+1. **Polling cadence:** 2s for first 10s, then back off to 5s up to ~60s. Use this for any GET endpoint after triggering an async action.
+2. **Error response shape:** Spring default `{ timestamp, status, error, message, path }` for V1. No field-level error array yet. Backend will add a `{ code, message, fieldErrors: [{ field, code, message }] }` envelope on request — small lift, but only when frontend forms actually need it.
+3. **Pending breakdown:** no dedicated endpoint in V1. Derive client-side by grouping `MemberSummaryDto.pendingReason` from the members list response. Server-side aggregate added later if it becomes hot.
+
+**Engine work:**
+- Extended `useSmartQuery` to support `pollSchedule: { initialIntervalMs, initialDurationMs, fallbackIntervalMs, maxDurationMs? }` for backoff polling. Falls back to fixed `refreshInterval` when no schedule is given. `stopWhen` halts either kind early. Implementation uses `useRef` to track polling-cycle start time.
+- Added `src/lib/polling.ts` exporting `STANDARD_POLL_SCHEDULE = { 2s for 10s → 5s up to 60s }`. All polling consumers reference this constant rather than hardcoding intervals; one tuning point for cadence.
+- Typecheck clean.
+
+**Plan + docs updates:**
+- Task 1.2 (API clients): error mapper notes Spring default shape, no field-level errors, envelope-upgrade trigger documented.
+- Task 2.4.5 (Pricing tab): replaced fixed 5s with `STANDARD_POLL_SCHEDULE`; "still working…" banner appears once initial-cadence phase ends (≥10s).
+- Task 3.3 (Policy detail): pending breakdown card derives client-side; no `GetPolicyPendingBreakdownQuery` endpoint; shared dataSource between card and members tab via `useWidgetState` or a `useMemberPendingBreakdown` selector hook.
+- `STATE_MANAGEMENT_GUIDE.md §8.1`: schema example switched to `pollSchedule` + the constant; explanation of fast/slow phases.
+- `ARCH_TRANSITION.md`:
+  - "Async transition signalling" updated for backoff cadence + new risks.
+  - "Error response shape" rewritten to match Spring default + envelope-upgrade convergence trigger.
+  - New entry "Pending-breakdown derived client-side" with risks (paginated list drift) and convergence trigger.
+- `CORE_MEMORY.md` V1 assumption list updated: now 9 items (added pending-breakdown), polling cadence + error shape revised.
+
+**Files touched:** `src/hooks/useSmartQuery.ts`, `src/types/widget.ts`, `src/lib/polling.ts` (new), `docs/STATE_MANAGEMENT_GUIDE.md`, `docs/group-pas-v1-plan.md`, `context/ARCH_TRANSITION.md`, `context/CORE_MEMORY.md`, this log.
+
+**Process answer to user's `/build-feature` question:** the skill takes proposal id, free-form ask, **or path to a design doc**. Plan tasks have Context/Output/Done structured like a design doc, so `/build-feature Task 0.1 per docs/group-pas-v1-plan.md` works. Proposals are only needed for out-of-plan changes.
+
+**Next:** Phase 0 teardown.

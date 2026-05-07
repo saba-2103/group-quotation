@@ -198,7 +198,15 @@ The current widget engine doesn't natively express a couple of patterns the Grou
 
 **Use case:** "Request price" on a Quote, "classify member" on a PolicyMember, "activate policy" — backend kicks off a workflow that populates fields asynchronously. Frontend should keep refetching until the result lands.
 
-**Engine support:** `useSmartQuery` accepts `refreshInterval: number` plus `stopWhen: jsonLogicCondition` on `DataSourceConfig`. When `stopWhen` evaluates truthy against the latest response, polling stops. No component-level timer needed for the stop case.
+**Backend-suggested cadence:** poll fast at first, then back off, then give up. `2s for the first 10s, then 5s up to 60s` is the default for any V1 polling consumer. This is exported as `STANDARD_POLL_SCHEDULE` from [`src/lib/polling.ts`](../src/lib/polling.ts) — use that constant rather than hardcoding the numbers per widget.
+
+**Engine support:** `useSmartQuery` accepts the following on `DataSourceConfig`:
+
+- `pollSchedule: { initialIntervalMs, initialDurationMs, fallbackIntervalMs, maxDurationMs? }` — backoff schedule.
+- `refreshInterval: number` — fixed-cadence alternative; ignored if `pollSchedule` is also set.
+- `stopWhen: jsonLogicCondition` — halts polling early when the latest response satisfies the condition.
+
+When `stopWhen` evaluates truthy against the latest response, polling stops. When `pollSchedule.maxDurationMs` elapses without `stopWhen` firing, polling also stops (hard cap). The next time the component remounts, the schedule restarts fresh.
 
 **Schema example — Pricing tab on Quote detail:**
 
@@ -211,14 +219,31 @@ The current widget engine doesn't natively express a couple of patterns the Grou
       "endpoint": "/api/quotation/quotes/{{id}}",
       "method": "GET"
     },
-    "refreshInterval": 5000,
+    "pollSchedule": {
+      "initialIntervalMs": 2000,
+      "initialDurationMs": 10000,
+      "fallbackIntervalMs": 5000,
+      "maxDurationMs": 60000
+    },
     "stopWhen": { "!=": [{ "var": "premium" }, null] }
   },
   "children": [ /* premium summary card consumes the data */ ]
 }
 ```
 
-**Belt-and-braces timeout:** `stopWhen` halts on success. For a hard timeout (e.g. "stop polling after 30s and show a 'still working' banner"), use a component-level `setTimeout` that flips `enabled: false` on the query — out of scope for the schema engine itself.
+In code, prefer reading from the constant:
+
+```ts
+import { STANDARD_POLL_SCHEDULE } from "@/lib/polling";
+
+const dataSource = {
+  api: { endpoint: `/api/quotation/quotes/${id}`, method: "GET" },
+  pollSchedule: STANDARD_POLL_SCHEDULE,
+  stopWhen: { "!=": [{ var: "premium" }, null] },
+};
+```
+
+**UI hint during the slow phase:** once elapsed time crosses `initialDurationMs` (10s), surface a "still working…" banner so users understand the action is in flight. Component-owned: read elapsed time off a local timer, or check whether the query has had ≥1 fetch with `data.<resultField>` still null.
 
 ### 8.2 State-driven detail page (sibling widgets gated by entity state)
 
