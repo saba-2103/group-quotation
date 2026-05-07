@@ -53,8 +53,27 @@ Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [
 | Batch 1 — Foundation (Phase 0 + Phase 1 demo subset) | **DONE** — Phase 0 + Tasks 1.1, 1.2, 1.3, 1.4, 1.5, 1.8, 1.9 (skipped 1.6 + 1.7 per V1 demo cuts D7/D8) |
 | Batch 2 — Quote happy path (Phase 2 demo subset) | **DONE** — Tasks 2.1, 2.2, 2.3, 2.4.1–2.4.6 (Plans/Census/Mapping read-only per cuts D1/D2/D3; Pricing live with backoff poll; demo end-to-end walkthrough deferred to next session w/ user) |
 | Batch 3 — Issuance + PAM + glue (Phase 3, 4, 5 demo subsets) | **DONE** — Tasks 3.1 (light) + 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 5.1; demo walkthrough (5.3) deferred to a session w/ user. Skipped per cuts: 4.5, 5.2, 5.4. |
+| Post-batch follow-ups (2026-05-07) | **DONE** — pre-demo audit pass (P1.1–P1.9 + P2.2); GCL frontends; backend deployed, proxy mode wired; error envelope updated; FLOAT_UNAVAILABLE fixture removed. See SESSION_LOG.md. |
 
 **Deferred-from-demo backlog (D1–D12)** lives in the same plan section. After demo lands, work that backlog before starting any new feature.
+
+### Open items at this thread close (2026-05-07)
+
+Read [context/SESSION_LOG.md](SESSION_LOG.md) "End-of-thread handoff snapshot" entry first — full state lives there. Quick index of what's outstanding:
+
+1. **Two questions drafted to send to backend** (full text in SESSION_LOG):
+   - Quote-level maker-checker — apply existing PAM approval pattern (decision: backend OWNS this; UI overlay is transitional scaffolding only).
+   - File upload status — all four `/files/upload-url` + `/files/download-url` endpoints non-functional; needs S3 wiring.
+2. **Cloudflare deploy** failed — bundle 8.4 MB, free tier 3 MiB. Three options offered to user (pay $5/mo, prune `pdfmake`+`xlsx`, aggressive purge). Awaiting user decision.
+3. **Demo walkthrough Task 5.3** still gated on user attendance.
+4. **Pass-2 V1_DEMO_ISSUES** still has open items: P2.1 (confirm-with-input dialog), P2.5 ("still working" banner on Pricing tab), P2.6 (filter-bar reset on chip clear).
+5. **Optional polish:** `useClientNames()` resolver for proxy-mode list pages (~2h).
+
+### Demo posture at thread close
+
+- **Mock mode** (default — `.env.local` not set): rich fixture data, full demo path works including request-price simulator and maker-checker overlay. **Recommended for the demo.**
+- **Proxy mode** (`GROUP_PAS_BACKEND_URL=https://group-pas-dev.anairacloud.com` in `.env.local`): real backend wiring proven, gaps documented. Use as proof-of-integration backup.
+- Switch between modes by editing `.env.local` (1 line, restart `npm run dev`).
 
 When picking up a task, follow the per-task **Context to load / Output / Done when** structure in the plan doc — it points to the exact spec files, templates, and acceptance criteria.
 

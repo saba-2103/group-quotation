@@ -686,3 +686,63 @@ Backend has **6 GCL `MemberQuote` endpoints we deliberately didn't mock** — th
 **Files about to touch:** `src/lib/api/error-mapper.ts`, `src/mocks/group-pas/policy-admin/members.ts`, new `src/app/quotation/member-quotes/{page.tsx,[id]/page.tsx}`, new `schemas/member-quote.json` + `schemas/member-quote-detail.json` + create form, sidebar nav update.
 
 **Next:** execute the above, verify, commit, push.
+
+### 2026-05-07 (continued) — End-of-thread handoff snapshot
+
+Context window filled; new thread starts after this entry. Everything above stays canonical. New thread should read this entry + `context/HANDOFF.md` + `docs/Demo_Prep_Business_Context.md` + the latest commit log. No action lost.
+
+**Commits landed this thread (chronological):**
+
+| SHA | Title | Notes |
+|---|---|---|
+| `3f30dca` | feat(group-pas): align with deployed backend — error envelope, GCL screens, FLOAT cleanup | Error mapper handles `{ error, message }` + Spring default; `MEM-0009 FLOAT_UNAVAILABLE` fixture removed; full GCL Member Quote frontends built (list / detail / create / set-premium / sidebar nav / 6 mock routes / 3 fixtures / state-map entry). |
+| `3abd301` | feat(api-mock): proxy mode wired to live backend with UI-only short-circuits | Set `GROUP_PAS_BACKEND_URL` in `.env.local` → catch-all proxies to backend. `MOCK_ONLY_PATTERNS` keeps `/awaiting-approval`, `/pending-breakdown`, proposal-scoped `/members` local. Approval overlay decoupled to `Map<string, boolean>` so UUIDs work. `.env.example` documents the switch. |
+
+**Verified live (proxy on, against `https://group-pas-dev.anairacloud.com`):**
+- All 5 list pages render real backend rows.
+- Detail pages with real UUIDs render.
+- `POST /quotes` and `POST /member-quotes` create real entities; appear in subsequent reads.
+- PAM Member by-policy-member redirect resolves real UUIDs.
+- UI-only awaiting-approval works in proxy mode (overlay map keyed by id).
+- 16/16 jest tests pass; `tsc --noEmit` clean.
+
+**Known limitations in proxy mode** (documented for the demo, not blockers):
+- Backend `QuoteSummaryDto` carries `clientId` but no `clientName` → list pages show UUIDs in proxy mode. Mitigation = build a `useClientNames()` resolver hook (~2h, future polish).
+- `request-price` proxies through but backend has no Rule Engine listener — premium never populates. Demo runs in mock mode where the simulator works.
+- File upload endpoints throw `UnsupportedOperationException` on backend — D7/D2/D3 stay deferred until backend wires S3.
+- Quote-level maker-checker `awaitingApproval` overlay only persists locally — backend doesn't carry the field on its DTOs.
+
+**Architecture decision locked this thread (Quote-level maker-checker):**
+
+User chose **option 1** — backend should own Quote-level approval, frontend overlay is **transitional scaffolding only** (delete when backend ships). The path to send to backend (short version):
+
+> **Subject: Quote-level maker-checker — extend the PAM approval pattern to Quote?**
+>
+> We're keeping our UI-only `awaitingApproval` overlay only as transitional scaffolding. Real ownership belongs in backend. Can you apply the same pattern you already shipped on PAM (`RequestApprovalCommand` → `MemberApprovalRequested` event → central Approval module → `ApprovalCompletedListener` → `Member.pendingReason = PENDING_APPROVAL`) to Quote?
+>
+> Concrete ask: a `RequestQuoteApprovalCommand`, a corresponding `QuoteApprovalRequested` event, an in-flight state on Quote (matching whatever shape — flag, enum, or aggregate — you prefer for consistency with Member), a listener back from the Approval module, and Cerbos enforcement on `submit`.
+>
+> Once your contract lands, we delete the overlay and read your field directly (~half day cleanup on our side). Timeline / priority?
+
+That question hasn't been sent yet (user task). Also outstanding:
+- **File upload feedback to backend**: `POST /api/quotation/files/upload-url` and `POST /api/quotation/files/download-url` throw `UnsupportedOperationException` (`group-pas/quotation/QuotationCommand/.../FileUrlCommands.java:21`). PolicyAdmin equivalent returns invalid stub URLs (`https://policy-files.local/stub/...`). All four file-URL endpoints non-functional — needs S3 wiring before D7 unblocks.
+
+**Deploy issue surfaced at end of thread (Cloudflare Workers):**
+
+`npm run deploy` fails — bundle is 8.4 MB, free-tier limit is 3 MiB. Top contributors: `pdfmake` + `vfs_fonts` (1.78 MB + 834 KB), `@vercel/og` (resvg + edge + yoga = 2.2 MB), `xlsx` (402 KB), Next.js runtime + SSR chunk. Three options offered to user (paid tier $5/mo for 10 MB; remove pdfmake+xlsx via dropping table-export feature; aggressive purge). User has not chosen yet.
+
+**Where next thread should start:**
+
+1. **Send the two questions to backend** (maker-checker pattern + file upload status). Both fully drafted in this log entry — copy-paste ready.
+2. **Decide deploy path** (pay tier vs prune) before attempting `npm run deploy` again.
+3. **Demo walkthrough Task 5.3** still gated on user attendance — not done.
+4. **Pass-2 V1_DEMO_ISSUES** still has open items (P2.1 confirm-with-input, P2.5 "still working" banner, P2.6 filter-bar reset).
+5. **Optional polish:** `useClientNames()` resolver for proxy-mode list pages (~2h).
+
+**Demo posture at thread close:**
+- Mock mode (default `.env.local` flipped off): rich fixture data, full demo path works including request-price simulator and maker-checker overlay. Recommended for Friday.
+- Proxy mode (`.env.local` flipped on): real backend wiring proven, gaps documented. Demo as proof of integration, not full walkthrough.
+- Switch between modes by editing `.env.local` (1 line, restart `npm run dev`).
+
+**Untouched untracked files** still on disk (same as previous handoff entry, no decision yet):
+- `ARCH_REVIEW_SCRATCH.md`, `backend/`, `docs/Demo_Script_Day_in_the_Life.md`, `docs/Keystone_UI_Design_Principles{,.v2}*.{pptx,md}`, `docs/archV1/12-ARCHITECTURE-FREEZE-DECISIONS.md`, `docs/generate_slides{,_v2}.js`, `test-results/`, `.env.local` (gitignored).
