@@ -629,6 +629,60 @@ Sub-tasks 2.4.x are parallel after the shell (2.3) lands.
 - Whether Quote detail header should embed the action bar inline or as a sticky footer — design call after Task 2.3 lands.
 - Role expansion — V1 ships Maker/Checker/Ops/Viewer. If demo needs UW-as-distinct-role (not just "read-only of REVIEW_PENDING"), add it to Task 1.9's role list.
 
+## V1 demo — execution strategy + deferred work
+
+The plan above describes the *complete* V1. For the Friday 2026-05-08 internal demo (~24h horizon, AI-assisted), we ship a narrower slice that walks the demo happy path (Task 5.3) and stub the rest as read-only or fixtures. **All deferred items below are still V1; they come back immediately after demo.** They're listed here so nothing slips.
+
+### Execution strategy — 3 batches, minimal `/build-feature` overhead
+
+`/build-feature` is for genuinely ambiguous design. Most plan tasks are mechanical schema/type/mock/widget work and the plan task itself is the design doc — execute directly, commit per logical chunk.
+
+| Batch | Tasks | `/build-feature` use |
+|---|---|---|
+| **1 — Foundation** | Phase 0 (0.1, 0.2) + Phase 1 demo subset (1.1, 1.2, 1.3, 1.4, 1.5, 1.8, 1.9; skip 1.6, 1.7) | Skip — execute directly, batch commits |
+| **2 — Quote happy path** | 2.1, 2.2, 2.3 + 2.4.1 editable + 2.4.2/2.4.3/2.4.4 **read-only** + 2.4.5 with poll + 2.4.6 placeholder | Use for action-bar maker-checker overlay only |
+| **3 — Issuance + PAM + glue** | 3.1 (light) + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 4.4 (single-member + state-driven detail) + 5.1 (deep links) + 5.3 (walk + fix) | Use for state-driven PolicyMember detail only |
+
+### Demo critical path
+
+These are the only screens/actions exercised by the demo. Build them to working quality.
+
+- Quote list, create, detail shell, Key Data tab, Pricing tab + Action Bar wiring (Send for approval / Approve / Send to client / Accept / Finalize)
+- Plans / Census / Member-to-Plan tabs **read-only** (display from fixtures, no editing UI)
+- Proposal detail (light, mostly read-only; auto-discovery from finalized quote)
+- Add member single-form
+- State-driven PolicyMember detail with REPAIR_PENDING edit + APPROVED→SendForIssuance
+- PAM Policy detail with pending-breakdown card; PAM Member detail with reason banner
+- Role switcher in top shell; cross-module deep links
+
+### Deferred from V1 demo (still V1 — pick up immediately after)
+
+| # | What | Cross-ref | Notes |
+|---|---|---|---|
+| D1 | Plans tab CRUD (add/edit/remove modal, rate-card upload) | Task 2.4.2 | Demo uses fixtures; CRUD comes back. |
+| D2 | Census file-format upload + aggregate-headcount grid editing | Task 2.4.3 | Display only for demo. |
+| D3 | Member-to-Plan DMN replace flow | Task 2.4.4 | Display ref only for demo. |
+| D4 | Bulk census flow (initiate / upload / ingest / row review / submit) | Task 4.5 | Single-member-add covers demo. |
+| D5 | Operational queue index landing page | Task 5.2 | Saved-view chips on each list cover demo. |
+| D6 | Critical-path test suite | Task 5.4 | Post-demo. |
+| D7 | `PresignedUploader` widget | Task 1.6 | Mock route accepts any POST as a fake `fileRef` for demo. |
+| D8 | `useEnum` hook | Task 1.7 | Inline-hardcoded option lists from DSL enums for demo. |
+| D9 | Clients detail page (`/policy-admin/clients/[id]`) | Task 3.1 | List only for demo. |
+| D10 | UW review queue surface | implicit Task 4.3 chip | Read-only chip on member list; full UW workbench is separate app anyway. |
+| D11 | Polished detail screens for WITHDRAWN / EXPIRED / REJECTED Quote states | implicit Task 2.3 | Badge renders, but no per-state empty-state copy or different layout. |
+| D12 | Most saved-view chip variants on Quote list | Task 2.1 | Demo uses "All" + "Pending approval" only. |
+
+### Demo-time-only shortcuts (must clean up post-demo)
+
+These are V1 *correctness-debt* introduced for speed. Re-evaluate immediately after demo:
+
+- Mock route accepts any POST as a successful upload regardless of payload — replace with proper `PresignedUploader` flow.
+- Inline-hardcoded enum option arrays in select fields — replace with `useEnum`.
+- Client-side polling cadence has no per-action customization — fine for now (everything uses `STANDARD_POLL_SCHEDULE`).
+- Some forms render error from `message` only (no field-level) — request the envelope upgrade from backend if any V1 form needs richer feedback (per [context/ARCH_TRANSITION.md](../context/ARCH_TRANSITION.md) → Error response shape).
+
+---
+
 ## Future widget-engine cleanups (not in V1)
 
 These were identified during the V1 architectural audit. They're solvable today via the patterns in [STATE_MANAGEMENT_GUIDE.md §8](STATE_MANAGEMENT_GUIDE.md#8-patterns-the-schema-driven-engine-supports-verbosely-v1) and don't block any V1 task. Re-evaluate when the future archV1 lands; if archV1 doesn't make them implicit, file them as proposals.

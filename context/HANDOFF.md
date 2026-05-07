@@ -46,14 +46,15 @@ When sources disagree, follow this order. Higher entries win. Same rule lives in
 
 Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md).
 
-| Phase | Status |
+**Build is batched, not iterated per task.** The plan above is the complete V1; for the demo we ship a narrower slice in 3 batches per [docs/group-pas-v1-plan.md → V1 demo — execution strategy + deferred work](../docs/group-pas-v1-plan.md#v1-demo--execution-strategy--deferred-work). Read that section before picking up work — it lists which tasks are demo-critical, which are demo-deferred-but-V1, and which shortcuts must be cleaned up post-demo.
+
+| Batch | Status |
 |-------|--------|
-| Phase 0 — Teardown of legacy quotations + auth-branch zombies | not started |
-| Phase 1 — Shared infrastructure (9 parallel tasks, includes role switcher) | not started |
-| Phase 2 — Quotation module | blocked on Phase 1 |
-| Phase 3 — Policy Admin read views | blocked on Phase 1 |
-| Phase 4 — Issuance module | blocked on Phase 3 detail routes |
-| Phase 5 — Cross-cutting polish | blocked on 2/3/4 |
+| Batch 1 — Foundation (Phase 0 + Phase 1 demo subset) | not started |
+| Batch 2 — Quote happy path (Phase 2 demo subset) | blocked on Batch 1 |
+| Batch 3 — Issuance + PAM + glue (Phase 3, 4, 5 demo subsets) | blocked on Batch 2 |
+
+**Deferred-from-demo backlog (D1–D12)** lives in the same plan section. After demo lands, work that backlog before starting any new feature.
 
 When picking up a task, follow the per-task **Context to load / Output / Done when** structure in the plan doc — it points to the exact spec files, templates, and acceptance criteria.
 

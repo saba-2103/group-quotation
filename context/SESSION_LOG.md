@@ -138,3 +138,30 @@ Backend confirmed:
 **Process answer to user's `/build-feature` question:** the skill takes proposal id, free-form ask, **or path to a design doc**. Plan tasks have Context/Output/Done structured like a design doc, so `/build-feature Task 0.1 per docs/group-pas-v1-plan.md` works. Proposals are only needed for out-of-plan changes.
 
 **Next:** Phase 0 teardown.
+
+### 2026-05-07 (continued) — V1 demo execution strategy locked, cuts captured
+
+User flagged: the full plan is too big to iterate task-by-task with `/build-feature` against the Friday demo deadline. Strategy locked:
+
+**3 batches, mostly direct execution (no `/build-feature` overhead) for mechanical work:**
+
+- Batch 1 — Foundation (Phase 0 + Phase 1 demo subset: Tasks 1.1, 1.2, 1.3, 1.4, 1.5, 1.8, 1.9; skip 1.6 + 1.7).
+- Batch 2 — Quote happy path (Tasks 2.1, 2.2, 2.3, 2.4.1 editable + 2.4.2/3/4 **read-only** + 2.4.5 with poll + 2.4.6 placeholder).
+- Batch 3 — Issuance + PAM + demo glue (Tasks 3.1 light + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 4.4 single-member-only + 5.1 + 5.3 walkthrough).
+
+`/build-feature` reserved for the two genuinely ambiguous design points: action-bar maker-checker overlay (Batch 2) and state-driven PolicyMember detail (Batch 3). Everything else executes directly against the plan as design doc.
+
+**Deferred-from-V1-demo backlog (D1–D12)** captured in [docs/group-pas-v1-plan.md → V1 demo — execution strategy + deferred work](../docs/group-pas-v1-plan.md#v1-demo--execution-strategy--deferred-work):
+
+- D1 Plans CRUD, D2 Census authoring, D3 DMN replace flow, D4 Bulk census flow, D5 Operational queue index, D6 Tests, D7 PresignedUploader, D8 useEnum, D9 Clients detail, D10 UW review queue surface, D11 Terminal-state polish, D12 Saved-view chip variants.
+
+**Demo-time-only shortcuts** (correctness-debt to clean up immediately post-demo):
+- Mock route accepts any POST as successful upload (no PresignedUploader).
+- Inline-hardcoded enum options instead of `useEnum`.
+- Forms render top-level message only (no field-level errors); request envelope upgrade from backend if pain surfaces.
+
+HANDOFF Active Workstreams updated to show the 3-batch view + pointer to the strategy section. Future AI/human picking up work reads that section before any task.
+
+**Files touched:** `docs/group-pas-v1-plan.md`, `context/HANDOFF.md`, this log.
+
+**Next:** kick off Batch 1 — Phase 0 teardown.
