@@ -1,0 +1,204 @@
+{
+  "id": "policy-member-detail-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "pm-header",
+      "type": "page-header",
+      "props": {
+        "title": "PolicyMember {{memberId}}",
+        "description": "Workflow-driven detail. Available actions depend on the lifecycle state and your active role."
+      }
+    },
+    {
+      "id": "pm-state-summary",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}", "method": "GET" }
+      },
+      "props": {
+        "columns": 4,
+        "fields": [
+          {
+            "id": "state",
+            "label": "State",
+            "accessorKey": "state",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "CREATED", "label": "Created", "variant": "secondary" },
+              { "value": "PRICED", "label": "Priced", "variant": "info" },
+              { "value": "MAF_PENDING", "label": "MAF pending", "variant": "warning" },
+              { "value": "MAF_CONFIRMED", "label": "MAF confirmed", "variant": "teal" },
+              { "value": "CLASSIFYING", "label": "Classifying", "variant": "info" },
+              { "value": "REPAIR_PENDING", "label": "Repair pending", "variant": "warning" },
+              { "value": "REFERRED_TO_UW", "label": "Referred to UW", "variant": "warning" },
+              { "value": "APPROVED", "label": "Approved", "variant": "teal" },
+              { "value": "SENT_FOR_ISSUANCE", "label": "Sent for issuance", "variant": "info" },
+              { "value": "ADDED", "label": "Added", "variant": "success" },
+              { "value": "REJECTED", "label": "Rejected", "variant": "destructive" },
+              { "value": "ARCHIVED", "label": "Archived", "variant": "grey" }
+            ]
+          },
+          { "id": "memberId", "label": "Member ref", "accessorKey": "memberId" },
+          { "id": "policyId", "label": "Policy", "accessorKey": "policyId" },
+          { "id": "planNo", "label": "Plan", "accessorKey": "planNo" }
+        ]
+      }
+    },
+    {
+      "id": "pm-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}", "method": "GET" }
+      },
+      "props": {
+        "stateActions": {
+          "CREATED": ["price"],
+          "PRICED": ["classify"],
+          "REPAIR_PENDING": ["repair-edit", "reject", "archive"],
+          "REFERRED_TO_UW": ["uw-approve", "uw-reject"],
+          "APPROVED": ["send-for-issuance"],
+          "SENT_FOR_ISSUANCE": [],
+          "ADDED": ["pam-link"],
+          "REJECTED": [],
+          "ARCHIVED": []
+        },
+        "roleActions": {
+          "maker": ["repair-edit"],
+          "checker": ["price", "classify", "uw-approve", "uw-reject", "reject", "send-for-issuance", "pam-link"],
+          "ops": ["repair-edit", "reject", "archive", "pam-link"],
+          "viewer": []
+        },
+        "actions": [
+          {
+            "id": "price",
+            "label": "Price member",
+            "icon": "Calculator",
+            "type": "api-mutation",
+            "refreshKey": "/api/issuance/policy-members/{{memberId}}",
+            "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}/price", "method": "POST" }
+          },
+          {
+            "id": "classify",
+            "label": "Classify",
+            "icon": "Workflow",
+            "type": "api-mutation",
+            "refreshKey": "/api/issuance/policy-members/{{memberId}}",
+            "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}/classify", "method": "POST" }
+          },
+          {
+            "id": "repair-edit",
+            "label": "Edit & re-classify",
+            "icon": "Wrench",
+            "type": "open-modal",
+            "target": "repair-policy-member-form",
+            "variant": "default"
+          },
+          {
+            "id": "uw-approve",
+            "label": "UW approve",
+            "icon": "Check",
+            "type": "api-mutation",
+            "refreshKey": "/api/issuance/policy-members/{{memberId}}",
+            "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}/uw/approve", "method": "POST" }
+          },
+          {
+            "id": "uw-reject",
+            "label": "UW reject",
+            "icon": "X",
+            "type": "api-mutation",
+            "variant": "destructive",
+            "refreshKey": "/api/issuance/policy-members/{{memberId}}",
+            "api": {
+              "endpoint": "/api/issuance/policy-members/{{memberId}}/uw/reject",
+              "method": "POST",
+              "body": { "reason": "Rejected by UW via UI" }
+            }
+          },
+          {
+            "id": "reject",
+            "label": "Reject",
+            "icon": "ThumbsDown",
+            "type": "api-mutation",
+            "variant": "destructive",
+            "refreshKey": "/api/issuance/policy-members/{{memberId}}",
+            "api": {
+              "endpoint": "/api/issuance/policy-members/{{memberId}}/reject",
+              "method": "POST",
+              "body": { "reason": "Rejected by ops via UI" }
+            }
+          },
+          {
+            "id": "archive",
+            "label": "Archive",
+            "icon": "Archive",
+            "type": "api-mutation",
+            "variant": "outline",
+            "refreshKey": "/api/issuance/policy-members/{{memberId}}",
+            "api": {
+              "endpoint": "/api/issuance/policy-members/{{memberId}}/archive",
+              "method": "POST",
+              "body": { "reason": "Archived by ops via UI" }
+            }
+          },
+          {
+            "id": "send-for-issuance",
+            "label": "Send for issuance",
+            "icon": "Send",
+            "type": "api-mutation",
+            "refreshKey": "/api/issuance/policy-members/{{memberId}}",
+            "api": {
+              "endpoint": "/api/issuance/policy-members/{{memberId}}/send-for-issuance",
+              "method": "POST"
+            },
+            "successMessage": "Member sent for issuance; PAM Member visibility lands shortly."
+          },
+          {
+            "id": "pam-link",
+            "label": "Open in Policy Admin",
+            "icon": "ExternalLink",
+            "type": "navigate",
+            "target": "/policy-admin/members/MEM-{{memberId}}"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pm-classification",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Classification & UW",
+        "columns": 2,
+        "fields": [
+          { "id": "classificationResultJson", "label": "Classification result (JSON)", "accessorKey": "classificationResultJson" },
+          { "id": "uwDecisionJson", "label": "UW decision (JSON)", "accessorKey": "uwDecisionJson" },
+          { "id": "reclassificationCount", "label": "Re-classification count", "accessorKey": "reclassificationCount" },
+          { "id": "floatDeductionId", "label": "Float deduction", "accessorKey": "floatDeductionId" }
+        ]
+      }
+    },
+    {
+      "id": "pm-identity",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Member data",
+        "columns": 3,
+        "fields": [
+          { "id": "name", "label": "Name", "accessorKey": "name" },
+          { "id": "dob", "label": "Date of birth", "accessorKey": "dob", "type": "date" },
+          { "id": "gender", "label": "Gender", "accessorKey": "gender" },
+          { "id": "salary", "label": "Salary", "accessorKey": "salary", "type": "currency", "currency": "INR" },
+          { "id": "sumInsured", "label": "Sum insured", "accessorKey": "sumInsured", "type": "currency", "currency": "INR" },
+          { "id": "annualPremium", "label": "Annual premium", "accessorKey": "annualPremiumAmount", "type": "currency", "currency": "INR" }
+        ]
+      }
+    }
+  ]
+}

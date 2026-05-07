@@ -1,0 +1,87 @@
+{
+  "id": "policy-detail-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "policy-detail-header",
+      "type": "page-header",
+      "props": {
+        "title": "Policy {{id}}",
+        "description": "PAM master policy. Members + activation watch live below."
+      }
+    },
+    {
+      "id": "policy-state-summary",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/policies/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "columns": 4,
+        "fields": [
+          {
+            "id": "state",
+            "label": "State",
+            "accessorKey": "state",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "CREATED", "label": "Created", "variant": "secondary" },
+              { "value": "PENDING", "label": "Pending", "variant": "warning" },
+              { "value": "ACTIVE", "label": "Active", "variant": "success" },
+              { "value": "CANCELLED", "label": "Cancelled", "variant": "destructive" }
+            ]
+          },
+          { "id": "policyNumber", "label": "Policy #", "accessorKey": "policyNumber" },
+          { "id": "clientId", "label": "Client", "accessorKey": "clientId" },
+          { "id": "premium", "label": "Premium", "accessorKey": "estimatedPremium.amount" }
+        ]
+      }
+    },
+    {
+      "id": "policy-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/policies/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "stateActions": {
+          "PENDING": ["cancel"],
+          "ACTIVE": ["cancel"],
+          "CREATED": [],
+          "CANCELLED": []
+        },
+        "roleActions": {
+          "maker": [],
+          "checker": ["cancel"],
+          "ops": [],
+          "viewer": []
+        },
+        "actions": [
+          {
+            "id": "cancel",
+            "label": "Cancel policy",
+            "icon": "Ban",
+            "type": "api-mutation",
+            "variant": "destructive",
+            "refreshKey": "/api/policy-admin/policies/{{id}}",
+            "api": { "endpoint": "/api/policy-admin/policies/{{id}}/cancel", "method": "POST" },
+            "confirm": {
+              "title": "Cancel policy",
+              "message": "Cancellation cascades to members. Continue?"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "policy-detail-tabs",
+      "type": "tabs-container",
+      "props": { "defaultValue": "overview" },
+      "children": [
+        { "$ref": "schemas/tabs/policy/overview.json" },
+        { "$ref": "schemas/tabs/policy/members.json" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "id": "policy-list-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "policy-list-header",
+      "type": "page-header",
+      "props": {
+        "title": "Policies",
+        "description": "Master policies created from finalized proposals."
+      }
+    },
+    {
+      "id": "policy-list-filters",
+      "type": "filter-bar",
+      "props": {
+        "stateKey": "policy-list-filters",
+        "filters": [
+          {
+            "id": "state",
+            "label": "State",
+            "type": "select",
+            "options": [
+              { "value": "CREATED", "label": "Created" },
+              { "value": "PENDING", "label": "Pending" },
+              { "value": "ACTIVE", "label": "Active" },
+              { "value": "CANCELLED", "label": "Cancelled" }
+            ]
+          },
+          {
+            "id": "policyType",
+            "label": "Type",
+            "type": "select",
+            "options": [
+              { "value": "GTL", "label": "GTL" },
+              { "value": "GCL", "label": "GCL" },
+              { "value": "GH", "label": "GH" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "policies-table",
+      "type": "data-table",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/policy-admin/policies/search",
+          "method": "GET",
+          "params": { "page": 0, "size": 50 }
+        },
+        "stateDependencies": ["policy-list-filters"]
+      },
+      "props": {
+        "title": "Policies",
+        "columns": [
+          {
+            "id": "policyNumber",
+            "accessorKey": "policyNumber",
+            "label": "Policy #",
+            "type": "link",
+            "linkRoute": "/policy-admin/policies/:id"
+          },
+          { "id": "clientId", "accessorKey": "clientId", "label": "Client", "type": "text" },
+          { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+          { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policy" }
+        ],
+        "rowActions": [
+          {
+            "id": "view-policy-btn",
+            "label": "View",
+            "icon": "Eye",
+            "type": "navigate",
+            "target": "/policy-admin/policies/:id"
+          }
+        ],
+        "emptyState": {
+          "title": "No policies yet",
+          "description": "Finalize a Quote → Proposal to create the first one."
+        }
+      }
+    }
+  ]
+}

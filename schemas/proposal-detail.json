@@ -1,0 +1,112 @@
+{
+  "id": "proposal-detail-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "proposal-detail-header",
+      "type": "page-header",
+      "props": {
+        "title": "Proposal {{id}}",
+        "description": "Operate the Quote → Policy hand-off here. Submit locks the proposal; Finalize triggers Policy creation."
+      }
+    },
+    {
+      "id": "proposal-state-summary",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/proposals/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "columns": 4,
+        "fields": [
+          {
+            "id": "state",
+            "label": "State",
+            "accessorKey": "state",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "DRAFT", "label": "Draft", "variant": "secondary" },
+              { "value": "SUBMITTED", "label": "Submitted", "variant": "info" },
+              { "value": "FINALIZED", "label": "Finalized", "variant": "teal" },
+              { "value": "POLICY_CREATED", "label": "Policy created", "variant": "success" },
+              { "value": "CANCELLED", "label": "Cancelled", "variant": "destructive" }
+            ]
+          },
+          { "id": "quoteId", "label": "Source quote", "accessorKey": "quoteId" },
+          { "id": "clientId", "label": "Client", "accessorKey": "clientId" },
+          { "id": "policyId", "label": "Created policy", "accessorKey": "policyId" }
+        ]
+      }
+    },
+    {
+      "id": "proposal-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/proposals/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "entityType": "proposal",
+        "entityId": "{{id}}",
+        "stateActions": {
+          "DRAFT": ["submit", "cancel"],
+          "SUBMITTED": ["finalize", "cancel"],
+          "FINALIZED": [],
+          "POLICY_CREATED": [],
+          "CANCELLED": []
+        },
+        "roleActions": {
+          "maker": ["submit"],
+          "checker": ["finalize", "cancel"],
+          "ops": [],
+          "viewer": []
+        },
+        "actions": [
+          {
+            "id": "submit",
+            "label": "Submit proposal",
+            "icon": "Send",
+            "type": "api-mutation",
+            "refreshKey": "/api/issuance/proposals/{{id}}",
+            "api": { "endpoint": "/api/issuance/proposals/{{id}}/submit", "method": "POST" }
+          },
+          {
+            "id": "finalize",
+            "label": "Finalize → create policy",
+            "icon": "Lock",
+            "type": "api-mutation",
+            "refreshKey": "/api/issuance/proposals/{{id}}",
+            "api": { "endpoint": "/api/issuance/proposals/{{id}}/finalize", "method": "POST" },
+            "successMessage": "Proposal finalized; Policy will appear in Policy Admin shortly."
+          },
+          {
+            "id": "cancel",
+            "label": "Cancel proposal",
+            "icon": "Ban",
+            "type": "api-mutation",
+            "variant": "destructive",
+            "refreshKey": "/api/issuance/proposals/{{id}}",
+            "api": {
+              "endpoint": "/api/issuance/proposals/{{id}}/cancel",
+              "method": "POST",
+              "body": { "reason": "Cancelled by checker via UI" }
+            },
+            "confirm": {
+              "title": "Cancel proposal",
+              "message": "Cancellation is terminal. Continue?"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "proposal-detail-tabs",
+      "type": "tabs-container",
+      "props": { "defaultValue": "overview" },
+      "children": [
+        { "$ref": "schemas/tabs/proposal/overview.json" },
+        { "$ref": "schemas/tabs/proposal/members.json" }
+      ]
+    }
+  ]
+}

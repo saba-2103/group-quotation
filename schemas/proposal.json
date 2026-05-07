@@ -1,0 +1,78 @@
+{
+  "id": "proposal-list-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "proposal-list-header",
+      "type": "page-header",
+      "props": {
+        "title": "Proposals",
+        "description": "Auto-created from finalized quotes (W2). Operate the proposal → policy hand-off here."
+      }
+    },
+    {
+      "id": "proposal-list-filters",
+      "type": "filter-bar",
+      "props": {
+        "stateKey": "proposal-list-filters",
+        "filters": [
+          {
+            "id": "state",
+            "label": "State",
+            "type": "select",
+            "options": [
+              { "value": "DRAFT", "label": "Draft" },
+              { "value": "SUBMITTED", "label": "Submitted" },
+              { "value": "FINALIZED", "label": "Finalized" },
+              { "value": "POLICY_CREATED", "label": "Policy created" },
+              { "value": "CANCELLED", "label": "Cancelled" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "proposals-table",
+      "type": "data-table",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/issuance/proposals/search",
+          "method": "GET",
+          "params": { "page": 0, "size": 50 }
+        },
+        "stateDependencies": ["proposal-list-filters"]
+      },
+      "props": {
+        "title": "Proposals",
+        "columns": [
+          {
+            "id": "id",
+            "accessorKey": "id",
+            "label": "Proposal ID",
+            "type": "link",
+            "linkRoute": "/issuance/proposals/:id"
+          },
+          { "id": "quoteId", "accessorKey": "quoteId", "label": "Source Quote", "type": "text" },
+          { "id": "clientId", "accessorKey": "clientId", "label": "Client", "type": "text" },
+          { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+          { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "proposal" },
+          { "id": "policyNumber", "accessorKey": "policyNumber", "label": "Policy #", "type": "text" }
+        ],
+        "rowActions": [
+          {
+            "id": "view-proposal-btn",
+            "label": "View",
+            "icon": "Eye",
+            "type": "navigate",
+            "target": "/issuance/proposals/:id"
+          }
+        ],
+        "emptyState": {
+          "title": "No proposals yet",
+          "description": "Finalize a Quote in /quotation to create one."
+        }
+      }
+    }
+  ]
+}

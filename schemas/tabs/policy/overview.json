@@ -1,0 +1,53 @@
+{
+  "id": "policy-overview-tab",
+  "type": "tab-panel",
+  "props": { "value": "overview", "label": "Overview", "icon": "Info" },
+  "children": [
+    {
+      "id": "policy-overview-grid",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/policies/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Policy details",
+        "columns": 3,
+        "fields": [
+          { "id": "policyNumber", "label": "Policy #", "accessorKey": "policyNumber" },
+          { "id": "clientId", "label": "Client", "accessorKey": "clientId" },
+          { "id": "policyType", "label": "Type", "accessorKey": "policyType" },
+          { "id": "premiumType", "label": "Premium type", "accessorKey": "premiumType" },
+          { "id": "lineOfBusiness", "label": "Line of business", "accessorKey": "lineOfBusiness" },
+          { "id": "riskTermClassification", "label": "Risk class", "accessorKey": "riskTermClassification" },
+          { "id": "effectiveDate", "label": "Effective date", "accessorKey": "effectiveDate", "type": "date" },
+          { "id": "expiryDate", "label": "Expiry date", "accessorKey": "expiryDate", "type": "date" },
+          { "id": "inceptionDate", "label": "Inception date", "accessorKey": "inceptionDate", "type": "date" },
+          { "id": "activationThreshold", "label": "Activation threshold (members)", "accessorKey": "activationThreshold" },
+          { "id": "premiumAmount", "label": "Estimated premium", "accessorKey": "estimatedPremium.amount" },
+          { "id": "premiumCurrency", "label": "Currency", "accessorKey": "estimatedPremium.currency" },
+          { "id": "proposalLink", "label": "Source proposal", "accessorKey": "proposalId" }
+        ]
+      }
+    },
+    {
+      "id": "policy-pending-breakdown",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/policies/{{id}}/pending-breakdown", "method": "GET" }
+      },
+      "props": {
+        "title": "Activation watch",
+        "description": "Member counts derived from the members list (no dedicated backend endpoint in V1 — see CORE_MEMORY interim assumption #5).",
+        "columns": 4,
+        "fields": [
+          { "id": "policyState", "label": "Policy state", "accessorKey": "policyState" },
+          { "id": "policyPendingReason", "label": "Pending reason", "accessorKey": "policyPendingReason" },
+          { "id": "totalMembers", "label": "Total members", "accessorKey": "totalMembers" },
+          { "id": "activeMembers", "label": "Active", "accessorKey": "activeMembers" },
+          { "id": "pendingMembers", "label": "Pending", "accessorKey": "pendingMembers" },
+          { "id": "voidMembers", "label": "Void", "accessorKey": "voidMembers" }
+        ]
+      }
+    }
+  ]
+}

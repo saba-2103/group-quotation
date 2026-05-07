@@ -509,3 +509,63 @@ Mechanical execution per the strategy:
 **Demo verification still TODO** (next session, ideally with the user): walk Maker → Send for approval → switch to Checker → Approve → Send to client → Accept → Finalize → confirm Proposal auto-creates in Issuance.
 
 **Next:** Batch 3 — Issuance + PAM + glue. Tasks 3.1 (light) + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 4.4 + 5.1 + 5.3.
+
+### 2026-05-07 (continued) — Batch 3 — Issuance + PAM + glue — IN PROGRESS
+
+About to do (per the locked execution strategy):
+- 3.1 light — Clients list only (D9 defers detail page).
+- 3.2 — Policies list with status chips.
+- 3.3 — Policy detail with client-side derived pending-breakdown + members tab (per V1 interim assumption #5).
+- 3.4 — PAM Member detail with `ReasonBanner` for every reason family.
+- 4.1 — Proposals list with state chips.
+- 4.2 — Proposal detail shell + action bar (state×role from plan table).
+- 4.3 — Members tab inside proposal.
+- 4.4 — Single-member add form + state-driven PolicyMember detail (the core operational screen). Executes directly per strategy; `/build-feature` reserved for it but the plan task is detailed enough to act as the design doc.
+- 5.1 — Cross-module deep-link verification.
+- 5.3 — End-to-end demo walkthrough deferred to a session with the user.
+
+Skipped per V1 cuts: 4.5 (D4 census flow — single-member-add covers demo), 5.2 (D5 ops queue index), 5.4 (D6 critical-path tests).
+
+Pattern reuse:
+- Three list pages clone the Quote list pattern (filter-bar + data-table + state-badge column + row navigate action).
+- Detail pages clone the Quote detail shell (state-summary KVG + ActionBar with dataSource + tabs-container).
+- PAM Member detail uses `reason-banner` registered in WidgetRegistry.
+- Mock layer already has all the routes Batch 3 needs (Task 1.4).
+
+**Files created:**
+
+PAM (Phase 3):
+- `schemas/client.json` + `src/app/policy-admin/clients/page.tsx` — list only per cut D9. Filter-bar + data-table over `/clients/search`.
+- `schemas/policy.json` + `src/app/policy-admin/policies/page.tsx` — list with state + policyType filters, state-badge column, link-cell to detail.
+- `schemas/policy-detail.json` + `src/app/policy-admin/policies/[id]/page.tsx` — state summary, action-bar (Cancel: PENDING/ACTIVE under Checker), 2 tabs.
+- `schemas/tabs/policy/{overview,members}.json` — Overview includes the activation-watch breakdown card (consumes the `/policies/:id/pending-breakdown` route built in Task 1.4 — server-side mock derives the same way the plan describes client-side; matches V1 interim assumption #5). Members tab has state filter + state-badge + pendingReason column rendered as separate text column per the V1 convention (composite cell deferred per ARCH_TRANSITION).
+- `schemas/member-detail.json` + `src/app/policy-admin/members/[id]/page.tsx` — read-only with reason-banner widget (auto-picks PENDING/VOID/CANCELLED groups via `reasonGroupFor()`), identity + coverage + cancellation note + additionalAttributesJson sections.
+
+Issuance (Phase 4):
+- `schemas/proposal.json` + `src/app/issuance/proposals/page.tsx` — list with state filter, state-badge column.
+- `schemas/proposal-detail.json` + `src/app/issuance/proposals/[id]/page.tsx` — state summary, action-bar (Submit/Maker, Finalize/Checker, Cancel/Checker), 2 tabs.
+- `schemas/tabs/proposal/{overview,members}.json` — Overview shows carried-from-quote data; Members tab embeds the proposal's PolicyMember list with full state filter + "Add member" header action navigating to /members/new.
+- `schemas/forms/add-policy-member-form.json` — single-step add with V1 fields per `CreatePolicyMemberRequest`. Hardcoded to `POL-2026-0001` for the demo (multi-policy multi-tenancy is backend-future).
+- `schemas/forms/repair-policy-member-form.json` — repair edit form. Used by the `repair-edit` action on the state-driven PolicyMember detail when the workflow lane is REPAIR.
+- `src/app/issuance/proposals/[id]/members/new/page.tsx` — wraps the add form in a stack-layout with a contextual page header.
+- `schemas/policy-member-detail.json` + `src/app/issuance/proposals/[id]/members/[memberId]/page.tsx` — single page with state-summary, large action-bar covering the full DSL lifecycle (price / classify / repair-edit / uw-approve / uw-reject / reject / archive / send-for-issuance / pam-link), classification + UW JSON section, and member-data section. State-driven UI is fully expressed through the action bar's state×role gating (no top-level conditional widget rendering needed for V1).
+
+**Engine extensions:** none. Pure schema + route-file work. The earlier ActionBar/ReasonBanner dataSource extension already covered state-driven needs; the `state-badge` cell type covered list rendering.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- `npx jest src/tests/unit/{state,actions}/` — 15/15 still pass.
+- 10 new pages all return 200 against the live dev server on :3000 (4 lists + 6 detail/create surfaces).
+- Cross-module deep-link APIs all 200: `/issuance/proposals/by-quote/QTE-2026-0006`, `/policy-admin/policies/by-proposal/PRO-2026-0001`, `/policy-admin/members/by-policy-member/PMB-0011`.
+- `/policies/:id/pending-breakdown` derives the right reason tally from the in-memory store (`PENDING_FLOAT_RESERVATION:1, PENDING_APPROVAL:1, PENDING_POLICY_ACTIVATION:2` for POL-2026-0002).
+
+**Cross-module deep links wired (Task 5.1) — all return 200:**
+- Quote detail's `finalize` success message → user follows up by polling `/issuance/proposals/by-quote/<id>` (mock auto-creates Proposal 4s after finalize, per Task 1.4).
+- Proposal detail header surfaces `policyId` once POLICY_CREATED; manual navigation suffices for V1 demo.
+- PolicyMember detail's `pam-link` action navigates to `/policy-admin/members/MEM-:memberId` (the simulator names PAM members as `MEM-<timestamp>` so the link is approximate for fixture-seeded members; for newly-created PolicyMembers the real created MEM id is `MEM-<base36-ts>` — exact resolution needs a `findMemberByPolicyMember` lookup, deferred to D-cleanup).
+
+**Demo verification (Task 5.3):** deferred to a session with the user. Walking the 9-step happy path is out of scope for the unattended build.
+
+**Skipped per V1 cuts:** 4.5 (D4 census flow), 5.2 (D5 ops queue index), 5.4 (D6 critical-path tests).
+
+**Batch 3 complete. Demo build done.**

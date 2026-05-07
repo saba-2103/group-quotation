@@ -1,0 +1,71 @@
+{
+  "id": "policy-members-tab",
+  "type": "tab-panel",
+  "props": { "value": "members", "label": "Members", "icon": "Users" },
+  "children": [
+    {
+      "id": "policy-members-filters",
+      "type": "filter-bar",
+      "props": {
+        "stateKey": "policy-members-filters",
+        "filters": [
+          {
+            "id": "state",
+            "label": "State",
+            "type": "select",
+            "options": [
+              { "value": "PENDING", "label": "Pending" },
+              { "value": "ACTIVE", "label": "Active" },
+              { "value": "VOID", "label": "Void" },
+              { "value": "CANCELLED", "label": "Cancelled" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "policy-members-table",
+      "type": "data-table",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/policy-admin/members/search",
+          "method": "GET",
+          "params": { "policyId": "{{id}}", "page": 0, "size": 50 }
+        },
+        "stateDependencies": ["policy-members-filters"]
+      },
+      "props": {
+        "title": "Members on this policy",
+        "columns": [
+          {
+            "id": "memberNumber",
+            "accessorKey": "memberNumber",
+            "label": "Member #",
+            "type": "link",
+            "linkRoute": "/policy-admin/members/:id"
+          },
+          { "id": "name", "accessorKey": "name", "label": "Name", "type": "text" },
+          { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
+          { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "member" },
+          {
+            "id": "pendingReason",
+            "accessorKey": "pendingReason",
+            "label": "Pending reason",
+            "type": "text"
+          },
+          { "id": "sumInsured", "accessorKey": "sumInsured", "label": "Sum insured", "type": "currency", "currency": "INR" },
+          { "id": "premium", "accessorKey": "annualPremium.amount", "label": "Annual premium", "type": "currency", "currency": "INR" }
+        ],
+        "rowActions": [
+          {
+            "id": "view-member-btn",
+            "label": "View",
+            "icon": "Eye",
+            "type": "navigate",
+            "target": "/policy-admin/members/:id"
+          }
+        ]
+      }
+    }
+  ]
+}
