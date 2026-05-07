@@ -15,7 +15,7 @@
         "columns": 3,
         "fields": [
           { "id": "id", "label": "Quote ID", "accessorKey": "id" },
-          { "id": "clientId", "label": "Client", "accessorKey": "clientId" },
+          { "id": "client", "label": "Client", "accessorKey": "clientName" },
           { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
           { "id": "premiumType", "label": "Premium type", "accessorKey": "premiumType" },
           { "id": "lineOfBusiness", "label": "Line of business", "accessorKey": "lineOfBusiness" },

@@ -38,7 +38,7 @@
               { "value": "EXPIRED", "label": "Expired", "variant": "grey" }
             ]
           },
-          { "id": "client", "label": "Client", "accessorKey": "clientId" },
+          { "id": "client", "label": "Client", "accessorKey": "clientName" },
           { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
           { "id": "headcount", "label": "Headcount", "accessorKey": "headcount" }
         ]

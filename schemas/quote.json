@@ -78,8 +78,8 @@
             "linkRoute": "/quotation/:id"
           },
           {
-            "id": "clientId",
-            "accessorKey": "clientId",
+            "id": "clientName",
+            "accessorKey": "clientName",
             "label": "Client",
             "type": "text"
           },

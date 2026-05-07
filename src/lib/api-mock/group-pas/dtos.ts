@@ -2,9 +2,22 @@
 // pairs and serialize composite shapes (plans, census, premium) to *Json
 // strings. These mappers do that flattening so route handlers can return the
 // fixtures unmodified-looking from the wire.
+//
+// V1 demo affordance: every DTO that carries a `clientId` is enriched with
+// a `clientName` lookup from the in-memory client store, so screens can
+// surface human-readable labels alongside the raw IDs without a second
+// API call. Real backend will likely add this on the wire too.
 
+import { CLIENTS } from '@/mocks/group-pas';
 import type { MockQuote } from '@/mocks/group-pas/quotation/quotes';
 import type { MockProposal } from '@/lib/api-mock/group-pas/store';
+
+function clientNameFor(clientId: string): string {
+  // Read from the static seed list rather than the mutable store to avoid an
+  // import cycle (store imports dtos via consumers). Clients aren't mutated
+  // in V1 demo flows, so the static read is correct.
+  return CLIENTS.find((c) => c.id === clientId)?.name ?? clientId;
+}
 import type {
   CensusSubmission,
   CensusSubmissionDto,
@@ -38,12 +51,19 @@ const ISO_PLACEHOLDER = '';
 // (see context/ARCH_TRANSITION.md). Carried in the response so client gating
 // can read it from the same poll without a separate endpoint. Real backend
 // will never set this — the field is dropped when V1 maker-checker lands.
-export type MockQuoteDto = QuoteDto & { awaitingApproval?: boolean };
+//
+// `clientName` is a V1-demo enrichment alongside the raw clientId so the UI
+// can surface a human-readable label without a second fetch.
+export type MockQuoteDto = QuoteDto & {
+  awaitingApproval?: boolean;
+  clientName?: string;
+};
 
 export function quoteToDto(q: MockQuote): MockQuoteDto {
   return {
     id: q.id,
     clientId: q.clientId,
+    clientName: clientNameFor(q.clientId),
     policyType: q.policyType,
     premiumType: q.premiumType ?? '',
     effectiveDate: q.effectiveDate ?? ISO_PLACEHOLDER,
@@ -74,10 +94,13 @@ export function quoteToDto(q: MockQuote): MockQuoteDto {
   };
 }
 
-export function quoteToSummary(q: MockQuote): QuoteSummaryDto {
+export type MockQuoteSummaryDto = QuoteSummaryDto & { clientName?: string };
+
+export function quoteToSummary(q: MockQuote): MockQuoteSummaryDto {
   return {
     id: q.id,
     clientId: q.clientId,
+    clientName: clientNameFor(q.clientId),
     policyType: q.policyType,
     status: q.status,
     headcount: q.aggregateCensus?.headcount ?? 0,
@@ -86,13 +109,20 @@ export function quoteToSummary(q: MockQuote): QuoteSummaryDto {
 }
 
 // `awaitingApproval` mock-only field — see `MockQuoteDto` note above.
-export type MockProposalDto = ProposalDto & { awaitingApproval?: boolean };
+export type MockProposalDto = ProposalDto & {
+  awaitingApproval?: boolean;
+  clientName?: string;
+};
+export type MockProposalSummaryDto = ProposalSummaryDto & {
+  clientName?: string;
+};
 
 export function proposalToDto(p: MockProposal): MockProposalDto {
   return {
     id: p.id,
     quoteId: p.quoteId,
     clientId: p.clientId,
+    clientName: clientNameFor(p.clientId),
     policyType: p.policyType,
     state: p.state,
     plansJson: JSON.stringify(p.plans),
@@ -105,11 +135,12 @@ export function proposalToDto(p: MockProposal): MockProposalDto {
   };
 }
 
-export function proposalToSummary(p: MockProposal): ProposalSummaryDto {
+export function proposalToSummary(p: MockProposal): MockProposalSummaryDto {
   return {
     id: p.id,
     quoteId: p.quoteId,
     clientId: p.clientId,
+    clientName: clientNameFor(p.clientId),
     policyType: p.policyType,
     state: p.state,
     policyId: p.policyId ?? '',
@@ -217,11 +248,14 @@ export function clientToSummary(c: Client): ClientSummaryDto {
   };
 }
 
-export function policyToDto(p: Policy): PolicyDto {
+export type MockPolicyDto = PolicyDto & { clientName?: string };
+
+export function policyToDto(p: Policy): MockPolicyDto {
   return {
     id: p.id,
     policyNumber: p.policyNumber,
     clientId: p.clientId,
+    clientName: clientNameFor(p.clientId),
     proposalId: p.proposalId,
     policyType: p.policyType,
     effectiveDate: p.effectiveDate ?? '',
@@ -249,11 +283,14 @@ export function policyToDto(p: Policy): PolicyDto {
   };
 }
 
-export function policyToSummary(p: Policy): PolicySummaryDto {
+export type MockPolicySummaryDto = PolicySummaryDto & { clientName?: string };
+
+export function policyToSummary(p: Policy): MockPolicySummaryDto {
   return {
     id: p.id,
     policyNumber: p.policyNumber,
     clientId: p.clientId,
+    clientName: clientNameFor(p.clientId),
     policyType: p.policyType,
     state: p.state,
   };

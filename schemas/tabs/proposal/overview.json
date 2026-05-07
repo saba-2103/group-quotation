@@ -15,7 +15,7 @@
         "fields": [
           { "id": "id", "label": "Proposal ID", "accessorKey": "id" },
           { "id": "quoteId", "label": "Source quote", "accessorKey": "quoteId" },
-          { "id": "clientId", "label": "Client", "accessorKey": "clientId" },
+          { "id": "client", "label": "Client", "accessorKey": "clientName" },
           { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
           { "id": "memberToPlanMapping", "label": "Member-to-Plan DMN", "accessorKey": "memberToPlanMapping", "type": "presence" },
           { "id": "policyNumber", "label": "Created policy #", "accessorKey": "policyNumber" }

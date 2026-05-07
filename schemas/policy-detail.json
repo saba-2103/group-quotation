@@ -35,7 +35,7 @@
             ]
           },
           { "id": "policyNumber", "label": "Policy #", "accessorKey": "policyNumber" },
-          { "id": "clientId", "label": "Client", "accessorKey": "clientId" },
+          { "id": "client", "label": "Client", "accessorKey": "clientName" },
           { "id": "premium", "label": "Premium", "accessorKey": "estimatedPremium.amount", "type": "currency", "currency": "INR" }
         ]
       }

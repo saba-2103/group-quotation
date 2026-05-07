@@ -62,7 +62,7 @@
             "type": "link",
             "linkRoute": "/policy-admin/policies/:id"
           },
-          { "id": "clientId", "accessorKey": "clientId", "label": "Client", "type": "text" },
+          { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
           { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
           { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policy" }
         ],
