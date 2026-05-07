@@ -17,6 +17,8 @@ import { SearchableDropdownWidget } from "../widgets/controls/searchDropDown/ind
 import { ContextHelpTooltipWidget } from "../widgets/items/ContextHelpTooltip";
 import { RoleSwitcher } from "../widgets/role/RoleSwitcher";
 import { ActionBar } from "../widgets/actions/ActionBar";
+import { StateBadge } from "../widgets/state/StateBadge";
+import { ReasonBanner } from "../widgets/state/ReasonBanner";
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
   "stack-layout": StackLayout,
@@ -37,7 +39,9 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
   "searchable-dropdown": SearchableDropdownWidget,
   "context-help-tooltip": ContextHelpTooltipWidget,
   "role-switcher": RoleSwitcher,
-  "action-bar": ActionBar
+  "action-bar": ActionBar,
+  "state-badge": StateBadge,
+  "reason-banner": ReasonBanner
 };
 
 export const getWidgetComponent = (type: string) => {
