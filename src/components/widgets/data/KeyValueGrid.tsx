@@ -129,6 +129,16 @@ function renderFieldValue(field: KeyValueField, value: unknown): React.ReactNode
       return <span>{formatted.join(", ")}</span>;
     }
     default:
+      // Empty strings render as "—" so a blank field reads consistently with
+      // null/undefined ones.
+      if (typeof value === "string" && value.length === 0) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      // Objects / arrays without an explicit type render as "—" rather than
+      // dumping JSON. Schemas should declare a type for non-scalar values.
+      if (typeof value === "object") {
+        return <span className="text-muted-foreground">—</span>;
+      }
       return <span>{String(value)}</span>;
   }
 }
