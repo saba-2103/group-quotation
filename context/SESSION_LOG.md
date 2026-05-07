@@ -281,3 +281,47 @@ Also fixed a Phase 0 stale stub: `src/mocks/original/group-insurance/index.ts` s
 **Verify:** `npx tsc --noEmit` clean (exit 0). Fixtures will be exercised by Task 1.4 mock routes next.
 
 **Next:** Task 1.4 — Mock API route handlers (catch-all per module).
+
+### 2026-05-07 (continued) — Task 1.4 — Mock API route handlers — IN PROGRESS
+
+About to do: build catch-all `[[...path]]/route.ts` handlers for `/api/quotation`, `/api/issuance`, `/api/policy-admin`, backed by a shared in-memory mock layer cloned from the Task 1.5 fixtures. The accounting catch-all is a pure proxy — too thin for V1 since the backend isn't deployed — so this lays down a richer mock-first layer with a `GROUP_PAS_BACKEND_URL` proxy toggle for the day backend goes live (interim assumption #8 → "Auth = open API in V1").
+
+Shared infra plan (`src/lib/api-mock/group-pas/`):
+- `store.ts` — global mutable store cloned from fixtures. Hot-reload safe via `globalThis` so the dev server doesn't reset state on every save.
+- `http.ts` — `matchPath`, `ok`, `json`, plus a `proxyIfConfigured` helper.
+- `dtos.ts` — entity → DTO mappers (Quote → QuoteDto, Proposal → ProposalDto, Policy → PolicyDto, PolicyMember → PolicyMemberDto, Member → MemberDto, plus the *Json fields the DSL flattens).
+- `simulator.ts` — `scheduleTransition` (setTimeout) for the state-transition delays so polling consumers (Pricing tab, send-for-issuance → PAM visibility) see realistic asynchrony. Default cadence aligned with `STANDARD_POLL_SCHEDULE` (delays in the 2–6s window so the first 2s poll catches the change).
+
+State-transition coverage (demo-critical):
+- Quote: requestPrice (DRAFT, sets `premium` after delay), submit (→ SUBMITTED), sendToClient (→ SENT_TO_CLIENT), accept (→ ACCEPTED), finalize (→ FINALIZED, then auto-creates Proposal).
+- Proposal: submit (DRAFT → SUBMITTED), finalize (→ FINALIZED, then creates Policy + transitions to POLICY_CREATED).
+- PolicyMember: priceMember (CREATED → PRICED), sendForIssuance (APPROVED → SENT_FOR_ISSUANCE, then creates PAM Member visibility after delay).
+- Census: initiate (creates INITIATED), ingest (→ INGESTED), submit (→ SUBMITTED, then COMPLETED).
+
+Unmatched mutation paths (e.g. updatePolicyDetail, addPlan, updateAggregateCensus, etc.) return 200 echo-success — the demo flows don't gate on them but the backend contract is satisfied. Unmatched GETs return 404 so missing paths surface loudly.
+
+**Files created:**
+- `src/lib/api-mock/group-pas/store.ts` — `globalThis`-backed mutable store + `nextId` + `scheduleTransition`.
+- `src/lib/api-mock/group-pas/http.ts` — `matchPath`, `dispatch`, `json`, `ok`, `notFound`, `readJson`, `proxyIfConfigured`, `RouteEntry`.
+- `src/lib/api-mock/group-pas/dtos.ts` — entity → DTO mappers for Quote, Proposal, PolicyMember, Census(+Row), Client, Policy, Member.
+- `src/app/api/quotation/[[...path]]/route.ts` — Quotation catch-all (3 common, 5 quote list/search, 1 quote-by-id, 8 mutators, 8 state transitions). `finalize` schedules an auto-Proposal creation after 4s.
+- `src/app/api/issuance/[[...path]]/route.ts` — Issuance catch-all. Proposal CRUD + state transitions. PolicyMember list/by-id/mutators. Census submission lifecycle. `finalize` proposal → auto-Policy creation; `send-for-issuance` PolicyMember → auto-PAM-Member creation (mirrors the W2/W3 cross-module hooks documented in the issuance domain).
+- `src/app/api/policy-admin/[[...path]]/route.ts` — PAM catch-all. Client/Policy/Member CRUD + lookups. `pending-breakdown` derives reason tallies client-side per V1 interim assumption #5 (no dedicated backend endpoint).
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- Smoke-tested every category against the dev server already running on :3000:
+  - `GET /api/quotation/quotes/list` → 200, payload shape correct (incl. `headcount` + `premiumAmount`).
+  - `GET /api/quotation/quotes/QTE-2026-0002` → 200 (specific Quote).
+  - `GET /api/quotation/quotes/by-status?status=SUBMITTED` → 200, filtered correctly.
+  - `GET /api/quotation/enums/QuoteStatus` → 200, all 8 enum values.
+  - `GET /api/issuance/proposals/list` → 200; `proposals/by-quote/QTE-2026-0006` → 200.
+  - `GET /api/issuance/policies/POL-2026-0001/members` → 200, returns 20 PolicyMember summaries.
+  - `GET /api/issuance/policies/POL-2026-0001/census-submissions` → 200; `census-submissions/CSB-0001/rows` → 200.
+  - `GET /api/policy-admin/clients/list`, `clients/CLI-0001`, `policies/list`, `members/by-policy-member/PMB-0010` → all 200.
+  - `GET /api/policy-admin/policies/POL-2026-0002/pending-breakdown` → derives `pendingByReason: [PENDING_FLOAT_RESERVATION:1, PENDING_APPROVAL:1, PENDING_POLICY_ACTIVATION:2]` from the live members store.
+  - `GET /api/quotation/non-existent` → 404 (loud failure for missing GET paths).
+  - `POST /api/quotation/quotes/.../whatever` → 200 (echo-success for unmatched mutations).
+  - State-transition simulator: `POST /api/quotation/quotes/QTE-2026-0010/finalize` → 200, then 5s later `GET /api/issuance/proposals/by-quote/QTE-2026-0010` → 200 (auto-Proposal landed).
+
+**Next:** Task 1.2 — API clients (typed wrappers around these endpoints, error-mapper for the Spring default error shape).

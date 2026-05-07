@@ -50,7 +50,7 @@ Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [
 
 | Batch | Status |
 |-------|--------|
-| Batch 1 — Foundation (Phase 0 + Phase 1 demo subset) | in progress — Phase 0 done; Tasks 1.1, 1.5 done; **next = Task 1.4** (then 1.2 → 1.9 → 1.3 → 1.8) |
+| Batch 1 — Foundation (Phase 0 + Phase 1 demo subset) | in progress — Phase 0 done; Tasks 1.1, 1.5, 1.4 done; **next = Task 1.2** (then 1.9 → 1.3 → 1.8) |
 | Batch 2 — Quote happy path (Phase 2 demo subset) | blocked on Batch 1 |
 | Batch 3 — Issuance + PAM + glue (Phase 3, 4, 5 demo subsets) | blocked on Batch 2 |
 

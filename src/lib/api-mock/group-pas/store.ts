@@ -1,0 +1,68 @@
+// In-memory mock store for the Group PAS modules.
+// Cloned from fixtures on first access; survives Next.js hot reloads via globalThis
+// so a dev session keeps state across edits.
+
+import {
+  CENSUS_ROWS,
+  CENSUS_SUBMISSIONS,
+  CLIENTS,
+  MEMBERS,
+  POLICIES,
+  POLICY_MEMBERS,
+  PROPOSALS,
+  QUOTES,
+} from '@/mocks/group-pas';
+import type {
+  CensusSubmission,
+  CensusSubmissionRow,
+  PolicyMember,
+  Proposal,
+} from '@/types/group-pas/issuance';
+import type {
+  Client,
+  Member,
+  Policy,
+} from '@/types/group-pas/policy-admin';
+import type { MockQuote } from '@/mocks/group-pas/quotation/quotes';
+
+interface GroupPasStore {
+  quotes: MockQuote[];
+  proposals: Proposal[];
+  policyMembers: PolicyMember[];
+  censusSubmissions: CensusSubmission[];
+  censusRows: CensusSubmissionRow[];
+  clients: Client[];
+  policies: Policy[];
+  members: Member[];
+}
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __groupPasStore: GroupPasStore | undefined;
+}
+
+export const store: GroupPasStore =
+  globalThis.__groupPasStore ??
+  (globalThis.__groupPasStore = {
+    quotes: structuredClone(QUOTES),
+    proposals: structuredClone(PROPOSALS),
+    policyMembers: structuredClone(POLICY_MEMBERS),
+    censusSubmissions: structuredClone(CENSUS_SUBMISSIONS),
+    censusRows: structuredClone(CENSUS_ROWS),
+    clients: structuredClone(CLIENTS),
+    policies: structuredClone(POLICIES),
+    members: structuredClone(MEMBERS),
+  });
+
+// Schedules a state transition after a short delay. Aligned with
+// STANDARD_POLL_SCHEDULE's 2s initial cadence so polling consumers see the
+// transition on the second or third poll.
+export function scheduleTransition(fn: () => void, delayMs = 4000): void {
+  setTimeout(fn, delayMs);
+}
+
+// Generates a unique identifier in the same shape as the static fixtures.
+export function nextId(prefix: string): string {
+  const ts = Date.now().toString(36).toUpperCase();
+  return `${prefix}-${ts}`;
+}
