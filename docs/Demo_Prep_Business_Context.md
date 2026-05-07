@@ -50,10 +50,47 @@ Three group products are mentioned in the codebase:
 | Code | Name | What it covers |
 |---|---|---|
 | **GTL** | Group Term Life | Pays a fixed sum if a covered employee dies during the coverage period (typically 1 year, renewed annually). Sum-assured is set per member up-front. The flagship V1 product. |
-| **GCL** | Group Credit Life | Pays off a borrower's outstanding loan balance if they die. Banks bundle this with home/personal loans. Cover is **decreasing-term** (it shrinks as the loan amortises). In our spec each loan disbursement triggers a new `MemberQuote`. (Out of V1 demo.) |
+| **GCL** | Group Credit Life | Pays off a borrower's outstanding loan balance if they die during the loan term. Sold by banks alongside loans. (Out of V1 demo — see slow read below.) |
 | **GH** | Group Health | Hospital and medical expense coverage for employees. (Out of V1 demo.) |
 
 All our demo data is GTL. When a business user asks "where's GCL?" — see the GCL placeholder tab on a Quote detail; the data model already supports it (see `MemberQuote` in the spec), the screens light up post-V1.
+
+#### Slow read on GCL — for readers with no bancassurance background
+
+GCL (Group Credit Life) sounds technical; it's actually a simple insurance product wrapped around a bank loan. Skip this if you already know GCL.
+
+**The story:** You take a home loan from a bank — say ₹50 lakh, repaid over 20 years. The bank sells you a GCL policy at the same time. If you die during those 20 years, the GCL pays off whatever is still left on the loan, so your family doesn't inherit the debt. Bank protects itself (loan gets repaid no matter what); your family gets a clean exit.
+
+**Two terms a banker will use that you need:**
+
+- **Amortise** — when you repay an EMI each month, part of it pays off the loan principal. So the **balance you owe shrinks over time**. That shrinking-as-you-pay process is amortisation. By the end of year 20, the loan balance is zero.
+  | End of year | What you still owe |
+  |---|---|
+  | Year 0 (just took the loan) | ₹50 lakh |
+  | Year 5 | ₹42 lakh |
+  | Year 10 | ₹30 lakh |
+  | Year 15 | ₹15 lakh |
+  | Year 20 | ₹0 (paid off) |
+
+- **Decreasing-term cover** — *Term* means the policy is for a fixed period (here: 20 years to match the loan). *Decreasing* means the **payout amount shrinks year by year**, instead of staying flat. The cover schedule mirrors the loan balance:
+  | End of year | Loan balance | GCL cover that year |
+  |---|---|---|
+  | Year 0 | ₹50 lakh | ₹50 lakh |
+  | Year 5 | ₹42 lakh | ₹42 lakh |
+  | Year 10 | ₹30 lakh | ₹30 lakh |
+  | Year 15 | ₹15 lakh | ₹15 lakh |
+  | Year 20 | ₹0 | ₹0 |
+
+  You die in year 12 owing ₹25 lakh → GCL pays the bank ₹25 lakh → loan closed, your family is clean. The insurer doesn't owe more than the outstanding balance because that's all the bank is at risk for.
+
+  Contrast with **GTL** (the V1 demo product) — GTL pays a *flat* sum (say ₹1 crore) for the whole term regardless of when in the term you die. GCL's payout is wired to a specific debt that's shrinking; GTL's is a fixed benefit.
+
+**Why this matters for our app:** every time the bank disburses a new loan, a new GCL **MemberQuote** is created — sized to that disbursement, with a decreasing schedule baked in. A bank making 100 home loans a day generates 100 MemberQuotes a day. That's why GCL needs the per-member quote-then-issue flow (the `MemberQuote` entity in our spec). GTL is the opposite shape — one quote covers a fixed roster of 120 employees in one shot.
+
+**One-sentence demo answer if a banker asks:**
+> "GCL is per-loan, decreasing-cover term life — each loan disbursement creates a member quote sized to that loan and the cover amount shrinks as the loan amortises. Different from GTL where one quote covers a fixed employee roster with flat-sum cover."
+
+If they push deeper than that — fall back to "GCL screens are post-V1; the `MemberQuote` data model is already in the spec."
 
 ### 1.3 What is a Policy Administration System (PAS)?
 
@@ -95,6 +132,7 @@ Read this once; come back to it during the demo if a term confuses you.
 | Term | Plain English |
 |---|---|
 | **Aggregate census** | A summary count: "this employer has 120 members; 90 on Plan A, 30 on Plan B." Used for pricing before individual member data is collected. |
+| **Amortise** | The process of paying off a loan through scheduled EMIs, where each payment reduces the outstanding principal. By the end of the loan term, the balance is zero. The "amortisation schedule" is the table of how the balance shrinks year-by-year. Relevant to GCL (see §1.2 slow read). |
 | **Annual premium** | The money the client pays to the insurer per year for the coverage. Our currency throughout the demo is INR (₹). |
 | **Awaiting approval** | UI overlay state: Maker has prepared a quote and clicked "Send for approval"; the Checker now needs to review and approve before the workflow continues. **This is UI-only in V1** — the backend doesn't enforce maker-checker. |
 | **Broker** | A licensed intermediary who sells insurance on behalf of one or more insurers. In our demo, the Maker is the broker side. |
@@ -103,6 +141,7 @@ Read this once; come back to it during the demo if a term confuses you.
 | **Checker** | The Approver role. See §1.4. |
 | **Classification (lane)** | When a member is added, the Rule Engine classifies them into one of four lanes: **STP** (straight-through processing — auto-approve), **REPAIR** (data is broken, needs fixing), **REVIEW** (needs underwriter judgment), **REJECT** (auto-reject, e.g. age out of bounds). |
 | **Client** | The organization that buys the group policy. Examples in our fixtures: "Acme Industries Pvt Ltd", "Brightline Technologies Ltd". Not the insurance industry's other meaning of "client" (= end customer of the insurer). |
+| **Decreasing-term cover** | Life insurance for a fixed period (the "term") where the **payout amount shrinks year by year** instead of staying flat. Used for GCL: the cover schedule mirrors the loan amortisation, so the payout always equals (roughly) the outstanding loan balance. Contrast with **flat-sum** term cover (used in GTL) where the payout is the same throughout the term. See §1.2 slow read. |
 | **DMN** | Decision Model and Notation — an industry-standard way to express business rules as decision tables. We use it for "given this member's attributes, which plan should they go on?" V1 stores the DMN reference as an opaque file ref; authoring is post-V1 (deferred D3). |
 | **Endorsement** | A formal change to a policy mid-term (e.g. employer increases sum-insured, or adds a new sub-product). Out of V1. |
 | **Finalize** | Verb. Quote.finalize() means "Sales has done all the paperwork; turn this Accepted quote into a Proposal so we can issue the actual policy." Proposal.finalize() means "Ops has reviewed; create the master Policy and start enrolling members." |
