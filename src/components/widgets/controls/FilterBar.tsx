@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Search, ListFilter, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const INPUT_DEBOUNCE_MS = 300;
 
@@ -75,19 +76,33 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
     filters.filter((f) => f.type === "text" && activeFilterValues[f.id]).map((f) => f.id)
   );
 
+  useEffect(() => {
+    setActivatedTextFilterIds((prev) => {
+      const external = filters
+        .filter((f) => f.type === "text" && activeFilterValues[f.id])
+        .map((f) => f.id);
+      const toAdd = external.filter((id) => !prev.includes(id));
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+    });
+  }, [activeFilterValues, filters]);
+
   // Which pill currently owns the search bar input (null = global search)
   const [focusedFilterId, setFocusedFilterId] = useState<string | null>(null);
 
   // Single search bar input — routes to focusedFilterId or global searchKey
   const [searchInputValue, setSearchInputValue] = useState<string>((activeFilterValues[searchKey] as string) ?? "");
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useRef<{ timer: ReturnType<typeof setTimeout>; flush: () => void } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const activeFilterValuesRef = useRef(activeFilterValues);
   activeFilterValuesRef.current = activeFilterValues;
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current.timer);
+      debounceRef.current.flush();
+      debounceRef.current = null;
+    }
     const currentValues = activeFilterValuesRef.current;
     const newValue = focusedFilterId
       ? ((currentValues[focusedFilterId] as string) ?? "")
@@ -108,28 +123,35 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   // Cancel any pending debounce on unmount
   useEffect(() => {
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (debounceRef.current) clearTimeout(debounceRef.current.timer);
     };
   }, []);
 
-  const handleSearchInputChange = (value: string) => {
+  const handleSearchInputChange = useCallback((value: string) => {
     setSearchInputValue(value);
     const targetKey = focusedFilterId ?? searchKey;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current.timer);
+    const dispatch = () => {
       handleAction({
         type: "update-widget-state",
         props: { key: stateKey, operation: "patch", value: { [targetKey]: value } }
       });
-    }, INPUT_DEBOUNCE_MS);
-  };
+    };
+    debounceRef.current = {
+      timer: setTimeout(() => {
+        dispatch();
+        debounceRef.current = null;
+      }, INPUT_DEBOUNCE_MS),
+      flush: dispatch,
+    };
+  }, [focusedFilterId, searchKey, stateKey, handleAction]);
 
-  const handleActivateTextFilter = (filterId: string) => {
+  const handleActivateTextFilter = useCallback((filterId: string) => {
     if (!activatedTextFilterIds.includes(filterId)) {
       setActivatedTextFilterIds((prev) => [...prev, filterId]);
     }
     setFocusedFilterId((prev) => (prev === filterId ? null : filterId));
-  };
+  }, [activatedTextFilterIds]);
 
   const handleRemoveTextFilterPill = useCallback(
     (filterId: string) => {
@@ -166,7 +188,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   );
 
   const resetFilters = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (debounceRef.current) clearTimeout(debounceRef.current.timer);
     setSearchInputValue("");
     setActivatedTextFilterIds([]);
     setFocusedFilterId(null);
@@ -281,24 +303,26 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
             return (
               <div
                 key={filter.id}
-                className={`inline-flex items-center rounded-full border h-7 overflow-hidden transition-all ${
+                className={cn(
+                  "inline-flex items-center rounded-full border h-7 overflow-hidden transition-all",
                   isFocused
                     ? "border-primary/60 bg-primary/5 shadow-sm"
                     : "border-border bg-background hover:border-muted-foreground/40"
-                }`}
+                )}
               >
                 <Button
                   type="button"
                   variant="ghost"
                   aria-pressed={isFocused}
-                  onClick={() => setFocusedFilterId((prev) => (prev === filter.id ? null : filter.id))}
-                  className={`h-full px-2.5 rounded-none text-[11px] font-medium whitespace-nowrap transition-colors hover:bg-transparent ${
+                  onClick={() => handleActivateTextFilter(filter.id)}
+                  className={cn(
+                    "h-full px-2.5 rounded-none text-[11px] font-medium whitespace-nowrap transition-colors hover:bg-transparent",
                     isFocused ? "text-primary" : "text-muted-foreground"
-                  }`}
+                  )}
                 >
                   {filter.label}
                   {filterValue && (
-                    <span className={`ml-1.5 font-semibold ${isFocused ? "text-primary" : "text-foreground"}`}>
+                    <span className={cn("ml-1.5 font-semibold", isFocused ? "text-primary" : "text-foreground")}>
                       {filterValue}
                     </span>
                   )}
@@ -307,6 +331,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                   type="button"
                   variant="ghost"
                   size="icon"
+                  aria-label={`Remove ${filter.label} filter`}
                   onClick={() => handleRemoveTextFilterPill(filter.id)}
                   className="h-5 w-5 mr-0.5 rounded-full shrink-0 text-muted-foreground hover:text-foreground"
                 >
@@ -323,6 +348,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                 type="button"
                 variant="ghost"
                 size="icon"
+                aria-label={`Remove ${chip.label} filter`}
                 onClick={() => handleRemoveSelectFilter(chip.key)}
                 className="h-5 w-5 rounded-full text-muted-foreground hover:text-foreground"
               >
