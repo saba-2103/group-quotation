@@ -20,18 +20,42 @@ export interface DataSourceConfig {
         params?: Record<string, any>;
     };
     /**
-     * If set, the query refetches on this interval (ms). Combined with
-     * `stopWhen`, this lets a widget poll until the response satisfies a
-     * condition (e.g. wait for an async backend computation to complete).
+     * Fixed-interval polling. If set, the query refetches every N ms.
+     * For backoff polling (e.g. backend's suggested 2s → 5s schedule),
+     * use `pollSchedule` instead. `pollSchedule` takes precedence when both
+     * are set.
      */
     refreshInterval?: number;
     /**
+     * Schedule-based polling: fast at first, then back off to a slower
+     * interval, with a hard maximum duration. Modeled on the backend-
+     * suggested cadence for async actions: poll fast (2s) for the first
+     * 10s, then 5s out to 60s, then give up.
+     *
+     * Example:
+     *   pollSchedule: {
+     *     initialIntervalMs: 2000,
+     *     initialDurationMs: 10000,
+     *     fallbackIntervalMs: 5000,
+     *     maxDurationMs: 60000
+     *   }
+     *
+     * `stopWhen` still halts polling early when the response is satisfied.
+     */
+    pollSchedule?: {
+        initialIntervalMs: number;
+        initialDurationMs: number;
+        fallbackIntervalMs: number;
+        maxDurationMs?: number;
+    };
+    /**
      * jsonLogic condition evaluated against the latest fetched data.
-     * When truthy, polling stops (refetchInterval returns false). Has no
-     * effect if `refreshInterval` isn't set.
+     * When truthy, polling stops (refetchInterval returns false). Works
+     * with both `refreshInterval` and `pollSchedule`.
      *
      * Example: poll a quote until premium populates —
-     *   refreshInterval: 5000,
+     *   pollSchedule: { initialIntervalMs: 2000, initialDurationMs: 10000,
+     *                   fallbackIntervalMs: 5000, maxDurationMs: 60000 },
      *   stopWhen: { "!=": [{ "var": "premium" }, null] }
      */
     stopWhen?: Record<string, unknown>;
