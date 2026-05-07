@@ -1,8 +1,14 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { StateBadge } from '@/components/widgets/state/StateBadge';
 import { ReasonBanner } from '@/components/widgets/state/ReasonBanner';
+
+function withQuery(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
+}
 import {
   type EntityKind,
   getReasonMeta,
@@ -121,13 +127,13 @@ describe('<ReasonBanner>', () => {
 
   it('renders the canonical pendingReason copy for a PENDING member', () => {
     render(
-      <ReasonBanner
+      withQuery(<ReasonBanner
         config={configFor({
           entity: 'member',
           state: 'PENDING',
           pendingReason: 'PENDING_FLOAT_RESERVATION',
         })}
-      />,
+      />),
     );
     expect(screen.getByText(/float reservation/i)).toBeInTheDocument();
   });
@@ -135,22 +141,24 @@ describe('<ReasonBanner>', () => {
   it('renders free-text cancellationReason verbatim for a CANCELLED member', () => {
     const free = 'Member resigned from Acme Industries; coverage terminated.';
     render(
-      <ReasonBanner
+      withQuery(<ReasonBanner
         config={configFor({
           entity: 'member',
           state: 'CANCELLED',
           cancellationReason: free,
         })}
-      />,
+      />),
     );
     expect(screen.getByText(free)).toBeInTheDocument();
   });
 
   it('returns null when no reason applies', () => {
     const { container } = render(
-      <ReasonBanner
-        config={configFor({ entity: 'member', state: 'ACTIVE' })}
-      />,
+      withQuery(
+        <ReasonBanner
+          config={configFor({ entity: 'member', state: 'ACTIVE' })}
+        />,
+      ),
     );
     expect(container).toBeEmptyDOMElement();
   });

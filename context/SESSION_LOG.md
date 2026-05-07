@@ -470,3 +470,42 @@ Test plan: snapshot-style test per entity asserting every enum value resolves to
 **Batch 1 complete.** Phase 0 + Phase 1 demo subset done. The widget engine + all foundational primitives, mocks, clients, role + maker-checker plumbing, ActionBar, and StateBadge/ReasonBanner are all in place.
 
 **Next:** Batch 2 — Quote happy path. Tasks 2.1, 2.2, 2.3, 2.4.1 (editable) + 2.4.2/3/4 (read-only) + 2.4.5 (with poll) + 2.4.6 (placeholder). `/build-feature` reserved for the action-bar maker-checker overlay design point in this batch per the locked execution strategy.
+
+### 2026-05-07 (continued) — Batch 2 — Quote happy path — IN PROGRESS
+
+User reported the Quotation card on the dashboard 404s — that's expected (Phase 0 wired the nav target; the page lands now in Batch 2). Starting Task 2.1 first to surface a clickable list, then 2.2 → 2.3 → tabs.
+
+Mechanical execution per the strategy:
+- Schema-driven, leveraging existing primitives (`data-table`, `tabs-container`, `form-container`, `key-value-grid`, `action-bar`, `state-badge`, `reason-banner`).
+- Saved-view chips (D12) explicitly deferred per execution strategy — list will ship with `filter-bar` for status/policyType filtering, no chip variants.
+- Row-level role gating on actions: deferred to D12-equivalent — page-header "New Quote" button gates to Maker; row actions ungate for V1 demo (ActionBar in detail view does the heavy gating).
+- Plans / Census / Member-mapping tabs render read-only displays of fixture data per Batch 2 cuts D1/D2/D3.
+- Member Quotes tab is the GCL placeholder per cut D5/D8.
+
+**CellRenderer extension:** adding a `state-badge` cell type that dispatches to the canonical `StateBadge` widget so the list table and detail header share copy + variant from `state-map.ts` instead of duplicating valueMapping JSON. Also adding an `awaiting-approval` cell type that renders a small warning badge when the value is truthy.
+
+**Files created:**
+- `schemas/quote.json` — list page: page-header, filter-bar (status + policyType), data-table backed by `/api/quotation/quotes/search` with `stateDependencies: ['quote-list-filters']`, columns include `state-badge` cell. Header action `New Quote` opens `create-quote-form` modal. Row actions: View (navigate), Withdraw (api-mutation).
+- `schemas/forms/create-quote-form.json` — 2-field form (clientId select sourced from PAM clients/list, policyType static select) → POST `/api/quotation/quotes` → `refreshKey` invalidates the list query.
+- `schemas/quote-detail.json` — 5-section page: page-header (title interpolates `{{id}}`), state-summary key-value-grid, action-bar with full state×role matrix per the plan + maker-checker overlay flags, tabs-container with 6 tab refs.
+- `schemas/tabs/quote/{key-data,plans,census,member-mapping,pricing,member-quotes-placeholder}.json` — Key Data + read-only Plans/Census/Member-mapping (D1-D3 deferred), GCL placeholder, Pricing tab with `pollSchedule: { initialIntervalMs: 2000, initialDurationMs: 10000, fallbackIntervalMs: 5000, maxDurationMs: 60000 }` + `stopWhen: { '!=': [{ var: 'estimatedPremium.totalAmount' }, 0] }` and a Maker-only "Request price" action.
+- `src/app/quotation/page.tsx` — server component, resolves the list schema and renders.
+- `src/app/quotation/[id]/page.tsx` — dynamic route mirroring the accounting `[module]/[id]` pattern; resolves schema, substitutes `{{id}}`, renders with `force-dynamic`.
+
+**Files touched:**
+- `src/components/widgets/data/CellRenderer.tsx` + `.../DataTable/types.ts` — added `state-badge` and `awaiting-approval` cell types; `entity?: string` field on ColumnConfig.
+- `src/components/widgets/actions/ActionBar.tsx` — now reads live entity from three sources (in priority order): explicit `useWidgetState({ stateKey })` slot → `useSmartQuery(config.dataSource)` (auto-fetched when the widget config carries a dataSource) → literal props. Lets a detail-page schema drop an action-bar inline with a dataSource and have it self-fetch live state. React Query dedupes the request with sibling widgets sharing the same key.
+- `src/components/widgets/state/ReasonBanner.tsx` — same dataSource-aware extension as ActionBar.
+- `src/tests/unit/{state,actions}/*.test.tsx` — wrapped renders in `QueryClientProvider` (required after the dataSource extension); 15/15 pass.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- `npx jest src/tests/unit/state src/tests/unit/actions` — 15/15.
+- Live smoke against existing dev server on :3000:
+  - `GET /quotation` → 200; rendered HTML carries the `Quotations` page title and `New Quote` action.
+  - `GET /quotation/QTE-2026-0001` → 200; all 6 tabs (Key Data / Plans / Census / Member-to-Plan Mapping / Pricing / Member Quotes) render in the markup; action-bar mounts; header interpolates the id.
+  - `GET /api/quotation/quotes/QTE-2026-0001` → 200 with `status: DRAFT, awaitingApproval: false`. Detail page consumers will pull live state from this on hydration.
+
+**Demo verification still TODO** (next session, ideally with the user): walk Maker → Send for approval → switch to Checker → Approve → Send to client → Accept → Finalize → confirm Proposal auto-creates in Issuance.
+
+**Next:** Batch 3 — Issuance + PAM + glue. Tasks 3.1 (light) + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 4.4 + 5.1 + 5.3.

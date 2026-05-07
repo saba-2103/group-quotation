@@ -1,10 +1,16 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { ActionBar } from '@/components/widgets/actions/ActionBar';
 import type { ActionConfig, WidgetConfig } from '@/types/widget';
 import type { Role } from '@/types/group-pas/roles';
+
+function withQueryClient(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
+}
 
 // Mock the role hook so each test can pin the active role.
 let currentRole: Role = 'maker';
@@ -86,7 +92,7 @@ function renderBar(overrides: Partial<{
       entityId: overrides.entityId ?? 'Q1',
     },
   } as unknown as WidgetConfig;
-  return render(<ActionBar config={config} />);
+  return render(withQueryClient(<ActionBar config={config} />));
 }
 
 function buttonByLabel(label: string): HTMLButtonElement {

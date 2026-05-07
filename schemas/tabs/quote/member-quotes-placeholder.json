@@ -1,0 +1,20 @@
+{
+  "id": "quote-member-quotes-tab",
+  "type": "tab-panel",
+  "props": { "value": "member-quotes", "label": "Member Quotes (GCL)", "icon": "Users2" },
+  "children": [
+    {
+      "id": "quote-member-quotes-empty",
+      "type": "key-value-grid",
+      "props": {
+        "title": "GCL Member Quotes",
+        "description": "Member-quote authoring is not part of V1. This tab is a placeholder so deep-links keep working as the GCL workflow lights up post-V1.",
+        "columns": 1,
+        "fields": [
+          { "id": "status", "label": "Availability", "accessorKey": "status", "valueMapping": [] }
+        ],
+        "data": { "status": "Coming in a future release" }
+      }
+    }
+  ]
+}

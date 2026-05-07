@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { ColumnConfig, ValueMapping } from "./DataTable/types";
 import { DateDisplay } from "@/components/widgets/controls/dateWidget/DateDisplay";
 import { BADGE_COLOR_TO_VARIANT } from "./DataTable/constants";
+import { StateBadge } from "@/components/widgets/state/StateBadge";
+import type { EntityKind } from "@/components/widgets/state/state-map";
 
 interface CellRendererProps {
   column: ColumnConfig;
@@ -42,6 +44,19 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
           {mapping?.label ?? String(value)}
         </Badge>
       );
+    }
+
+    // Group PAS entity-state badge — colour + label sourced from state-map.ts
+    // so list cells and detail headers stay in sync.
+    case "state-badge": {
+      const entity = (column.entity as EntityKind | undefined) ?? "quote";
+      return <StateBadge entity={entity} state={String(value)} />;
+    }
+
+    // Boolean → small "Awaiting approval" warning chip when truthy.
+    case "awaiting-approval": {
+      if (!value) return <span className="text-muted-foreground">—</span>;
+      return <Badge variant="warning">Awaiting approval</Badge>;
     }
 
     case "number":

@@ -8,6 +8,7 @@
 import { AlertCircle, AlertTriangle, Ban, Clock } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { useSmartQuery } from '@/hooks/useSmartQuery';
 import { useWidgetState } from '@/hooks/useWidgetState';
 import type { WidgetConfig } from '@/types/widget';
 
@@ -51,15 +52,28 @@ export const ReasonBanner: React.FC<ReasonBannerProps> = ({ config }) => {
   const live = props.stateKey
     ? (values[props.stateKey] as Record<string, unknown> | undefined)
     : undefined;
+  const fetchedFromRenderer = (config?.props as { data?: Record<string, unknown> } | undefined)?.data;
+  const fetchedDirect = useSmartQuery(config?.dataSource);
+  const fetched = fetchedFromRenderer ?? fetchedDirect.data ?? undefined;
 
   const entity = props.entity ?? ('member' as EntityKind);
-  const state = (live?.state as string | undefined) ?? props.state ?? '';
+  const state =
+    (live?.state as string | undefined) ??
+    (fetched?.state as string | undefined) ??
+    props.state ??
+    '';
   const pendingReason =
-    (live?.pendingReason as string | undefined) ?? props.pendingReason;
+    (live?.pendingReason as string | undefined) ??
+    (fetched?.pendingReason as string | undefined) ??
+    props.pendingReason;
   const voidReason =
-    (live?.voidReason as string | undefined) ?? props.voidReason;
+    (live?.voidReason as string | undefined) ??
+    (fetched?.voidReason as string | undefined) ??
+    props.voidReason;
   const cancellationReason =
-    (live?.cancellationReason as string | undefined) ?? props.cancellationReason;
+    (live?.cancellationReason as string | undefined) ??
+    (fetched?.cancellationReason as string | undefined) ??
+    props.cancellationReason;
 
   const group = reasonGroupFor(entity, state, Boolean(cancellationReason));
   if (!group) return null;

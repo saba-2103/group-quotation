@@ -1,0 +1,168 @@
+{
+  "id": "quote-detail-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "quote-detail-header",
+      "type": "page-header",
+      "props": {
+        "title": "Quote {{id}}",
+        "description": "State-aware quote detail. Available actions depend on the current state and your active role."
+      }
+    },
+    {
+      "id": "quote-state-summary",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "columns": 4,
+        "fields": [
+          {
+            "id": "status",
+            "label": "Status",
+            "accessorKey": "status",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "DRAFT", "label": "Draft", "variant": "secondary" },
+              { "value": "SUBMITTED", "label": "Submitted", "variant": "info" },
+              { "value": "SENT_TO_CLIENT", "label": "Sent to client", "variant": "info" },
+              { "value": "ACCEPTED", "label": "Accepted", "variant": "teal" },
+              { "value": "FINALIZED", "label": "Finalized", "variant": "success" },
+              { "value": "REJECTED", "label": "Rejected", "variant": "destructive" },
+              { "value": "WITHDRAWN", "label": "Withdrawn", "variant": "grey" },
+              { "value": "EXPIRED", "label": "Expired", "variant": "grey" }
+            ]
+          },
+          { "id": "client", "label": "Client", "accessorKey": "clientId" },
+          { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
+          { "id": "headcount", "label": "Headcount", "accessorKey": "headcount" }
+        ]
+      }
+    },
+    {
+      "id": "quote-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "entityType": "quote",
+        "entityId": "{{id}}",
+        "stateActions": {
+          "DRAFT": ["edit", "send-for-approval", "submit", "clear-approval", "withdraw"],
+          "SUBMITTED": ["send-to-client", "withdraw"],
+          "SENT_TO_CLIENT": ["accept", "reject", "withdraw"],
+          "ACCEPTED": ["finalize", "withdraw"],
+          "FINALIZED": [],
+          "REJECTED": [],
+          "WITHDRAWN": [],
+          "EXPIRED": []
+        },
+        "roleActions": {
+          "maker": ["edit", "send-for-approval", "withdraw"],
+          "checker": ["submit", "clear-approval", "send-to-client", "accept", "reject", "finalize", "withdraw"],
+          "ops": [],
+          "viewer": []
+        },
+        "actions": [
+          {
+            "id": "send-for-approval",
+            "label": "Send for approval",
+            "icon": "Send",
+            "type": "trigger-event",
+            "target": "send-for-approval",
+            "variant": "default"
+          },
+          {
+            "id": "clear-approval",
+            "label": "Clear approval",
+            "icon": "Undo2",
+            "type": "trigger-event",
+            "target": "clear-approval",
+            "variant": "outline"
+          },
+          {
+            "id": "submit",
+            "label": "Approve & submit",
+            "icon": "Check",
+            "type": "api-mutation",
+            "refreshKey": "/api/quotation/quotes/{{id}}",
+            "api": { "endpoint": "/api/quotation/quotes/{{id}}/submit", "method": "POST" },
+            "successMessage": "Quote submitted"
+          },
+          {
+            "id": "send-to-client",
+            "label": "Send to client",
+            "icon": "Mail",
+            "type": "api-mutation",
+            "refreshKey": "/api/quotation/quotes/{{id}}",
+            "api": { "endpoint": "/api/quotation/quotes/{{id}}/send-to-client", "method": "POST" }
+          },
+          {
+            "id": "accept",
+            "label": "Mark accepted",
+            "icon": "ThumbsUp",
+            "type": "api-mutation",
+            "refreshKey": "/api/quotation/quotes/{{id}}",
+            "api": { "endpoint": "/api/quotation/quotes/{{id}}/accept", "method": "POST" }
+          },
+          {
+            "id": "reject",
+            "label": "Reject",
+            "icon": "ThumbsDown",
+            "type": "api-mutation",
+            "variant": "destructive",
+            "refreshKey": "/api/quotation/quotes/{{id}}",
+            "api": { "endpoint": "/api/quotation/quotes/{{id}}/reject", "method": "POST" }
+          },
+          {
+            "id": "finalize",
+            "label": "Finalize",
+            "icon": "Lock",
+            "type": "api-mutation",
+            "refreshKey": "/api/quotation/quotes/{{id}}",
+            "api": { "endpoint": "/api/quotation/quotes/{{id}}/finalize", "method": "POST" },
+            "successMessage": "Quote finalized; Proposal will appear in Issuance shortly."
+          },
+          {
+            "id": "withdraw",
+            "label": "Withdraw",
+            "icon": "Ban",
+            "type": "api-mutation",
+            "variant": "destructive",
+            "refreshKey": "/api/quotation/quotes/{{id}}",
+            "api": { "endpoint": "/api/quotation/quotes/{{id}}/withdraw", "method": "POST" },
+            "confirm": {
+              "title": "Withdraw quote",
+              "message": "Withdrawal is terminal. Continue?"
+            }
+          },
+          {
+            "id": "edit",
+            "label": "Edit",
+            "icon": "Pencil",
+            "type": "open-modal",
+            "target": "create-quote-form",
+            "variant": "outline"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quote-detail-tabs",
+      "type": "tabs-container",
+      "props": { "defaultValue": "key-data" },
+      "children": [
+        { "$ref": "schemas/tabs/quote/key-data.json" },
+        { "$ref": "schemas/tabs/quote/plans.json" },
+        { "$ref": "schemas/tabs/quote/census.json" },
+        { "$ref": "schemas/tabs/quote/member-mapping.json" },
+        { "$ref": "schemas/tabs/quote/pricing.json" },
+        { "$ref": "schemas/tabs/quote/member-quotes-placeholder.json" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "quote-member-mapping-tab",
+  "type": "tab-panel",
+  "props": { "value": "member-mapping", "label": "Member-to-Plan Mapping", "icon": "GitBranch" },
+  "children": [
+    {
+      "id": "quote-member-mapping-grid",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Member-to-Plan mapping (read-only for V1 demo — D3)",
+        "description": "DMN authoring is out of V1; only the file ref is shown. Replace flow is deferred to D3.",
+        "columns": 1,
+        "fields": [
+          { "id": "memberToPlanMappingJson", "label": "DMN mapping JSON", "accessorKey": "memberToPlanMappingJson" }
+        ]
+      }
+    }
+  ]
+}

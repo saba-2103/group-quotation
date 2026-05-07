@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useActionHandler } from '@/hooks/useActionHandler';
 import { useRole } from '@/hooks/useRole';
+import { useSmartQuery } from '@/hooks/useSmartQuery';
 import { useWidgetState } from '@/hooks/useWidgetState';
 import { clearApproval, sendForApproval } from '@/lib/maker-checker';
 import type { ActionConfig, WidgetConfig } from '@/types/widget';
@@ -81,12 +82,28 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
   const handleAction = useActionHandler();
   const { values } = useWidgetState();
 
-  // Pull live entity state from a sibling widget when stateKey is set;
-  // otherwise fall back to the literal prop.
-  const liveEntity = stateKey ? (values[stateKey] as Record<string, unknown> | undefined) : undefined;
-  const state = (liveEntity?.state as string | undefined) ?? props.state ?? '';
+  // Two ways to get live entity state into the bar:
+  //   1. dataSource on the widget's WidgetConfig — useSmartQuery fetches and
+  //      WidgetRenderer injects the result onto config.props.data, which we
+  //      read here. React Query dedupes across siblings sharing the same key.
+  //   2. stateKey — read from a sibling-published useWidgetState slot.
+  // Falls back to the literal prop if neither yields data.
+  const fetchedFromRenderer = (config.props as { data?: Record<string, unknown> } | undefined)?.data;
+  const fetchedDirect = useSmartQuery(config.dataSource);
+  const fetchedEntity = fetchedFromRenderer ?? fetchedDirect.data ?? undefined;
+  const liveEntity = stateKey
+    ? (values[stateKey] as Record<string, unknown> | undefined)
+    : undefined;
+
+  const state =
+    (liveEntity?.state as string | undefined) ??
+    (fetchedEntity?.state as string | undefined) ??
+    props.state ??
+    '';
   const awaitingApproval = Boolean(
-    liveEntity?.awaitingApproval ?? props.awaitingApproval,
+    liveEntity?.awaitingApproval ??
+      fetchedEntity?.awaitingApproval ??
+      props.awaitingApproval,
   );
 
   const decoratedActions = useMemo(() => {

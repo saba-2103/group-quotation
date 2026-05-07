@@ -51,8 +51,8 @@ Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [
 | Batch | Status |
 |-------|--------|
 | Batch 1 — Foundation (Phase 0 + Phase 1 demo subset) | **DONE** — Phase 0 + Tasks 1.1, 1.2, 1.3, 1.4, 1.5, 1.8, 1.9 (skipped 1.6 + 1.7 per V1 demo cuts D7/D8) |
-| Batch 2 — Quote happy path (Phase 2 demo subset) | unblocked — **next** |
-| Batch 3 — Issuance + PAM + glue (Phase 3, 4, 5 demo subsets) | blocked on Batch 2 |
+| Batch 2 — Quote happy path (Phase 2 demo subset) | **DONE** — Tasks 2.1, 2.2, 2.3, 2.4.1–2.4.6 (Plans/Census/Mapping read-only per cuts D1/D2/D3; Pricing live with backoff poll; demo end-to-end walkthrough deferred to next session w/ user) |
+| Batch 3 — Issuance + PAM + glue (Phase 3, 4, 5 demo subsets) | unblocked — **next** |
 
 **Deferred-from-demo backlog (D1–D12)** lives in the same plan section. After demo lands, work that backlog before starting any new feature.
 

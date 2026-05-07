@@ -1,0 +1,22 @@
+{
+  "id": "quote-plans-tab",
+  "type": "tab-panel",
+  "props": { "value": "plans", "label": "Plans", "icon": "Layers" },
+  "children": [
+    {
+      "id": "quote-plans-info",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Plan structure (read-only for V1 demo — D1)",
+        "description": "Add / edit / remove deferred to D1; the demo renders the plans configured on the fixture.",
+        "columns": 1,
+        "fields": [
+          { "id": "plansSummary", "label": "Plans (count)", "accessorKey": "plans.length" }
+        ]
+      }
+    }
+  ]
+}
