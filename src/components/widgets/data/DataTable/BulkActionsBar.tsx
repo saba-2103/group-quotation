@@ -23,11 +23,11 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
   return (
     <div className="flex flex-col gap-1.5">
       {showBulkBar && (
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-4 py-2">
-          <span className="text-sm font-medium">
+        <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 animate-fade-in">
+          <span className="text-sm font-medium text-foreground tabular-nums">
             {selectedCount} {selectedCount === 1 ? "item" : "items"} selected
           </span>
-          <div className="h-4 w-px bg-border" />
+          <div className="h-4 w-px bg-primary/20" />
           <div className="flex items-center gap-2">
             {bulkActions.slice(0, MAX_BULK_ACTIONS).map((action) => (
               <ActionRenderer

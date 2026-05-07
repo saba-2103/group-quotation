@@ -211,12 +211,13 @@ describe("DataTable — quotations-table schema", () => {
   // ── Loading State ─────────────────────────────────────────────────────────
 
   describe("Loading State", () => {
-    it("shows Loading... text when isLoading=true", () => {
-      render(<DataTable config={makeConfig({ isLoading: true })} />, {
-        wrapper: createWrapper(),
-      });
+    it("renders skeleton rows when isLoading=true", () => {
+      const { container } = render(
+        <DataTable config={makeConfig({ isLoading: true })} />,
+        { wrapper: createWrapper() },
+      );
 
-      expect(screen.getByText("Loading...")).toBeInTheDocument();
+      expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
     });
 
     it("does not render data rows when isLoading=true", () => {

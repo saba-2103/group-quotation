@@ -27,14 +27,14 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
 }) => {
   const sizeOptions = pageSizeOptions ?? PAGE_SIZE_OPTIONS;
   return (
-    <div className="flex items-center justify-between px-2 py-1">
-      <span className="text-sm text-muted-foreground">
+    <div className="flex items-center justify-between gap-3 px-2 py-1.5">
+      <span className="text-xs text-muted-foreground tabular-nums">
         {totalCount === 0
           ? "No results"
-          : `Showing ${pageIndex * pageSize + 1}–${Math.min(
+          : `${pageIndex * pageSize + 1}–${Math.min(
               (pageIndex + 1) * pageSize,
               totalCount,
-            )} of ${totalCount} results`}
+            )} of ${totalCount}`}
       </span>
 
       <div className="flex items-center gap-3">
@@ -44,7 +44,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
             value={String(pageSize)}
             onValueChange={(val) => table.setPageSize(Number(val))}
           >
-            <SelectTrigger className="h-8 w-[70px] text-xs">
+            <SelectTrigger className="h-7 w-[64px] text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -59,11 +59,11 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
         </div>
 
         {/* Navigation: << < [page] > >> */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
             aria-label="First page"
@@ -71,22 +71,22 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
             <ChevronsLeft size={14} />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
             aria-label="Previous page"
           >
             <ChevronLeft size={14} />
           </Button>
-          <span className="text-sm px-2 tabular-nums">
+          <span className="text-xs px-2 tabular-nums text-foreground font-medium">
             Page {pageIndex + 1} of {table.getPageCount() || 1}
           </span>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
             aria-label="Next page"
@@ -94,9 +94,9 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
             <ChevronRight size={14} />
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
             aria-label="Last page"

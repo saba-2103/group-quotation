@@ -47,6 +47,21 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
     case "number":
       return <span>{Number(value)}</span>;
 
+    case "currency": {
+      const num = Number(value);
+      if (isNaN(num)) return <span>{String(value)}</span>;
+      const currency = (column as { currency?: string }).currency ?? "USD";
+      return (
+        <span>
+          {new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency,
+            maximumFractionDigits: 0,
+          }).format(num)}
+        </span>
+      );
+    }
+
     case "date":
       return <DateDisplay value={String(value)} />;
 

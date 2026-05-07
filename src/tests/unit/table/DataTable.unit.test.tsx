@@ -18,13 +18,17 @@ const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return ({ children }: { children: React.ReactNode }) => (
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+
+  Wrapper.displayName = "DataTableTestWrapper";
+
+  return Wrapper;
 };
 
 /** Minimal column factory */
-const col = (overrides: Record<string, any>) => ({
+const col = (overrides: Record<string, unknown>) => ({
   id: overrides.id ?? "col1",
   header: overrides.header ?? "Column",
   accessorKey: overrides.accessorKey ?? overrides.id ?? "col1",
@@ -33,20 +37,30 @@ const col = (overrides: Record<string, any>) => ({
 });
 
 /** Build a WidgetConfig for DataTable with optional prop overrides */
-const makeConfig = (props: Record<string, any> = {}): WidgetConfig => ({
+const makeConfig = (props: Record<string, unknown> = {}): WidgetConfig => ({
   id: "test-table",
   type: "data-table",
   props,
 });
 
-const renderTable = (props: Record<string, any> = {}) =>
+const renderTable = (props: Record<string, unknown> = {}) =>
   render(<DataTable config={makeConfig(props)} />, { wrapper: createWrapper() });
+
+const setViewport = (width: number) => {
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    writable: true,
+    value: width,
+  });
+  window.dispatchEvent(new Event("resize"));
+};
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("DataTable — unit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    setViewport(1024);
   });
 
   // ── 1. Column Type Rendering ───────────────────────────────────────────────
@@ -318,13 +332,13 @@ describe("DataTable — unit", () => {
   // ── 4. Loading State ───────────────────────────────────────────────────────
 
   describe("Loading State", () => {
-    it("shows 'Loading...' text when isLoading=true", () => {
-      renderTable({
+    it("renders skeleton rows when isLoading=true", () => {
+      const { container } = renderTable({
         columns: [col({ id: "name", header: "Name" })],
         isLoading: true,
       });
 
-      expect(screen.getByText("Loading...")).toBeInTheDocument();
+      expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(0);
     });
 
     it("does not render data rows while loading", () => {
@@ -346,6 +360,37 @@ describe("DataTable — unit", () => {
       });
 
       expect(screen.queryByText("No data")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("Responsive Layout", () => {
+    it("renders the mobile card layout below the md breakpoint without duplicating row content", () => {
+      setViewport(375);
+
+      renderTable({
+        columns: [
+          col({ id: "name", header: "Name", type: "text" }),
+          col({ id: "status", header: "Status", type: "text" }),
+        ],
+        data: [{ id: "1", name: "Acme Corp", status: "Active" }],
+      });
+
+      expect(screen.queryByRole("columnheader", { name: "Name" })).not.toBeInTheDocument();
+      expect(screen.getByText("Name")).toBeInTheDocument();
+      expect(screen.getAllByText("Acme Corp")).toHaveLength(1);
+      expect(screen.getAllByText("Active")).toHaveLength(1);
+    });
+
+    it("renders the desktop table layout at and above the md breakpoint", () => {
+      setViewport(1024);
+
+      renderTable({
+        columns: [col({ id: "name", header: "Name", type: "text" })],
+        data: [{ id: "1", name: "Acme Corp" }],
+      });
+
+      expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
+      expect(screen.getAllByText("Acme Corp")).toHaveLength(1);
     });
   });
 
@@ -693,7 +738,7 @@ describe("DataTable — unit", () => {
         pagination: { enabled: true, pageSize: 10 },
       });
 
-      expect(screen.getByText(/showing 1 to 10 of 25/i)).toBeInTheDocument();
+      expect(screen.getByText(/1.*–.*10.*of.*25/i)).toBeInTheDocument();
     });
   });
 
@@ -745,12 +790,13 @@ describe("DataTable — unit", () => {
       expect(screen.getByText("New Row")).toBeInTheDocument();
     });
 
-    it("uses quotationNumber as row id fallback when id is absent", () => {
+    it("uses explicit rowIdKey to resolve navigation from a link column", () => {
       renderTable({
         columns: [
           col({ id: "quotationNumber", header: "Quotation Number", type: "link", linkRoute: "/q/:id" }),
         ],
         data: [{ quotationNumber: "QT-999" }],
+        rowIdKey: "quotationNumber",
       });
 
       fireEvent.click(screen.getByRole("button", { name: "QT-999" }));

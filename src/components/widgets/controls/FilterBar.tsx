@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { WidgetConfig } from "@/types/widget";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { useWidgetState } from "@/hooks/useWidgetState";
@@ -93,7 +93,9 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
       ? ((currentValues[focusedFilterId] as string) ?? "")
       : ((currentValues[searchKey] as string) ?? "");
     setSearchInputValue(newValue);
-    inputRef.current?.focus();
+    if (focusedFilterId !== null) {
+      inputRef.current?.focus();
+    }
   }, [focusedFilterId, searchKey]);
 
   useEffect(() => {
@@ -130,8 +132,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
   };
 
   const handleRemoveTextFilterPill = useCallback(
-    (filterId: string, e: React.MouseEvent) => {
-      e.stopPropagation();
+    (filterId: string) => {
       setActivatedTextFilterIds((prev) => prev.filter((id) => id !== filterId));
       if (focusedFilterId === filterId) {
         setFocusedFilterId(null);
@@ -192,8 +193,8 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
 
   const hasActivePills = activeTextFilterPills.length > 0 || appliedSelectChips.length > 0;
 
-  const textFilters = filters.filter((f) => f.type === "text");
-  const selectFilters = filters.filter((f) => f.type === "select");
+  const textFilters = useMemo(() => filters.filter((f) => f.type === "text"), [filters]);
+  const selectFilters = useMemo(() => filters.filter((f) => f.type === "select"), [filters]);
 
   const focusedFilter = focusedFilterId ? filters.find((f) => f.id === focusedFilterId) : null;
   const activeSearchPlaceholder = focusedFilter
@@ -258,7 +259,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
               {textFilters.map((filter) => (
                 <DropdownMenuItem
                   key={filter.id}
-                  disabled={activatedTextFilterIds.includes(filter.id)}
+                  disabled={activatedTextFilterIds.includes(filter.id) || !!activeFilterValues[filter.id]}
                   onSelect={() => handleActivateTextFilter(filter.id)}
                 >
                   {filter.label}
@@ -306,7 +307,7 @@ export const FilterBar: React.FC<{ config: WidgetConfig }> = ({ config }) => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={(e) => handleRemoveTextFilterPill(filter.id, e)}
+                  onClick={() => handleRemoveTextFilterPill(filter.id)}
                   className="h-5 w-5 mr-0.5 rounded-full shrink-0 text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-2.5 w-2.5" />

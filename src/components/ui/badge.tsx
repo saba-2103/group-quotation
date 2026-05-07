@@ -4,26 +4,30 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "border-primary/20 bg-primary text-primary-foreground",
+          "border-transparent bg-primary text-primary-foreground",
         secondary:
-          "border-secondary/20 bg-secondary text-secondary-foreground",
+          "border-transparent bg-secondary text-secondary-foreground",
         destructive:
-          "border-destructive/20 bg-destructive/10 text-destructive",
-        outline: "text-foreground",
+          "border-destructive/20 bg-destructive/10 text-destructive dark:text-destructive",
+        outline:
+          "border-border text-foreground",
         success:
-          "border-green-300 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+          "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
         warning:
-          "border-yellow-300 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-        info: "border-blue-300 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-        teal: "border-cyan-300 bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
+          "border-yellow-500/25 bg-yellow-500/10 text-yellow-800 dark:text-yellow-300",
+        info:
+          "border-sky-500/25 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+        teal:
+          "border-teal-500/25 bg-teal-500/10 text-teal-700 dark:text-teal-300",
         amber:
-          "border-amber-300 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
-        grey: "border-gray-300 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+          "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+        grey:
+          "border-zinc-500/20 bg-zinc-500/10 text-zinc-700 dark:text-zinc-300",
       },
     },
     defaultVariants: {
