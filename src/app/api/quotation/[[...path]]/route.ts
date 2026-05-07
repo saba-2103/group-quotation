@@ -390,6 +390,30 @@ const routes: RouteEntry[] = [
       return ok();
     },
   },
+
+  // ── UI-only maker-checker overlay (not in DSL) ──
+  // POST sets, DELETE clears `awaitingApproval` on a Quote. Removed once the
+  // backend implements real maker-checker (see context/ARCH_TRANSITION.md).
+  {
+    method: 'POST',
+    pattern: 'quotes/:quoteId/awaiting-approval',
+    handler: (_req, params) => {
+      const q = findQuote(params.quoteId);
+      if (!q) return notFound('awaiting-approval');
+      q.awaitingApproval = true;
+      return ok();
+    },
+  },
+  {
+    method: 'DELETE',
+    pattern: 'quotes/:quoteId/awaiting-approval',
+    handler: (_req, params) => {
+      const q = findQuote(params.quoteId);
+      if (!q) return notFound('awaiting-approval');
+      q.awaitingApproval = false;
+      return ok();
+    },
+  },
 ];
 
 async function handle(

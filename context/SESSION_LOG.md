@@ -360,3 +360,45 @@ Naming: function names mirror the DSL operation names (e.g. `createQuote`, `requ
 **ARCH_TRANSITION** "Error response shape" entry already documents the `{ code, message, fieldErrors }` envelope-upgrade trigger — no further docs change needed for V1.
 
 **Next:** Task 1.9 — Role switcher + role-aware action gating (must land before Task 1.3 ActionBar consumes it).
+
+### 2026-05-07 (continued) — Task 1.9 — Role switcher + role-aware gating — IN PROGRESS
+
+About to do: build the V1 demo's UI-only role context + switcher per ARCH_TRANSITION's "Maker-checker UI overlay" entry. Default role is `maker`; localStorage key `group-pas:current-role` so a refresh keeps the demoer's chosen role.
+
+Layout decisions:
+- `RoleProvider` mounts in `src/app/layout.tsx` between `Providers` and `AppContextProvider` so the switcher renders before app-config loads (cheap; no network).
+- `RoleSwitcher` mounts at the top of `<main>` (right-aligned). Avoids restructuring the layout into a dedicated top-bar; keeps the existing `SidebarTrigger` slot intact.
+- WidgetRegistry gets `"role-switcher"` so future schemas can also embed it inline.
+
+Maker-checker UI-overlay state:
+- `MockQuote.awaitingApproval` already exists on the fixtures (added in Task 1.5). Adding two UI-only mock routes — `POST /api/quotation/quotes/:quoteId/awaiting-approval` (set true) and `DELETE /api/quotation/quotes/:quoteId/awaiting-approval` (clear) — neither is in the DSL. They're explicitly tagged "UI-only" and will simply not exist when `GROUP_PAS_BACKEND_URL` is set (the proxy will 404 them). When the maker-checker overlay disappears post-V1 (real Keycloak + backend-enforced approval), these routes get deleted.
+- `src/lib/maker-checker.ts` exposes `sendForApproval(entityType, id)` and `clearApproval(entityType, id)` calling those routes; ActionBar (Task 1.3) wires its "Send for approval" action to this helper.
+
+The Checker → Approve action calls the real `submitQuote(id)` from Task 1.2 (no special handling needed — once `awaitingApproval` clears, the entity moves through the DSL flow normally).
+
+**Files created:**
+- `src/contexts/RoleContext.tsx` — `RoleProvider` + `RoleContext`. Hydration-safe (SSR sees `maker`; effect upgrades to the localStorage value on mount). `STORAGE_KEY = 'group-pas:current-role'`.
+- `src/hooks/useRole.ts` — `useRole(): { role, setRole }` with provider-presence guard.
+- `src/components/widgets/role/RoleSwitcher.tsx` — top-shell dropdown with all four roles, lucide icons, descriptions; uses existing `dropdown-menu` primitive.
+- `src/lib/maker-checker.ts` — `sendForApproval(entity, id)` / `clearApproval(entity, id)` for `'quote' | 'proposal'`. Calls the new mock routes; does nothing else (Checker's Approve calls real `submitQuote` from Task 1.2).
+
+**Files touched:**
+- `src/components/registry/WidgetRegistry.tsx` — registered `"role-switcher"`.
+- `src/app/layout.tsx` — mounted `RoleProvider` (between `Providers` and `AppContextProvider`) and `RoleSwitcher` in the top-right of `<main>` (`absolute top-4 right-6 z-50`).
+- `src/lib/api-mock/group-pas/store.ts` — added `MockProposal = Proposal & { awaitingApproval?: boolean }` and re-typed `proposals` as `MockProposal[]`.
+- `src/lib/api-mock/group-pas/dtos.ts` — `MockQuoteDto` + `MockProposalDto` extend the wire DTOs with the optional `awaitingApproval` flag; mappers populate it from the store. Real backend never returns it; field disappears once V1 maker-checker lands.
+- `src/app/api/quotation/[[...path]]/route.ts` — added `POST/DELETE /quotes/:quoteId/awaiting-approval` (UI-only, not in DSL).
+- `src/app/api/issuance/[[...path]]/route.ts` — added `POST/DELETE /proposals/:proposalId/awaiting-approval`; switched `findProposal` return type to `MockProposal`.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- Live smoke against existing dev server on :3000:
+  - `POST /api/quotation/quotes/QTE-2026-0001/awaiting-approval` → 200; subsequent GET returns `awaitingApproval: true`.
+  - `DELETE` → 200; subsequent GET returns `awaitingApproval: false`.
+  - Fixture-default `QTE-2026-0002` returns `awaitingApproval: true` immediately (round-trips the seed value).
+  - Proposal `POST /api/issuance/proposals/PRO-2026-0001/awaiting-approval` → 200, GET returns `awaitingApproval: true`.
+  - `GET /` returns 200 and the rendered HTML references `RoleSwitcher` chunk (mounted in layout).
+
+**Done-criteria deferred to Task 1.3:** ActionBar consumes `useRole()` + `awaitingApproval` to render Maker → Send for approval → Checker → Approve. The infra is in place; gating logic lives in ActionBar per the original task split.
+
+**Next:** Task 1.3 — ActionBar widget (state + role gating, consumed by every detail page).

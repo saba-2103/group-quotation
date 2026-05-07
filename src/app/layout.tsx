@@ -5,6 +5,8 @@ import { Providers } from "@/components/providers";
 import { AppContextProvider } from "@/components/providers/AppContextProvider";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { RoleProvider } from "@/contexts/RoleContext";
+import { RoleSwitcher } from "@/components/widgets/role/RoleSwitcher";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -33,15 +35,20 @@ export default function RootLayout({
 			</head>
 			<body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
 				<Providers>
-					<AppContextProvider>
-						<SidebarProvider defaultOpen={true}>
-							<AppSidebar />
-              				<main className="w-full min-w-0 flex-1 overflow-x-hidden p-6 relative">
-								<SidebarTrigger className="absolute top-6 left-6 z-50 md:hidden" />
-								{children}
-							</main>
-						</SidebarProvider>
-					</AppContextProvider>
+					<RoleProvider>
+						<AppContextProvider>
+							<SidebarProvider defaultOpen={true}>
+								<AppSidebar />
+								<main className="w-full min-w-0 flex-1 overflow-x-hidden p-6 relative">
+									<SidebarTrigger className="absolute top-6 left-6 z-50 md:hidden" />
+									<div className="absolute top-4 right-6 z-50">
+										<RoleSwitcher />
+									</div>
+									{children}
+								</main>
+							</SidebarProvider>
+						</AppContextProvider>
+					</RoleProvider>
 				</Providers>
 			</body>
 		</html>

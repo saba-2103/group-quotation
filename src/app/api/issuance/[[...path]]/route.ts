@@ -24,6 +24,7 @@ import {
   nextId,
   scheduleTransition,
   store,
+  type MockProposal,
 } from '@/lib/api-mock/group-pas/store';
 import type {
   AggregateCensus,
@@ -43,7 +44,7 @@ import type {
 
 type RouteContext = { params: Promise<{ path?: string[] }> };
 
-function findProposal(id: string): Proposal | undefined {
+function findProposal(id: string): MockProposal | undefined {
   return store.proposals.find((p) => p.id === id);
 }
 
@@ -266,6 +267,28 @@ const routes: RouteEntry[] = [
       const body = await readJson<{ reason: string }>(req);
       p.state = 'CANCELLED';
       void body; // reason currently unused on the read side
+      return ok();
+    },
+  },
+
+  // ── UI-only maker-checker overlay (not in DSL) ──
+  {
+    method: 'POST',
+    pattern: 'proposals/:proposalId/awaiting-approval',
+    handler: (_req, params) => {
+      const p = findProposal(params.proposalId);
+      if (!p) return notFound('awaiting-approval');
+      p.awaitingApproval = true;
+      return ok();
+    },
+  },
+  {
+    method: 'DELETE',
+    pattern: 'proposals/:proposalId/awaiting-approval',
+    handler: (_req, params) => {
+      const p = findProposal(params.proposalId);
+      if (!p) return notFound('awaiting-approval');
+      p.awaitingApproval = false;
       return ok();
     },
   },

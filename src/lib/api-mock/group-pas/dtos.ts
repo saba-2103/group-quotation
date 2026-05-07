@@ -4,6 +4,7 @@
 // fixtures unmodified-looking from the wire.
 
 import type { MockQuote } from '@/mocks/group-pas/quotation/quotes';
+import type { MockProposal } from '@/lib/api-mock/group-pas/store';
 import type {
   CensusSubmission,
   CensusSubmissionDto,
@@ -12,7 +13,6 @@ import type {
   PolicyMember,
   PolicyMemberDto,
   PolicyMemberSummaryDto,
-  Proposal,
   ProposalDto,
   ProposalSummaryDto,
 } from '@/types/group-pas/issuance';
@@ -34,7 +34,13 @@ import type {
 
 const ISO_PLACEHOLDER = '';
 
-export function quoteToDto(q: MockQuote): QuoteDto {
+// `awaitingApproval` is a UI-only mock field for the V1 maker-checker overlay
+// (see context/ARCH_TRANSITION.md). Carried in the response so client gating
+// can read it from the same poll without a separate endpoint. Real backend
+// will never set this — the field is dropped when V1 maker-checker lands.
+export type MockQuoteDto = QuoteDto & { awaitingApproval?: boolean };
+
+export function quoteToDto(q: MockQuote): MockQuoteDto {
   return {
     id: q.id,
     clientId: q.clientId,
@@ -64,6 +70,7 @@ export function quoteToDto(q: MockQuote): QuoteDto {
     },
     memberToPlanMappingJson: q.memberToPlanMapping ?? '',
     censusFileFormatJson: JSON.stringify(q.censusFileFormat ?? null),
+    awaitingApproval: q.awaitingApproval,
   };
 }
 
@@ -78,7 +85,10 @@ export function quoteToSummary(q: MockQuote): QuoteSummaryDto {
   };
 }
 
-export function proposalToDto(p: Proposal): ProposalDto {
+// `awaitingApproval` mock-only field — see `MockQuoteDto` note above.
+export type MockProposalDto = ProposalDto & { awaitingApproval?: boolean };
+
+export function proposalToDto(p: MockProposal): MockProposalDto {
   return {
     id: p.id,
     quoteId: p.quoteId,
@@ -91,10 +101,11 @@ export function proposalToDto(p: Proposal): ProposalDto {
     estimatedPremiumJson: JSON.stringify(p.estimatedPremium),
     policyId: p.policyId ?? '',
     policyNumber: p.policyNumber ?? '',
+    awaitingApproval: p.awaitingApproval,
   };
 }
 
-export function proposalToSummary(p: Proposal): ProposalSummaryDto {
+export function proposalToSummary(p: MockProposal): ProposalSummaryDto {
   return {
     id: p.id,
     quoteId: p.quoteId,

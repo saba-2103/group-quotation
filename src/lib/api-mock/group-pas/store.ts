@@ -25,9 +25,14 @@ import type {
 } from '@/types/group-pas/policy-admin';
 import type { MockQuote } from '@/mocks/group-pas/quotation/quotes';
 
+// `awaitingApproval` is a UI-only overlay flag (see context/ARCH_TRANSITION.md
+// → "Maker-checker UI overlay"). Carried on Proposal mocks the same way the
+// MockQuote type carries it on Quote.
+export type MockProposal = Proposal & { awaitingApproval?: boolean };
+
 interface GroupPasStore {
   quotes: MockQuote[];
-  proposals: Proposal[];
+  proposals: MockProposal[];
   policyMembers: PolicyMember[];
   censusSubmissions: CensusSubmission[];
   censusRows: CensusSubmissionRow[];
