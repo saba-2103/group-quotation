@@ -402,3 +402,41 @@ The Checker → Approve action calls the real `submitQuote(id)` from Task 1.2 (n
 **Done-criteria deferred to Task 1.3:** ActionBar consumes `useRole()` + `awaitingApproval` to render Maker → Send for approval → Checker → Approve. The infra is in place; gating logic lives in ActionBar per the original task split.
 
 **Next:** Task 1.3 — ActionBar widget (state + role gating, consumed by every detail page).
+
+### 2026-05-07 (continued) — Task 1.3 — ActionBar widget — IN PROGRESS
+
+About to do: schema-driven action bar consumed by every detail page (Quote, Proposal, Policy, PolicyMember). Reads the entity's current `state` + `useRole()` and renders the per-schema action set with disabled buttons + hover tooltip explaining the gate.
+
+Props:
+- `state: string` — entity state pulled from the page's data
+- `stateActions: Record<string, string[]>` — state → allowed action IDs
+- `roleActions?: Record<string, string[]>` — role → allowed action IDs (optional; absence = no role gate)
+- `actions: ActionConfig[]` — full set of action configs (from `@/types/widget`)
+- `awaitingApproval?: boolean` — UI-only maker-checker flag from the dto; when true, the Maker can't re-submit and the Checker's Approve becomes the primary call-to-action.
+
+Special action types (id-conventional, not new types in `ActionConfig`):
+- `id: 'send-for-approval'` and `id: 'clear-approval'` are intercepted before delegating to `useActionHandler` so they call `sendForApproval(entity, id)` / `clearApproval(entity, id)` from `@/lib/maker-checker`. The schema declares `entityType: 'quote' | 'proposal'` + `entityId` via `props`. Everything else flows through the existing `useActionHandler` plumbing unchanged.
+
+Disabled tooltip messages:
+- State-disabled: `"Not available in {state}"`
+- Role-disabled: `"Requires {allowed roles}"` — computed from which roles allow this action.
+- Awaiting-approval lock (Maker editing actions): `"Awaiting checker approval"`.
+
+The widget consumes `useWidgetState()` to optionally pull `state` and `awaitingApproval` from a sibling-published widget state (e.g. the entity-detail dataSource), so the schema can wire it without prop drilling. Falls back to direct props when published state is absent.
+
+Test plan: a Jest unit covering 3 sample states × 3 sample roles, asserting which actions are enabled/disabled and which tooltip message renders.
+
+**Files created:**
+- `src/components/widgets/actions/ActionBar.tsx` — schema-driven action bar. Reads `state` + `awaitingApproval` either from props or (when `stateKey` is set) from a sibling-published widget state via `useWidgetState()`. Three gating layers in order: (1) state, (2) role, (3) maker-checker approval lock for `role === 'maker'` when `awaitingApproval=true`. Disabled buttons render through a `<Tooltip>` with the gating reason. Special action ids `'send-for-approval'` and `'clear-approval'` short-circuit `useActionHandler` and call the `@/lib/maker-checker` helpers with `entityType` + `entityId` props. Other action ids flow through the existing `useActionHandler` pipeline unchanged.
+- `src/tests/unit/actions/ActionBar.unit.test.tsx` — Jest unit with 6 cases: Maker DRAFT (state-allowed actions enabled, others disabled); Checker SUBMITTED (Approve enabled, Edit state-disabled with right tooltip); Maker DRAFT + awaitingApproval=true (edit/send locked with "Awaiting checker approval"; Approve still state-disabled because state gate wins); Viewer DRAFT (everything role-disabled); Checker click → handleAction dispatch; Maker click on send-for-approval → maker-checker helper called, handleAction NOT called.
+
+**Files touched:**
+- `src/components/registry/WidgetRegistry.tsx` — registered `"action-bar"`.
+
+**Done-criteria (Task 1.9 + 1.3 combined):** the maker-checker overlay can now be wired end-to-end on a quote — schemas declare `roleActions: { maker: ['edit', 'send-for-approval'], checker: ['submit', 'send-to-client', 'finalize', 'clear-approval'], ... }` and the ActionBar handles the rest. End-to-end demo wiring lives in the Quote/Proposal detail-page schemas (Phase 2 / 3).
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- `npx jest src/tests/unit/actions/ActionBar.unit.test.tsx` — 6/6 pass.
+
+**Next:** Task 1.8 — StateBadge + ReasonBanner widgets (simple presentational helpers consumed by every list/detail page).
