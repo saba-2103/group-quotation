@@ -165,3 +165,46 @@ HANDOFF Active Workstreams updated to show the 3-batch view + pointer to the str
 **Files touched:** `docs/group-pas-v1-plan.md`, `context/HANDOFF.md`, this log.
 
 **Next:** kick off Batch 1 — Phase 0 teardown.
+
+### 2026-05-07 (continued) — Batch 1 in progress
+
+Starting **Batch 1 — Foundation**. Order:
+
+1. Task 0.1 — Teardown legacy quotations + auth-branch zombie forms.
+2. Task 0.2 — Nav config update (3 modules + GCL placeholder).
+3. Task 1.1 — TypeScript domain types.
+4. Task 1.5 — Mock fixtures.
+5. Task 1.4 — Mock API route handlers (catch-all per module).
+6. Task 1.2 — API clients.
+7. Task 1.9 — Role switcher (must land before ActionBar consumes it).
+8. Task 1.3 — ActionBar widget.
+9. Task 1.8 — StateBadge + ReasonBanner widgets.
+
+Tasks 1.6 (PresignedUploader) and 1.7 (useEnum) explicitly skipped per V1 demo strategy — replaced with mock-accept-anything + inline enum constants.
+
+In progress.
+
+#### Task 0.1 — Teardown legacy quotations + auth-branch zombies — DONE
+
+Bulk delete (90 files, ~24,500 LoC removed):
+
+- Routes: `src/app/quotations/`, `src/app/api/quotations/` (catch-all + 7 sub-routes).
+- Page schemas: `schemas/quotations.json`, `schemas/quotations-detail.json`.
+- Tab schemas (all only referenced by the deleted detail): `plans`, `plan-products`, `plan-product-credit-life`, `plan-product-health`, `plan-product-investment`, `plan-product-term-life`, `plan-product-benefits`, `plan-product-benefits-health`, `benefit-investment`, `policy-profile`, `policy-exclusion`, `common-header`, `premium-method-05/06/07/08`, `headcount`, `subsidiaries`, `members`, `documents`, `qtn-detail-help-sheet`.
+- Forms (33 deleted): per the plan list + the orphan `plan-product-*`, `premium-method-*`, `benefit-investment`, `add-product`, `policy-configuration`, `policy-details` forms (none referenced elsewhere). Auth-branch zombies (`add-member-form`, `bulk-upload-form`) removed from the bundled `schemas/forms/index.ts`. Survivors: 7 accounting/payout forms.
+- Tests: `QuotationListTable.test.tsx`, `CreateQuotationForm.test.tsx`, `FilterBar.unit.test.tsx` (the FilterBar test sourced its config from `quotations.json` so deleted alongside).
+- Mocks: `src/mocks/original/seeds/` (entire dir — orphan after `quotation-mock.ts` removed), `quotations-list-page-config-mock.ts`, `quotations-detail-page-config-mock.ts`, `tab-config-mock.ts`, `table-config-mock.ts`, `form-config-mock.ts`, `data/quotation-mock.ts`, `data/index.ts`, `data/` (empty dir removed implicitly).
+- Updated registries: `schemas/forms/index.ts` (removed deleted entries + zombies), `src/mocks/original/page-config-mock.ts` (no quotation re-exports), `src/mocks/original/group-insurance/page-config-service.ts` (no quotation registry entries), `src/mocks/original/group-insurance/config/index.ts` (no quotation/tab/form/table-config-mock exports).
+- Dashboard schema (`schemas/dashboard.json`) + `dashboard-page-config-mock.ts` cards repurposed: legacy "Group Quotation" / "Group New Business" cards → "Quotation" / "Issuance" / "Policy Admin" cards pointing at the new module routes; legacy `metric-pending-quotations` renamed to `metric-pending-quotes`; `new-quotation-action` → `new-quote-action` navigating to `/quotation`.
+- `src/app/page.tsx` legacy "Quotations List" card removed.
+
+#### Task 0.2 — Nav config update — DONE (folded into 0.1)
+
+`src/mocks/original/group-insurance/config/app-config-mock.ts`: legacy "Group Quotation" multi-link nav entry replaced with three new top-level items — **Quotation** (`/quotation`, with disabled "Member Quotes (GCL) — coming soon" sub-item), **Issuance** (`/issuance/proposals`), **Policy Admin** (`/policy-admin/clients` and `/policy-admin/policies` sub-items). Lucide icons: FileText, ShieldCheck, Building2.
+
+**Verify:**
+- `npx tsc --noEmit` clean (modulo stale `.next/` cache from a previous branch).
+- `npm run build` succeeds.
+- Test failures: 2 files (`DataTable.unit`, `FormContainer.unit`) — confirmed pre-existing on the prior commit via stash dance; not introduced by this batch. Filed as part of pre-existing tech debt; will revisit in Batch 3 polish.
+
+**Next:** Phase 1 — types, mocks, API clients, widgets.

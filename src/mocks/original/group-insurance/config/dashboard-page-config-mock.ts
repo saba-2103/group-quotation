@@ -19,7 +19,7 @@ export const groupInsuranceDashboardPageConfig: DashboardPageConfig = {
       widgets: [
         {
           widgetType: "metric",
-          id: "pending-quotations",
+          id: "pending-quotes",
           label: "Pending Quotations",
           priority: 1,
           icon: "FileText",
@@ -82,32 +82,32 @@ export const groupInsuranceDashboardPageConfig: DashboardPageConfig = {
           layout: "grid",
           links: [
             {
-              id: "group-quotation-card",
-              label: "Group Quotation",
+              id: "quotation-card",
+              label: "Quotation",
               type: "card",
               icon: "FileText",
-              description: "Manage group insurance quotations",
+              description: "Build and manage GTL quotes",
               action: {
-                id: "group-quotation-action",
-                label: "View Quotations",
+                id: "view-quotation-action",
+                label: "View Quotes",
                 intent: "view",
                 actionProps: {
-                  route: "/quotations?status=pending"
+                  route: "/quotation"
                 }
               }
             },
             {
-              id: "group-new-business-card",
-              label: "Group New Business",
+              id: "issuance-card",
+              label: "Issuance",
               type: "card",
-              icon: "PlusCircle",
-              description: "Process new policy applications",
+              icon: "ShieldCheck",
+              description: "Process proposals into policies",
               action: {
-                id: "new-business-action",
-                label: "View New Business",
+                id: "view-issuance-action",
+                label: "View Proposals",
                 intent: "view",
                 actionProps: {
-                  route: "/quotations?status=new-business"
+                  route: "/issuance/proposals"
                 }
               }
             },
@@ -239,16 +239,16 @@ export const groupInsuranceDashboardPageConfig: DashboardPageConfig = {
           layout: "grid",
           links: [
             {
-              id: "new-quotation-action",
-              label: "New Quotation",
+              id: "new-quote-action",
+              label: "New Quote",
               type: "link",
               icon: "Plus",
               action: {
-                id: "create-quotation",
-                label: "New Quotation",
-                intent: "create",
+                id: "navigate-to-quotation",
+                label: "New Quote",
+                intent: "view",
                 actionProps: {
-                  formId: "create-quotation-form"
+                  route: "/quotation"
                 }
               }
             },

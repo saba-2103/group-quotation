@@ -22,7 +22,7 @@
             },
             "children": [
                 {
-                    "id": "metric-pending-quotations",
+                    "id": "metric-pending-quotes",
                     "type": "metric-card",
                     "dataSource": {
                         "api": {
@@ -31,7 +31,7 @@
                         }
                     },
                     "props": {
-                        "label": "Pending Quotations",
+                        "label": "Pending Quotes",
                         "icon": "FileText",
                         "format": "number",
                         "priority": 1
@@ -105,25 +105,36 @@
                         "layout": "grid",
                         "links": [
                             {
-                                "id": "group-quotation-card",
-                                "label": "Group Quotation",
+                                "id": "quotation-card",
+                                "label": "Quotation",
                                 "type": "card",
                                 "icon": "FileText",
-                                "description": "Manage group insurance quotations",
+                                "description": "Build and manage GTL quotes",
                                 "action": {
                                     "type": "navigate",
-                                    "target": "/quotations?status=pending"
+                                    "target": "/quotation"
                                 }
                             },
                             {
-                                "id": "group-new-business-card",
-                                "label": "Group New Business",
+                                "id": "issuance-card",
+                                "label": "Issuance",
                                 "type": "card",
-                                "icon": "PlusCircle",
-                                "description": "Process new policy applications",
+                                "icon": "ShieldCheck",
+                                "description": "Process proposals into policies",
                                 "action": {
                                     "type": "navigate",
-                                    "target": "/quotations?status=new-business"
+                                    "target": "/issuance/proposals"
+                                }
+                            },
+                            {
+                                "id": "policy-admin-card",
+                                "label": "Policy Admin",
+                                "type": "card",
+                                "icon": "Building2",
+                                "description": "View clients, policies and members",
+                                "action": {
+                                    "type": "navigate",
+                                    "target": "/policy-admin/policies"
                                 }
                             },
                             {
@@ -259,13 +270,13 @@
                         "layout": "grid",
                         "links": [
                             {
-                                "id": "new-quotation-action",
-                                "label": "New Quotation",
+                                "id": "new-quote-action",
+                                "label": "New Quote",
                                 "type": "link",
                                 "icon": "Plus",
                                 "action": {
-                                    "type": "open-modal",
-                                    "target": "create-quotation-form"
+                                    "type": "navigate",
+                                    "target": "/quotation"
                                 }
                             },
                             {

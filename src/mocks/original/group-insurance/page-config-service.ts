@@ -1,15 +1,15 @@
 import type { PageConfig } from "@shared/types";
-import { groupInsuranceDashboardPageConfig, quotationDetailsPageConfig, quotationDetailsEditPageConfig, quotationsListPageConfig } from "./config";
+import { groupInsuranceDashboardPageConfig } from "./config";
 
 // ============================================
 // Group Insurance Page Config Registry
 // ============================================
+// Legacy quotation entries (`quotations`, `quotations-detail`,
+// `quotations-detail-edit`) were removed in the Phase 0 teardown of the
+// legacy module. New Group PAS module pages register here as they ship.
 
 const groupInsurancePageConfigs: Record<string, PageConfig> = {
   dashboard: groupInsuranceDashboardPageConfig,
-  quotations: quotationsListPageConfig,
-  "quotations-detail": quotationDetailsPageConfig,
-  "quotations-detail-edit": quotationDetailsEditPageConfig,
 };
 
 // ============================================

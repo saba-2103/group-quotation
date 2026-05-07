@@ -9,12 +9,6 @@ export {
   dashboardPageConfig,
 } from "./auto-claims/config";
 
-// Re-export group insurance configs
-export {
-  quotationDetailsPageConfig,
-  quotationsListPageConfig,
-} from "./group-insurance/config";
-
 // Re-export app-specific page config services
 export { getAutoClaimsPageConfigMock } from "./auto-claims/page-config-service";
 export { getGroupInsurancePageConfigMock } from "./group-insurance/page-config-service";

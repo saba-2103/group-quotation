@@ -214,29 +214,39 @@ export const groupInsuranceAppConfig: AppConfig = {
         ]
       },
       {
-        id: "group-quotation",
-        label: "Group Quotation",
-        icon: "FileStack",
+        id: "quotation",
+        label: "Quotation",
+        url: "/quotation",
+        icon: "FileText",
         subMenuItems: [
           {
-            id: "pending-quotations",
-            label: "Work with pending quotations",
-            url: "/quotations?status=pending"
+            // GCL placeholder — out of V1 scope; see context/ARCH_TRANSITION.md "GCL endpoints — placeholder only".
+            // No `url` keeps it non-clickable in the existing AppSidebar render.
+            id: "member-quotes-gcl",
+            label: "Member Quotes (GCL) — coming soon"
+          }
+        ]
+      },
+      {
+        id: "issuance",
+        label: "Issuance",
+        url: "/issuance/proposals",
+        icon: "ShieldCheck"
+      },
+      {
+        id: "policy-admin",
+        label: "Policy Admin",
+        icon: "Building2",
+        subMenuItems: [
+          {
+            id: "policy-admin-clients",
+            label: "Clients",
+            url: "/policy-admin/clients"
           },
           {
-            id: "accepted-listing",
-            label: "Accepted quote listing",
-            url: "/quotations?status=accepted"
-          },
-          {
-            id: "no-update-cases",
-            label: "Update 'not-taken-up' cases",
-            url: "/quotations?status=not-taken-up"
-          },
-          {
-            id: "quotation-listing",
-            label: "Quotation listing",
-            url: "/quotations"
+            id: "policy-admin-policies",
+            label: "Policies",
+            url: "/policy-admin/policies"
           }
         ]
       },
