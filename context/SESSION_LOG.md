@@ -251,3 +251,33 @@ Decisions baked in:
 - `npx tsc --noEmit` clean (exit 0). No callers yet, so this just guarantees the types compile in isolation; they'll get exercised by Tasks 1.2 (API clients) and 1.5 (fixtures).
 
 **Next:** Task 1.5 — Mock fixtures (per the order locked at the previous handoff: 1.1 → 1.5 → 1.4 → 1.2 → 1.9 → 1.3 → 1.8). Skip 1.6 (PresignedUploader) and 1.7 (useEnum) per V1 demo cuts D7/D8.
+
+### 2026-05-07 (continued) — Task 1.5 — Mock fixtures — DONE
+
+Created `src/mocks/group-pas/` typed against the Task 1.1 interfaces. The legacy mock pattern at `src/mocks/original/group-insurance/data/` was deleted during Phase 0 (Task 0.1), so this batch establishes the new layout. Each fixture file exports typed arrays + a derived summary array; the `src/mocks/group-pas/index.ts` barrel re-exports them so Task 1.4 mock route handlers can pull from a single import.
+
+UI-overlay state: `awaitingApproval` is added on the Quote fixtures as a non-DSL mock-only flag via `MockQuote = Quote & { awaitingApproval?: boolean }` — it is purely a UI-layer demo affordance for the role-switcher per CORE_MEMORY scope-locks.
+
+Also fixed a Phase 0 stale stub: `src/mocks/original/group-insurance/index.ts` still re-exported `./data` (deleted in Task 0.1). Only `app/api/config/app/route.ts` imported the deeper file directly, so the broken barrel never tripped tsc — but it would have bitten the next caller. Removed the stale re-export.
+
+**Coverage notes:**
+- `quotes.ts` — 10 quotes covering all 8 `QuoteStatus` values; one (QTE-2026-0002) flagged `awaitingApproval: true` for the maker-checker demo. `QUOTE_SUMMARIES` derived from the long-form list so list endpoints stay in sync.
+- `proposals.ts` — 5 proposals: POLICY_CREATED (with policyNumber), FINALIZED, SUBMITTED, DRAFT, CANCELLED. Plan + premium carried verbatim from the parent Quote (W2 step 1 contract).
+- `policy-members.ts` — 20 PolicyMembers covering every DSL state: CREATED, PRICED, MAF_PENDING, MAF_CONFIRMED, CLASSIFYING, APPROVED, REPAIR_PENDING (with classification errors on PMB-0007 + PMB-0020), REFERRED_TO_UW, REJECTED, SENT_FOR_ISSUANCE, ADDED, ARCHIVED. Plan task wording said "REVIEW_PENDING" loosely — the canonical DSL state is REFERRED_TO_UW.
+- `census.ts` — 2 submissions: CSB-0001 INGESTED with mixed-status rows (ACCEPTED / INGESTED / REJECTED); CSB-0002 COMPLETED with all rows accepted.
+- `clients.ts` — 5 clients, all ACTIVE per ClientState MVP single state.
+- `policies.ts` — 5 policies covering CREATED, PENDING (`AWAITING_MIN_MEMBERS` and `AWAITING_COMPLIANCE`), ACTIVE, CANCELLED.
+- `members.ts` — 15 members:
+  - PENDING samples covering every `MemberPendingReason` (PENDING_FLOAT_RESERVATION, PENDING_APPROVAL, PENDING_POLICY_ACTIVATION).
+  - 4 ACTIVE samples (with `floatReservationId` set per MemberEnrollmentFlow).
+  - VOID samples covering every `MemberVoidReason` (FLOAT_UNAVAILABLE, APPROVAL_REJECTED, POLICY_CANCELLED, WITHDRAWN_BY_PROPOSER).
+  - 1 CANCELLED with a free-text `cancellationReason` (MEM-0013).
+  - `MEMBER_SUMMARIES` carries `pendingReason` so the policy → members tab can render reason badges inline (Task 3.3 requirement).
+
+**ID conventions:** quotes `QTE-YYYY-NNNN`, proposals `PRO-YYYY-NNNN`, policies `POL-YYYY-NNNN`, policy-members `PMB-NNNN`, members `MEM-NNNN`, clients `CLI-NNNN`, plans `PLAN-GTL-NNN`, census submissions `CSB-NNNN`. Cross-refs preserved (e.g. PRO-2026-0001 → QTE-2026-0006 → CLI-0005 → POL-2026-0001).
+
+**Files created:** `src/mocks/group-pas/{quotation/quotes,issuance/proposals,issuance/policy-members,issuance/census,policy-admin/clients,policy-admin/policies,policy-admin/members,index}.ts`. **Files touched:** `src/mocks/original/group-insurance/index.ts` (removed dangling `./data` re-export).
+
+**Verify:** `npx tsc --noEmit` clean (exit 0). Fixtures will be exercised by Task 1.4 mock routes next.
+
+**Next:** Task 1.4 — Mock API route handlers (catch-all per module).
