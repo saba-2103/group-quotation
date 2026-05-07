@@ -223,3 +223,31 @@ State at handoff:
 - Test failures pre-exist: `DataTable.unit`, `FormContainer.unit`. Will revisit in Batch 3 polish.
 
 Resume entry point: read `context/HANDOFF.md` first. It links to CORE_MEMORY, this log, and the V1 plan with the demo execution strategy section.
+
+### 2026-05-07 (continued) — Task 1.1 — TypeScript domain types — DONE
+
+Picked up Batch 1 / Phase 1 in a fresh thread per the previous handoff.
+
+Created `src/types/group-pas/{common,quotation,issuance,policy-admin,roles,index}.ts` from the DSL specs in `docs/spec/`. Source of truth is DSL (per CORE_MEMORY precedence).
+
+Decisions baked in:
+- `Money = { amount: number; currency: 'INR' | 'USD' }` per `CommonData.data`.
+- DSL optional `?` → TS `?:`. `list<X>` → `X[]`. `date` → `ISODate` (string alias). `datetime` → `ISODateTime`.
+- Domain entities use strict enum unions (e.g. `Quote.status: QuoteStatus`); wire DTOs keep loose `string` for the fields the DSL DTOs declare as `string`. Mappers in Task 1.2 will narrow at the API-client boundary.
+- DTO `*Json` string fields (e.g. `plansJson`, `aggregateCensusJson`, `byPlanJson`) carry serialized payloads. Modelled as `string` here; Task 1.2 mappers will parse to typed `Plan[]` / `AggregateCensus` / etc.
+- `ClassificationLane` aliased to DSL `UwLane = 'STP' | 'REPAIR' | 'REVIEW' | 'REJECT'` per Task 1.1 wording in the plan.
+- PAM `MemberSummaryDto.pendingReason?: string` is optional per the latest backend additions noted in HANDOFF; PAM `MemberDto` carries `pendingReason / voidReason / cancellationReason` as required strings (DSL declares them non-optional but they'll be empty when the entity isn't in that state — same pattern as existing `archivedReason` etc.).
+- Roles per scope-lock: `Role = 'maker' | 'checker' | 'ops' | 'viewer'`. `RoleContext` carries `currentRole` plus reserved `userId` / `displayName` slots so post-V1 auth can fill them without changing call sites.
+
+**Files created:**
+- `src/types/group-pas/common.ts` — Money, AmountFormula, Plan(+children), AggregateCensus, QuotePremium, MemberPremium, MemberData, file-flow DTOs.
+- `src/types/group-pas/quotation.ts` — Quote, MemberQuote, all enums (QuoteStatus etc.), CensusFileFormat, QuoteDto/QuoteSummaryDto/QuotePlanDto/EstimatedPremiumDto/MemberQuoteDto.
+- `src/types/group-pas/issuance.ts` — Proposal, PolicyMember, CensusSubmission(+Row), enums (ProposalState, PolicyMemberState, UwLane, CensusSubmission*), value objects (ClassifyMemberResult, UwDecisionResult, MemberRepairCorrections), all DTOs.
+- `src/types/group-pas/policy-admin.ts` — Client, Policy, Member, ClientRegistrationData, MemberEnrollmentData, PolicyPlan*, all enums (PolicyState, MemberState, PolicyPendingReason, MemberPendingReason, MemberVoidReason, ClientState, CommunicationPreference, FloatReservationStatus), workflow signal payloads, all DTOs (incl. ReasonCount + PolicyPendingBreakdownDto).
+- `src/types/group-pas/roles.ts` — Role, RoleContext.
+- `src/types/group-pas/index.ts` — barrel re-export.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0). No callers yet, so this just guarantees the types compile in isolation; they'll get exercised by Tasks 1.2 (API clients) and 1.5 (fixtures).
+
+**Next:** Task 1.5 — Mock fixtures (per the order locked at the previous handoff: 1.1 → 1.5 → 1.4 → 1.2 → 1.9 → 1.3 → 1.8). Skip 1.6 (PresignedUploader) and 1.7 (useEnum) per V1 demo cuts D7/D8.
