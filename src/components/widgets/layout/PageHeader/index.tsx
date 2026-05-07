@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 import { WidgetConfig } from '@/types/widget';
 import { cn } from '@/lib/utils';
 import { ActionRenderer } from '../../controls/ActionRenderer';
@@ -13,6 +15,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Badge, BadgeProps } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ErrorBanner } from '../../items/ErrorBanner';
 
 interface ValidAction {
@@ -35,6 +38,10 @@ interface PageHeaderConfig {
     tranStatus?: TranStatus;
     backendErrors?: { error_code: string; error_desc: string }[];
     className?: string;
+    // Optional back-link; renders a compact "Back" button before the title.
+    // Use a relative URL (e.g. "/quotation") so router prefetching works.
+    backHref?: string;
+    backLabel?: string;
 }
 
 export const PageHeader: React.FC<{ config: WidgetConfig }> = ({ config }) => {
@@ -48,6 +55,8 @@ export const PageHeader: React.FC<{ config: WidgetConfig }> = ({ config }) => {
         tranStatus,
         backendErrors = [],
         className,
+        backHref,
+        backLabel,
     } = (config.props ?? {}) as PageHeaderConfig;
 
     const [screenAction, setScreenAction] = useState(validActions[0]?.code ?? '');
@@ -64,6 +73,14 @@ export const PageHeader: React.FC<{ config: WidgetConfig }> = ({ config }) => {
             )}
 
             <header className="flex flex-col gap-2">
+                {backHref && (
+                    <Button asChild variant="ghost" size="sm" className="self-start -ml-2 text-muted-foreground hover:text-foreground">
+                        <Link href={backHref}>
+                            <ArrowLeft className="size-4" />
+                            {backLabel ?? 'Back'}
+                        </Link>
+                    </Button>
+                )}
                 <div className="flex flex-wrap items-center justify-between gap-3">
 
                     <div className="flex items-center gap-3">

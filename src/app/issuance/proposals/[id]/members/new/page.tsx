@@ -25,6 +25,8 @@ export default async function ProposalAddMemberPage(props: {
         id: 'add-pm-header',
         type: 'page-header',
         props: {
+          backHref: `/issuance/proposals/${id}`,
+          backLabel: 'Back to proposal',
           title: `Add member to proposal ${id}`,
           description:
             "Single-step form. The proposal's policy must already exist (POLICY_CREATED state) for the add to succeed.",

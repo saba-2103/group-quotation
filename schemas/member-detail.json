@@ -7,6 +7,8 @@
       "id": "member-detail-header",
       "type": "page-header",
       "props": {
+        "backHref": "/policy-admin/policies",
+        "backLabel": "Back to policies",
         "title": "Member {{id}}",
         "description": "PAM Member — final read of identity, plan, premium, reservations, and reason banners."
       }

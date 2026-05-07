@@ -7,6 +7,8 @@
       "id": "policy-detail-header",
       "type": "page-header",
       "props": {
+        "backHref": "/policy-admin/policies",
+        "backLabel": "All policies",
         "title": "Policy {{id}}",
         "description": "PAM master policy. Members + activation watch live below."
       }

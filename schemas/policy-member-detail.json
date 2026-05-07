@@ -7,6 +7,8 @@
       "id": "pm-header",
       "type": "page-header",
       "props": {
+        "backHref": "/issuance/proposals/{{id}}",
+        "backLabel": "Back to proposal",
         "title": "PolicyMember {{memberId}}",
         "description": "Workflow-driven detail. Available actions depend on the lifecycle state and your active role."
       }

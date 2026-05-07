@@ -7,6 +7,8 @@
       "id": "quote-detail-header",
       "type": "page-header",
       "props": {
+        "backHref": "/quotation",
+        "backLabel": "All quotes",
         "title": "Quote {{id}}",
         "description": "State-aware quote detail. Available actions depend on the current state and your active role."
       }

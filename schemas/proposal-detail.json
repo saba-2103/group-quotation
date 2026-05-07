@@ -7,6 +7,8 @@
       "id": "proposal-detail-header",
       "type": "page-header",
       "props": {
+        "backHref": "/issuance/proposals",
+        "backLabel": "All proposals",
         "title": "Proposal {{id}}",
         "description": "Operate the Quote → Policy hand-off here. Submit locks the proposal; Finalize triggers Policy creation."
       }
