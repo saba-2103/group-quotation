@@ -569,3 +569,52 @@ Issuance (Phase 4):
 **Skipped per V1 cuts:** 4.5 (D4 census flow), 5.2 (D5 ops queue index), 5.4 (D6 critical-path tests).
 
 **Batch 3 complete. Demo build done.**
+
+### 2026-05-07 (continued) — Post-Batch-3 polish + demo prep (commit-log catch-up)
+
+This entry catches the running log up to actual repo state. Twelve commits landed after the "Batch 3 complete" entry above without being logged at the time. Captured here for resumption fidelity. Source: `git log 6dccea9..HEAD`.
+
+**UI polish (`docs/V1_DEMO_ISSUES.md` Pass 1 + selected Pass 2):**
+
+- `5cd9968` — motion + depth pass per Keystone "Elegance" principle.
+- `a88e3c6` — resolved hardcoded IDs + cross-module deep-link gaps (already-fixed list at the bottom of `docs/V1_DEMO_ISSUES.md`).
+- `4ead472` (P1.1) — ActionBar hides role-gated actions, keeps state-gated visible-but-disabled per design deck v2.
+- `91c2909` (P1.2) — back button on every detail page (`page-header` extended with `backHref`).
+- `97a8caa` (P1.3–P1.9) — `KeyValueGrid` nested accessors + raw-JSON cleanup across PAM Member detail, Quote/Proposal overview, Quote census, PolicyMember detail; GCL placeholder tab swapped to a clean empty-state widget.
+- `356f995` (P2.2) — DTOs enriched with `clientName` so detail headers surface labels instead of raw IDs.
+- `12a91fe` — ActionBar refinement: Checker hides pre-submit actions (Maker-only), Maker retains Withdraw while under approval lock.
+
+**Demo replay infra:**
+
+- `8b7191c` — new `POST /api/dev/reset` endpoint that re-clones fixtures into the in-memory store so the 5.3 walkthrough can replay from clean state without a server restart.
+
+**Demo-prep docs (untracked):**
+
+- `docs/Demo_Script_Day_in_the_Life.md` — minute-by-minute talk track for the live walkthrough.
+- `docs/Demo_Prep_Business_Context.md` (committed in `85edb4d`/`a5dc8d1`/`156df2c`/`b2fec97`) — insurance-101 + glossary + finance/regulatory cheatsheet for the demoer.
+- `docs/Keystone_UI_Design_Principles.pptx` + `_v2.pptx` + speaker notes (`*_Speaker_Notes.md`) — design-principles deck.
+- `docs/generate_slides.js` + `generate_slides_v2.js` — pptx generator scripts.
+
+**Other untracked items not part of demo-prep:**
+
+- `docs/archV1/12-ARCHITECTURE-FREEZE-DECISIONS.md` — companion doc for the older `arch_v0` → `archV1` review captured in `ARCH_REVIEW_SCRATCH.md` (also untracked). Both are scratch/review notes from a parallel branch and unrelated to the Group PAS V1 demo build.
+- `backend/` — FastAPI scaffold (alembic + app/{core,routers,tests} + venv + .db) with no source files currently checked in (only `__pycache__/`). Likely the residue of an earlier `/build-backend` exploration on a different branch; not driving any current keystone-ui work and not referenced from the V1 plan.
+- `test-results/` — empty directory; safe to ignore.
+
+**Unstaged file:** `context/CORE_MEMORY.md` — adds the "Two distinct rules on rework" build-approach bullets (frontend builds to real-backend contract; mock-backend simulations get deferred). Matches the user's standing feedback memory ("Build to expected scope") and ARCH_TRANSITION's deferral rationale. Not yet committed; leaving it staged-but-unmodified until a logical commit window opens.
+
+**V1_DEMO_ISSUES outstanding (per `docs/V1_DEMO_ISSUES.md`):**
+
+- Pass 1: all P1.1–P1.9 done.
+- Pass 2: P2.2 done. **Open:** P2.1 (cancel/reject/archive use a hardcoded reason — wants a confirm-with-input dialog; needs `confirm` action shape extension), P2.3 (Quote → Proposal "open created proposal" navigates to list, not specific proposal — needs chained action handler), P2.4 (no breadcrumbs; back-button considered sufficient for V1), P2.5 (Pricing tab "still working…" banner not implemented), P2.6 (filter-bar empty-state reset on chip clear — verify in walkthrough).
+- Pass 3 (D1–D12) post-demo backlog — untouched, as planned.
+
+**Demo target unchanged:** internal demo 2026-05-08 (Friday, tomorrow). Task 5.3 (end-to-end walkthrough) still gated on user session — see HANDOFF Active Workstreams.
+
+**No new code changes in this session.** Read-only reconciliation pass.
+
+**Next:** waiting on user direction. Plausible candidates surfaced from repo state, in rough priority order:
+1. Run task 5.3 demo walkthrough together (gated on user attendance).
+2. Burn down remaining V1_DEMO_ISSUES Pass 2 (P2.1 confirm-with-input is the highest-impact open item before tomorrow).
+3. Decide what to do with the unstaged `CORE_MEMORY.md` rework rules and the untracked design-principles deck / `Demo_Script_Day_in_the_Life.md` (commit, leave, or discard).
+4. Triage `backend/` and `ARCH_REVIEW_SCRATCH.md` — both look like residue from parallel work; confirm with user whether to gitignore, archive, or pursue.

@@ -22,11 +22,16 @@ This is not optional — stale context causes other AIs to redo or contradict co
 
 ## Build approach
 
+- **Two distinct rules on rework — apply both.** Recorded 2026-05-07.
+  1. **Frontend:** build to the expected real-backend contract, not a thin POC. Avoids frontend rework when real backend lands.
+  2. **Mock backend:** don't build mock logic that real backend will replace. Mock-route simulations of significant backend behavior (file storage, workflow engines, validation pipelines, async flows) are throwaway — defer until real backend is known. Frontend can still be written against the contract; it just won't have a working mock to exercise.
+- When evaluating a deferred item, separate **frontend cost** from **mock-backend cost**. Build now if frontend cost > 0 and mock cost is small/none. Defer if mock cost is significant. Skip entirely if the item is pure mock simulation (real backend will do it for real, e.g. auto-activation, the maker-checker overlay).
 - Front-load foundational work when it meaningfully reduces downstream rework.
 - Favor future-compatible shared primitives and workflow-complete building blocks over the narrowest possible first slice.
 - Accept moderate early scope expansion when it improves long-term execution speed, surfaces integration issues earlier, and gives later proposals a cleaner base.
 - Do not silently trim a feature back to a smaller demo if that creates likely follow-on churn; surface the tradeoff and bias toward the more reusable path.
 - Every UI build should include a design preview checkpoint before implementation begins.
+- Still flag cost when proposing scope ("this is 2 days vs 4 hours") so the user can choose informed.
 
 ## Schema & widget architecture
 
