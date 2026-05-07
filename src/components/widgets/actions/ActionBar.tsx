@@ -154,7 +154,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
   return (
     <TooltipProvider delayDuration={150}>
       <div
-        className="flex flex-wrap items-center gap-2"
+        className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-card/40 p-3 shadow-sm transition-all duration-200 hover:shadow-md animate-in fade-in slide-in-from-bottom-2 duration-300"
         role="toolbar"
         aria-label="Entity actions"
       >

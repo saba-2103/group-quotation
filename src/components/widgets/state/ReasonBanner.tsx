@@ -95,11 +95,17 @@ export const ReasonBanner: React.FC<ReasonBannerProps> = ({ config }) => {
     <div
       role="status"
       className={cn(
-        'flex items-start gap-3 rounded-md border px-4 py-3 text-sm',
+        'flex items-start gap-3 rounded-md border px-4 py-3 text-sm shadow-sm',
+        'animate-in fade-in slide-in-from-top-1 duration-300',
         variantClass,
       )}
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+      <Icon
+        className={cn(
+          'mt-0.5 h-4 w-4 shrink-0',
+          meta.variant === 'warning' && 'animate-pulse',
+        )}
+      />
       <div className="flex-1">
         <p className="font-medium leading-tight">{meta.label}</p>
       </div>

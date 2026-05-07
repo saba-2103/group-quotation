@@ -44,7 +44,9 @@ export default function RootLayout({
 									<div className="absolute top-4 right-6 z-50">
 										<RoleSwitcher />
 									</div>
-									{children}
+									<div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+										{children}
+									</div>
 								</main>
 							</SidebarProvider>
 						</AppContextProvider>

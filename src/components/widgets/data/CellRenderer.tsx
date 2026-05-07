@@ -25,7 +25,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
         return (
           <button
             type="button"
-            className="text-primary hover:underline font-medium"
+            className="text-primary font-medium underline-offset-4 transition-all duration-150 hover:underline hover:text-primary/80"
             onClick={() => onLinkClick(column.linkRoute!, rowId)}
           >
             {String(value)}
@@ -54,9 +54,18 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
     }
 
     // Boolean → small "Awaiting approval" warning chip when truthy.
+    // The pulse on the dot is the cue for Checkers — "act on this."
     case "awaiting-approval": {
       if (!value) return <span className="text-muted-foreground">—</span>;
-      return <Badge variant="warning">Awaiting approval</Badge>;
+      return (
+        <Badge variant="warning" className="gap-1.5">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-500 opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-yellow-500" />
+          </span>
+          Awaiting approval
+        </Badge>
+      );
     }
 
     case "number":
