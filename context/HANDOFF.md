@@ -75,6 +75,7 @@ Read [context/SESSION_LOG.md](SESSION_LOG.md) "End-of-thread handoff snapshot" e
 - **Mock mode** (default — `.env.local` not set): rich fixture data, full happy path works through the real action set. Pricing tab is honest (button rendered disabled with tooltip — backend Rule Engine not wired); approval-lock fiction is gone; Q→P handoff is sync. **Recommended for the demo.**
 - **Proxy mode** (`GROUP_PAS_BACKEND_URL=https://group-pas-dev.anairacloud.com` in `.env.local`): real backend wiring proven. Same honesty surface — disabled-with-tooltip explains everything backend can't do yet.
 - Switch between modes by editing `.env.local` (1 line, restart `npm run dev`).
+- **Seeding the dev backend with demo data:** `npm run seed:backend` runs [`scripts/seed-backend.ts`](../scripts/seed-backend.ts) — creates 6 clients, 9 fully-decorated DRAFT quotes, 5 PAM policies (one CANCELLED), and 20 PAM members against `https://group-pas-dev.anairacloud.com`. Quotes can't advance past DRAFT (backend has no premium-set REST endpoint); seed comments document the constraint inline. Idempotent across runs (timestamp-suffixed reg numbers / proposalIds), append-only (no delete endpoint exposed). Logs each request/response under `/tmp/keystone-seed/<run>/` for debugging.
 
 When picking up a task, follow the per-task **Context to load / Output / Done when** structure in the plan doc — it points to the exact spec files, templates, and acceptance criteria.
 

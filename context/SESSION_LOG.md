@@ -812,3 +812,36 @@ This is a **stronger** version of the existing build-to-expected-scope rule. Whe
 3. Cloudflare deploy decision — still open.
 4. Pass-2 V1_DEMO_ISSUES open items: **P2.1 confirm-with-input dialog** is the highest-value remaining; P2.5 (still-working banner) is moot now that the polling story is gone; P2.6 (filter-bar reset) verify in walkthrough.
 5. Optional polish: `useClientNames()` resolver for proxy-mode list pages.
+
+### 2026-05-07 (continued) — Backend seed script
+
+User wanted scripted seeding so proxy-mode demos aren't stuck with the 3-Acme-Corp / 2-DRAFT-quote skeleton the dev environment ships with. Wrote `scripts/seed-backend.ts` (TypeScript via tsx).
+
+**Constraints surfaced while writing the script (probed live against the dev backend):**
+
+- `POST /quotes` returns a DRAFT quote shell. Decorating it requires a strict order: PUT `/policy-detail` and PUT `/census-file-format` first; only then POST `/plans` (PUT `/plans/:planNo` updates an existing plan and returns "Plan not found" if used to add); finally PUT `/aggregate-census` and PUT `/member-to-plan-mapping`. Wrong order returns confusing "Census file format must be set before submitting" errors on the plan/mapping endpoints.
+- `POST /quotes/:id/submit` requires premium ("Estimated premium must be calculated before submitting"). The Rule Engine has no listener (`requestPrice` Kafka emit is a no-op); `Quote.updatePremium()` is a domain method with **no REST endpoint**. **Net: no live quote can transition past DRAFT.** The seed leaves all 9 quotes in DRAFT and skips the submit/finalize chain. Same gap surfaced in UI as disabled-with-tooltip.
+- `POST /api/policy-admin/policies` works for direct PAM policy creation (used by backend's own scenarios.sh). Bypasses the Quote → Proposal → Policy workflow entirely. Required body fields: clientId, proposalId (synthetic ok — backend stores verbatim), policyType, dates, premium type, plans, estimatedPremium. Returns `{ policyId, policyNumber }`.
+- `POST /api/policy-admin/policies/:id/cancel` works with `{ reason }` body, returns 204.
+- `POST /api/policy-admin/policies/:id/members` works with the AddMember body shape from DSL. Returns `{ memberId, memberNumber }`. Members come back PENDING with no premium (Float Management stub), regardless of input — that's a backend stub gap, surfaced in mock fixtures the same way.
+- Activation workflow on dev backend: not observed firing for `activationThreshold: 1` policy with 8 members. Either Temporal worker isn't running on dev, or the workflow takes longer than the seed's runtime. Documented in script as "may auto-activate".
+
+**Seed shape (matches local mock fixtures `src/mocks/group-pas/`):**
+- 6 clients (Acme Industries / Brightline Tech / Caravel Logistics / Deltawave Solutions / Evergreen Foods / FinHealth — varied industries, mirrors `CLIENTS` mock).
+- 9 quotes, all DRAFT, fully decorated (plans, census-file-format, aggregate-census, member-to-plan-mapping, policy-detail). Spread across the 6 clients with varied plan/census shapes.
+- 5 PAM policies (1 low-threshold "active intent", 2 PENDING with thresholds 30/50, 1 CREATED, 1 immediately CANCELLED).
+- 20 PAM members spread across 3 of the 5 policies (deltawave-CREATED and brightline-CANCEL deliberately empty).
+
+**Run end-to-end against `https://group-pas-dev.anairacloud.com`:** all 40 entities created, all calls 200/201/204. Verified via `GET /quotes/list` (16 total = 5 pre-existing + 2 probe + 9 seeded), `GET /policies/list` (10 total = 5 pre-existing + 5 seeded incl. POL-010 CANCELLED), `GET /policies/<active>/members` (8 members on the active policy).
+
+**Idempotency:** timestamp-suffixed reg numbers (`ACME-{TS_SUFFIX}` etc.) and synthetic proposalIds, so re-runs add fresh entities without uniqueness collisions. Backend exposes no delete-client endpoint, so the seed is append-only — long-term cleanup needs a backend-side tenant flush or DB reset.
+
+**Logs:** every request/response written to `/tmp/keystone-seed/seed-<ISO-timestamp>/<NNN>-<label>.json` for debugging.
+
+**New dev dependency:** `tsx@^4.21.0` (added to `package.json`). New npm script: `seed:backend`.
+
+**Files touched:** `scripts/seed-backend.ts` (new, ~470 LOC), `package.json` + `package-lock.json` (tsx dep + script), `context/HANDOFF.md` (Demo posture section gains a seeding note), this log.
+
+**`tsc --noEmit`:** clean.
+
+**Next thread:** unchanged from earlier — demo walkthrough, backend questions, deploy decision, P2.1 dialog, useClientNames polish. Seed script means proxy-mode demo is now actually demo-able for the Quotation list and PAM modules; Issuance module stays sparse (no Proposals seeded since the only path is via finalized Quotes which we can't produce).
