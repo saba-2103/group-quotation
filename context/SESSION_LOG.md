@@ -440,3 +440,33 @@ Test plan: a Jest unit covering 3 sample states × 3 sample roles, asserting whi
 - `npx jest src/tests/unit/actions/ActionBar.unit.test.tsx` — 6/6 pass.
 
 **Next:** Task 1.8 — StateBadge + ReasonBanner widgets (simple presentational helpers consumed by every list/detail page).
+
+### 2026-05-07 (continued) — Task 1.8 — StateBadge + ReasonBanner — IN PROGRESS
+
+About to do: presentational widgets used by every list cell + detail header to render the entity state and any pending/void/cancellation reason. One canonical map (`state-map.ts`) keeps all label + colour pairs in one place so ActionBar tooltips and list cells share copy.
+
+Coverage matrix:
+- 5 entity types: quote, proposal, policyMember, policy, member.
+- All states from Task 1.1 enums (8/5/12/4/4 = 33 states total).
+- 3 enum reason groups (PolicyPendingReason × 2, MemberPendingReason × 3, MemberVoidReason × 4) + free-text `cancellationReason` (member only) + `Quote.awaitingApproval` UI overlay.
+
+Variant assignments follow a simple convention: terminal-success → `success`; in-progress → `info`; awaiting-something → `warning`; terminal-rejection/cancel → `destructive`; archived → `grey`. Existing Badge variants reused; no new design tokens.
+
+Test plan: snapshot-style test per entity asserting every enum value resolves to a non-empty label + a defined variant; one render test for the cancellation free-text passthrough.
+
+**Files created:**
+- `src/components/widgets/state/state-map.ts` — single source of truth. `getStateMeta(entity, state)` covers all 38 enum values across `quote / proposal / policyMember / policy / member / censusSubmission`; `getReasonMeta(group, value)` covers `policyPending`, `memberPending`, `memberVoid`, plus `memberCancellation` (free-text passthrough). `reasonGroupFor(entity, state, hasCancellationReason)` is the convenience the ReasonBanner uses to pick the right map without the schema spelling it out.
+- `src/components/widgets/state/StateBadge.tsx` — Badge wrapper supporting both schema-render mode (props on `config.props`) and direct-render mode (column-cell usage). `aria-label` carries the canonical label.
+- `src/components/widgets/state/ReasonBanner.tsx` — banner with icon + canonical copy. Reads live entity from `useWidgetState({ stateKey })` falling back to literal props. Returns `null` when no reason group applies.
+- `src/tests/unit/state/StateBadge.unit.test.tsx` — Jest unit asserting (a) every state in every entity yields non-empty label + defined variant; (b) unknown state falls back to `outline` variant; (c) every reason enum value resolves to copy that mentions the gating concept; (d) `memberCancellation` passes free text through verbatim; (e) StateBadge renders the right label in both prop modes; (f) ReasonBanner renders the canonical text for PENDING + the verbatim text for CANCELLED, and returns null when no reason applies.
+
+**Files touched:**
+- `src/components/registry/WidgetRegistry.tsx` — registered `"state-badge"` and `"reason-banner"`.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- `npx jest src/tests/unit/state/ src/tests/unit/actions/` — 15/15 pass (9 state + 6 ActionBar).
+
+**Batch 1 complete.** Phase 0 + Phase 1 demo subset done. The widget engine + all foundational primitives, mocks, clients, role + maker-checker plumbing, ActionBar, and StateBadge/ReasonBanner are all in place.
+
+**Next:** Batch 2 — Quote happy path. Tasks 2.1, 2.2, 2.3, 2.4.1 (editable) + 2.4.2/3/4 (read-only) + 2.4.5 (with poll) + 2.4.6 (placeholder). `/build-feature` reserved for the action-bar maker-checker overlay design point in this batch per the locked execution strategy.
