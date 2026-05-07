@@ -70,6 +70,11 @@ export interface BaseActionConfig {
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
     display?: "button" | "icon" | "menu-item";
     refreshKey?: string;
+    // When set, the action renders as visible-but-disabled with this tooltip,
+    // overriding state-gating. Used to surface backend gaps honestly (e.g.
+    // "Pricing engine not yet wired on backend") rather than mock-simulating
+    // a behavior the real backend can't deliver. Role gating still applies.
+    disabledTooltip?: string;
     props?: Record<string, any>;
 }
 

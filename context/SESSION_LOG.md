@@ -746,3 +746,69 @@ That question hasn't been sent yet (user task). Also outstanding:
 
 **Untouched untracked files** still on disk (same as previous handoff entry, no decision yet):
 - `ARCH_REVIEW_SCRATCH.md`, `backend/`, `docs/Demo_Script_Day_in_the_Life.md`, `docs/Keystone_UI_Design_Principles{,.v2}*.{pptx,md}`, `docs/archV1/12-ARCHITECTURE-FREEZE-DECISIONS.md`, `docs/generate_slides{,_v2}.js`, `test-results/`, `.env.local` (gitignored).
+
+### 2026-05-07 (continued) — New tighter mock rule: don't simulate backend-missing behavior
+
+User directive (this turn): "i dont want to mock functionality which are not there in the actual backend, much rather i would show a tooltip that says that backend does not have the functionality."
+
+This is a **stronger** version of the existing build-to-expected-scope rule. Where the prior rule said "don't build mock-route logic real backend will replace," the new rule says: when frontend has an affordance but real backend can't deliver the behavior at all (endpoint missing, throws, fires-and-forgets to no listener, no DSL concept), render the affordance **disabled with a tooltip explaining the gap** rather than mock-simulating the behavior. Honest > demo-pretty. Memory updated: [feedback_build_to_expected_scope.md](../.claude/projects/-Users-seriousblack-dev-anaira-sandbox-keystone-ui/memory/feedback_build_to_expected_scope.md) (rule #6 added).
+
+**Three targets confirmed by user:**
+
+1. **Quote pricing — `request-price` flow.** Backend Kafka event has no Rule Engine listener; mock auto-populates `premium`. Convert: action button visible-but-disabled with tooltip "Pricing engine not yet wired on backend"; drop premium-auto-populate timer; drop "still working" cadence simulator on Pricing tab; replace tab body with explanatory empty state.
+
+2. **Quote-level maker-checker approval-lock.** Backend has no Quote-level approval concept. Convert: approval-related actions (request-approval / approve / reject) visible-but-disabled with tooltip "Quote approval not yet wired on backend"; remove `awaitingApproval` UI-state, the `/awaiting-approval` mock endpoints, the lock overlay, and the `MOCK_ONLY_PATTERNS` carve-out for them. **Keep** role-switcher widget + role-aware action gating in schemas (that's real UX, not a fiction).
+
+3. **Quote → Proposal handoff polling.** Backend creates Proposal synchronously; mock fakes async with 4s timer + frontend polling. Convert: mock returns Proposal immediately on `POST /quotes/:id/finalize` (response includes `proposalId`); frontend stops polling `/proposals/by-quote/:id`; "Open created proposal" action navigates straight to the new id (resolves P2.3).
+
+**Not changing** (already honest): file upload (no UI exists), Plans/Census/Member-Mapping (read-only "Configured/Not configured"), Float reservation (already aligned), pending-breakdown (frontend-only derivation), PAM Member async (real on backend).
+
+**Demo impact** (1 day before demo, accepted by user):
+- Pricing tab story is reduced from "watch it compute" to "explanation of where pricing fits when backend wires Rule Engine."
+- Maker-checker narrative is reduced from "Maker prepares → Checker approves" to "role-adaptive UI with the approval handoff disabled (deck shows the future state).""
+- Quote → Proposal handoff is sharper (sync), no polling banner.
+
+**Plan for execution (this turn):**
+1. Audit current locations (mock routes, schemas, ActionBar/tooltip plumbing, overlay components, polling consumers).
+2. Convert #1 pricing → tooltip.
+3. Convert #2 maker-checker overlay → tooltip + scrub.
+4. Convert #3 Q→P → sync.
+5. Update tests, ARCH_TRANSITION entries, this log, HANDOFF.
+6. `tsc --noEmit` + jest + dev-server smoke against the changed routes.
+7. Commit.
+
+**Outcome (this turn):**
+
+- **New schema field** `disabledTooltip?: string` on `BaseActionConfig` (`src/types/widget.ts`). Set on a schema action → ActionBar renders the button visible-but-disabled with that tooltip, **overriding state-gating**. Role-gating still applies (so the right roles see the gap explanation). One mechanism, three uses today: pricing button, approval-flow buttons.
+- **Pricing tab (`schemas/tabs/quote/pricing.json`):** dropped `pollSchedule` + `stopWhen`; rewrote tab description to explain backend gap; `request-price` action now carries `disabledTooltip`. Mock route `POST /quotes/:id/request-price` is now a no-op (matches backend's Kafka-emit-no-listener). `QuotePremium` import dropped from the route file.
+- **Maker-checker overlay scrub:**
+  - `src/lib/maker-checker.ts` — deleted.
+  - `quote-detail.json` — removed `clear-approval` action; `send-for-approval` converted to api-mutation with `disabledTooltip`; `submit` added to maker's `roleActions`; `Approve & submit` label simplified to `Submit`. `entityType`/`entityId` props removed from both `quote-detail.json` and `proposal-detail.json` (no longer needed without the maker-checker code path).
+  - `src/lib/api-mock/group-pas/store.ts` — removed `approvalOverlay` map, `setApprovalOverlay`/`getApprovalOverlay` exports, `MockProposal.awaitingApproval` field; `MockProposal` is now an alias of `Proposal`.
+  - `src/lib/api-mock/group-pas/dtos.ts` — `awaitingApproval` dropped from `MockQuoteDto`/`MockProposalDto` shape and field copy.
+  - `src/lib/api-mock/group-pas/http.ts` — `MOCK_ONLY_PATTERNS` regex for `/awaiting-approval` removed; comment updated.
+  - `src/app/api/{quotation,issuance}/[[...path]]/route.ts` — `/awaiting-approval` POST/DELETE handlers removed; unused `setApprovalOverlay` import dropped.
+  - `src/mocks/group-pas/quotation/quotes.ts` — `MockQuote` is now an alias of `Quote`; `awaitingApproval: true` fixture flag on `QTE-2026-0002` removed.
+  - `src/components/widgets/data/CellRenderer.tsx` — `case "awaiting-approval"` removed (was unused after schema cleanup).
+  - `src/components/widgets/actions/ActionBar.tsx` — full strip of `awaitingApproval`/`SEND_FOR_APPROVAL_ID`/`CLEAR_APPROVAL_ID` codepath; new `disabledTooltip` rendering logic added.
+  - `src/components/widgets/role/RoleSwitcher.tsx` — Maker/Checker descriptions updated to drop the "submits for approval / approves submissions" wording (now "submits to advance state" / "sends to client, accepts, rejects, finalizes").
+  - `.env.example` — comment updated to drop `awaiting-approval` from the MOCK_ONLY list.
+- **Q→P handoff sync:** `autoCreateProposalFromQuote()` now returns the new (or existing, idempotent) `proposalId`; `quotes/:id/finalize` mock route returns `{ proposalId }` synchronously; `scheduleTransition` import dropped from the quotation route. Quote-detail finalize `successMessage` updated to "Quote finalized; Proposal created in Issuance."
+- **Tests:** `src/tests/unit/actions/ActionBar.unit.test.tsx` rewritten — 7 tests covering role-hide, disabledTooltip override, state-gated default tooltip, dispatch behaviour. `npx tsc --noEmit` clean (exit 0). `npx jest src/tests/unit/actions` 7/7 pass.
+- **Pre-existing test failures** in `DataTable.unit.test.tsx` and `FormContainer.unit.test.tsx` (56 failures total) confirmed to fail on clean HEAD too — not introduced by this change. Untouched.
+- **Docs:** `ARCH_TRANSITION.md` — "Async transition signalling" updated to remove pricing simulator reference; "Quote → Proposal handoff" rewritten as "synchronous"; "Maker-checker UI overlay" rewritten as "Maker-checker — role-adaptive UI only". `CORE_MEMORY.md` — V1 scope-locks + interim-assumptions sections updated to match. `HANDOFF.md` — Active Workstreams gains a "Honesty pass" row; demo posture updated to drop simulator/overlay mentions.
+
+**Memory updated:** `feedback_build_to_expected_scope.md` — rule #6 added: "If the frontend affordance exists but the real backend can't deliver the behavior yet, render disabled with a tooltip explaining the backend gap rather than building a mock simulator."
+
+**Files touched** (commit candidates):
+- Code/schemas: `src/types/widget.ts`, `src/components/widgets/actions/ActionBar.tsx`, `src/components/widgets/data/CellRenderer.tsx`, `src/components/widgets/role/RoleSwitcher.tsx`, `src/lib/api-mock/group-pas/{store,dtos,http}.ts`, `src/app/api/{quotation,issuance}/[[...path]]/route.ts`, `src/mocks/group-pas/quotation/quotes.ts`, `src/tests/unit/actions/ActionBar.unit.test.tsx`, `schemas/quote-detail.json`, `schemas/proposal-detail.json`, `schemas/tabs/quote/pricing.json`, `.env.example`. Deleted: `src/lib/maker-checker.ts`.
+- Docs: `context/HANDOFF.md`, `context/CORE_MEMORY.md`, `context/ARCH_TRANSITION.md`, this log.
+
+**Demo readiness check** (mock mode, default): unchanged — happy path still works through Quote → Proposal → Policy → PolicyMember. Pricing tab now correctly shows zero premium with a tooltip explaining why. Maker → submit → checker → finalize narrative still works (Maker can submit because backend doesn't actually distinguish, role-switcher adapts the rest of the buttons).
+
+**Next thread should pick up from:**
+1. Demo walkthrough Task 5.3 (still gated on user attendance).
+2. Two backend questions (full text in earlier "End-of-thread handoff snapshot" entry) — still unsent. The maker-checker question is now extra-relevant since we've explicitly chosen to wait on backend rather than fake the workflow.
+3. Cloudflare deploy decision — still open.
+4. Pass-2 V1_DEMO_ISSUES open items: **P2.1 confirm-with-input dialog** is the highest-value remaining; P2.5 (still-working banner) is moot now that the polling story is gone; P2.6 (filter-bar reset) verify in walkthrough.
+5. Optional polish: `useClientNames()` resolver for proxy-mode list pages.

@@ -51,10 +51,8 @@
         "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
       },
       "props": {
-        "entityType": "quote",
-        "entityId": "{{id}}",
         "stateActions": {
-          "DRAFT": ["edit", "send-for-approval", "submit", "clear-approval", "withdraw"],
+          "DRAFT": ["edit", "send-for-approval", "submit", "withdraw"],
           "SUBMITTED": ["send-to-client", "withdraw"],
           "SENT_TO_CLIENT": ["accept", "reject", "withdraw"],
           "ACCEPTED": ["finalize", "withdraw"],
@@ -64,8 +62,8 @@
           "EXPIRED": []
         },
         "roleActions": {
-          "maker": ["edit", "send-for-approval", "withdraw", "view-proposal"],
-          "checker": ["submit", "clear-approval", "send-to-client", "accept", "reject", "finalize", "withdraw", "view-proposal"],
+          "maker": ["edit", "send-for-approval", "submit", "withdraw", "view-proposal"],
+          "checker": ["submit", "send-to-client", "accept", "reject", "finalize", "withdraw", "view-proposal"],
           "ops": ["view-proposal"],
           "viewer": ["view-proposal"]
         },
@@ -74,21 +72,14 @@
             "id": "send-for-approval",
             "label": "Send for approval",
             "icon": "Send",
-            "type": "trigger-event",
-            "target": "send-for-approval",
-            "variant": "default"
-          },
-          {
-            "id": "clear-approval",
-            "label": "Clear approval",
-            "icon": "Undo2",
-            "type": "trigger-event",
-            "target": "clear-approval",
-            "variant": "outline"
+            "type": "api-mutation",
+            "api": { "endpoint": "/api/quotation/quotes/{{id}}/submit", "method": "POST" },
+            "variant": "default",
+            "disabledTooltip": "Quote-level approval workflow not yet wired on backend. The Maker → Checker handoff arrives when backend extends the PAM approval pattern to Quote (RequestQuoteApprovalCommand + central Approval module). Until then, use Submit directly."
           },
           {
             "id": "submit",
-            "label": "Approve & submit",
+            "label": "Submit",
             "icon": "Check",
             "type": "api-mutation",
             "refreshKey": "/api/quotation/quotes/{{id}}",
@@ -127,7 +118,7 @@
             "type": "api-mutation",
             "refreshKey": "/api/quotation/quotes/{{id}}",
             "api": { "endpoint": "/api/quotation/quotes/{{id}}/finalize", "method": "POST" },
-            "successMessage": "Quote finalized; Proposal will appear in Issuance shortly."
+            "successMessage": "Quote finalized; Proposal created in Issuance."
           },
           {
             "id": "withdraw",

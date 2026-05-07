@@ -59,11 +59,9 @@ export function notFound(path: string): NextResponse {
 // Routes we keep handling locally even in proxy mode. Backend doesn't
 // implement these — see context/ARCH_TRANSITION.md and SESSION_LOG.md
 // 2026-05-07 backend-investigation entry. When the backend ships any of
-// these (e.g. real Quote-level approval), drop the regex and let the
-// proxy take over.
+// these (e.g. a server-side pending-breakdown aggregate), drop the regex
+// and let the proxy take over.
 const MOCK_ONLY_PATTERNS: RegExp[] = [
-  // UI-only maker-checker overlay (Quote + Proposal).
-  /\/awaiting-approval$/,
   // Client-derived breakdown — V1 interim assumption #5; backend has no equiv.
   /\/pending-breakdown$/,
   // Proposal-scoped member shortcuts; backend uses /policies/:id/members.

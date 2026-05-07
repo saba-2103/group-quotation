@@ -20,14 +20,11 @@ import {
 } from '@/lib/api-mock/group-pas/http';
 import {
   nextId,
-  scheduleTransition,
-  setApprovalOverlay,
   store,
 } from '@/lib/api-mock/group-pas/store';
 import type {
   AggregateCensus,
   Plan,
-  QuotePremium,
 } from '@/types/group-pas/common';
 import type {
   CensusFileFormat,
@@ -42,16 +39,19 @@ function findQuote(id: string) {
 }
 
 // Auto-creates a Proposal entry when a Quote is finalized (mirrors the W2
-// trigger documented in the issuance domain). Appends to the issuance store so
-// `GET /api/issuance/proposals/by-quote/:quoteId` returns 200 once the Quote
-// transitions to FINALIZED.
-function autoCreateProposalFromQuote(quoteId: string) {
+// trigger documented in the issuance domain). Backend handles this
+// synchronously inside the QuoteFinalized event flow, so we do the same:
+// the Proposal is created in the same request as `finalize` and its id is
+// returned to the caller. No polling.
+function autoCreateProposalFromQuote(quoteId: string): string | null {
   const quote = findQuote(quoteId);
-  if (!quote) return;
-  // Skip if already created (idempotent).
-  if (store.proposals.some((p) => p.quoteId === quoteId)) return;
+  if (!quote) return null;
+  // Idempotent — return the existing proposal's id if a re-finalize happens.
+  const existing = store.proposals.find((p) => p.quoteId === quoteId);
+  if (existing) return existing.id;
+  const proposalId = nextId('PRO');
   store.proposals.push({
-    id: nextId('PRO'),
+    id: proposalId,
     quoteId,
     clientId: quote.clientId,
     policyType: quote.policyType,
@@ -66,6 +66,7 @@ function autoCreateProposalFromQuote(quoteId: string) {
         breakup: [],
       },
   });
+  return proposalId;
 }
 
 const ENUM_VALUES: Record<string, string[]> = {
@@ -307,23 +308,12 @@ const routes: RouteEntry[] = [
     method: 'POST',
     pattern: 'quotes/:quoteId/request-price',
     handler: (_req, params) => {
+      // Mirrors the deployed backend: emits a Kafka event with no listener
+      // wired (Rule Engine not yet shipped). Returns ok() but does not
+      // populate `premium`. UI surfaces this via the disabledTooltip on the
+      // schema action — the button is rendered disabled.
       const q = findQuote(params.quoteId);
       if (!q) return notFound('request-price');
-      // Simulator: backend computes the premium asynchronously.
-      scheduleTransition(() => {
-        const totalInr = (q.aggregateCensus?.headcount ?? 50) * 36_000;
-        const premium: QuotePremium = {
-          amount: { amount: totalInr, currency: 'INR' },
-          breakup: q.plans.map((p) => ({
-            planNo: p.planNo,
-            amount: {
-              amount: Math.round(totalInr / Math.max(q.plans.length, 1)),
-              currency: 'INR',
-            },
-          })),
-        };
-        q.premium = premium;
-      });
       return ok();
     },
   },
@@ -394,37 +384,10 @@ const routes: RouteEntry[] = [
       const q = findQuote(params.quoteId);
       if (!q) return notFound('finalize');
       q.status = 'FINALIZED';
-      // Async W2 trigger: a Proposal materialises shortly after finalize.
-      scheduleTransition(() => autoCreateProposalFromQuote(q.id));
-      return ok();
-    },
-  },
-
-  // ── UI-only maker-checker overlay (not in DSL) ──
-  // POST sets, DELETE clears `awaitingApproval`. Persists to a standalone
-  // overlay map (not the entity store) so it works against backend-issued
-  // UUIDs in proxy mode. Removed once the backend implements real
-  // maker-checker — see SESSION_LOG.md 2026-05-07 backend investigation.
-  {
-    method: 'POST',
-    pattern: 'quotes/:quoteId/awaiting-approval',
-    handler: (_req, params) => {
-      setApprovalOverlay('quote', params.quoteId, true);
-      // Mirror the flag onto the local fixture too if it happens to be there
-      // (mock mode only — preserves the in-store snapshot for reset).
-      const q = findQuote(params.quoteId);
-      if (q) q.awaitingApproval = true;
-      return ok();
-    },
-  },
-  {
-    method: 'DELETE',
-    pattern: 'quotes/:quoteId/awaiting-approval',
-    handler: (_req, params) => {
-      setApprovalOverlay('quote', params.quoteId, false);
-      const q = findQuote(params.quoteId);
-      if (q) q.awaitingApproval = false;
-      return ok();
+      // W2 trigger handled synchronously inside the same request, mirroring
+      // the deployed backend's QuoteFinalized → Proposal-creation flow.
+      const proposalId = autoCreateProposalFromQuote(q.id);
+      return json({ proposalId });
     },
   },
 

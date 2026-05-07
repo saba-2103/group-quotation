@@ -38,15 +38,16 @@ Once backend is live, the catch-all routes pass through to real backend. Fixture
 ## Async transition signalling — polling with backoff + stop-condition
 
 **Interim contract (V1):**
-`RequestQuotePrice`, PolicyMember classification, and policy/member activation all run async on the backend. Frontend polls the relevant `GET` endpoint after triggering the action using the **backend-suggested cadence**: 2s for the first 10s, then 5s out to 60s, then stop. Polling also halts early when the response satisfies a jsonLogic `stopWhen` condition declared on `dataSource` (e.g. `{ "!=": [{ "var": "premium" }, null] }`). Mock routes flip state on a timer to simulate completion.
+PolicyMember classification, PAM Member enrolment, and policy activation all run async on the backend (Temporal-driven workflows). Frontend polls the relevant `GET` endpoint after triggering the action using the **backend-suggested cadence**: 2s for the first 10s, then 5s out to 60s, then stop. Polling also halts early when the response satisfies a jsonLogic `stopWhen` condition declared on `dataSource` (e.g. `{ "!=": [{ "var": "state" }, "PENDING"] }`). Mock routes flip state on a timer to simulate completion.
 
 The cadence is exported as `STANDARD_POLL_SCHEDULE` from [`src/lib/polling.ts`](../src/lib/polling.ts) so all consumers reference one constant. `useSmartQuery` supports `pollSchedule` (backoff with hard cap) + `stopWhen` (early halt) + `refreshInterval` (fixed-interval alternative). Schema example in [docs/STATE_MANAGEMENT_GUIDE.md §8.1](../docs/STATE_MANAGEMENT_GUIDE.md#81-polling-until-an-async-backend-computation-completes).
+
+**Note (2026-05-07):** Quote `requestPrice` was previously a polling consumer of this scheme, simulated via mock auto-populate. Backend has no Rule Engine listener wired (`quote.requestPrice()` emits a Kafka event no consumer reads), so we removed the simulator and the Pricing tab `pollSchedule`/`stopWhen`. The `Request price` action is now rendered visible-but-disabled with a `disabledTooltip` explaining the backend gap. When the Rule Engine ships, restore the polling pattern (it stays valid for genuinely async transitions).
 
 **Risk:**
 - Stale UI between transitions (up to 5s in the slow phase).
 - Many concurrent polls if a user opens multiple list/detail tabs.
 - `stopWhen` is jsonLogic — typo in the condition leads to silent polling-until-cap.
-- Cadence isn't visible to the user; the "still working…" banner appears only after the initial-phase boundary (~10s) so quick completions feel instant.
 
 **Future architecture (target):**
 SSE or webhook channel that pushes state-changed events. React Query subscribes; polling drops to 0.
@@ -55,18 +56,18 @@ SSE or webhook channel that pushes state-changed events. React Query subscribes;
 
 ---
 
-## Quote → Proposal handoff — auto-create assumption
+## Quote → Proposal handoff — synchronous auto-create
 
-**Interim contract (V1):**
-We assume backend auto-creates a Proposal on `POST /quotation/quotes/{id}/finalize` (matching the W2 trigger described in blueprint v3). Frontend polls `GET /api/issuance/proposals/by-quote/{quoteId}` until the proposal appears, then deep-links to it.
+**Contract (verified against deployed backend, 2026-05-07):**
+Backend auto-creates a Proposal **synchronously** inside the `QuoteFinalized` event handler (no Temporal workflow). Mock route mirrors this: `POST /api/quotation/quotes/:id/finalize` creates the Proposal in the same request and returns `{ proposalId }`. Frontend does **not** poll `GET /api/issuance/proposals/by-quote/:quoteId` — the by-quote endpoint stays available (backend exposes it; mock mirrors it) for direct lookup, but the post-finalize path uses the response payload directly.
 
 **Risk:**
-- If backend actually requires the frontend to make a separate `POST /api/issuance/proposals` call, finalize will succeed but no proposal will ever appear and polling will time out.
+- None today. The endpoint is exercised against the deployed backend and matches DSL.
 
 **Future architecture (target):**
-Confirm with backend on first integration test. If frontend-triggered, the Finalize action chains a follow-up `createProposal` call (one extra dispatch in `useActionHandler`).
+If backend later moves Proposal creation into Temporal (matching the PAM workflow style), reintroduce polling with `STANDARD_POLL_SCHEDULE` — but only if the change actually lands. Don't speculate.
 
-**Convergence trigger:** first end-to-end test against real backend.
+**Convergence trigger:** none required; remove this section if the assumption holds permanently.
 
 ---
 
@@ -226,25 +227,25 @@ Backend adds `GET /policies/:policyId/pending-breakdown` (or includes the count 
 
 ---
 
-## Maker-checker UI overlay (V1 demo, frontend-only)
+## Maker-checker — role-adaptive UI only (no fictional approval-lock state)
 
 **Interim contract (V1):**
-Backend doesn't implement auth or maker-checker enforcement, but the V1 demo needs to *show* the maker → checker hand-off. We implement this purely on the frontend:
+Backend has **no Quote-level maker-checker model** — `Quote.submit()` is single-actor in the DSL ("submitter QCs their own work"). Only PAM Member has an approval workflow, via the central Approval module + Cerbos.
 
-- A **role switcher** widget in the top-right of the app shell lets the demo operator switch between roles (Maker / Checker / Ops, plus Viewer for read-only).
-- Current role is held in a React context (`useRole()`), persisted in `localStorage`.
-- Schemas carry an additional `roleActions: Record<Role, ActionId[]>` map alongside `stateActions`. The `ActionBar` widget enables an action only if the current role is permitted AND the current state allows it.
-- A UI-only "pending approval" overlay state sits between the user's "Send for approval" click and the real backend submit:
-  - Maker fills entity → clicks **Send for approval** → entity is locally tagged `awaitingApproval: true` (mock-route persisted, never hits backend submit).
-  - Checker switches role → sees the entity with a "Pending approval (submitted by Maker)" banner → clicks **Approve** (which calls the real backend `submit`/`finalize` endpoint) or **Reject** (clears the local flag, returns to DRAFT).
+We surface what's real and tooltip what isn't:
+
+- **Role switcher** (real UX, kept): top-right widget lets the demo operator switch between roles (Maker / Checker / Ops / Viewer). Current role held in React context (`useRole()`), persisted in `localStorage`. Schemas carry a `roleActions: Record<Role, ActionId[]>` map alongside `stateActions`; ActionBar shows/hides actions per role.
+- **Approval-lock state (gone, 2026-05-07):** the previous `awaitingApproval` UI-state, `/awaiting-approval` mock endpoints, lock-overlay UI, and `MOCK_ONLY_PATTERNS` carve-out have been removed. The Quote `Send for approval` action stays in the schema as a visible-but-disabled button with a `disabledTooltip` explaining the gap ("Quote-level approval workflow not yet wired on backend"). The Maker submits directly; both Maker and Checker have `submit` in `roleActions` (matching backend single-actor reality).
 - Roles only gate UI affordances; they do not affect what backend accepts (backend remains unrestricted).
 
+**Why removed:** rule "don't simulate behavior backend can't deliver, surface the gap with a tooltip" — see [feedback_build_to_expected_scope.md](../.claude/projects/-Users-seriousblack-dev-anaira-sandbox-keystone-ui/memory/feedback_build_to_expected_scope.md) rule #6.
+
 **Risk:**
-- Operator confusion if roles aren't visually obvious — the role switcher must be prominent and the active role must be unambiguous on every screen.
-- The overlay is fiction; if a real auth backend ships and disagrees with our role model, we have to rebuild this.
-- Two sources of truth for "what's allowed": frontend role/state map vs eventual backend authorization. Drift risk.
+- Role-adaptive UI without backend enforcement is purely cosmetic; once a real auth backend ships, the role assignments need to mirror backend authorization or drift will be visible.
 
 **Future architecture (target):**
-Backend ships maker-checker as proper workflow states (e.g. `Quote: PENDING_APPROVAL` between DRAFT and SUBMITTED) plus role-aware authorization. The role switcher is replaced by real auth context (the current user's role from the token). The `roleActions` map either disappears (because backend's `frontendProjection` carries `allowedActions` per the role) or becomes a typed mirror of the backend's authorization model.
+Option A — backend extends the PAM approval pattern to Quote (`RequestQuoteApprovalCommand` → `QuoteApprovalRequested` event → central Approval module → listener back → Cerbos enforcement on `submit`). Frontend deletes the `disabledTooltip`, replaces `Send for approval` with a real api-mutation calling the new endpoint, and reads any in-flight state from the Quote DTO directly. Question already drafted to backend (in SESSION_LOG end-of-thread snapshot).
 
-**Convergence trigger:** backend implements maker-checker states + auth.
+Option B — backend ships Cerbos role-aware authorization on `submit` itself (no separate approval state). Frontend `roleActions` becomes a typed mirror of Cerbos rules.
+
+**Convergence trigger:** backend response to the drafted question.

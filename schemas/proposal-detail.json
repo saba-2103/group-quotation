@@ -48,8 +48,6 @@
         "api": { "endpoint": "/api/issuance/proposals/{{id}}", "method": "GET" }
       },
       "props": {
-        "entityType": "proposal",
-        "entityId": "{{id}}",
         "stateActions": {
           "DRAFT": ["submit", "cancel"],
           "SUBMITTED": ["finalize", "cancel"],

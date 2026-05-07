@@ -54,6 +54,7 @@ Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [
 | Batch 2 — Quote happy path (Phase 2 demo subset) | **DONE** — Tasks 2.1, 2.2, 2.3, 2.4.1–2.4.6 (Plans/Census/Mapping read-only per cuts D1/D2/D3; Pricing live with backoff poll; demo end-to-end walkthrough deferred to next session w/ user) |
 | Batch 3 — Issuance + PAM + glue (Phase 3, 4, 5 demo subsets) | **DONE** — Tasks 3.1 (light) + 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 5.1; demo walkthrough (5.3) deferred to a session w/ user. Skipped per cuts: 4.5, 5.2, 5.4. |
 | Post-batch follow-ups (2026-05-07) | **DONE** — pre-demo audit pass (P1.1–P1.9 + P2.2); GCL frontends; backend deployed, proxy mode wired; error envelope updated; FLOAT_UNAVAILABLE fixture removed. See SESSION_LOG.md. |
+| Honesty pass (2026-05-07 late) | **DONE** — removed mock simulators for backend-missing behavior: pricing simulator, maker-checker `awaitingApproval` overlay (incl. `lib/maker-checker.ts`, `/awaiting-approval` mock routes, MOCK_ONLY_PATTERNS carve-out, `awaiting-approval` cell type). Q→P handoff converted from async-in-mock to sync (matches backend). New schema field: `disabledTooltip` on `ActionConfig`. ActionBar tests rewritten. |
 
 **Deferred-from-demo backlog (D1–D12)** lives in the same plan section. After demo lands, work that backlog before starting any new feature.
 
@@ -71,8 +72,8 @@ Read [context/SESSION_LOG.md](SESSION_LOG.md) "End-of-thread handoff snapshot" e
 
 ### Demo posture at thread close
 
-- **Mock mode** (default — `.env.local` not set): rich fixture data, full demo path works including request-price simulator and maker-checker overlay. **Recommended for the demo.**
-- **Proxy mode** (`GROUP_PAS_BACKEND_URL=https://group-pas-dev.anairacloud.com` in `.env.local`): real backend wiring proven, gaps documented. Use as proof-of-integration backup.
+- **Mock mode** (default — `.env.local` not set): rich fixture data, full happy path works through the real action set. Pricing tab is honest (button rendered disabled with tooltip — backend Rule Engine not wired); approval-lock fiction is gone; Q→P handoff is sync. **Recommended for the demo.**
+- **Proxy mode** (`GROUP_PAS_BACKEND_URL=https://group-pas-dev.anairacloud.com` in `.env.local`): real backend wiring proven. Same honesty surface — disabled-with-tooltip explains everything backend can't do yet.
 - Switch between modes by editing `.env.local` (1 line, restart `npm run dev`).
 
 When picking up a task, follow the per-task **Context to load / Output / Done when** structure in the plan doc — it points to the exact spec files, templates, and acceptance criteria.

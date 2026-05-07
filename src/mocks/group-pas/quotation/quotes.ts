@@ -1,6 +1,8 @@
 // Mock Quote fixtures spanning every QuoteStatus.
-// `awaitingApproval` is a UI-overlay flag (UI-only maker-checker per CORE_MEMORY scope-locks),
-// kept off the DSL Quote interface and added as a mock-only extension.
+// MockQuote was previously extended with a UI-only `awaitingApproval` field
+// for the maker-checker overlay; that fiction is gone (backend has no
+// Quote-level approval). The alias stays so the import sites keep working
+// if a future mock-only field needs to be added.
 
 import type {
   AggregateCensus,
@@ -14,7 +16,7 @@ import type {
   QuoteSummaryDto,
 } from '@/types/group-pas/quotation';
 
-export type MockQuote = Quote & { awaitingApproval?: boolean };
+export type MockQuote = Quote;
 
 const inrFormulaFixed = (amount: number): AmountFormula => ({
   type: 'FIXED',
@@ -137,7 +139,6 @@ export const QUOTES: MockQuote[] = [
     ageDefinitionRule: 'ALB',
     riskTermClassification: 'YEARLY_RENEWABLE',
     lineOfBusiness: 'GROUP',
-    awaitingApproval: true,
   },
   {
     id: 'QTE-2026-0003',
