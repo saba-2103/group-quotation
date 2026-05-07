@@ -148,7 +148,12 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
       if (entityType && entityId) await clearApproval(entityType, entityId);
       return;
     }
-    await handleAction(action);
+    // Pass the live entity as rowData so endpoints with `:id` substitute
+    // correctly (used by overlay forms opened via open-modal).
+    const rowData = (fetchedEntity ?? undefined) as
+      | Record<string, unknown>
+      | undefined;
+    await handleAction(action, rowData);
   };
 
   return (

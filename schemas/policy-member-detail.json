@@ -159,7 +159,7 @@
             "label": "Open in Policy Admin",
             "icon": "ExternalLink",
             "type": "navigate",
-            "target": "/policy-admin/members/MEM-{{memberId}}"
+            "target": "/policy-admin/members/by-policy-member/{{memberId}}"
           }
         ]
       }

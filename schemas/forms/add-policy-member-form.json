@@ -91,9 +91,9 @@
         "variant": "default",
         "type": "api-mutation",
         "submitAction": true,
-        "refreshKey": "/api/issuance/policy-members/search",
+        "refreshKey": "/api/issuance/proposals/{{proposalId}}/members",
         "api": {
-          "endpoint": "/api/issuance/policies/POL-2026-0001/members",
+          "endpoint": "/api/issuance/proposals/{{proposalId}}/members",
           "method": "POST"
         },
         "successMessage": "Policy member created"

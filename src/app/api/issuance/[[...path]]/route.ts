@@ -374,6 +374,87 @@ const routes: RouteEntry[] = [
     },
   },
 
+  // ── Proposal-scoped member shortcuts (resolve to underlying policy) ──
+  // Lets the proposal-detail "Members" tab and add-member form work without
+  // hardcoding the policyId. 400s if the proposal hasn't reached POLICY_CREATED
+  // (no policy → can't enrol members yet).
+  {
+    method: 'GET',
+    pattern: 'proposals/:proposalId/members',
+    handler: (req, params) => {
+      const p = findProposal(params.proposalId);
+      if (!p) return notFound(`proposals/${params.proposalId}/members`);
+      if (!p.policyId) {
+        return json(
+          {
+            timestamp: new Date().toISOString(),
+            status: 400,
+            error: 'Bad Request',
+            message:
+              'Proposal has no policy yet — submit and finalize first to create the master policy.',
+            path: `/api/issuance/proposals/${params.proposalId}/members`,
+          },
+          400,
+        );
+      }
+      const state = req.nextUrl.searchParams.get('state');
+      const list = store.policyMembers.filter(
+        (m) => m.policyId === p.policyId && (!state || m.state === state),
+      );
+      return json(list.map(policyMemberToSummary));
+    },
+  },
+  {
+    method: 'POST',
+    pattern: 'proposals/:proposalId/members',
+    handler: async (req, params) => {
+      const p = findProposal(params.proposalId);
+      if (!p) return notFound(`proposals/${params.proposalId}/members`);
+      if (!p.policyId) {
+        return json(
+          {
+            timestamp: new Date().toISOString(),
+            status: 400,
+            error: 'Bad Request',
+            message:
+              'Cannot add a member: proposal has no policy yet. Submit and finalize the proposal first.',
+            path: `/api/issuance/proposals/${params.proposalId}/members`,
+          },
+          400,
+        );
+      }
+      const body = await readJson<{
+        memberId: string;
+        planNo: string;
+        name: string;
+        dob?: string;
+        gender?: string;
+        salary?: number;
+        occupation?: string;
+        sumInsured: number;
+      }>(req);
+      const id = nextId('PMB');
+      store.policyMembers.push({
+        id,
+        policyId: p.policyId,
+        memberId: body?.memberId ?? nextId('MEM-INT'),
+        planNo: body?.planNo ?? '',
+        state: 'CREATED',
+        memberData: {
+          name: body?.name ?? '',
+          dob: body?.dob,
+          gender: body?.gender,
+          salary: body?.salary,
+          occupation: body?.occupation,
+          sumInsured: body?.sumInsured,
+          planNo: body?.planNo,
+        },
+        reclassificationCount: 0,
+      });
+      return json({ policyMemberId: id });
+    },
+  },
+
   // ── PolicyMember — list/search (must precede /policy-members/:id) ──
   {
     method: 'GET',

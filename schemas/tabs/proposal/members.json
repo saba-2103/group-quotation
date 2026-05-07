@@ -36,9 +36,8 @@
       "type": "data-table",
       "dataSource": {
         "api": {
-          "endpoint": "/api/issuance/policy-members/search",
-          "method": "GET",
-          "params": { "policyId": "POL-2026-0001", "page": 0, "size": 50 }
+          "endpoint": "/api/issuance/proposals/{{id}}/members",
+          "method": "GET"
         },
         "stateDependencies": ["proposal-members-filters"]
       },

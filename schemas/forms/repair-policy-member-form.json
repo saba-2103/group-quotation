@@ -23,7 +23,7 @@
         "submitAction": true,
         "refreshKey": "/api/issuance/policy-members",
         "api": {
-          "endpoint": "/api/issuance/policy-members/{{id}}",
+          "endpoint": "/api/issuance/policy-members/:id",
           "method": "PUT"
         },
         "successMessage": "Member saved; re-classification triggered"

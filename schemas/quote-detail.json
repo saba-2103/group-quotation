@@ -56,16 +56,16 @@
           "SUBMITTED": ["send-to-client", "withdraw"],
           "SENT_TO_CLIENT": ["accept", "reject", "withdraw"],
           "ACCEPTED": ["finalize", "withdraw"],
-          "FINALIZED": [],
+          "FINALIZED": ["view-proposal"],
           "REJECTED": [],
           "WITHDRAWN": [],
           "EXPIRED": []
         },
         "roleActions": {
-          "maker": ["edit", "send-for-approval", "withdraw"],
-          "checker": ["submit", "clear-approval", "send-to-client", "accept", "reject", "finalize", "withdraw"],
-          "ops": [],
-          "viewer": []
+          "maker": ["edit", "send-for-approval", "withdraw", "view-proposal"],
+          "checker": ["submit", "clear-approval", "send-to-client", "accept", "reject", "finalize", "withdraw", "view-proposal"],
+          "ops": ["view-proposal"],
+          "viewer": ["view-proposal"]
         },
         "actions": [
           {
@@ -147,6 +147,14 @@
             "type": "open-modal",
             "target": "create-quote-form",
             "variant": "outline"
+          },
+          {
+            "id": "view-proposal",
+            "label": "Open created proposal",
+            "icon": "ExternalLink",
+            "type": "navigate",
+            "target": "/issuance/proposals",
+            "variant": "default"
           }
         ]
       }
