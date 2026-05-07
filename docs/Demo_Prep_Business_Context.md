@@ -63,7 +63,7 @@ GCL (Group Credit Life) sounds technical; it's actually a simple insurance produ
 
 **Two terms a banker will use that you need:**
 
-- **Amortise** — when you repay an EMI each month, part of it pays off the loan principal. So the **balance you owe shrinks over time**. That shrinking-as-you-pay process is amortisation. By the end of year 20, the loan balance is zero.
+- **Amortise** — when you repay an EMI (Equated Monthly Instalment — the fixed monthly loan payment) each month, part of it pays off the **principal** (the original amount you borrowed) and part is interest. So the principal balance you owe shrinks over time. That shrinking-as-you-pay process is amortisation. By the end of year 20, the loan balance is zero.
   | End of year | What you still owe |
   |---|---|
   | Year 0 (just took the loan) | ₹50 lakh |
@@ -85,7 +85,7 @@ GCL (Group Credit Life) sounds technical; it's actually a simple insurance produ
 
   Contrast with **GTL** (the V1 demo product) — GTL pays a *flat* sum (say ₹1 crore) for the whole term regardless of when in the term you die. GCL's payout is wired to a specific debt that's shrinking; GTL's is a fixed benefit.
 
-**Why this matters for our app:** every time the bank disburses a new loan, a new GCL **MemberQuote** is created — sized to that disbursement, with a decreasing schedule baked in. A bank making 100 home loans a day generates 100 MemberQuotes a day. That's why GCL needs the per-member quote-then-issue flow (the `MemberQuote` entity in our spec). GTL is the opposite shape — one quote covers a fixed roster of 120 employees in one shot.
+**Why this matters for our app:** every time the bank **disburses** a new loan (i.e. actually transfers the loan money to the borrower), a new GCL **MemberQuote** is created — sized to that disbursement, with a decreasing schedule baked in. A bank making 100 home loan disbursements a day generates 100 MemberQuotes a day. That's why GCL needs the per-member quote-then-issue flow (the `MemberQuote` entity in our spec). GTL is the opposite shape — one quote covers a fixed roster of 120 employees in one shot.
 
 **One-sentence demo answer if a banker asks:**
 > "GCL is per-loan, decreasing-cover term life — each loan disbursement creates a member quote sized to that loan and the cover amount shrinks as the loan amortises. Different from GTL where one quote covers a fixed employee roster with flat-sum cover."
@@ -126,6 +126,8 @@ The role you're acting as in the demo is set by the **role switcher dropdown in 
 ---
 
 ## 2. Glossary — every jargon word you'll hear
+
+Two parts: §2 main glossary covers insurance domain terms (everything in the workflow). §2.1 at the end is a separate cheatsheet for the finance / banking / Indian regulatory acronyms that the doc references but aren't insurance-specific. If you're a developer with no finance background, scan §2.1 once.
 
 Read this once; come back to it during the demo if a term confuses you.
 
@@ -180,6 +182,39 @@ Read this once; come back to it during the demo if a term confuses you.
 | **Underwriting (UW)** | The risk-assessment process: deciding whether to cover a person, on what terms, at what price. For STP cases the Rule Engine does this automatically; for REVIEW cases a human underwriter reviews the case in the UW Workbench. |
 | **UW Workbench** | A separate application where underwriters review REVIEW-lane cases. Our PAS sends cases to it and receives back approve/reject decisions. We don't ship the workbench itself in V1. |
 | **VIP client** | A client flagged for white-glove service / priority handling. In V1 this is a list-filter chip only — no special routing or SLA logic; downstream queue prioritisation lands post-V1. |
+
+### 2.1 Finance, banking & regulatory cheatsheet (for non-finance readers)
+
+The doc references several finance, banking, and Indian-regulatory acronyms that aren't insurance-specific. If you're a developer with no finance background, this is the lookup table.
+
+| Term | Plain English |
+|---|---|
+| **AML** | Anti-Money Laundering — the body of regulations + checks that try to stop illicit funds entering the financial system. Insurers must run AML screening on the proposer. |
+| **Bancassurance** | Selling insurance through a bank's distribution network (loan officers, branches, banking apps). The bank acts as a corporate agent for the insurer. GCL is the canonical bancassurance product. |
+| **Brokerage** / **broker commission** | The percentage of premium that goes to the broker as compensation for sourcing the deal. Typically a higher first-year rate, then a smaller "trailing" rate on each renewal. Out of V1 (no Commission entity yet). |
+| **CFT** | Counter-Financing of Terrorism — twin regulation to AML, often paired as "AML/CFT." |
+| **CIN** | Corporate Identification Number — the unique 21-character ID issued by India's Ministry of Corporate Affairs (MCA) to every registered company. Equivalent to a "company registration number" in other jurisdictions. |
+| **Disbursement** | When a bank actually transfers loan money to the borrower's account. A loan can be approved without being disbursed (e.g. a home loan that disburses in stages as construction progresses). Each disbursement = a new GCL MemberQuote. |
+| **EMI** | Equated Monthly Instalment — the fixed monthly amount a borrower pays toward a loan. Each EMI is part principal repayment, part interest. |
+| **FATF** | Financial Action Task Force — the global body that sets AML/CFT standards. Countries it puts on its "grey list" or "black list" face heavy compliance scrutiny. |
+| **Free-look period** | An IRDAI-mandated 15-day window after policy issue during which the proposer can cancel and get a full refund (minus minimal admin fees). Standard consumer protection. Out of V1. |
+| **GST** | Goods and Services Tax — India's unified indirect tax. Insurance premium attracts 18% GST. Computing it on the premium and adding it to the invoice is post-V1. |
+| **GSTIN** | GST Identification Number — the 15-character GST registration number issued to every business. Captured on the Client master in our system. |
+| **HRIS** | Human Resource Information System — the employer's HR software (Workday, SAP SuccessFactors, BambooHR, Darwinbox etc) that holds the canonical employee roster. The PAS imports member rosters from HRIS systems. |
+| **Indemnity** | An insurance contract that reimburses actual loss incurred (not a fixed sum). Health insurance is indemnity (you submit hospital bills, you get reimbursed up to the cover); life insurance is not (you get the fixed sum-assured no matter what). |
+| **IRDAI** | Insurance Regulatory and Development Authority of India — the regulator that licenses insurers, approves products, sets rules. Every insurance discussion in India ends up at IRDAI. |
+| **KYC** | Know Your Customer — mandatory identity-verification checks on the proposer. For a corporate client, KYC documents include CIN proof, GSTIN, PAN of authorised signatory, latest financials. Out of V1. |
+| **MCA** | Ministry of Corporate Affairs — the Indian government department that registers and regulates companies. Source of truth for CIN. |
+| **OFAC** | US Treasury's Office of Foreign Assets Control — maintains a sanctions list of individuals + entities US persons can't transact with. Indian insurers screen against OFAC + UN sanctions lists as part of AML. |
+| **PAN** | Permanent Account Number — the 10-character alphanumeric ID issued by India's Income Tax department to every taxpayer (individual + entity). Mandatory for any high-value financial transaction. |
+| **PEP** | Politically Exposed Person — a person holding (or recently holding) a prominent public position, like a minister, judge, or senior bureaucrat. PEPs trigger enhanced KYC scrutiny because they're a higher corruption-risk category. |
+| **Principal** | The original amount borrowed in a loan, distinct from the interest. When you repay an EMI, part goes to principal, part to interest. The principal balance shrinks over time (amortisation). |
+| **Reinsurance (RI)** | When an insurer offloads part of a risk it has taken on to another insurer (the "reinsurer"). Two flavours: **Treaty RI** is a pre-agreed standing deal — every policy meeting certain criteria automatically gets ceded. **Facultative RI** is case-by-case for individual large risks. **RI cession** is the act of passing the risk to the reinsurer. Out of V1 (placeholder gate in the workflow). |
+| **Section 10(10D)** | Indian Income Tax Act clause that makes most life-insurance proceeds (death benefit, maturity benefit) tax-free in the recipient's hands. A policy meeting 10(10D) conditions is a tax-saving product. Generating the certificate that proves 10(10D)-compliance is a post-V1 regulatory output. |
+| **Settlement** | When a claim is paid out to the beneficiary. Out of V1 (claims module is post-V1). |
+| **TAT** | Turnaround Time — the SLA on how fast something gets done. IRDAI sets claims TAT at 15-30 days. Quote turnaround TAT is set by the insurer's own ops policy. |
+| **Tranche** | A portion of a larger transaction released or disbursed in stages. A construction-linked home loan disburses in tranches as the building progresses; each tranche = a new GCL cover slice in our model. |
+| **Treaty / facultative** | See Reinsurance. |
 
 ---
 
