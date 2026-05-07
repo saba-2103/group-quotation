@@ -23,6 +23,7 @@ import {
 import {
   nextId,
   scheduleTransition,
+  setApprovalOverlay,
   store,
   type MockProposal,
 } from '@/lib/api-mock/group-pas/store';
@@ -272,13 +273,15 @@ const routes: RouteEntry[] = [
   },
 
   // ── UI-only maker-checker overlay (not in DSL) ──
+  // Same pattern as quotation: standalone overlay map keyed by id, works
+  // against backend-issued UUIDs in proxy mode.
   {
     method: 'POST',
     pattern: 'proposals/:proposalId/awaiting-approval',
     handler: (_req, params) => {
+      setApprovalOverlay('proposal', params.proposalId, true);
       const p = findProposal(params.proposalId);
-      if (!p) return notFound('awaiting-approval');
-      p.awaitingApproval = true;
+      if (p) p.awaitingApproval = true;
       return ok();
     },
   },
@@ -286,9 +289,9 @@ const routes: RouteEntry[] = [
     method: 'DELETE',
     pattern: 'proposals/:proposalId/awaiting-approval',
     handler: (_req, params) => {
+      setApprovalOverlay('proposal', params.proposalId, false);
       const p = findProposal(params.proposalId);
-      if (!p) return notFound('awaiting-approval');
-      p.awaitingApproval = false;
+      if (p) p.awaitingApproval = false;
       return ok();
     },
   },

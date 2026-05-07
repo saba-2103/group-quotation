@@ -56,14 +56,35 @@ export function notFound(path: string): NextResponse {
   );
 }
 
-// Real-backend toggle. When GROUP_PAS_BACKEND_URL is set, every request short-
-// circuits the mock layer and proxies to the live backend instead.
+// Routes we keep handling locally even in proxy mode. Backend doesn't
+// implement these — see context/ARCH_TRANSITION.md and SESSION_LOG.md
+// 2026-05-07 backend-investigation entry. When the backend ships any of
+// these (e.g. real Quote-level approval), drop the regex and let the
+// proxy take over.
+const MOCK_ONLY_PATTERNS: RegExp[] = [
+  // UI-only maker-checker overlay (Quote + Proposal).
+  /\/awaiting-approval$/,
+  // Client-derived breakdown — V1 interim assumption #5; backend has no equiv.
+  /\/pending-breakdown$/,
+  // Proposal-scoped member shortcuts; backend uses /policies/:id/members.
+  /\/issuance\/proposals\/[^/]+\/members\b/,
+];
+
+// Real-backend toggle. When GROUP_PAS_BACKEND_URL is set, requests short-
+// circuit the mock layer and proxy to the live backend — except those
+// matched by MOCK_ONLY_PATTERNS, which fall through to the local dispatcher.
 export async function proxyIfConfigured(
   req: NextRequest,
   pathSegments: string[],
 ): Promise<NextResponse | null> {
   const backend = process.env.GROUP_PAS_BACKEND_URL;
   if (!backend) return null;
+
+  const fullPath = '/' + pathSegments.join('/');
+  if (MOCK_ONLY_PATTERNS.some((re) => re.test(fullPath))) {
+    return null; // fall through to mock dispatcher
+  }
+
   const search = req.nextUrl.searchParams.toString();
   const target = `${backend.replace(/\/$/, '')}/${pathSegments.join('/')}${
     search ? `?${search}` : ''

@@ -18,7 +18,12 @@ import {
   readJson,
   type RouteEntry,
 } from '@/lib/api-mock/group-pas/http';
-import { nextId, scheduleTransition, store } from '@/lib/api-mock/group-pas/store';
+import {
+  nextId,
+  scheduleTransition,
+  setApprovalOverlay,
+  store,
+} from '@/lib/api-mock/group-pas/store';
 import type {
   AggregateCensus,
   Plan,
@@ -396,15 +401,19 @@ const routes: RouteEntry[] = [
   },
 
   // ── UI-only maker-checker overlay (not in DSL) ──
-  // POST sets, DELETE clears `awaitingApproval` on a Quote. Removed once the
-  // backend implements real maker-checker (see context/ARCH_TRANSITION.md).
+  // POST sets, DELETE clears `awaitingApproval`. Persists to a standalone
+  // overlay map (not the entity store) so it works against backend-issued
+  // UUIDs in proxy mode. Removed once the backend implements real
+  // maker-checker — see SESSION_LOG.md 2026-05-07 backend investigation.
   {
     method: 'POST',
     pattern: 'quotes/:quoteId/awaiting-approval',
     handler: (_req, params) => {
+      setApprovalOverlay('quote', params.quoteId, true);
+      // Mirror the flag onto the local fixture too if it happens to be there
+      // (mock mode only — preserves the in-store snapshot for reset).
       const q = findQuote(params.quoteId);
-      if (!q) return notFound('awaiting-approval');
-      q.awaitingApproval = true;
+      if (q) q.awaitingApproval = true;
       return ok();
     },
   },
@@ -412,9 +421,9 @@ const routes: RouteEntry[] = [
     method: 'DELETE',
     pattern: 'quotes/:quoteId/awaiting-approval',
     handler: (_req, params) => {
+      setApprovalOverlay('quote', params.quoteId, false);
       const q = findQuote(params.quoteId);
-      if (!q) return notFound('awaiting-approval');
-      q.awaitingApproval = false;
+      if (q) q.awaitingApproval = false;
       return ok();
     },
   },
