@@ -101,27 +101,24 @@ function buttonByLabel(label: string): HTMLButtonElement {
 }
 
 describe('ActionBar', () => {
-  it('Maker in DRAFT can edit + send-for-approval; submit/finalize are disabled', () => {
+  it('Maker in DRAFT sees only Maker actions (Edit, Send for approval); Checker actions are HIDDEN', () => {
     currentRole = 'maker';
     renderBar({ state: 'DRAFT' });
     expect(buttonByLabel('Edit')).not.toBeDisabled();
     expect(buttonByLabel('Send for approval')).not.toBeDisabled();
-    expect(buttonByLabel('Approve')).toBeDisabled();
-    expect(buttonByLabel('Finalize')).toBeDisabled();
+    const toolbar = screen.getByRole('toolbar');
+    expect(within(toolbar).queryByRole('button', { name: 'Approve' })).toBeNull();
+    expect(within(toolbar).queryByRole('button', { name: 'Finalize' })).toBeNull();
   });
 
-  it('Checker in DRAFT cannot edit (role-gated) and gets a "Requires checker role" tooltip on Approve when state allows', () => {
+  it('Checker in SUBMITTED sees Approve enabled; role-only actions for Maker (Edit) are HIDDEN, not disabled', () => {
     currentRole = 'checker';
     renderBar({ state: 'SUBMITTED' });
     // Approve is allowed in SUBMITTED for checker.
     expect(buttonByLabel('Approve')).not.toBeDisabled();
-    // Edit is state-gated out of SUBMITTED.
-    const editBtn = buttonByLabel('Edit');
-    expect(editBtn).toBeDisabled();
-    expect(editBtn).toHaveAttribute(
-      'data-disabled-reason',
-      'Not available in SUBMITTED',
-    );
+    // Edit is Maker-only — Checker doesn't see it at all (deck v2 spec).
+    const toolbar = screen.getByRole('toolbar');
+    expect(within(toolbar).queryByRole('button', { name: 'Edit' })).toBeNull();
   });
 
   it('Maker DRAFT with awaitingApproval=true locks edit + send-for-approval ("Awaiting checker approval")', () => {
@@ -133,21 +130,17 @@ describe('ActionBar', () => {
       'data-disabled-reason',
       'Awaiting checker approval',
     );
-    // Approve isn't allowed in DRAFT regardless of approval lock — state gate
-    // wins (state check runs before role check in the widget).
-    const approve = buttonByLabel('Approve');
-    expect(approve).toBeDisabled();
-    expect(approve.getAttribute('data-disabled-reason')).toBe(
-      'Not available in DRAFT',
-    );
+    // Approve is Checker-only — Maker doesn't see it at all under the
+    // role-hide rule (deck v2). The button is absent from the toolbar.
+    const toolbar = screen.getByRole('toolbar');
+    expect(within(toolbar).queryByRole('button', { name: 'Approve' })).toBeNull();
   });
 
-  it('Viewer sees every action disabled with role-tooltip', () => {
+  it('Viewer sees no actions at all (role-hide rule applied to every action)', () => {
     currentRole = 'viewer';
-    renderBar({ state: 'DRAFT' });
-    const edit = buttonByLabel('Edit');
-    expect(edit).toBeDisabled();
-    expect(edit.getAttribute('data-disabled-reason')).toMatch(/Requires/);
+    const { container } = renderBar({ state: 'DRAFT' });
+    // No actions allowed for viewer → ActionBar returns null.
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('Checker clicking Approve in SUBMITTED dispatches the api-mutation through useActionHandler', async () => {

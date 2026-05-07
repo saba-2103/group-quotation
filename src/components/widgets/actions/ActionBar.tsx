@@ -51,22 +51,6 @@ interface ActionBarPropsResolved {
 const SEND_FOR_APPROVAL_ID = 'send-for-approval';
 const CLEAR_APPROVAL_ID = 'clear-approval';
 
-function rolesAllowingAction(
-  roleActions: RoleActions | undefined,
-  actionId: string,
-): string[] {
-  if (!roleActions) return [];
-  return Object.entries(roleActions)
-    .filter(([, ids]) => ids.includes(actionId))
-    .map(([role]) => role);
-}
-
-function describeRoles(roles: string[]): string {
-  if (roles.length === 0) return 'no role';
-  if (roles.length === 1) return roles[0];
-  return `${roles.slice(0, -1).join(', ')} or ${roles[roles.length - 1]}`;
-}
-
 export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
   const props = (config.props ?? {}) as ActionBarPropsResolved;
   const {
@@ -107,33 +91,37 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
   );
 
   const decoratedActions = useMemo(() => {
-    return actions.map((action) => {
-      const id = action.id ?? '';
-      const allowedStates = stateActions[state] ?? [];
-      const stateOk = allowedStates.includes(id);
-      const roleOk =
-        !roleActions || (roleActions[role as Role] ?? []).includes(id);
+    return actions
+      .map((action) => {
+        const id = action.id ?? '';
+        const allowedStates = stateActions[state] ?? [];
+        const stateOk = allowedStates.includes(id);
+        const roleOk =
+          !roleActions || (roleActions[role as Role] ?? []).includes(id);
 
-      // Maker-checker overlay rules (UI-only):
-      //   - When awaitingApproval=true, the maker's normal editing actions
-      //     (submit, send-for-approval, etc.) lock so the checker can act.
-      //   - Approve / clear-approval are still allowed for the checker.
-      const lockedByApproval =
-        awaitingApproval &&
-        role === 'maker' &&
-        id !== CLEAR_APPROVAL_ID;
+        // Spec resolution (see docs/V1_DEMO_ISSUES.md):
+        //   - Role-gated → action is HIDDEN entirely (deck v2: "they never see
+        //     an Approve button"). Returning null filters it out below.
+        //   - State-gated → render disabled with tooltip ("Not available in
+        //     <state>") so the user understands the lifecycle.
+        //   - Awaiting-approval lock → render disabled with tooltip ("Awaiting
+        //     checker approval") since the lock is temporary.
+        if (!roleOk) return null;
 
-      let disabledReason: string | undefined;
-      if (!stateOk) disabledReason = `Not available in ${state || 'this state'}`;
-      else if (!roleOk) {
-        const roles = rolesAllowingAction(roleActions, id);
-        disabledReason = `Requires ${describeRoles(roles)} role`;
-      } else if (lockedByApproval) {
-        disabledReason = 'Awaiting checker approval';
-      }
+        const lockedByApproval =
+          awaitingApproval &&
+          role === 'maker' &&
+          id !== CLEAR_APPROVAL_ID;
 
-      return { action, disabled: Boolean(disabledReason), disabledReason };
-    });
+        let disabledReason: string | undefined;
+        if (!stateOk) disabledReason = `Not available in ${state || 'this state'}`;
+        else if (lockedByApproval) {
+          disabledReason = 'Awaiting checker approval';
+        }
+
+        return { action, disabled: Boolean(disabledReason), disabledReason };
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
   }, [actions, awaitingApproval, role, roleActions, state, stateActions]);
 
   if (decoratedActions.length === 0) return null;
