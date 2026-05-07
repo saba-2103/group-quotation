@@ -15,6 +15,7 @@ import { ErrorBanner } from "../widgets/items/ErrorBanner";
 import { DateWidget } from "../widgets/controls/dateWidget/index";
 import { SearchableDropdownWidget } from "../widgets/controls/searchDropDown/index";
 import { ContextHelpTooltipWidget } from "../widgets/items/ContextHelpTooltip";
+import { RoleSwitcher } from "../widgets/role/RoleSwitcher";
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
   "stack-layout": StackLayout,
@@ -33,7 +34,8 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
   "error-banner": ErrorBanner,
   "date-widget": DateWidget,
   "searchable-dropdown": SearchableDropdownWidget,
-  "context-help-tooltip": ContextHelpTooltipWidget
+  "context-help-tooltip": ContextHelpTooltipWidget,
+  "role-switcher": RoleSwitcher
 };
 
 export const getWidgetComponent = (type: string) => {
