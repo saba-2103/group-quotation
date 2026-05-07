@@ -4,7 +4,11 @@
 
 import type { NextRequest, NextResponse } from 'next/server';
 
-import { quoteToDto, quoteToSummary } from '@/lib/api-mock/group-pas/dtos';
+import {
+  memberQuoteToDto,
+  quoteToDto,
+  quoteToSummary,
+} from '@/lib/api-mock/group-pas/dtos';
 import {
   dispatch,
   json,
@@ -411,6 +415,108 @@ const routes: RouteEntry[] = [
       const q = findQuote(params.quoteId);
       if (!q) return notFound('awaiting-approval');
       q.awaitingApproval = false;
+      return ok();
+    },
+  },
+
+  // ── MemberQuote (GCL) — backend has these wired; we mirror them ──
+  {
+    method: 'GET',
+    pattern: 'member-quotes',
+    handler: (req) => {
+      const sp = req.nextUrl.searchParams;
+      const policyId = sp.get('policyId');
+      const status = sp.get('status');
+      const list = store.memberQuotes.filter(
+        (q) =>
+          (!policyId || q.policyId === policyId) &&
+          (!status || q.status === status),
+      );
+      return json(list.map(memberQuoteToDto));
+    },
+  },
+  {
+    method: 'POST',
+    pattern: 'member-quotes',
+    handler: async (req) => {
+      const body = await readJson<{
+        policyId: string;
+        name: string;
+        dob?: string;
+        gender?: string;
+        salary?: number;
+        occupation?: string;
+        sumAssured?: number;
+      }>(req);
+      const id = nextId('MQT');
+      store.memberQuotes.push({
+        id,
+        policyId: body?.policyId ?? '',
+        status: 'DRAFT',
+        memberData: {
+          name: body?.name ?? '',
+          dob: body?.dob,
+          gender: body?.gender,
+          salary: body?.salary,
+          occupation: body?.occupation,
+        },
+        sumAssured: body?.sumAssured
+          ? { amount: body.sumAssured, currency: 'INR' }
+          : undefined,
+      });
+      return json({ memberQuoteId: id });
+    },
+  },
+  {
+    method: 'GET',
+    pattern: 'member-quotes/:memberQuoteId',
+    handler: (_req, params) => {
+      const q = store.memberQuotes.find((x) => x.id === params.memberQuoteId);
+      if (!q) return notFound(`member-quotes/${params.memberQuoteId}`);
+      return json(memberQuoteToDto(q));
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: 'member-quotes/:memberQuoteId/premium',
+    handler: async (req, params) => {
+      const q = store.memberQuotes.find((x) => x.id === params.memberQuoteId);
+      if (!q) return notFound('member-quote-premium');
+      const body = await readJson<{
+        annualPremiumAmount: number;
+        currency: string;
+      }>(req);
+      if (body) {
+        q.premium = {
+          amount: { amount: body.annualPremiumAmount, currency: body.currency as 'INR' | 'USD' },
+          breakup: [
+            {
+              productCode: 'TERM-LIFE',
+              premium: { amount: body.annualPremiumAmount, currency: body.currency as 'INR' | 'USD' },
+            },
+          ],
+        };
+      }
+      return ok();
+    },
+  },
+  {
+    method: 'POST',
+    pattern: 'member-quotes/:memberQuoteId/submit',
+    handler: (_req, params) => {
+      const q = store.memberQuotes.find((x) => x.id === params.memberQuoteId);
+      if (!q) return notFound('member-quote-submit');
+      q.status = 'SUBMITTED';
+      return ok();
+    },
+  },
+  {
+    method: 'POST',
+    pattern: 'member-quotes/:memberQuoteId/finalize',
+    handler: (_req, params) => {
+      const q = store.memberQuotes.find((x) => x.id === params.memberQuoteId);
+      if (!q) return notFound('member-quote-finalize');
+      q.status = 'FINALIZED';
       return ok();
     },
   },

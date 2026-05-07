@@ -618,3 +618,71 @@ This entry catches the running log up to actual repo state. Twelve commits lande
 2. Burn down remaining V1_DEMO_ISSUES Pass 2 (P2.1 confirm-with-input is the highest-impact open item before tomorrow).
 3. Decide what to do with the unstaged `CORE_MEMORY.md` rework rules and the untracked design-principles deck / `Demo_Script_Day_in_the_Life.md` (commit, leave, or discard).
 4. Triage `backend/` and `ARCH_REVIEW_SCRATCH.md` — both look like residue from parallel work; confirm with user whether to gitignore, archive, or pursue.
+
+### 2026-05-07 (continued) — Backend deployed; investigation pass against `/Users/seriousblack/dev_anaira/group-pas/`
+
+User pointed at the live backend repo. Three-way diff (DSL ↔ deployed OpenAPI ↔ our mock) + code-level investigation against the actual Java/Spring source. Findings drive the day's build decisions.
+
+**Spec ⇔ deployed OpenAPI**: zero drift. 85 group-pas endpoints in DSL, 85 deployed, byte-identical method/path. DTO field counts match (QuoteDto:16, QuoteSummaryDto:6, ProposalDto:11, PolicyDto:17, MemberDto:24, MemberSummaryDto:11, PolicyMemberDto:19).
+
+**Mock ⇔ deployed delta**: our 86 mock endpoints include 7 that won't exist on backend — all expected/UI-only:
+- 4 `/awaiting-approval` (UI maker-checker overlay; deletes when backend ships real approval; see below).
+- 1 `/policies/:id/pending-breakdown` (V1 interim assumption #5 — derive client-side; backend has no plans for it).
+- 2 proposal-scoped `/proposals/:id/members` shortcuts (we resolve to backend's `/policies/:id/members` via the proposal's policyId).
+
+Backend has **6 GCL `MemberQuote` endpoints we deliberately didn't mock** — those are out of V1 demo cuts. **Backend has them all implemented** (`MemberQuoteAPI.java`, `MemberQuoteCommands.java` are real, not stubs). Decision (this turn): build the GCL frontends so the placeholder tab stops being a placeholder.
+
+**Critical backend-status findings (read directly from Java source):**
+
+1. **File upload — NOT WIRED.**
+   - `quotation/QuotationCommand/src/main/java/com/anaira/quotation/command/FileUrlCommands.java:21` throws `UnsupportedOperationException("File URL generation not yet wired")` for both upload + download. Comment: `// TODO: wire S3 presigner — cross-cutting infra not in repo yet.`
+   - `policyAdmin/PolicyAdminCommand/src/main/java/com/anaira/policyadmin/command/PolicyFileUrlCommands.java` returns a stub URL pointing at `https://policy-files.local/stub/...` — not a real bucket; effectively broken too.
+   - **Implication:** D7 (PresignedUploader) stays deferred. D2/D3 (file-flow CRUD on Quote) likewise. Frontend won't build until backend infra lands.
+
+2. **Rule Engine — request-price is a no-op on backend.**
+   - `QuoteCommands.java:110` calls `quote.requestPrice()` which emits `QuotePriceRequested` to Kafka. **No listener consumes that event** (verified via grep across `quotation`, `issuance`, `policyAdmin` modules — only test references).
+   - DSL has `Quote.updatePremium(premium)` as a domain method but **NO REST endpoint** is exposed for it (`QuotationApi.api` lacks a `PUT /quotes/:id/premium`). So Sales currently has no way to manually set the premium against the real backend.
+   - Decision (this turn): **keep "Request price" button** (it's the expected production flow once Rule Engine lands), keep the mock simulator, do NOT add a manual-entry UI today (would require backend exposing `updatePremium` over REST first).
+
+3. **Number generation — sync, in-memory counter.**
+   - `policyAdmin/.../NumberGeneratorClient.java`: `ConcurrentMap<String, AtomicLong>` returning `CLI-NNN` / `POL-NNN` / `MEM-NNN` / `CNT-NNN`. Live verified: `POST /clients` returns `clientId` (UUID) + `clientNumber` synchronously.
+   - **Implication:** no polling needed for numbers. `CreateClientResponse` carries them.
+
+4. **Float Management — stub, always RESERVED.**
+   - `policyAdmin/.../FloatManagementClient.java`: `doReserve` always returns `FloatReservationStatus.RESERVED` with `R-NNN`.
+   - `app/src/main/.../MockFloatManagementClient.java`: `deduct` returns a fresh UUID, no ledger.
+   - **Implication:** `FLOAT_UNAVAILABLE` void reason and `PENDING_FLOAT_RESERVATION` pending reason can't naturally trigger via real backend. Decision (this turn): drop the `MEM-0009` VOID/`FLOAT_UNAVAILABLE` fixture row to align frontend with backend reality.
+
+5. **Maker-checker on Quote — does NOT exist in spec.**
+   - `QuotationDomain.domain:152` comment on `submit()` says "internal approval/QC complete" — meaning the submitter QCs their own work; no separate Checker entity. Verified via grep: zero `approve`/`maker`/`checker` references in `quotation/` source or DSL.
+   - PAM module has a "MemberApprovalCompletedListener" but that's for **member-enrollment-time approval** (PAM workflow's `RequestApproval` step routes to a "central Approval module" outside this codebase). Quote-level has no equivalent.
+   - **Implication:** the UI-only `awaitingApproval` overlay has no backend counterpart and isn't getting one without an explicit DSL change. Either keep the overlay forever, or escalate to backend for a DSL extension.
+   - **Specific question to backend** drafted in this turn (in chat) for the user to forward.
+
+6. **Workflows (Temporal) — running for PAM only.**
+   - `policyAdmin/PolicyAdminWorkflow/.../WorkflowRuntimeConfiguration.java` wires Temporal in `app/` profile. PAM's `MemberEnrollmentFlow` and `PolicyActivationFlow` execute on Temporal in production.
+   - `issuance-code-review.md` and direct grep: Quote and Proposal workflows are NOT yet running. Quote/Proposal state transitions are direct command handlers, no async workflow.
+   - **Implication:** activation cascade demo is real on backend (scenarios.sh proves it); Quote→Proposal handoff is sync on backend; `request-price` polling fiction is mock-only.
+
+7. **Error envelope — actual backend shape differs from V1 assumption #4.**
+   - `QuotationExceptionHandler.java` returns `{ "error": "NOT_FOUND" | "BAD_REQUEST", "message": "..." }` for 404/400. NOT the Spring default `{ timestamp, status, error, message, path }`.
+   - Other paths fall back to Spring's default 500 envelope.
+   - Decision (this turn): update `src/lib/api/error-mapper.ts` to handle both shapes.
+
+8. **Auth on dev — open.** `app/src/main/.../DevSecurityConfiguration.java`: `permitAll()` + synthetic dev-user with tenantId `00000000-0000-0000-0000-000000000001`. No headers needed for V1 demo.
+
+9. **Live data on dev backend (sparse):** 3 clients (Acme Corp ×3 — different reg numbers), 2 quotes (DRAFT), 2 proposals, 1 policy (POL-001), 1 member (MEM-001/PM-001 PENDING). User can re-run `scenarios.sh` against the dev URL for richer demo data, or ask backend to seed.
+
+10. **Known backend bugs surfaced by `issuance-code-review.md`:** census `memberId` silently discarded (synthetic IDs); float-deduct ↔ PAM-add not atomic (orphan reservations possible); `PolicyMember.canUpdate()` guard not invoked; no DB indexes on hot read columns. Not ours to fix; flagged for awareness mid-demo.
+
+**Decisions taken this turn:**
+- Drafted file-upload feedback question for backend (precise endpoints + status by module).
+- Updating error-mapper to absorb backend's actual `{ error, message }` shape.
+- Removing `MEM-0009` VOID/`FLOAT_UNAVAILABLE` fixture row (frontend follows backend stub reality).
+- Building GCL frontends (list + detail + create form + sidebar nav update + mock routes) since backend exposes the contract.
+- Keep request-price button + mock simulator as-is; defer manual-entry UI until backend exposes `PUT /quotes/:id/premium`.
+- Maker-checker overlay stays as permanent V1 fixture pending a backend DSL extension.
+
+**Files about to touch:** `src/lib/api/error-mapper.ts`, `src/mocks/group-pas/policy-admin/members.ts`, new `src/app/quotation/member-quotes/{page.tsx,[id]/page.tsx}`, new `schemas/member-quote.json` + `schemas/member-quote-detail.json` + create form, sidebar nav update.
+
+**Next:** execute the above, verify, commit, push.

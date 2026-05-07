@@ -7,12 +7,12 @@
       "id": "quote-member-quotes-empty",
       "type": "key-value-grid",
       "props": {
-        "title": "GCL Member Quotes",
-        "description": "Member-quote authoring is not part of V1. This tab is a placeholder so deep-links keep working as the GCL workflow lights up post-V1.",
+        "title": "GCL Member Quotes — different shape from GTL",
+        "description": "MemberQuotes hang off a Policy, not a Quote — they're created per-loan-disbursement after the GCL master policy is in place. Open the GCL list directly to manage them.",
         "columns": 1,
-        "data": { "availability": "Coming in a future release" },
+        "data": { "where": "→ /quotation/member-quotes (linked from sidebar)" },
         "fields": [
-          { "id": "availability", "label": "Availability", "accessorKey": "availability" }
+          { "id": "where", "label": "GCL workflow lives at", "accessorKey": "where" }
         ]
       }
     }

@@ -1,7 +1,22 @@
-// Spring default error envelope: { timestamp, status, error, message, path }.
-// Backend will ship a richer { code, message, fieldErrors[] } envelope on
-// request once a V1 form needs per-field validation feedback — see
-// context/ARCH_TRANSITION.md → "Error response shape" for the trigger.
+// Backend error envelopes — two shapes seen in the wild as of 2026-05-07
+// (verified against the deployed Spring service in
+// `/Users/seriousblack/dev_anaira/group-pas/`):
+//
+// 1. Module-specific @RestControllerAdvice (e.g. QuotationExceptionHandler,
+//    PolicyAdminGlobalExceptionHandler) returns:
+//       { "error": "NOT_FOUND" | "BAD_REQUEST", "message": "..." }
+//    The `error` field is a status-class string, not Spring's "Not Found"
+//    reason phrase.
+//
+// 2. Anything not caught by an @ExceptionHandler falls back to Spring's
+//    default DefaultErrorAttributes envelope:
+//       { timestamp, status, error, message, path }
+//
+// Both share the `error` and `message` fields, so a permissive parser that
+// reads `message` (with `error` as fallback) handles both cleanly. We retain
+// the optional Spring fields for the day backend adopts a richer
+// { code, message, fieldErrors[] } envelope (per V1 interim assumption #4
+// upgrade trigger — see context/ARCH_TRANSITION.md → "Error response shape").
 
 export interface SpringErrorEnvelope {
   timestamp?: string;
@@ -9,6 +24,9 @@ export interface SpringErrorEnvelope {
   error?: string;
   message?: string;
   path?: string;
+  // Reserved for the future field-level envelope upgrade.
+  code?: string;
+  fieldErrors?: Array<{ field: string; code: string; message: string }>;
 }
 
 export class ApiError extends Error {
@@ -32,7 +50,14 @@ export async function parseSpringError(res: Response): Promise<ApiError> {
     const text = await res.text();
     if (text) {
       envelope = JSON.parse(text) as SpringErrorEnvelope;
-      if (envelope.message) message = envelope.message;
+      // Prefer `message` (both shapes carry it), fall back to `error` for
+      // the module-specific shape that may have only `error: "BAD_REQUEST"`
+      // with no `message`.
+      if (envelope.message) {
+        message = envelope.message;
+      } else if (envelope.error) {
+        message = envelope.error;
+      }
     }
   } catch {
     // body wasn't JSON; keep statusText fallback.

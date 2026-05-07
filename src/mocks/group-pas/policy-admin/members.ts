@@ -177,24 +177,10 @@ export const MEMBERS: Member[] = [
     transactionRefs: ['TXN-0008'],
   },
 
-  // ── VOID — every MemberVoidReason ──
-  {
-    id: 'MEM-0009',
-    memberNumber: 'M-2026-00009',
-    policyId: POLICY_ID,
-    policyMemberId: 'PMB-V001',
-    planNo: PLAN_NO,
-    state: 'VOID',
-    voidReason: 'FLOAT_UNAVAILABLE',
-    name: 'Yashvi Bhat',
-    dob: '1992-03-17',
-    gender: 'F',
-    salary: 980_000,
-    occupation: 'Engineer',
-    sumInsured: 23_520_000,
-    premium: samplePremium,
-    transactionRefs: ['TXN-0009'],
-  },
+  // ── VOID — three reasons (FLOAT_UNAVAILABLE removed: backend's
+  // FloatManagementClient stub always returns RESERVED, so this scenario
+  // can't naturally happen. State enum kept in state-map for the day backend
+  // randomises the stub.) ──
   {
     id: 'MEM-0010',
     memberNumber: 'M-2026-00010',

@@ -456,7 +456,7 @@ Useful to know which records to use during the demo.
 Note on which **policy** each member is on:
 - MEM-0001..MEM-0004 sit on **POL-2026-0002** (PENDING) — perfect for demoing the activation watch (F2).
 - MEM-0005..MEM-0008 sit on **POL-2026-0001** (ACTIVE).
-- MEM-0009..MEM-0013 also sit on POL-2026-0001 (mix of VOID + CANCELLED + ACTIVE).
+- MEM-0010..MEM-0013 also sit on POL-2026-0001 (mix of VOID + CANCELLED + ACTIVE).
 
 | ID | Policy | State | Reason | Best for showing |
 |---|---|---|---|---|
@@ -465,8 +465,7 @@ Note on which **policy** each member is on:
 | MEM-0003 | POL-2026-0002 | PENDING | PENDING_POLICY_ACTIVATION | "Awaiting policy activation" |
 | MEM-0004 | POL-2026-0002 | PENDING | PENDING_POLICY_ACTIVATION | Second example of same reason |
 | MEM-0005 | POL-2026-0001 | ACTIVE | — | The successful end-state. Linked from PMB-0011's "Open in Policy Admin" action. |
-| MEM-0009 | POL-2026-0001 | VOID | FLOAT_UNAVAILABLE | Void reason banner |
-| MEM-0010 | POL-2026-0001 | VOID | APPROVAL_REJECTED | |
+| MEM-0010 | POL-2026-0001 | VOID | APPROVAL_REJECTED | Void reason banner |
 | MEM-0011 | POL-2026-0005 | VOID | POLICY_CANCELLED | (Note: POL-2026-0005 is itself CANCELLED) |
 | MEM-0012 | POL-2026-0001 | VOID | WITHDRAWN_BY_PROPOSER | |
 | **MEM-0013** | POL-2026-0001 | **CANCELLED** | "Member resigned from Acme Industries…" | The free-text cancellation reason — the demo's only example of a CANCELLED member. Reach it via /policy-admin/members/MEM-0013 directly, or via POL-2026-0001 → Members tab. |

@@ -23,12 +23,13 @@ import type {
   PolicyPendingReason,
   PolicyState,
 } from '@/types/group-pas/policy-admin';
-import type { QuoteStatus } from '@/types/group-pas/quotation';
+import type { MemberQuoteStatus, QuoteStatus } from '@/types/group-pas/quotation';
 
 export type Variant = NonNullable<BadgeProps['variant']>;
 
 export type EntityKind =
   | 'quote'
+  | 'memberQuote'
   | 'proposal'
   | 'policyMember'
   | 'policy'
@@ -39,6 +40,12 @@ export interface StateMeta {
   label: string;
   variant: Variant;
 }
+
+const MEMBER_QUOTE_STATES: Record<MemberQuoteStatus, StateMeta> = {
+  DRAFT: { label: 'Draft', variant: 'secondary' },
+  SUBMITTED: { label: 'Submitted', variant: 'info' },
+  FINALIZED: { label: 'Finalized', variant: 'success' },
+};
 
 const QUOTE_STATES: Record<QuoteStatus, StateMeta> = {
   DRAFT: { label: 'Draft', variant: 'secondary' },
@@ -98,6 +105,7 @@ const CENSUS_SUBMISSION_STATES: Record<CensusSubmissionStatus, StateMeta> = {
 
 const STATE_MAPS: Record<EntityKind, Record<string, StateMeta>> = {
   quote: QUOTE_STATES,
+  memberQuote: MEMBER_QUOTE_STATES,
   proposal: PROPOSAL_STATES,
   policyMember: POLICY_MEMBER_STATES,
   policy: POLICY_STATES,

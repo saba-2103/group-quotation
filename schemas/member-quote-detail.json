@@ -1,0 +1,109 @@
+{
+  "id": "member-quote-detail-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "member-quote-detail-header",
+      "type": "page-header",
+      "props": {
+        "backHref": "/quotation/member-quotes",
+        "backLabel": "All member quotes",
+        "title": "Member Quote {{id}}",
+        "description": "Per-member GCL quote. Goes through DRAFT → SUBMITTED → FINALIZED. On finalize, a PolicyMember is created on the parent policy."
+      }
+    },
+    {
+      "id": "mq-state-summary",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/member-quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "columns": 4,
+        "fields": [
+          {
+            "id": "status",
+            "label": "Status",
+            "accessorKey": "status",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "DRAFT", "label": "Draft", "variant": "secondary" },
+              { "value": "SUBMITTED", "label": "Submitted", "variant": "info" },
+              { "value": "FINALIZED", "label": "Finalized", "variant": "success" }
+            ]
+          },
+          { "id": "name", "label": "Member", "accessorKey": "name" },
+          { "id": "policyId", "label": "Policy", "accessorKey": "policyId" },
+          { "id": "planNo", "label": "Plan", "accessorKey": "planNo" }
+        ]
+      }
+    },
+    {
+      "id": "mq-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/member-quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "stateActions": {
+          "DRAFT": ["set-premium", "submit"],
+          "SUBMITTED": ["finalize"],
+          "FINALIZED": []
+        },
+        "roleActions": {
+          "maker": ["set-premium", "submit"],
+          "checker": ["finalize"],
+          "ops": [],
+          "viewer": []
+        },
+        "actions": [
+          {
+            "id": "set-premium",
+            "label": "Set premium",
+            "icon": "Calculator",
+            "type": "open-modal",
+            "target": "set-member-quote-premium-form",
+            "variant": "outline"
+          },
+          {
+            "id": "submit",
+            "label": "Submit",
+            "icon": "Send",
+            "type": "api-mutation",
+            "refreshKey": "/api/quotation/member-quotes/{{id}}",
+            "api": { "endpoint": "/api/quotation/member-quotes/{{id}}/submit", "method": "POST" }
+          },
+          {
+            "id": "finalize",
+            "label": "Finalize",
+            "icon": "Lock",
+            "type": "api-mutation",
+            "refreshKey": "/api/quotation/member-quotes/{{id}}",
+            "api": { "endpoint": "/api/quotation/member-quotes/{{id}}/finalize", "method": "POST" },
+            "successMessage": "Member quote finalized; PolicyMember will appear on the policy."
+          }
+        ]
+      }
+    },
+    {
+      "id": "mq-identity",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/member-quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Member data",
+        "columns": 3,
+        "fields": [
+          { "id": "name", "label": "Name", "accessorKey": "name" },
+          { "id": "dob", "label": "Date of birth", "accessorKey": "dob", "type": "date" },
+          { "id": "gender", "label": "Gender", "accessorKey": "gender" },
+          { "id": "salary", "label": "Salary", "accessorKey": "salary", "type": "currency", "currency": "INR" },
+          { "id": "sumAssured", "label": "Sum assured", "accessorKey": "sumAssured", "type": "currency", "currency": "INR" },
+          { "id": "annualPremium", "label": "Annual premium", "accessorKey": "annualPremiumAmount", "type": "currency", "currency": "INR" }
+        ]
+      }
+    }
+  ]
+}

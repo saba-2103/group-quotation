@@ -220,10 +220,11 @@ export const groupInsuranceAppConfig: AppConfig = {
         icon: "FileText",
         subMenuItems: [
           {
-            // GCL placeholder — out of V1 scope; see context/ARCH_TRANSITION.md "GCL endpoints — placeholder only".
-            // No `url` keeps it non-clickable in the existing AppSidebar render.
+            // GCL Member Quotes — backend has the full MemberQuoteAPI deployed
+            // (verified 2026-05-07). See /quotation/member-quotes for the list.
             id: "member-quotes-gcl",
-            label: "Member Quotes (GCL) — coming soon"
+            label: "Member Quotes (GCL)",
+            url: "/quotation/member-quotes"
           }
         ]
       },
