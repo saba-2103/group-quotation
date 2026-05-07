@@ -10,10 +10,10 @@
         "title": "GCL Member Quotes",
         "description": "Member-quote authoring is not part of V1. This tab is a placeholder so deep-links keep working as the GCL workflow lights up post-V1.",
         "columns": 1,
+        "data": { "availability": "Coming in a future release" },
         "fields": [
-          { "id": "status", "label": "Availability", "accessorKey": "status", "valueMapping": [] }
-        ],
-        "data": { "status": "Coming in a future release" }
+          { "id": "availability", "label": "Availability", "accessorKey": "availability" }
+        ]
       }
     }
   ]

@@ -8,8 +8,44 @@ import { ErrorState } from "@/components/ui/error-state";
 import { DateDisplay } from "@/components/widgets/controls/dateWidget/DateDisplay";
 import { BADGE_COLOR_TO_VARIANT } from "./DataTable/constants";
 
-function renderFieldValue(field: KeyValueField, value: FieldValue | undefined): React.ReactNode {
-  if (value === null || value === undefined) return <span>-</span>;
+// Walks dotted accessor keys (e.g. "estimatedPremium.totalAmount") so the
+// schema can pull nested DTO fields without flattening.
+function getNested(source: unknown, path: string): unknown {
+  if (source == null || !path) return undefined;
+  return path
+    .split('.')
+    .reduce<unknown>(
+      (acc, key) =>
+        acc != null && typeof acc === 'object' && key in (acc as object)
+          ? (acc as Record<string, unknown>)[key]
+          : undefined,
+      source,
+    );
+}
+
+function isEmpty(v: unknown): boolean {
+  if (v === null || v === undefined) return true;
+  if (typeof v === 'string') return v.length === 0 || v === 'null';
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === 'object') return Object.keys(v as object).length === 0;
+  return false;
+}
+
+function renderFieldValue(field: KeyValueField, value: unknown): React.ReactNode {
+  // `presence` — render Configured / Not configured chip based on whether
+  // the source has a meaningful value. Used for opaque blobs (DMN ref,
+  // census-format JSON) where the demo just needs a "is it set" signal.
+  if (field.type === "presence") {
+    return isEmpty(value) ? (
+      <Badge variant="grey">Not configured</Badge>
+    ) : (
+      <Badge variant="success">Configured</Badge>
+    );
+  }
+
+  if (value === null || value === undefined) {
+    return <span className="text-muted-foreground">—</span>;
+  }
 
   switch (field.type) {
     case "badge": {
@@ -28,7 +64,40 @@ function renderFieldValue(field: KeyValueField, value: FieldValue | undefined): 
     }
     case "date":
       return <DateDisplay value={String(value)} />;
+    case "currency": {
+      const num = Number(value);
+      if (Number.isNaN(num)) return <span>{String(value)}</span>;
+      const currency = (field as { currency?: string }).currency ?? "INR";
+      return (
+        <span>
+          {new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency,
+            maximumFractionDigits: 0,
+          }).format(num)}
+        </span>
+      );
+    }
+    case "count": {
+      const arr = Array.isArray(value) ? value : null;
+      const n = arr ? arr.length : Number(value) || 0;
+      return (
+        <span>
+          {n} {n === 1 ? (field as { unit?: string }).unit ?? "item" : (field as { unitPlural?: string }).unitPlural ?? `${(field as { unit?: string }).unit ?? "items"}`}
+        </span>
+      );
+    }
     default:
+      // Empty strings render as "—" so a blank field reads consistently with
+      // null/undefined ones.
+      if (typeof value === "string" && value.length === 0) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      // Objects / arrays without an explicit type render as "—" rather than
+      // dumping JSON. Schemas should declare a type for non-scalar values.
+      if (typeof value === "object") {
+        return <span className="text-muted-foreground">—</span>;
+      }
       return <span>{String(value)}</span>;
   }
 }
@@ -70,7 +139,7 @@ export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => 
       style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
     >
       {fields.map((field: KeyValueField) => {
-        const value = sourceData ? sourceData[field.accessorKey] : undefined;
+        const value = getNested(sourceData, field.accessorKey);
 
         return (
           <div key={field.id} className="flex flex-col space-y-1.5">

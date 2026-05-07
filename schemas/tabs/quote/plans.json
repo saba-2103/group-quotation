@@ -12,9 +12,10 @@
       "props": {
         "title": "Plan structure (read-only for V1 demo — D1)",
         "description": "Add / edit / remove deferred to D1; the demo renders the plans configured on the fixture.",
-        "columns": 1,
+        "columns": 2,
         "fields": [
-          { "id": "plansSummary", "label": "Plans (count)", "accessorKey": "plans.length" }
+          { "id": "plansCount", "label": "Plans configured", "accessorKey": "plans", "type": "count", "unit": "plan", "unitPlural": "plans" },
+          { "id": "headcount", "label": "Census headcount", "accessorKey": "headcount" }
         ]
       }
     }

@@ -11,14 +11,13 @@
       },
       "props": {
         "title": "Proposal — read-only data carried from the source quote (W2 step 1)",
-        "columns": 2,
+        "columns": 3,
         "fields": [
           { "id": "id", "label": "Proposal ID", "accessorKey": "id" },
           { "id": "quoteId", "label": "Source quote", "accessorKey": "quoteId" },
           { "id": "clientId", "label": "Client", "accessorKey": "clientId" },
           { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
-          { "id": "memberToPlanMapping", "label": "Member-to-Plan DMN", "accessorKey": "memberToPlanMapping" },
-          { "id": "policyId", "label": "Created policy", "accessorKey": "policyId" },
+          { "id": "memberToPlanMapping", "label": "Member-to-Plan DMN", "accessorKey": "memberToPlanMapping", "type": "presence" },
           { "id": "policyNumber", "label": "Created policy #", "accessorKey": "policyNumber" }
         ]
       }

@@ -11,10 +11,10 @@
       },
       "props": {
         "title": "Member-to-Plan mapping (read-only for V1 demo — D3)",
-        "description": "DMN authoring is out of V1; only the file ref is shown. Replace flow is deferred to D3.",
+        "description": "DMN authoring is out of V1; the demo just signals whether a mapping is set. Replace flow is deferred to D3.",
         "columns": 1,
         "fields": [
-          { "id": "memberToPlanMappingJson", "label": "DMN mapping JSON", "accessorKey": "memberToPlanMappingJson" }
+          { "id": "mappingState", "label": "DMN mapping", "accessorKey": "memberToPlanMappingJson", "type": "presence" }
         ]
       }
     }

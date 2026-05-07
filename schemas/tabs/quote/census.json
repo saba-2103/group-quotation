@@ -15,7 +15,7 @@
         "columns": 2,
         "fields": [
           { "id": "headcount", "label": "Total headcount", "accessorKey": "headcount" },
-          { "id": "censusFileFormat", "label": "Census file format JSON", "accessorKey": "censusFileFormatJson" }
+          { "id": "censusFileFormat", "label": "Census file format", "accessorKey": "censusFileFormatJson", "type": "presence" }
         ]
       }
     }

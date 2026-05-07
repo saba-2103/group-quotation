@@ -11,8 +11,8 @@
       },
       "props": {
         "title": "Quote details",
-        "description": "Editing the policy detail is Maker-only on a DRAFT quote (deferred to D-edit; demo shows read-only).",
-        "columns": 2,
+        "description": "Read-only for V1. Maker-only edit lands in D-edit.",
+        "columns": 3,
         "fields": [
           { "id": "id", "label": "Quote ID", "accessorKey": "id" },
           { "id": "clientId", "label": "Client", "accessorKey": "clientId" },

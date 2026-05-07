@@ -23,8 +23,7 @@
           { "id": "expiryDate", "label": "Expiry date", "accessorKey": "expiryDate", "type": "date" },
           { "id": "inceptionDate", "label": "Inception date", "accessorKey": "inceptionDate", "type": "date" },
           { "id": "activationThreshold", "label": "Activation threshold (members)", "accessorKey": "activationThreshold" },
-          { "id": "premiumAmount", "label": "Estimated premium", "accessorKey": "estimatedPremium.amount" },
-          { "id": "premiumCurrency", "label": "Currency", "accessorKey": "estimatedPremium.currency" },
+          { "id": "premiumAmount", "label": "Estimated premium", "accessorKey": "estimatedPremium.amount", "type": "currency", "currency": "INR" },
           { "id": "proposalLink", "label": "Source proposal", "accessorKey": "proposalId" }
         ]
       }

@@ -86,32 +86,17 @@
       }
     },
     {
-      "id": "member-cancellation",
-      "type": "key-value-grid",
-      "dataSource": {
-        "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
-      },
-      "props": {
-        "title": "Cancellation note",
-        "description": "Free-text reason captured at the time of cancellation (CANCELLED state only).",
-        "columns": 1,
-        "fields": [
-          { "id": "cancellationReason", "label": "Cancellation reason", "accessorKey": "cancellationReason" }
-        ]
-      }
-    },
-    {
       "id": "member-additional-attributes",
       "type": "key-value-grid",
       "dataSource": {
         "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
       },
       "props": {
-        "title": "Additional attributes",
-        "description": "Product-specific extensions stored as opaque JSON in V1.",
+        "title": "Product-specific attributes",
+        "description": "Stored as opaque JSON in V1 — only a presence indicator is surfaced.",
         "columns": 1,
         "fields": [
-          { "id": "additionalAttributesJson", "label": "Additional attributes (JSON)", "accessorKey": "additionalAttributesJson" }
+          { "id": "additionalAttributes", "label": "Additional attributes", "accessorKey": "additionalAttributesJson", "type": "presence" }
         ]
       }
     }

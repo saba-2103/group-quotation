@@ -174,10 +174,11 @@
       },
       "props": {
         "title": "Classification & UW",
-        "columns": 2,
+        "description": "Workflow signals from the Rule Engine + UW workbench. The full payloads are technical; what's surfaced here is the demo-relevant summary.",
+        "columns": 4,
         "fields": [
-          { "id": "classificationResultJson", "label": "Classification result (JSON)", "accessorKey": "classificationResultJson" },
-          { "id": "uwDecisionJson", "label": "UW decision (JSON)", "accessorKey": "uwDecisionJson" },
+          { "id": "classificationResult", "label": "Classification result", "accessorKey": "classificationResultJson", "type": "presence" },
+          { "id": "uwDecision", "label": "UW decision", "accessorKey": "uwDecisionJson", "type": "presence" },
           { "id": "reclassificationCount", "label": "Re-classification count", "accessorKey": "reclassificationCount" },
           { "id": "floatDeductionId", "label": "Float deduction", "accessorKey": "floatDeductionId" }
         ]
