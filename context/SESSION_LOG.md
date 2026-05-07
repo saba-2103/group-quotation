@@ -208,3 +208,18 @@ Bulk delete (90 files, ~24,500 LoC removed):
 - Test failures: 2 files (`DataTable.unit`, `FormContainer.unit`) — confirmed pre-existing on the prior commit via stash dance; not introduced by this batch. Filed as part of pre-existing tech debt; will revisit in Batch 3 polish.
 
 **Next:** Phase 1 — types, mocks, API clients, widgets.
+
+---
+
+### 2026-05-07 — Thread handoff
+
+This conversation is closing because the context window is filling up. **Pick up in a new thread starting at Task 1.1.**
+
+State at handoff:
+- HEAD: `f5f97e8 feat(group-pas): Phase 0 teardown` on `feat/new-buisiness` (pushed).
+- Phase 0 (Tasks 0.1, 0.2) — done.
+- Batch 1 — Phase 1 — not started. Order to follow: 1.1 → 1.5 → 1.4 → 1.2 → 1.9 → 1.3 → 1.8. Tasks 1.6 (PresignedUploader) and 1.7 (useEnum) skipped for V1 demo per cuts D7, D8.
+- `useSmartQuery` already extended with `pollSchedule` + `stopWhen`; `STANDARD_POLL_SCHEDULE` exported from `src/lib/polling.ts`. No further widget-engine work needed before Phase 1.
+- Test failures pre-exist: `DataTable.unit`, `FormContainer.unit`. Will revisit in Batch 3 polish.
+
+Resume entry point: read `context/HANDOFF.md` first. It links to CORE_MEMORY, this log, and the V1 plan with the demo execution strategy section.
