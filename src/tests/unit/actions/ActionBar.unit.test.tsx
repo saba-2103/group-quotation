@@ -61,9 +61,17 @@ const ACTIONS: ActionConfig[] = [
   },
 ];
 
+// Test fixture mirrors the real Quote workflow:
+//   DRAFT  → Maker edits + sends for approval; Checker (after maker submits)
+//            calls `submit` (Approve) which transitions DRAFT → SUBMITTED.
+//   SUBMITTED is post-submit; Checker's next action would be 'send-to-client'
+//   etc. — represented here by `finalize` for brevity.
+//
+// `submit` is special-cased in ActionBar: only visible to Checker when
+// awaitingApproval=true (symmetric to the Maker lock).
 const STATE_ACTIONS: Record<string, string[]> = {
-  DRAFT: ['edit', 'send-for-approval'],
-  SUBMITTED: ['submit'],
+  DRAFT: ['edit', 'send-for-approval', 'submit'],
+  SUBMITTED: ['finalize'],
   ACCEPTED: ['finalize'],
 };
 
@@ -111,14 +119,20 @@ describe('ActionBar', () => {
     expect(within(toolbar).queryByRole('button', { name: 'Finalize' })).toBeNull();
   });
 
-  it('Checker in SUBMITTED sees Approve enabled; role-only actions for Maker (Edit) are HIDDEN, not disabled', () => {
+  it('Checker in DRAFT awaitingApproval=true sees Approve; Maker-only actions are HIDDEN', () => {
     currentRole = 'checker';
-    renderBar({ state: 'SUBMITTED' });
-    // Approve is allowed in SUBMITTED for checker.
+    renderBar({ state: 'DRAFT', awaitingApproval: true });
     expect(buttonByLabel('Approve')).not.toBeDisabled();
-    // Edit is Maker-only — Checker doesn't see it at all (deck v2 spec).
     const toolbar = screen.getByRole('toolbar');
     expect(within(toolbar).queryByRole('button', { name: 'Edit' })).toBeNull();
+  });
+
+  it('Checker in DRAFT awaitingApproval=false does NOT see Approve (symmetric to maker lock)', () => {
+    currentRole = 'checker';
+    renderBar({ state: 'DRAFT', awaitingApproval: false });
+    const toolbar = screen.getByRole('toolbar');
+    // Nothing for Checker to do until Maker has submitted.
+    expect(within(toolbar).queryByRole('button', { name: 'Approve' })).toBeNull();
   });
 
   it('Maker DRAFT with awaitingApproval=true locks edit + send-for-approval ("Awaiting checker approval")', () => {
@@ -143,9 +157,9 @@ describe('ActionBar', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('Checker clicking Approve in SUBMITTED dispatches the api-mutation through useActionHandler', async () => {
+  it('Checker clicking Approve in DRAFT awaitingApproval=true dispatches the api-mutation through useActionHandler', async () => {
     currentRole = 'checker';
-    renderBar({ state: 'SUBMITTED' });
+    renderBar({ state: 'DRAFT', awaitingApproval: true });
     await userEvent.click(buttonByLabel('Approve'));
     expect(mockHandleAction).toHaveBeenCalledTimes(1);
     expect(mockHandleAction.mock.calls[0][0].id).toBe('submit');

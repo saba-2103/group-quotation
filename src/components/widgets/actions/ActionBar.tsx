@@ -51,6 +51,15 @@ interface ActionBarPropsResolved {
 const SEND_FOR_APPROVAL_ID = 'send-for-approval';
 const CLEAR_APPROVAL_ID = 'clear-approval';
 
+// Actions the Maker can still take while their submission is awaiting checker
+// approval (the rest are locked with the "Awaiting checker approval" tooltip).
+// Plan task 1.9 table: Withdraw is available to both roles always.
+const NOT_LOCKED_BY_APPROVAL = new Set([CLEAR_APPROVAL_ID, 'withdraw']);
+
+// Approval-flow actions the Checker only sees once the Maker has actually
+// submitted (mirrors the Maker lock — pre-submission there's nothing to act on).
+const CHECKER_AWAITING_APPROVAL_ACTIONS = new Set(['submit', CLEAR_APPROVAL_ID]);
+
 export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
   const props = (config.props ?? {}) as ActionBarPropsResolved;
   const {
@@ -108,10 +117,19 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
         //     checker approval") since the lock is temporary.
         if (!roleOk) return null;
 
+        // Symmetric to the Maker lock: when awaitingApproval is false, the
+        // Checker has nothing to act on for the Maker's draft yet. Hide the
+        // approval-flow actions to keep the bar uncluttered.
+        const checkerWaiting =
+          role === 'checker' &&
+          !awaitingApproval &&
+          CHECKER_AWAITING_APPROVAL_ACTIONS.has(id);
+        if (checkerWaiting) return null;
+
         const lockedByApproval =
           awaitingApproval &&
           role === 'maker' &&
-          id !== CLEAR_APPROVAL_ID;
+          !NOT_LOCKED_BY_APPROVAL.has(id);
 
         let disabledReason: string | undefined;
         if (!stateOk) disabledReason = `Not available in ${state || 'this state'}`;
