@@ -44,6 +44,8 @@ Sources disagree in places. When they do, follow this order. Higher entries win.
 - **State-action map:** every list/detail schema that drives lifecycle UI carries a `stateActions: Record<State, ActionId[]>` block. The new `ActionBar` widget consumes this. See Task 1.3.
 - **Role-action map:** alongside `stateActions`, schemas may carry `roleActions: Record<Role, ActionId[]>`. The `ActionBar` enables an action only if both maps allow it for current state + role. See Task 1.9.
 - **Reason banners:** entities with `pendingReason` / `voidReason` / `cancellationReason` show a banner above the detail header explaining *why* an entity is in its current state. Mapping in `state-map.ts` (Task 1.8).
+- **State-driven sibling widgets, polling-with-stop, form-edit-vs-readonly switching, role as a widget-state key:** see [docs/STATE_MANAGEMENT_GUIDE.md §8](STATE_MANAGEMENT_GUIDE.md#8-patterns-the-schema-driven-engine-supports-verbosely-v1) for the canonical patterns. Every state-driven detail page and editable-by-state form follows §8.2 / §8.3 — don't reinvent.
+- **Composite cells (state + reason in one column):** *not* used in V1 — render state and reason as **separate columns**. Composite cell type deferred (see Open items).
 
 ---
 
@@ -399,11 +401,12 @@ Sub-tasks 2.4.x are parallel after the shell (2.3) lands.
 - Command: `RequestQuotePriceCommand` (POST `/quotes/:id/request-price`).
 - Premium shape: `QuotePremium` (total + byPlan breakdown) on `QuoteDto`.
 - Async behaviour: backend computes via Rule Engine; frontend polls per [context/ARCH_TRANSITION.md](../context/ARCH_TRANSITION.md) → "Async transition signalling".
+- **Polling pattern:** [docs/STATE_MANAGEMENT_GUIDE.md §8.1](STATE_MANAGEMENT_GUIDE.md#81-polling-until-an-async-backend-computation-completes). Use `dataSource.refreshInterval` + `dataSource.stopWhen` (already supported by `useSmartQuery`).
 
 **Output:**
-- `schemas/tabs/quote/pricing.json` — "Request price" button (Maker only, DRAFT only). On click: call command, then refetch quote every 5s until `premium` populated or 30s timeout. Show in-progress banner during poll. Display total + per-plan breakdown card.
+- `schemas/tabs/quote/pricing.json` — "Request price" button (Maker only, DRAFT only). On click: trigger the action, then poll the Quote endpoint every 5s with `stopWhen: { "!=": [{ "var": "premium" }, null] }`. Component-level 30s hard timeout flips a "still working" banner. Display total + per-plan breakdown card.
 
-**Done when:** action triggers refetch loop; mock route flips a quote's premium after first refetch to validate.
+**Done when:** action triggers refetch loop; polling stops when premium populates; mock route flips a quote's premium after first refetch to validate.
 
 ### Task 2.4.6 — Member Quotes (GCL) placeholder tab
 
@@ -456,7 +459,7 @@ Sub-tasks 2.4.x are parallel after the shell (2.3) lands.
   - Overview: state, threshold, dates, premium, links to source proposal & quote.
   - Pending breakdown card showing `Map<pendingReason, count>`.
   - Members tab embedding `schemas/tabs/policy/members.json` (next).
-- `schemas/tabs/policy/members.json` — list of members for this policy with state filter, saved-view chips: Pending, Active, Void, **Cancelled**. Render `pendingReason` as an inline badge column on PENDING rows (e.g. `PENDING · awaiting approval`).
+- `schemas/tabs/policy/members.json` — list of members for this policy with state filter, saved-view chips: Pending, Active, Void, **Cancelled**. Render `state` and `pendingReason` as **two separate columns** (per V1 convention — composite cell type is deferred; see Open items). PENDING rows show both badges side by side; non-PENDING rows leave the reason column empty.
 - `ActionBar` with `stateActions`: PENDING/ACTIVE → `cancel` (Checker only). Otherwise none.
 - `src/app/policy-admin/policies/[id]/page.tsx`.
 
@@ -626,3 +629,12 @@ Sub-tasks 2.4.x are parallel after the shell (2.3) lands.
 - Workflow polling cadence — 5s default; revisit if it feels wrong in demo.
 - Whether Quote detail header should embed the action bar inline or as a sticky footer — design call after Task 2.3 lands.
 - Role expansion — V1 ships Maker/Checker/Ops/Viewer. If demo needs UW-as-distinct-role (not just "read-only of REVIEW_PENDING"), add it to Task 1.9's role list.
+
+## Future widget-engine cleanups (not in V1)
+
+These were identified during the V1 architectural audit. They're solvable today via the patterns in [STATE_MANAGEMENT_GUIDE.md §8](STATE_MANAGEMENT_GUIDE.md#8-patterns-the-schema-driven-engine-supports-verbosely-v1) and don't block any V1 task. Re-evaluate when the future archV1 lands; if archV1 doesn't make them implicit, file them as proposals.
+
+- **Composite cell type** — render multiple sub-elements (e.g. `state` + `pendingReason` badges) in one column. Skipped for V1 (use two columns). ~20 LOC when needed.
+- **`state-conditional-section` widget** — wraps a `cases: Record<State, WidgetConfig>` map and routes internally, so detail pages don't repeat the publish-then-gate plumbing per state. Replaces the verbose §8.2 pattern.
+- **`disabledWhen` on form fields** — add to `FieldConfig`, evaluate against parent context (entity state + role) so a form can be edit-or-read-only with one schema instead of two siblings (§8.3). Requires `WidgetRenderer` to thread parent context to children.
+- **`state-publisher` convenience widget** — small helper that fetches via `dataSource` and writes one field to `useWidgetState`. Built when first needed (PolicyMember detail) per §8.2; reused after.

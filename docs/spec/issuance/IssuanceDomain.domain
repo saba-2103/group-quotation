@@ -1,0 +1,325 @@
+package com.anaira.issuance.domain;
+
+// ── Proposal aggregate ─────────────────────────────────────────────────────────
+// States: DRAFT → SUBMITTED → FINALIZED → POLICY_CREATED (terminal)
+//         {DRAFT, SUBMITTED} → CANCELLED (terminal)
+// W2: ProposalFlow — created from finalized Quote; mutated via update; submit locks edits;
+//     finalize plugs into Policy module (CreatePolicyCommand) to create the master policy.
+
+entity Proposal {
+    id: string
+    quoteId: string
+    clientId: string
+    policyType: string
+    state: ProposalState
+    plans: list<Plan>
+    memberToPlanMapping: string // DMN decision table as JSON string (carried from Quote)
+    aggregateCensus: AggregateCensus
+    estimatedPremium: QuotePremium
+    policyId?: string
+    policyNumber?: string
+
+    check isDraft() {
+        error("PRO_PRE_001", "Proposal must be in DRAFT state")
+    }
+
+    check isSubmitted() {
+        error("PRO_PRE_002", "Proposal must be in SUBMITTED state")
+    }
+
+    check isFinalized() {
+        error("PRO_PRE_003", "Proposal must be in FINALIZED state")
+    }
+
+    check canCancel() {
+        error("PRO_PRE_004", "Proposal can only be cancelled in DRAFT or SUBMITTED state")
+    }
+
+    // W2 step 1 — mutate plan/mapping/census/premium copied from finalized Quote
+    function update(
+        plans: list<Plan>,
+        memberToPlanMapping: string,
+        aggregateCensus: AggregateCensus,
+        estimatedPremium: QuotePremium
+    ): void {
+        precondition isDraft;
+        emits ProposalUpdated;
+    }
+
+    // W2 step 2 — internal QC complete; locks the proposal from further updates
+    function submit(): void {
+        precondition isDraft;
+        emits ProposalSubmitted;
+    }
+
+    // W2 step 3 — operator confirms move to policy creation; W2 flow proceeds to plug
+    // into Policy module via CreatePolicyCommand. POLICY_CREATED is set on PolicyCreated.
+    function finalize(): void {
+        precondition isSubmitted;
+        emits ProposalFinalized;
+    }
+
+    // W2 step 4 — called after Policy Admin returns the created policy shell
+    function recordMasterPolicy(policyId: string, policyNumber: string): void {
+        precondition isFinalized;
+        emits PolicyCreated;
+    }
+
+    function cancel(reason: string): void {
+        precondition canCancel;
+        emits ProposalCancelled;
+    }
+}
+
+// ── PolicyMember aggregate ───────────────────────────────────────────────────
+// States:
+//   CREATED to PRICED to MAF_PENDING to MAF_CONFIRMED to CLASSIFYING (GCL/MAF path)
+//   CREATED to PRICED to CLASSIFYING (non-MAF path)
+//   CLASSIFYING to APPROVED to SENT_FOR_ISSUANCE to ADDED (STP)
+//   CLASSIFYING to REPAIR_PENDING to CLASSIFYING (lane = REPAIR)
+//   CLASSIFYING to REFERRED_TO_UW to CLASSIFYING (UW approve, re-classify)
+//   CLASSIFYING to REFERRED_TO_UW to REJECTED (UW reject)
+//   CLASSIFYING to REJECTED (lane = REJECT)
+//   ARCHIVED reachable from any non-ADDED state (terminal)
+//   update(memberData) in any non-terminal, non-ADDED, non-SENT_FOR_ISSUANCE state resets to CREATED and clears premium
+// W3: MemberLifecycle - fully independent of W2; requires policy to exist.
+
+entity PolicyMember {
+    id: string
+    policyId: string
+    memberId: string
+    planNo: string
+    state: PolicyMemberState
+    memberData: MemberData
+    classificationResult?: ClassifyMemberResult
+    uwDecision?: UwDecisionResult
+    repairCorrections?: MemberRepairCorrections
+    premium?: MemberPremium
+    floatDeductionId?: string
+    reclassificationCount: int
+    censusSubmissionId?: string
+    censusRowNumber?: int
+
+    check isCreated() {
+        error("PMB_PRE_001", "PolicyMember must be in CREATED state")
+    }
+
+    check isPriced() {
+        error("PMB_PRE_002", "PolicyMember must be in PRICED state")
+    }
+
+    check isMAFPending() {
+        error("PMB_PRE_003", "PolicyMember must be in MAF_PENDING state")
+    }
+
+    check isClassifying() {
+        error("PMB_PRE_004", "PolicyMember must be in CLASSIFYING state")
+    }
+
+    check isRepairPending() {
+        error("PMB_PRE_005", "PolicyMember must be in REPAIR_PENDING state")
+    }
+
+    check isReferredToUw() {
+        error("PMB_PRE_006", "PolicyMember must be in REFERRED_TO_UW state")
+    }
+
+    check isApproved() {
+        error("PMB_PRE_007", "PolicyMember must be in APPROVED state")
+    }
+
+    check isSentForIssuance() {
+        error("PMB_PRE_008", "PolicyMember must be in SENT_FOR_ISSUANCE state")
+    }
+
+    check canUpdate() {
+        error("PMB_PRE_009", "PolicyMember cannot be updated once SENT_FOR_ISSUANCE, ADDED, REJECTED, or ARCHIVED")
+    }
+
+    check canArchive() {
+        error("PMB_PRE_010", "PolicyMember cannot be archived once ADDED or already ARCHIVED")
+    }
+
+    check isNotTerminal() {
+        error("PMB_INV_001", "PolicyMember is in a terminal state (ADDED, REJECTED, or ARCHIVED)")
+    }
+
+    invariant isNotTerminal;
+
+    // Replace memberData; resets state to CREATED and clears premium so the member is re-priced
+    function update(memberData: MemberData): void {
+        precondition canUpdate;
+        emits MemberUpdated;
+    }
+
+    // W3: calls Rule Engine calculate-premium internally; CREATED → PRICED
+    function priceMember(premium: MemberPremium): void {
+        precondition isCreated;
+        emits MemberPriced;
+    }
+
+    // W3: MAF flow — applicable for GCL or specific product rules; PRICED → MAF_PENDING
+    function sendMAF(): void {
+        precondition isPriced;
+        emits MemberMAFSent;
+    }
+
+    function confirmMAF(): void {
+        precondition isMAFPending;
+        emits MemberMAFConfirmed;
+    }
+
+    // W3: enter CLASSIFYING — Rule Engine classify-member result passed in
+    function classify(result: ClassifyMemberResult): void {
+        precondition isPriced;
+        emits MemberClassificationStarted;
+    }
+
+    // W3: lane = STP — confirms the priced member and transitions to APPROVED
+    function approve(): void {
+        precondition isClassifying;
+        emits MemberApproved;
+    }
+
+    // W3: lane = REJECT
+    function reject(reason: string): void {
+        precondition isClassifying;
+        emits MemberRejected;
+    }
+
+    // W3: lane = REPAIR → emits MemberRepairRequested → Kafka → Ops Workbench
+    function markRepairPending(errors: list<ClassificationError>): void {
+        precondition isClassifying;
+        emits MemberRepairRequested;
+    }
+
+    // W3: MemberRepairCompleted received via Kafka processor → re-classify
+    function completeMemberRepair(corrections: MemberRepairCorrections): void {
+        precondition isRepairPending;
+    }
+
+    // W3: lane = REVIEW → emits MemberReferredToUw → Kafka → UW Workbench
+    function markReferredToUw(uwQuestionSetCode: string): void {
+        precondition isClassifying;
+        emits MemberReferredToUw;
+    }
+
+    // W3: UW workbench approved the case; REFERRED_TO_UW → CLASSIFYING (caller re-runs classify)
+    function approveUwCase(): void {
+        precondition isReferredToUw;
+        emits UwApprovedMember;
+    }
+
+    // W3: UW workbench rejected the case; REFERRED_TO_UW → REJECTED
+    function rejectUwCase(reason: string): void {
+        precondition isReferredToUw;
+        emits UwRejectedMember;
+    }
+
+    // W3: APPROVED → SENT_FOR_ISSUANCE; explicit handoff signal before Policy Admin call
+    function sendForIssuance(): void {
+        precondition isApproved;
+        emits MemberSentForIssuance;
+    }
+
+    // W3: Float deduction + Policy Admin add-member REST call — SENT_FOR_ISSUANCE → ADDED
+    function addMemberToPolicy(floatDeductionId: string, policyId: string): void {
+        precondition isSentForIssuance;
+        emits MemberAdded;
+    }
+
+    // Ops cleanup of unused members; terminal
+    function archive(reason: string): void {
+        precondition canArchive;
+        emits MemberArchived;
+    }
+}
+
+// ── Factories ──────────────────────────────────────────────────────────────────
+
+service ProposalFactory {
+    // W2 trigger: called on QuoteFinalized; copies plan/mapping/census/premium from Quote
+    function create(
+        quoteId: string,
+        clientId: string,
+        policyType: string,
+        plans: list<Plan>,
+        memberToPlanMapping: string,
+        aggregateCensus: AggregateCensus,
+        estimatedPremium: QuotePremium
+    ): Proposal;
+}
+
+service PolicyMemberFactory {
+    function create(
+        policyId: string,
+        memberId: string,
+        planNo: string,
+        memberData: MemberData,
+        censusSubmissionId?: string,
+        censusRowNumber?: int
+    ): PolicyMember;
+}
+
+// ── CensusSubmission aggregate ─────────────────────────────────────────────────
+// States: INITIATED to INGESTED to SUBMITTED to COMPLETED
+//         {INITIATED, INGESTED} to FAILED (terminal)
+// Bulk member upload: UI calls initiate (gets a presigned uploadUrl), PUTs the file,
+// calls ingest (parses + validates rows), then submit (fans out per-row member workflows).
+
+entity CensusSubmission {
+    id: string
+    policyId: string
+    file: CensusSubmissionFileRef
+    status: CensusSubmissionStatus
+    totalRows: int
+    acceptedRows: int
+    rejectedRows: int
+    createdMemberCount: int
+
+    check isInitiated() {
+        error("CSB_PRE_001", "CensusSubmission must be in INITIATED state")
+    }
+
+    check isIngested() {
+        error("CSB_PRE_002", "CensusSubmission must be in INGESTED state")
+    }
+
+    check isSubmitted() {
+        error("CSB_PRE_003", "CensusSubmission must be in SUBMITTED state")
+    }
+
+    check canSubmit() {
+        error("CSB_PRE_004", "CensusSubmission must be INGESTED with at least one accepted row")
+    }
+
+    check canFail() {
+        error("CSB_PRE_005", "CensusSubmission can only fail from INITIATED or INGESTED")
+    }
+
+    function recordIngestion(totalRows: int, acceptedRows: int, rejectedRows: int): void {
+        precondition isInitiated;
+        emits CensusFileIngested;
+    }
+
+    function submit(): void {
+        precondition canSubmit;
+        emits CensusSubmissionSubmitted;
+    }
+
+    function recordCompletion(): void {
+        precondition isSubmitted;
+        emits CensusSubmissionCompleted;
+    }
+
+    function markFailed(reason: string): void {
+        precondition canFail;
+        emits CensusSubmissionFailed;
+    }
+}
+
+service CensusSubmissionFactory {
+    // Issues an opaque presigned uploadUrl + fileRef from the storage layer
+    // and persists the submission in INITIATED.
+    function initiate(policyId: string): CensusSubmission;
+}

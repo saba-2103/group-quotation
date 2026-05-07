@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { DataSourceConfig } from '@/types/widget';
 import { useWidgetState } from './useWidgetState';
+import { evaluateCondition } from '@/lib/conditions';
 
 export function useSmartQuery(dataSource?: DataSourceConfig) {
-    const { api, valueKey, refreshInterval, stateDependencies } = dataSource || {};
+    const { api, valueKey, refreshInterval, stopWhen, stateDependencies } = dataSource || {};
     const { values } = useWidgetState();
 
     // Extract relevant state for dependencies
@@ -62,7 +63,16 @@ export function useSmartQuery(dataSource?: DataSourceConfig) {
 
       return jsonData;
     },
-        refetchInterval: refreshInterval,
+        // Function form so we can stop polling once `stopWhen` is satisfied
+        // by the latest response (e.g. wait for an async backend computation
+        // such as RequestQuotePrice to populate `premium`). Falls back to the
+        // plain interval when no stopWhen is given. Returns false to stop.
+        refetchInterval: !refreshInterval ? false : (query) => {
+            if (!stopWhen) return refreshInterval;
+            const data = query.state.data;
+            if (data && evaluateCondition(stopWhen, data)) return false;
+            return refreshInterval;
+        },
         enabled: !!api,
     });
 }

@@ -1,0 +1,122 @@
+package com.anaira.policyadmin.postgres;
+
+postgres ClientEntity {
+    id: string
+    clientNumber: string
+    name: string
+    alternateName: string
+    businessRegistrationNumber: string
+    incorporationDate: date
+    gstRegistrationNumber: string
+    taxReferenceNumber: string
+    clientCategory: string
+    industryCategory: string
+    countryCode: string
+    communicationPreference: string
+    clientUrl: string
+    contactPersonName: string
+    contactPersonPhone: string
+    isSubsidiary: boolean
+    isVip: boolean
+    isBlacklisted: boolean
+    effectiveDate: date
+    endDate: date
+    state: string
+
+    @primary(id)
+    @unique(clientNumber)
+    @notNull(clientNumber)
+    @notNull(name)
+    @notNull(businessRegistrationNumber)
+    @notNull(countryCode)
+    @notNull(effectiveDate)
+    @notNull(state)
+    @notNull(isSubsidiary)
+    @notNull(isVip)
+    @notNull(isBlacklisted)
+}
+
+postgres PolicyEntity {
+    id: string
+    policyNumber: string
+    clientId: string
+    proposalId: string
+    policyType: string
+    effectiveDate: date
+    expiryDate: date
+    premiumType: string
+    lineOfBusiness: string
+    riskTermClassification: string
+    inceptionDate: date
+    ageDefinitionRule: string
+    activationThreshold: int
+    pendingReason: string
+    state: string
+    estimatedPremiumAmount: double
+    estimatedPremiumCurrency: string
+
+    @primary(id)
+    @unique(policyNumber)
+    @notNull(policyNumber)
+    @notNull(clientId)
+    @notNull(proposalId)
+    @notNull(policyType)
+    @notNull(state)
+    @foreignKey(clientId) references ClientEntity(id)
+}
+
+postgres PolicyPlanEntity {
+    id: string
+    policyId: string
+    planNo: string
+    planName: string
+    productsJson: string
+    rateCardFile: string
+    coverAmountFormulaJson: string
+    freeCoverLimitFormulaJson: string
+
+    @primary(id)
+    @notNull(policyId)
+    @notNull(planNo)
+    @foreignKey(policyId) references PolicyEntity(id)
+}
+
+postgres MemberEntity {
+    id: string
+    memberNumber: string
+    policyId: string
+    policyMemberId: string
+    planNo: string
+    state: string
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    occupation: string
+    mobile: string
+    email: string
+    governmentIdType: string
+    governmentIdNumber: string
+    sumInsured: double
+    annualPremiumAmount: double
+    annualPremiumCurrency: string
+    premiumBreakupJson: string
+    uwDecisionJson: string
+    transactionRefsJson: string
+    floatReservationId: string
+    pendingReason: string
+    voidReason: string
+    cancellationReason: string
+    additionalAttributesJson: string
+
+    @primary(id)
+    @unique(memberNumber)
+    @notNull(memberNumber)
+    @notNull(policyId)
+    @notNull(policyMemberId)
+    @notNull(planNo)
+    @notNull(state)
+    @notNull(name)
+    @notNull(dob)
+    @foreignKey(policyId) references PolicyEntity(id)
+}

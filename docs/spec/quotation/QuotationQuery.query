@@ -1,0 +1,82 @@
+package com.anaira.quotation.query;
+
+data QuoteDto {
+    id: string
+    clientId: string
+    policyType: string
+    premiumType: string
+    effectiveDate: date
+    expiryDate: date
+    inceptionDate: date
+    ageDefinitionRule: string
+    riskTermClassification: string
+    lineOfBusiness: string
+    status: string
+    plans: list<QuotePlanDto>
+    headcount: int
+    estimatedPremium: EstimatedPremiumDto
+    memberToPlanMappingJson: string
+    censusFileFormatJson: string
+}
+
+data QuoteSummaryDto {
+    id: string
+    clientId: string
+    policyType: string
+    status: string
+    headcount: int
+    premiumAmount: Money
+}
+
+data QuotePlanDto {
+    id: string
+    planNo: string
+    planName: string
+    productsJson: string
+    rateCardFile: string
+    coverAmountFormulaJson: string
+    freeCoverLimitFormulaJson: string
+}
+
+data EstimatedPremiumDto {
+    totalAmount: double
+    currency: string
+    byPlanJson: string
+}
+
+data MemberQuoteDto {
+    id: string
+    policyId: string
+    planNo: string
+    status: string
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    sumAssured: double
+    annualPremiumAmount: double
+    annualPremiumCurrency: string
+    premiumBreakupJson: string
+}
+
+query-set QuoteQueries {
+    reads QuoteEntity;
+    reads QuotePlanEntity;
+
+    query GetQuoteByIdQuery(quoteId: string): QuoteDto;
+    query FindQuotesByClientQuery(clientId: string): list<QuoteSummaryDto>;
+    query FindQuotesByStatusQuery(status: string): list<QuoteSummaryDto>;
+    query SearchQuotesQuery(clientId: string, status: string, policyType: string, page: int, size: int): list<QuoteSummaryDto>;
+    query ListAllQuotesQuery(page: int, size: int): list<QuoteSummaryDto>;
+}
+
+query-set MemberQuoteQueries {
+    reads MemberQuoteEntity;
+
+    query GetMemberQuoteByIdQuery(memberQuoteId: string): MemberQuoteDto;
+    query FindMemberQuotesQuery(policyId: string, status: string): list<MemberQuoteDto>;
+}
+
+query-set EnumQueries {
+    query ListEnumTypeValuesQuery(enumType: string, search: string): list<string>;
+}

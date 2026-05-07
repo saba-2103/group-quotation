@@ -1,0 +1,106 @@
+package com.anaira.accounting.event;
+
+event AccountingEventCreated {
+    id: AccountingEventId
+    component: Component
+    lob: LineOfBusiness
+    businessKey: string
+    processCode: BusinessProcessCode
+    eventDate: date
+    detailCount: int
+}
+
+event AccountingEventPosted {
+    id: AccountingEventId
+    journalNumbers: list<JournalNumber>
+}
+
+event AccountingReversalEventCreated {
+    id: AccountingEventId
+    originalEventId: AccountingEventId
+}
+
+event AccountingEventFailed {
+    id: AccountingEventId
+    errorCode: string
+    errorMessage: string
+}
+
+event AccountingEventRetried {
+    id: AccountingEventId
+}
+
+event AccountingJournalPosted {
+    journalNumber: JournalNumber
+    accountingEventId?: AccountingEventId
+    journalDate: date
+    debitTotal: Money
+    creditTotal: Money
+    postedBy: string
+}
+
+event AccountingJournalReversed {
+    originalJournalNumber: JournalNumber
+    reversalJournalNumber: JournalNumber
+    reasonCode: string
+}
+
+event BalanceErrorDetected {
+    journalNumber: JournalNumber
+    debitTotal: Money
+    creditTotal: Money
+    difference: Money
+}
+
+event AccountingPeriodOpened {
+    periodId: PeriodId
+}
+
+event AccountingPeriodClosed {
+    periodId: PeriodId
+}
+
+event AccountingPeriodReopened {
+    periodId: PeriodId
+}
+
+event AccountingPeriodDeleted {
+    periodId: PeriodId
+    reason: string
+}
+
+event PostingRuleDefined {
+    ruleId: PostingRuleId
+    lob: LineOfBusiness
+    processCode: BusinessProcessCode
+    accountGroup: AccountGroup
+    accountSubgroup: AccountSubgroup
+    debitCreditIndicator: DebitCreditIndicator
+    glPseudoName: string
+}
+
+event PostingRuleUpdated {
+    ruleId: PostingRuleId
+    debitCreditIndicator: DebitCreditIndicator
+    glPseudoName: string
+    updatedBy: string
+}
+
+event PostingRuleDeleted {
+    ruleId: PostingRuleId
+    updatedBy: string
+}
+
+event AccountSummaryInitialized {
+    summaryId: SummaryId
+    lob: LineOfBusiness
+    entities: EntitySet
+    accountSubgroup: AccountSubgroup
+    currency: Currency
+}
+
+event AccountSummaryBalanceUpdated {
+    summaryId: SummaryId
+    previousBalance: Money
+    newBalance: Money
+}

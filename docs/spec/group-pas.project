@@ -1,0 +1,53 @@
+project group-pas {
+    name "group-pas"
+    groupId "com.anaira"
+    version "1.0.0"
+
+    section common {
+        data-module CommonData at com.anaira.common.data
+        domain-module CommonDomain(CommonData) at com.anaira.common.domain
+    }
+
+    section accounting {
+        data-module AccountingData(CommonData) at com.anaira.accounting.data
+        event-module AccountingEvent(CommonData, AccountingData) at com.anaira.accounting.event
+        domain-module AccountingDomain(CommonData, AccountingData, AccountingEvent) at com.anaira.accounting.domain
+        postgres-module AccountingPostgres(CommonData, AccountingData, AccountingDomain, AccountingEvent) at com.anaira.accounting.postgres
+        command-module AccountingCommand(CommonData, CommonDomain, AccountingData, AccountingDomain, AccountingEvent, AccountingPostgres) at com.anaira.accounting.command
+        query-module AccountingQuery(CommonData, AccountingData, AccountingDomain, AccountingPostgres) at com.anaira.accounting.query
+        api-module AccountingApi(CommonData, AccountingData, AccountingCommand, AccountingQuery) at com.anaira.accounting.api
+    }
+
+    section quotation {
+        data-module QuotationData(CommonData) at com.anaira.quotation.data
+        event-module QuotationEvent(CommonData, QuotationData) at com.anaira.quotation.event
+        domain-module QuotationDomain(CommonData, QuotationData, QuotationEvent) at com.anaira.quotation.domain
+        postgres-module QuotationPostgres(CommonData, QuotationData, QuotationDomain, QuotationEvent) at com.anaira.quotation.postgres
+        command-module QuotationCommand(CommonData, CommonDomain, QuotationData, QuotationDomain, QuotationEvent, QuotationPostgres) at com.anaira.quotation.command
+        query-module QuotationQuery(CommonData, QuotationData, QuotationDomain, QuotationPostgres) at com.anaira.quotation.query
+        api-module QuotationApi(CommonData, QuotationData, QuotationCommand, QuotationQuery) at com.anaira.quotation.api
+    }
+
+    section issuance {
+        data-module IssuanceData(CommonData) at com.anaira.issuance.data
+        event-module IssuanceEvent(CommonData, IssuanceData) at com.anaira.issuance.event
+        domain-module IssuanceDomain(CommonData, IssuanceData, IssuanceEvent) at com.anaira.issuance.domain
+        postgres-module IssuancePostgres(CommonData, IssuanceData, IssuanceDomain, IssuanceEvent) at com.anaira.issuance.postgres
+        command-module IssuanceCommand(CommonData, CommonDomain, IssuanceData, IssuanceDomain, IssuanceEvent, IssuancePostgres) at com.anaira.issuance.command
+        query-module IssuanceQuery(CommonData, IssuanceData, IssuanceDomain, IssuancePostgres) at com.anaira.issuance.query
+        api-module IssuanceApi(CommonData, IssuanceData, IssuanceCommand, IssuanceQuery) at com.anaira.issuance.api
+        processor-module IssuanceProcessor(CommonData, IssuanceData, IssuanceDomain, IssuanceEvent, IssuanceCommand) at com.anaira.issuance.processor
+    }
+
+    section policyAdmin {
+        data-module PolicyAdminData(CommonData) at com.anaira.policyadmin.data
+        event-module PolicyAdminEvent(CommonData, PolicyAdminData) at com.anaira.policyadmin.event
+        domain-module PolicyAdminDomain(CommonData, PolicyAdminData, PolicyAdminEvent) at com.anaira.policyadmin.domain
+        postgres-module PolicyAdminPostgres(CommonData, PolicyAdminData, PolicyAdminDomain, PolicyAdminEvent) at com.anaira.policyadmin.postgres
+        command-module PolicyAdminCommand(CommonData, CommonDomain, PolicyAdminData, PolicyAdminDomain, PolicyAdminEvent, PolicyAdminPostgres) at com.anaira.policyadmin.command
+        query-module PolicyAdminQuery(CommonData, PolicyAdminData, PolicyAdminDomain, PolicyAdminPostgres) at com.anaira.policyadmin.query
+        api-module PolicyAdminApi(CommonData, PolicyAdminData, PolicyAdminCommand, PolicyAdminQuery) at com.anaira.policyadmin.api
+        workflow-module MemberEnrollmentFlow(CommonData, PolicyAdminData, PolicyAdminDomain, PolicyAdminEvent, PolicyAdminCommand) at com.anaira.policyadmin.workflow
+        workflow-module PolicyActivationFlow(CommonData, PolicyAdminData, PolicyAdminDomain, PolicyAdminEvent, PolicyAdminCommand) at com.anaira.policyadmin.workflow
+    }
+}

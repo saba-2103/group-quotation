@@ -1,0 +1,140 @@
+package com.anaira.accounting.data;
+
+data AccountingEventId {
+    value: string
+}
+
+enum AccountingEventState {
+    PENDING
+    JOURNALS_CREATED
+    POSTED
+    ERROR
+    REVERSED
+}
+
+data EventDetailId {
+    value: string
+}
+
+data EventDetail {
+    id: EventDetailId
+    accountGroup: AccountGroup
+    accountSubgroup: AccountSubgroup
+    entities: EntitySet
+    effectiveDate: date
+    transactionDate: date
+    amount: Money
+    exchangeRate: float
+    glAmount: Money
+    shouldUpdateAccountSummary: boolean
+    billNumber: string
+    references: string
+    remarks: string
+    lineItemNumber: int
+}
+
+data EventDetailInput {
+    id: EventDetailId
+    accountGroup: AccountGroup
+    accountSubgroup: AccountSubgroup
+    entities: EntitySet
+    effectiveDate: date
+    transactionDate: date
+    amount: Money
+    exchangeRate: float
+    glAmount: Money
+    shouldUpdateAccountSummary: boolean
+    billNumber: string
+    references: string
+    remarks: string
+}
+
+data JournalNumber {
+    value: string
+}
+
+data JournalLineId {
+    value: string
+}
+
+enum JournalState {
+    PENDING
+    POSTED
+    REVERSED
+}
+
+enum JournalType {
+    SYSTEM
+    DIRECT
+    REVERSAL
+}
+
+data JournalDetail {
+    id: JournalLineId
+    accountSubgroup: AccountSubgroup
+    entities: EntitySet
+    transactionDate: date
+    transactionAmount: Money
+    exchangeRate: float
+    glAmount: Money
+    debitCreditIndicator: DebitCreditIndicator
+    glPseudoName: GlPseudoName
+    remarks: string
+    shouldUpdateSummary: boolean
+    lineItemNumber: int
+}
+
+data JournalLineInput {
+    accountSubgroup: AccountSubgroup
+    entities: EntitySet
+    transactionDate: date
+    transactionAmount: Money
+    exchangeRate: float
+    glAmount: Money
+    debitCreditIndicator: DebitCreditIndicator
+    glPseudoName: GlPseudoName
+    remarks: string
+    shouldUpdateSummary: boolean
+}
+
+data JournalLineUpdate {
+    lineId: string
+    line: JournalLineInput
+}
+
+data PeriodId {
+    value: string
+}
+
+enum PeriodState {
+    NOT_STARTED
+    OPEN
+    CLOSED
+    REOPENED
+}
+
+data PostingRuleId {
+    value: string
+}
+
+data SummaryId {
+    value: string
+}
+
+data SummaryUpdate {
+    summaryId: SummaryId
+    entityId: string
+    lob: LineOfBusiness
+    entities: EntitySet
+    accountSubgroup: AccountSubgroup
+    amountToApply: Money
+    balanceType: BalanceType
+}
+
+data PostingError {
+    accountGroup: string
+    accountSubgroup: string
+    lob: string
+    businessProcessCode: string
+    message: string
+}

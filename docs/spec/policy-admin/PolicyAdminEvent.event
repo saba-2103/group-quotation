@@ -1,0 +1,102 @@
+package com.anaira.policyadmin.event;
+
+// ── Client events ──────────────────────────────────────────────────────────────
+
+event ClientCreated {
+    clientId: string
+    clientNumber: string
+    name: string
+    alternateName?: string
+    businessRegistrationNumber: string
+    gstRegistrationNumber?: string
+    taxReferenceNumber?: string
+    clientCategory?: string
+    industryCategory?: string
+    countryCode: string
+    isSubsidiary: boolean
+    isVip: boolean
+    effectiveDate: date
+}
+
+// ── Policy events ──────────────────────────────────────────────────────────────
+
+event PolicyCreated {
+    policyId: string
+    policyNumber: string
+    clientId: string
+    proposalId: string
+    policyType: string
+    effectiveDate: date
+    expiryDate: date
+    premiumType: string
+    lineOfBusiness: string
+    riskTermClassification: string
+    inceptionDate: date
+    ageDefinitionRule: string
+    activationThreshold: int
+    pendingReason?: PolicyPendingReason
+    plans: list<PolicyPlanConfig>
+    estimatedPremium: Money
+}
+
+event PolicyActivated {
+    policyId: string
+    policyNumber: string
+    clientId: string
+}
+
+event PolicyCancelled {
+    policyId: string
+    reason?: string
+}
+
+// ── Member events ──────────────────────────────────────────────────────────────
+
+event MemberActivated {
+    policyId: string
+    memberId: string
+}
+
+// floatReservationId is null at emit time (factory emits before ReserveFloat runs).
+event MemberEnrolled {
+    policyId: string
+    memberId: string
+    memberNumber: string
+    policyMemberId: string
+    planNo: string
+    annualPremium: Money
+    floatReservationId?: string
+    transactionRefs: list<string>
+    additionalAttributesJson?: string
+}
+
+// PENDING → VOID. Pre-activation terminal.
+event MemberVoided {
+    policyId: string
+    memberId: string
+    voidReason: string
+    notes?: string
+}
+
+// ACTIVE → CANCELLED. Placeholder for future post-activation flow.
+event MemberCancelled {
+    policyId: string
+    memberId: string
+    reason: string
+}
+
+event MemberApprovalRequested {
+    policyId: string
+    memberId: string
+    sumInsured: double
+    planNo: string
+    productCode?: string
+    riskClass?: string
+}
+
+// ── Workflow-bridging events ───────────────────────────────────────────────────
+
+event MemberPendingForActivation {
+    policyId: string
+    memberId: string
+}

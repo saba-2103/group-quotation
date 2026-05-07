@@ -19,7 +19,22 @@ export interface DataSourceConfig {
         method: "GET" | "POST" | "PUT" | "DELETE";
         params?: Record<string, any>;
     };
+    /**
+     * If set, the query refetches on this interval (ms). Combined with
+     * `stopWhen`, this lets a widget poll until the response satisfies a
+     * condition (e.g. wait for an async backend computation to complete).
+     */
     refreshInterval?: number;
+    /**
+     * jsonLogic condition evaluated against the latest fetched data.
+     * When truthy, polling stops (refetchInterval returns false). Has no
+     * effect if `refreshInterval` isn't set.
+     *
+     * Example: poll a quote until premium populates —
+     *   refreshInterval: 5000,
+     *   stopWhen: { "!=": [{ "var": "premium" }, null] }
+     */
+    stopWhen?: Record<string, unknown>;
     valueKey?: string; // Key to extract from response or context
     stateDependencies?: string[]; // Keys in useWidgetState that trigger re-fetch
 }

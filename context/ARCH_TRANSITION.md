@@ -35,14 +35,17 @@ Once backend is live, the catch-all routes pass through to real backend. Fixture
 
 ---
 
-## Async transition signalling — polling
+## Async transition signalling — polling with stop-condition
 
 **Interim contract (V1):**
-`RequestQuotePrice`, `ProposalMember` classification, and policy/member activation all run async on the backend. Frontend polls the relevant `GET` endpoint on a 5s interval after triggering the action, with a 30s overall timeout that surfaces a "still working" banner. Mock routes flip state on a timer to simulate completion.
+`RequestQuotePrice`, PolicyMember classification, and policy/member activation all run async on the backend. Frontend polls the relevant `GET` endpoint on a 5s interval after triggering the action, with a 30s component-level hard timeout. Polling stops automatically when the response satisfies a jsonLogic `stopWhen` condition declared on `dataSource` (e.g. `{ "!=": [{ "var": "premium" }, null] }`). Mock routes flip state on a timer to simulate completion.
+
+`useSmartQuery` was extended to support `stopWhen` (uses TanStack's function-form `refetchInterval`). See [docs/STATE_MANAGEMENT_GUIDE.md §8.1](../docs/STATE_MANAGEMENT_GUIDE.md#81-polling-until-an-async-backend-computation-completes).
 
 **Risk:**
 - Stale UI between transitions (up to 5s).
 - Many concurrent polls if a user opens multiple list/detail tabs.
+- `stopWhen` is jsonLogic — typo in the condition leads to silent forever-polling.
 
 **Future architecture (target):**
 SSE or webhook channel that pushes state-changed events. React Query subscribes; polling drops to 0.
@@ -155,6 +158,51 @@ Keycloak token flow + `X-Tenant-Id` header (or equivalent). Token captured via O
 Direct PUT to the presigned object-store URL with content-type and upload progress. CORS configured for dev origins.
 
 **Convergence trigger:** backend deploys file-upload endpoints with CORS.
+
+---
+
+## State-conditional siblings via `useWidgetState`
+
+**Interim contract (V1):**
+State-driven detail pages (e.g. PolicyMember detail with edit form during REPAIR_PENDING vs read-only banner during CLASSIFYING vs action bar during APPROVED) compose multiple sibling widgets in a stack-layout, each gated via `visibleWhen` against an entity-state field published to `useWidgetState` by a small `state-publisher` widget. Pattern documented in [docs/STATE_MANAGEMENT_GUIDE.md §8.2](../docs/STATE_MANAGEMENT_GUIDE.md#82-state-driven-detail-page-sibling-widgets-gated-by-entity-state).
+
+**Risk:**
+- Verbosity tax: every state-driven detail page repeats the publish-then-gate plumbing. If a state value is forgotten or mis-typed, the affected sibling silently never renders.
+- Widget-state keys must be kept consistent across the parent and all siblings; rename mistakes cause silent breakage.
+
+**Future architecture (target):**
+A `state-conditional-section` widget that takes `cases: Record<State, WidgetConfig>` and routes internally. The schema declares states once; the widget owns the rendering switch. Eliminates the publish-then-gate duplication.
+
+**Convergence trigger:** widget-engine cleanup pass after V1 demo, OR archV1 lands with built-in route-context threading that supersedes the manual publish.
+
+---
+
+## Form-level disable via dual sibling widgets
+
+**Interim contract (V1):**
+Forms that should be editable only under specific entity-state × role conditions render two sibling widgets — an editable `form-container` and a read-only `key-value-grid` — and `visibleWhen` switches between them. See [docs/STATE_MANAGEMENT_GUIDE.md §8.3](../docs/STATE_MANAGEMENT_GUIDE.md#83-form-fields-disabled-by-parent-entity-state-or-current-role). Field-level `disabled` (form-state-driven) still works for in-form interactions; the dual-sibling pattern handles the *outer* gating.
+
+**Risk:**
+- The two siblings must stay synchronized — if one adds a field, the other must too. Easy drift point.
+- ~2× schema weight per editable surface.
+
+**Future architecture (target):**
+Add `disabledWhen: VisibilityCondition` to `FieldConfig` (and/or `FormContainerConfig`) and thread parent context (entity state + current role) into children via `WidgetRenderer`. ~50 LOC + a context-injection wrapper.
+
+**Convergence trigger:** widget-engine cleanup pass, post-V1.
+
+---
+
+## Composite cells deferred — two-column rendering for V1
+
+**Interim contract (V1):**
+`CellRenderer` is single-type per cell. Where the design wants `state` + `pendingReason` together (e.g. policy → members tab), V1 renders them as **two separate columns**. Reason column stays empty for non-PENDING rows.
+
+**Risk:** mild horizontal-real-estate cost; tables with many states-with-reasons feel chatty.
+
+**Future architecture (target):** add `type: "composite"` to `CellRenderer` config, taking an array of sub-renders. ~20 LOC. When it ships, the policy-members tab schema collapses two columns to one.
+
+**Convergence trigger:** product feedback that two-column rendering looks crowded.
 
 ---
 

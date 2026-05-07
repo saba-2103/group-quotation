@@ -1,0 +1,77 @@
+package com.anaira.quotation.data;
+
+// - Enums -
+
+enum QuoteStatus {
+    DRAFT
+    SUBMITTED
+    SENT_TO_CLIENT
+    ACCEPTED
+    REJECTED
+    WITHDRAWN
+    EXPIRED
+    FINALIZED
+}
+
+enum MemberQuoteStatus {
+    DRAFT
+    SUBMITTED
+    FINALIZED
+}
+
+enum PolicyType {
+    GTL
+    GCL
+    GH
+}
+
+enum PremiumType {
+    ANNUAL
+    SINGLE
+}
+
+enum CensusFileType {
+    CSV
+    XLSX
+}
+
+enum AgeDefinitionRule {
+    ALB
+    ANB
+    COMPLETED_YEARS
+}
+
+enum RiskTermClassification {
+    YEARLY_RENEWABLE
+    LONG_TERM
+    SINGLE_PREMIUM
+    LIMITED_PAY
+    MASS_MARKET
+    TAILOR_MADE
+}
+
+
+// - Shared value objects -
+
+data CensusFileFormat {
+    fileType: CensusFileType
+    sheetName?: string
+    schemaJson: string
+    dialectJson?: string
+}
+
+data MemberQuotePremium {
+    amount: Money
+    breakup: list<PremiumBreakupItem>
+}
+
+data QuoteCase {
+    quoteId: string
+    clientId: string
+    policyType: string
+}
+
+data MemberQuoteCase {
+    memberQuoteId: string
+    policyId: string
+}

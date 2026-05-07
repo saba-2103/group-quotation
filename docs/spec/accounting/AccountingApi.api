@@ -1,0 +1,483 @@
+package com.anaira.accounting.api;
+
+data CreateAccountingEventRequest {
+    id: string
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    eventDate: date
+    reference: string
+    remarks: string
+    details: list<EventDetailRequest>
+}
+
+data UpdateAccountingEventRequest {
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    eventDate: date
+    reference: string
+    remarks: string
+}
+
+data EventDetailRequest {
+    accountGroup: string
+    accountSubgroup: string
+    primaryEntityType: string
+    primaryEntityId: string
+    secondaryEntityType: string
+    secondaryEntityId: string
+    effectiveDate: date
+    transactionDate: date
+    exchangeRate: float
+    transactionAmount: Money
+    glAmount: Money
+    shouldUpdateAccountSummary: boolean
+    billNumber: string
+    references: string
+    remarks: string
+}
+
+data AddEventDetailsRequest {
+    details: list<EventDetailRequest>
+}
+
+data RemoveEventDetailsRequest {
+    detailIds: list<string>
+}
+
+data UpdateEventDetailsRequest {
+    updates: list<EventDetailUpdateRequest>
+}
+
+data EventDetailUpdateRequest {
+    detailId: string
+    detail: EventDetailRequest
+}
+
+data OverwriteEventDetailsRequest {
+    details: list<EventDetailRequest>
+}
+
+data ReverseEventRequest {
+    reversalEventDate: date
+}
+
+data MarkEventAsFailedRequest {
+    errorDetails: string
+}
+
+data AccountingEventResponse {
+    id: string
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    eventDate: date
+    reversedEventId: string
+    reference: string
+    remarks: string
+    state: string
+    errorDetails: string
+    postedJournals: list<string>
+    details: list<EventDetailResponse>
+}
+
+data AccountingEventSummaryResponse {
+    id: string
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    eventDate: date
+    state: string
+    detailCount: int
+}
+
+data EventDetailResponse {
+    id: string
+    accountGroup: string
+    accountSubgroup: string
+    primaryEntityType: string
+    primaryEntityId: string
+    secondaryEntityType: string
+    secondaryEntityId: string
+    effectiveDate: date
+    transactionDate: date
+    transactionAmount: Money
+    exchangeRate: float
+    glAmount: Money
+    shouldUpdateAccountSummary: boolean
+    billNumber: string
+    references: string
+    remarks: string
+}
+
+data ReverseJournalRequest {
+    reversalDate: date
+    reasonCode: string
+}
+
+data CreateDirectJournalRequest {
+    journalNumber: string
+    journalDate: date
+    component: string
+    lob: string
+    businessProcessCode: string
+    businessKey: string
+    accountGroup: string
+    lines: list<JournalLineRequest>
+}
+
+data UpdateJournalRequest {
+    journalDate: date
+    component: string
+    lob: string
+}
+
+data JournalLineRequest {
+    accountSubgroup: string
+    primaryEntityType: string
+    primaryEntityId: string
+    secondaryEntityType: string
+    secondaryEntityId: string
+    transactionDate: date
+    transactionAmount: Money
+    exchangeRate: float
+    glAmount: Money
+    debitCreditIndicator: string
+    glPseudoName: string
+    remarks: string
+    shouldUpdateSummary: boolean
+}
+
+data AddJournalLinesRequest {
+    lines: list<JournalLineRequest>
+}
+
+data RemoveJournalLinesRequest {
+    lineIds: list<string>
+}
+
+data UpdateJournalLinesRequest {
+    updates: list<JournalLineUpdateRequest>
+}
+
+data JournalLineUpdateRequest {
+    lineId: string
+    line: JournalLineRequest
+}
+
+data OverwriteJournalLinesRequest {
+    lines: list<JournalLineRequest>
+}
+
+data AccountingJournalResponse {
+    journalNumber: string
+    journalDate: date
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    accountingEventId: string
+    accountGroup: string
+    journalType: string
+    state: string
+    reverseeJournalNumber: string
+    reverserJournalNumber: string
+    postingDate: date
+    glExtractReference: string
+    periodId: string
+    details: list<JournalDetailResponse>
+    debitTotal: Money
+    creditTotal: Money
+}
+
+data AccountingJournalSummaryResponse {
+    journalNumber: string
+    journalDate: date
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    accountingEventId: string
+    accountGroup: string
+    journalType: string
+    state: string
+    reverseeJournalNumber: string
+    reverserJournalNumber: string
+    postingDate: date
+    periodId: string
+}
+
+data JournalDetailResponse {
+    id: string
+    accountSubgroup: string
+    primaryEntityType: string
+    primaryEntityId: string
+    secondaryEntityType: string
+    secondaryEntityId: string
+    transactionDate: date
+    transactionAmount: Money
+    exchangeRate: float
+    glAmount: Money
+    debitCreditIndicator: string
+    glPseudoName: string
+    remarks: string
+}
+
+data DefineAccountingPeriodRequest {
+    startDate: date
+    endDate: date
+}
+
+data MovePeriodDateRangeRequest {
+    startDate: date
+    endDate: date
+}
+
+data DeleteAccountingPeriodRequest {
+    reason: string
+}
+
+data AccountingPeriodResponse {
+    id: string
+    displayId: string
+    startDate: date
+    endDate: date
+    state: string
+}
+
+data DefinePostingRuleRequest {
+    lob: string
+    businessProcessCode: string
+    accountGroup: string
+    accountSubgroup: string
+    debitCreditIndicator: string
+    glPseudoName: string
+}
+
+data UpdatePostingRuleRequest {
+    debitCreditIndicator: string
+    glPseudoName: string
+}
+
+data DeletePostingRuleRequest {
+    reason: string
+}
+
+data PostingRuleResponse {
+    ruleId: string
+    lob: string
+    businessProcessCode: string
+    accountGroup: string
+    accountSubgroup: string
+    debitCreditIndicator: string
+    glPseudoName: string
+}
+
+data AccountSummaryResponse {
+    id: string
+    entityId: string
+    lob: string
+    primaryEntityType: string
+    primaryEntityId: string
+    secondaryEntityType: string
+    secondaryEntityId: string
+    accountSubgroup: string
+    balance: Money
+}
+
+api AccountingEventAPI {
+    POST("/events") createEvent(@body request:CreateAccountingEventRequest) {
+        command CreateAccountingEventCommand;
+    }
+
+    PUT("/events/:id") updateEvent(@path id: string, @body request:UpdateAccountingEventRequest) {
+        command UpdateAccountingEventCommand;
+    }
+
+    POST("/events/:id/details/batch") addDetails(@path id: string, @body request:AddEventDetailsRequest) {
+        command AddEventDetailsCommand;
+    }
+
+    PUT("/events/:id/details/batch/remove") removeDetails(@path id: string, @body request:RemoveEventDetailsRequest) {
+        command RemoveEventDetailsCommand;
+    }
+
+    PUT("/events/:id/details/batch") updateDetails(@path id: string, @body request:UpdateEventDetailsRequest) {
+        command UpdateEventDetailsCommand;
+    }
+
+    PUT("/events/:id/details") overwriteDetails(@path id: string, @body request:OverwriteEventDetailsRequest) {
+        command OverwriteEventDetailsCommand;
+    }
+
+    POST("/events/:id/post") postEvent(@path id: string) {
+        command PostAccountingEventCommand;
+    }
+
+    POST("/events/:id/reverse") reverseEvent(@path id: string, @body request:ReverseEventRequest) {
+        command ReverseAccountingEventCommand;
+    }
+
+    POST("/events/:id/mark-failed") markFailed(@path id: string, @body request:MarkEventAsFailedRequest) {
+        command MarkEventAsFailedCommand;
+    }
+
+    POST("/events/:id/mark-posted") markPosted(@path id: string) {
+        command MarkEventPostedCommand;
+    }
+
+    GET("/events/:id") getById(@path id: string) {
+        query GetAccountingEventByIdQuery;
+    }
+
+    GET("/events/by-state") findEventsByState(@query state: string) {
+        query FindAccountingEventsByStateQuery;
+    }
+
+    GET("/events/by-business-key") findEventsByBusinessKey(@query businessKey: string) {
+        query FindAccountingEventsByBusinessKeyQuery;
+    }
+
+    GET("/events/by-date-range") findEventsByDateRange(@query startDate: date, @query endDate: date) {
+        query FindAccountingEventsByDateRangeQuery;
+    }
+
+    GET("/events/list") listAllEvents(@query page: int, @query size: int) {
+        query ListAllAccountingEventsQuery;
+    }
+
+    GET("/events/search") searchEvents(@query state: string, @query businessKey: string, @query startDate: date, @query endDate: date, @query page: int, @query size: int) {
+        query SearchAccountingEventsQuery;
+    }
+}
+
+api AccountingJournalAPI {
+    POST("/journals") createDirectJournal(@body request:CreateDirectJournalRequest) {
+        command CreateDirectJournalCommand;
+    }
+
+    PUT("/journals/:journalNumber") updateJournal(@path journalNumber: string, @body request:UpdateJournalRequest) {
+        command UpdateJournalCommand;
+    }
+
+    POST("/journals/:journalNumber/lines/batch") addLines(@path journalNumber: string, @body request:AddJournalLinesRequest) {
+        command AddJournalLinesCommand;
+    }
+
+    PUT("/journals/:journalNumber/lines/batch/remove") removeLines(@path journalNumber: string, @body request:RemoveJournalLinesRequest) {
+        command RemoveJournalLinesCommand;
+    }
+
+    PUT("/journals/:journalNumber/lines/batch") updateLines(@path journalNumber: string, @body request:UpdateJournalLinesRequest) {
+        command UpdateJournalLinesCommand;
+    }
+
+    PUT("/journals/:journalNumber/lines") overwriteLines(@path journalNumber: string, @body request:OverwriteJournalLinesRequest) {
+        command OverwriteJournalLinesCommand;
+    }
+
+    POST("/journals/:journalNumber/post") postJournal(@path journalNumber: string) {
+        command PostJournalCommand;
+    }
+
+    POST("/journals/:journalNumber/reverse") reverseJournal(@path journalNumber: string, @body request:ReverseJournalRequest) {
+        command ReverseJournalCommand;
+    }
+
+    GET("/journals/:journalNumber") getByNumber(@path journalNumber: string) {
+        query GetJournalByNumberQuery;
+    }
+
+    GET("/journals/by-date-range") findJournalsByDateRange(@query startDate: date, @query endDate: date) {
+        query FindJournalsByDateRangeQuery;
+    }
+
+    GET("/journals/by-state") findJournalsByState(@query state: string) {
+        query FindJournalsByStateQuery;
+    }
+
+    GET("/journals/by-event") findJournalsByEventId(@query eventId: string) {
+        query FindJournalsByEventIdQuery;
+    }
+
+    GET("/journals/search") searchJournals(@query state: string, @query eventId: string, @query startDate: date, @query endDate: date, @query page: int, @query size: int) {
+        query SearchJournalsQuery;
+    }
+}
+
+api AccountingPeriodAPI {
+    POST("/periods") definePeriod(@body request:DefineAccountingPeriodRequest) {
+        command DefineAccountingPeriodCommand;
+    }
+
+    POST("/periods/:id/open") openPeriod(@path id: string) {
+        command OpenAccountingPeriodCommand;
+    }
+
+    POST("/periods/:id/close") closePeriod(@path id: string) {
+        command CloseAccountingPeriodCommand;
+    }
+
+    POST("/periods/:id/reopen") reopenPeriod(@path id: string) {
+        command ReopenAccountingPeriodCommand;
+    }
+
+    PUT("/periods/:id/date-range") moveDateRange(@path id: string, @body request:MovePeriodDateRangeRequest) {
+        command MovePeriodDateRangeCommand;
+    }
+
+    DELETE("/periods/:id") deletePeriod(@path id: string, @query reason: string) {
+        command DeleteAccountingPeriodCommand;
+    }
+
+    GET("/periods/:id") getPeriodById(@path id: string) {
+        query GetAccountingPeriodByIdQuery;
+    }
+
+    GET("/periods/current") getCurrentOpenPeriod(@query asOfDate: date) {
+        query FindCurrentOpenPeriodQuery;
+    }
+
+    GET("/periods/list") listAllPeriods(@query page: int, @query size: int) {
+        query ListAllAccountingPeriodsQuery;
+    }
+
+    GET("/periods/search") searchPeriods(@query state: string, @query page: int, @query size: int) {
+        query SearchAccountingPeriodsQuery;
+    }
+}
+
+api PostingRuleAPI {
+    POST("/posting-rules") defineRule(@body request:DefinePostingRuleRequest) {
+        command DefinePostingRuleCommand;
+    }
+
+    PUT("/posting-rules/:id") updateRule(@path id: string, @body request:UpdatePostingRuleRequest) {
+        command UpdatePostingRuleCommand;
+    }
+
+    DELETE("/posting-rules/:id") deleteRule(@path id: string, @query reason: string) {
+        command DeletePostingRuleCommand;
+    }
+
+    GET("/posting-rules/:id") getRuleById(@path id: string) {
+        query GetPostingRuleByIdQuery;
+    }
+
+    GET("/posting-rules") findRuleByDimensions(@query lob: string, @query businessProcessCode: string, @query accountGroup: string, @query accountSubgroup: string) {
+        query FindPostingRuleByDimensionsQuery;
+    }
+
+    GET("/posting-rules/list") listAllRules(@query page: int, @query size: int) {
+        query ListAllPostingRulesQuery;
+    }
+
+    GET("/posting-rules/search") searchRules(@query lob: string, @query businessProcessCode: string, @query accountGroup: string, @query accountSubgroup: string, @query page: int, @query size: int) {
+        query SearchPostingRulesQuery;
+    }
+}

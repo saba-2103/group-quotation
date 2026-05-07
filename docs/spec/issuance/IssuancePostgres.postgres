@@ -1,0 +1,102 @@
+package com.anaira.issuance.postgres;
+
+postgres ProposalEntity {
+    id: string
+    quoteId: string
+    clientId: string
+    policyType: string
+    state: string
+    plansJson: string
+    memberToPlanMapping: string
+    aggregateCensusJson: string
+    estimatedPremiumJson: string
+    policyId: string
+    policyNumber: string
+
+    @primary(id)
+    @notNull(quoteId)
+    @notNull(clientId)
+    @notNull(policyType)
+    @notNull(state)
+}
+
+postgres ProposalPlanEntity {
+    id: string
+    proposalId: string
+    planNo: string
+    planName: string
+    productsJson: string
+    rateCardFile: string
+    coverAmountFormulaJson: string
+    freeCoverLimitFormulaJson: string
+
+    @primary(id)
+    @notNull(proposalId)
+    @notNull(planNo)
+    @foreignKey(proposalId) references ProposalEntity(id)
+}
+
+postgres PolicyMemberEntity {
+    id: string
+    policyId: string
+    memberId: string
+    planNo: string
+    state: string
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    occupation: string
+    sumInsured: double
+    classificationResultJson: string
+    uwDecisionJson: string
+    repairCorrectionsJson: string
+    annualPremiumAmount: double
+    annualPremiumCurrency: string
+    premiumBreakupJson: string
+    floatDeductionId: string
+    reclassificationCount: int
+    archivedReason: string
+    censusSubmissionId: string
+    censusRowNumber: int
+
+    @primary(id)
+    @notNull(policyId)
+    @notNull(memberId)
+    @notNull(planNo)
+    @notNull(state)
+    @foreignKey(policyId) references PolicyEntity(id)
+}
+
+postgres CensusSubmissionEntity {
+    id: string
+    policyId: string
+    fileRef: string
+    fileSizeBytes: int
+    fileContentHash: string
+    status: string
+    totalRows: int
+    acceptedRows: int
+    rejectedRows: int
+    createdMemberCount: int
+
+    @primary(id)
+    @notNull(policyId)
+    @notNull(status)
+    @foreignKey(policyId) references PolicyEntity(id)
+}
+
+postgres CensusSubmissionRowEntity {
+    id: string
+    submissionId: string
+    rowNumber: int
+    status: string
+    ingestionErrorsJson: string
+    policyMemberId: string
+
+    @primary(id)
+    @notNull(submissionId)
+    @notNull(rowNumber)
+    @notNull(status)
+    @foreignKey(submissionId) references CensusSubmissionEntity(id)
+}

@@ -1,0 +1,193 @@
+package com.anaira.policyadmin.data;
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum PolicyState {
+    CREATED
+    PENDING
+    ACTIVE
+    CANCELLED
+}
+
+enum PolicyPendingReason {
+    AWAITING_MIN_MEMBERS
+    AWAITING_COMPLIANCE
+}
+
+// VOID = pre-activation terminal (enrollment workflow died).
+// CANCELLED = post-activation terminal (was ACTIVE, then cancelled — future flow).
+enum MemberState {
+    PENDING
+    ACTIVE
+    VOID
+    CANCELLED
+}
+
+enum MemberPendingReason {
+    PENDING_FLOAT_RESERVATION
+    PENDING_APPROVAL
+    PENDING_POLICY_ACTIVATION
+}
+
+enum MemberVoidReason {
+    FLOAT_UNAVAILABLE
+    APPROVAL_REJECTED
+    POLICY_CANCELLED
+    WITHDRAWN_BY_PROPOSER
+}
+
+// MVP single state — full lifecycle (suspend/deactivate) deferred.
+enum ClientState {
+    ACTIVE
+}
+
+enum CommunicationPreference {
+    EMAIL
+    LETTER
+    PORTAL
+}
+
+// ── Client registration ────────────────────────────────────────────────────────
+
+data ClientRegistrationData {
+    name: string
+    alternateName?: string
+    businessRegistrationNumber: string
+    incorporationDate?: date
+    gstRegistrationNumber?: string
+    taxReferenceNumber?: string
+    clientCategory?: string
+    industryCategory?: string
+    countryCode: string
+    communicationPreference?: CommunicationPreference
+    clientUrl?: string
+    // PII — repo-encryption + Cerbos (post-MVP).
+    contactPersonName?: string
+    contactPersonPhone?: string
+    isSubsidiary: boolean
+    isVip: boolean
+    isBlacklisted: boolean
+    effectiveDate: date
+    endDate?: date
+}
+
+// ── Plan structure ─────────────────────────────────────────────────────────────
+
+data PolicyPlanBenefit {
+    code: string
+    name?: string
+    mandatory: boolean
+}
+
+data PolicyPlanExclusion {
+    code: string
+    name?: string
+}
+
+data PolicyPlanProduct {
+    productCode: string
+    productName?: string
+    productType: string
+    benefits: list<PolicyPlanBenefit>
+    exclusions: list<PolicyPlanExclusion>
+}
+
+data PolicyPlanConfig {
+    planNo: string
+    planName?: string
+    products: list<PolicyPlanProduct>
+    rateCardFile: string
+    coverAmountFormula: AmountFormula
+    freeCoverLimitFormula?: AmountFormula
+}
+
+// ── UW ─────────────────────────────────────────────────────────────────────────
+
+data MemberUwDecision {
+    exclusions: list<UwExclusion>
+    notes?: string
+}
+
+// ── Member enrolment ───────────────────────────────────────────────────────────
+
+data MemberEnrollmentData {
+    policyMemberId: string
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    occupation?: string
+    // PII — repo-encryption + Cerbos (post-MVP).
+    mobile?: string
+    email?: string
+    governmentIdType?: string
+    governmentIdNumber?: string
+    sumInsured: double
+    planNo: string
+    premium: MemberPremium
+    uwDecision?: MemberUwDecision
+    transactionRefs: list<string>
+    // Product-specific extensions (GCL loan*, GTL employee*, partner refs). Opaque to PAM.
+    additionalAttributesJson?: string
+}
+
+// ── Float Management responses ─────────────────────────────────────────────────
+
+enum FloatReservationStatus {
+    RESERVED
+    INSUFFICIENT
+}
+
+data FloatReservationResult {
+    status: FloatReservationStatus
+    reservationId?: string
+    shortfall?: double
+}
+
+// ── Workflow document types ────────────────────────────────────────────────────
+
+data MemberEnrollmentCase {
+    memberId: string
+    policyId: string
+    policyMemberId: string
+    planNo: string
+}
+
+data PolicyActivationCase {
+    policyId: string
+    clientId: string
+    activationThreshold: int
+}
+
+// ── Workflow signal payloads ───────────────────────────────────────────────────
+
+data PolicyActivatedSignal {
+    policyId: string
+    policyNumber: string
+}
+
+data FloatTopUpSignal {
+    policyId: string
+    amount: double
+}
+
+data MemberApprovalCompletedSignal {
+    memberId: string
+    decision: string             // APPROVED | REJECTED | CONDITIONAL
+    notes?: string
+}
+
+data MemberVoidRequestedSignal {
+    memberId: string
+    reason: string               // free-form; mapped to MemberVoidReason in handler
+}
+
+data MemberPendingSignal {
+    policyId: string
+    memberId: string
+}
+
+data PolicyCancelledSignal {
+    policyId: string
+    reason?: string
+}

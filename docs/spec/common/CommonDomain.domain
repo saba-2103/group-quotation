@@ -1,0 +1,7 @@
+package com.anaira.common.domain;
+
+service IdGenerator {
+    function accountingPeriodDisplayId(startDate: date, endDate: date): string;
+    function journalNumber(): string;
+    function postingRuleId(lob: string, processCode: string, accountGroup: string, accountSubgroup: string): string;
+}

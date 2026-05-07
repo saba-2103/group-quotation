@@ -1,0 +1,179 @@
+package com.anaira.issuance.event;
+
+// ── Proposal events ────────────────────────────────────────────────────────────
+
+event ProposalCreated {
+    proposalId: string
+    quoteId: string
+    clientId: string
+    policyType: string
+}
+
+event ProposalUpdated {
+    proposalId: string
+}
+
+event ProposalSubmitted {
+    proposalId: string
+}
+
+// W2: signals readiness for policy creation; ProposalFlow plugs into Policy module next
+event ProposalFinalized {
+    proposalId: string
+    clientId: string
+    policyType: string
+}
+
+event ProposalCancelled {
+    proposalId: string
+    reason?: string
+}
+
+// Emitted after Policy Administration creates the policy shell (W2 done)
+event PolicyCreated {
+    proposalId: string
+    policyId: string
+    policyNumber: string
+    clientId: string
+}
+
+// ── PolicyMember events ──────────────────────────────────────────────────────
+
+event PolicyMemberCreated {
+    policyId: string
+    policyMemberId: string
+    memberId: string
+    planNo: string
+    censusSubmissionId?: string
+    censusRowNumber?: int
+}
+
+event MemberUpdated {
+    policyMemberId: string
+    memberId: string
+}
+
+event MemberPriced {
+    policyMemberId: string
+    memberId: string
+    premium: MemberPremium
+}
+
+event MemberMAFSent {
+    policyMemberId: string
+    memberId: string
+}
+
+event MemberMAFConfirmed {
+    policyMemberId: string
+    memberId: string
+}
+
+event MemberClassificationStarted {
+    policyMemberId: string
+    memberId: string
+}
+
+event MemberApproved {
+    policyMemberId: string
+    memberId: string
+    lane: UwLane
+}
+
+event MemberRejected {
+    policyMemberId: string
+    memberId: string
+    reason?: string
+}
+
+// Outbox → Kafka → ops-workbench: data repair request
+event MemberRepairRequested {
+    policyMemberId: string
+    memberData: MemberData
+    errors: list<ClassificationError>
+}
+
+// Outbox → Kafka → uw-workbench: UW review request
+event MemberReferredToUw {
+    policyMemberId: string
+    memberData: MemberData
+    planNo: string
+    uwQuestionSetCode?: string
+}
+
+// UW workbench decision events (split from prior single MemberReviewCompleted handling)
+event UwApprovedMember {
+    policyMemberId: string
+    memberId: string
+}
+
+event UwRejectedMember {
+    policyMemberId: string
+    memberId: string
+    reason?: string
+}
+
+// Kafka → ops-workbench: repair-completion event with corrected member data
+event MemberRepairCompleted {
+    policyMemberId: string
+    corrections: MemberRepairCorrections
+}
+
+// Emitted after APPROVED → SENT_FOR_ISSUANCE; signals readiness to invoke Policy Admin
+event MemberSentForIssuance {
+    policyMemberId: string
+    memberId: string
+    policyId: string
+    planNo: string
+}
+
+// Emitted after successful addition to policy (W3 done)
+event MemberAdded {
+    policyId: string
+    policyMemberId: string
+    memberId: string
+    planNo: string
+    annualPremium: Money
+    floatDeductionId: string
+}
+
+event MemberArchived {
+    policyMemberId: string
+    memberId: string
+    reason: string
+}
+
+// ── CensusSubmission events ──────────────────────────────────────────────────
+
+event CensusUploadUrlIssued {
+    submissionId: string
+    policyId: string
+    fileRef: string
+    expiresAt: datetime
+}
+
+event CensusFileIngested {
+    submissionId: string
+    policyId: string
+    totalRows: int
+    acceptedRows: int
+    rejectedRows: int
+}
+
+event CensusSubmissionSubmitted {
+    submissionId: string
+    policyId: string
+    acceptedRows: int
+}
+
+event CensusSubmissionCompleted {
+    submissionId: string
+    policyId: string
+    createdMemberCount: int
+}
+
+event CensusSubmissionFailed {
+    submissionId: string
+    policyId: string
+    reason: string
+}

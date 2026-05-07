@@ -1,0 +1,120 @@
+package com.anaira.issuance.data;
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+enum ProposalState {
+    DRAFT
+    SUBMITTED
+    FINALIZED
+    POLICY_CREATED
+    CANCELLED
+}
+
+enum PolicyMemberState {
+    CREATED
+    PRICED
+    MAF_PENDING
+    MAF_CONFIRMED
+    CLASSIFYING
+    APPROVED
+    REPAIR_PENDING
+    REFERRED_TO_UW
+    REJECTED
+    SENT_FOR_ISSUANCE
+    ADDED
+    ARCHIVED
+}
+
+enum UwLane {
+    STP
+    REPAIR
+    REVIEW
+    REJECT
+}
+
+enum UwDecision {
+    APPROVED
+    REJECTED
+}
+
+enum CensusSubmissionStatus {
+    INITIATED
+    INGESTED
+    SUBMITTED
+    COMPLETED
+    FAILED
+}
+
+enum CensusSubmissionRowStatus {
+    INGESTED
+    REJECTED
+    ACCEPTED
+}
+
+// ── Shared value objects ───────────────────────────────────────────────────────
+// Mirrors Quotation's Plan / QuotePremium / AggregateCensus so the same payload
+// flows Quote → Proposal → Policy without reshaping.
+
+
+data UwDecisionResult {
+    decision: UwDecision
+    exclusions: list<UwExclusion>
+    notes?: string
+}
+
+data MemberRepairCorrections {
+    dob?: date
+    salary?: double
+    sumInsured?: double
+    occupation?: string
+    otherCorrectionsJson?: string
+}
+
+data ClassifyMemberResult {
+    lane: UwLane
+    errors: list<ClassificationError>
+}
+
+data ClassificationError {
+    field: string
+    code: string
+    message: string
+}
+
+data ProposalCase {
+    proposalId: string
+    quoteId: string
+    clientId: string
+    policyType: string
+}
+
+data PolicyMemberCase {
+    policyMemberId: string
+    policyId: string
+    memberId: string
+    planNo: string
+}
+
+data CensusSubmissionCase {
+    submissionId: string
+    policyId: string
+}
+
+data CensusSubmissionFileRef {
+    fileRef: string
+    sizeBytes: int
+    contentHash: string
+}
+
+data CensusRowError {
+    field: string
+    code: string
+    message: string
+}
+
+data InitiateCensusSubmissionResult {
+    submissionId: string
+    uploadUrl: string
+    fileRef: string
+    expiresAt: datetime
+}

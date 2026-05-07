@@ -1,0 +1,232 @@
+package com.anaira.issuance.api;
+
+// Public-facing endpoints only. Each endpoint maps to a Miro action that an actor
+// (Sales/Ops User, Client, Member, or UW Workbench) performs from a screen.
+//
+// Workflow-internal commands (SendMAF, Classify, MarkRepairPending, MarkReferredToUw,
+// ApproveMember/STP, CreateMasterPolicy, AddMemberToPolicy) are NOT exposed here —
+// they are invoked by the workflow runtime / processors directly against the
+// command-set, not over HTTP.
+
+// ── Request / Response DTOs ────────────────────────────────────────────────────
+
+data CreateProposalRequest {
+    quoteId: string
+    clientId: string
+    policyType: string
+    plans: list<Plan>
+    memberToPlanMapping: string
+    aggregateCensus: AggregateCensus
+    estimatedPremium: QuotePremium
+}
+
+data UpdateProposalRequest {
+    plans: list<Plan>
+    memberToPlanMapping: string
+    aggregateCensus: AggregateCensus
+    estimatedPremium: QuotePremium
+}
+
+data CreateProposalResponse {
+    proposalId: string
+}
+
+data CancelProposalRequest {
+    reason: string
+}
+
+data CreatePolicyMemberRequest {
+    memberId: string
+    planNo: string
+    name: string
+    dob?: date
+    gender?: string
+    salary?: double
+    occupation?: string
+    sumInsured: double
+}
+
+data CreatePolicyMemberResponse {
+    policyMemberId: string
+}
+
+data ConfirmMAFRequest {
+    confirmedAt: datetime
+}
+
+data UpdateMemberRequest {
+    planNo: string
+    name: string
+    dob?: date
+    gender?: string
+    salary?: double
+    occupation?: string
+    sumInsured: double
+}
+
+data RejectMemberRequest {
+    reason: string
+}
+
+data ArchiveMemberRequest {
+    reason: string
+}
+
+data InitiateCensusSubmissionResponse {
+    submissionId: string
+    uploadUrl: string
+    fileRef: string
+    expiresAt: datetime
+}
+
+// ── Proposal API (W2) ─────────────────────────────────────────────────────────
+// Actor: Sales/Ops User (unless noted)
+
+api ProposalAPI base "/api/issuance" {
+
+    // Trigger: QuoteFinalized (sync REST from Quotation module). Modeled in Miro under
+    // a Sales/Ops User sticker because the Sales user's "Finalize Quote" action is what
+    // ultimately drives this — but no human hits this URL directly.
+    POST("/proposals") createProposal(@body request: CreateProposalRequest): CreateProposalResponse {
+        command CreateProposalCommand;
+    }
+
+    PUT("/proposals/:proposalId") updateProposal(@path proposalId: string, @body request: UpdateProposalRequest) {
+        command UpdateProposalCommand;
+    }
+
+    POST("/proposals/:proposalId/submit") submitProposal(@path proposalId: string) {
+        command SubmitProposalCommand;
+    }
+
+    POST("/proposals/:proposalId/finalize") finalizeProposal(@path proposalId: string) {
+        command FinalizeProposalCommand;
+    }
+
+    POST("/proposals/:proposalId/cancel") cancelProposal(@path proposalId: string, @body request: CancelProposalRequest) {
+        command CancelProposalCommand;
+    }
+
+    GET("/proposals/:proposalId") getProposalById(@path proposalId: string): ProposalDto {
+        query GetProposalByIdQuery;
+    }
+
+    GET("/proposals/by-quote/:quoteId") getByQuoteId(@path quoteId: string): ProposalDto {
+        query FindProposalByQuoteIdQuery;
+    }
+
+    GET("/proposals/by-client") findByClient(@query clientId: string): list<ProposalSummaryDto> {
+        query FindProposalsByClientQuery;
+    }
+
+    GET("/proposals/by-state") findByState(@query state: string): list<ProposalSummaryDto> {
+        query FindProposalsByStateQuery;
+    }
+
+    GET("/proposals/search") searchProposals(@query? clientId: string, @query? state: string, @query page: int, @query size: int): list<ProposalSummaryDto> {
+        query SearchProposalsQuery;
+    }
+
+    GET("/proposals/list") listAllProposals(@query page: int, @query size: int): list<ProposalSummaryDto> {
+        query ListAllProposalsQuery;
+    }
+}
+
+// ── PolicyMember API (W3) ────────────────────────────────────────────────────
+
+api PolicyMemberAPI base "/api/issuance" {
+
+    // Actor: Sales/Ops User - ad-hoc single-member entry. Bulk upload uses CensusSubmissionAPI.
+    POST("/policies/:policyId/members") createMember(@path policyId: string, @body request: CreatePolicyMemberRequest): CreatePolicyMemberResponse {
+        command CreatePolicyMemberCommand;
+    }
+
+    // Actor: Sales/Ops User — edits member; resets to CREATED, clears premium
+    PUT("/policy-members/:policyMemberId") updateMember(@path policyMemberId: string, @body request: UpdateMemberRequest) {
+        command UpdateMemberCommand;
+    }
+
+    // Actor: Sales/Ops User — explicitly priced via UI; calls Rule Engine internally
+    POST("/policy-members/:policyMemberId/price") priceMember(@path policyMemberId: string) {
+        command PriceMemberCommand;
+    }
+
+    // Actor: Member — confirms MAF via CCM-served form link
+    POST("/policy-members/:policyMemberId/confirm-maf") confirmMAF(@path policyMemberId: string, @body request: ConfirmMAFRequest) {
+        command ConfirmMAFCommand;
+    }
+
+    // Actor: UW Workbench (external system, sync REST)
+    POST("/policy-members/:policyMemberId/uw/approve") approveUwCase(@path policyMemberId: string) {
+        command ApproveUwCaseCommand;
+    }
+
+    // Actor: UW Workbench (external system, sync REST)
+    POST("/policy-members/:policyMemberId/uw/reject") rejectUwCase(@path policyMemberId: string, @body request: RejectMemberRequest) {
+        command RejectUwCaseCommand;
+    }
+
+    // Actor: Sales/Ops User — manual reject (non-classify path), e.g. Ops decides not to proceed
+    POST("/policy-members/:policyMemberId/reject") rejectMember(@path policyMemberId: string, @body request: RejectMemberRequest) {
+        command RejectMemberCommand;
+    }
+
+    // Actor: Sales/Ops User — explicit handoff to Policy Admin; APPROVED → SENT_FOR_ISSUANCE
+    POST("/policy-members/:policyMemberId/send-for-issuance") sendForIssuance(@path policyMemberId: string) {
+        command SendMemberForIssuanceCommand;
+    }
+
+    // Actor: Sales/Ops User — terminal cleanup
+    POST("/policy-members/:policyMemberId/archive") archiveMember(@path policyMemberId: string, @body request: ArchiveMemberRequest) {
+        command ArchiveMemberCommand;
+    }
+
+    GET("/policy-members/:policyMemberId") getMemberById(@path policyMemberId: string): PolicyMemberDto {
+        query GetPolicyMemberByIdQuery;
+    }
+
+    GET("/policies/:policyId/members") findMembersByPolicy(@path policyId: string): list<PolicyMemberSummaryDto> {
+        query FindMembersByPolicyQuery;
+    }
+
+    GET("/policies/:policyId/members/by-state") findMembersByState(@path policyId: string, @query state: string): list<PolicyMemberSummaryDto> {
+        query FindMembersByStateQuery;
+    }
+
+    GET("/policy-members/search") searchMembers(@query? policyId: string, @query? state: string, @query page: int, @query size: int): list<PolicyMemberSummaryDto> {
+        query SearchPolicyMembersQuery;
+    }
+}
+
+// ── CensusSubmission API ─────────────────────────────────────────────────────
+
+api CensusSubmissionAPI base "/api/issuance" {
+
+    // Actor: Sales/Ops User - step 1, get a presigned upload URL.
+    // PUT the file directly to the returned uploadUrl, then call /ingest.
+    POST("/policies/:policyId/census-submissions") initiateCensusSubmission(@path policyId: string): InitiateCensusSubmissionResponse {
+        command InitiateCensusSubmissionCommand;
+    }
+
+    // Actor: Sales/Ops User - step 2, server reads the uploaded file and persists rows
+    POST("/census-submissions/:submissionId/ingest") ingestCensusFile(@path submissionId: string) {
+        command IngestCensusFileCommand;
+    }
+
+    // Actor: Sales/Ops User - step 3, fan out per-row member workflows
+    POST("/census-submissions/:submissionId/submit") submitCensusSubmission(@path submissionId: string) {
+        command SubmitCensusSubmissionCommand;
+    }
+
+    GET("/census-submissions/:submissionId") getCensusSubmissionById(@path submissionId: string): CensusSubmissionDto {
+        query GetCensusSubmissionByIdQuery;
+    }
+
+    GET("/census-submissions/:submissionId/rows") listCensusSubmissionRows(@path submissionId: string, @query? status: string): list<CensusSubmissionRowDto> {
+        query ListCensusSubmissionRowsQuery;
+    }
+
+    GET("/policies/:policyId/census-submissions") listSubmissionsByPolicy(@path policyId: string): list<CensusSubmissionDto> {
+        query ListCensusSubmissionsByPolicyQuery;
+    }
+}
