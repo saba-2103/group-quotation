@@ -71,3 +71,17 @@ export function nextId(prefix: string): string {
   const ts = Date.now().toString(36).toUpperCase();
   return `${prefix}-${ts}`;
 }
+
+// Resets every collection back to its seed list — used by the
+// /api/_mock/reset route so the demo can replay from a clean state without
+// restarting the dev server.
+export function resetMockStore(): void {
+  store.quotes = structuredClone(QUOTES);
+  store.proposals = structuredClone(PROPOSALS);
+  store.policyMembers = structuredClone(POLICY_MEMBERS);
+  store.censusSubmissions = structuredClone(CENSUS_SUBMISSIONS);
+  store.censusRows = structuredClone(CENSUS_ROWS);
+  store.clients = structuredClone(CLIENTS);
+  store.policies = structuredClone(POLICIES);
+  store.members = structuredClone(MEMBERS);
+}
