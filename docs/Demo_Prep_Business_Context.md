@@ -6,13 +6,25 @@
 
 ---
 
+## Sections at a glance
+
+1. Insurance 101 for developers
+2. Glossary (every jargon word — keep open during the demo)
+3. The workflow in plain English
+4. Maker-Checker — the financial-services dance
+5. What this demo proves (and what it doesn't)
+6. Demo data — what's in the fixtures
+7. Demo flows — the script
+8. Q&A pre-bank
+9. Final pre-demo checklist
+
 ## Reading order
 
-If you have **15 minutes** before the demo: read §1 (insurance 101), §3 (the workflow in plain English), §4 (maker-checker), and skim §7 (the demo script).
+If you have **15 minutes**: read §1, §2 (skim), §3, §4, then jump to §7 (the demo script).
 
 If you have **45 minutes**: read everything.
 
-If you have **5 minutes**: read §3 and §8 (Q&A pre-bank).
+If you have **5 minutes**: read §3 and §8 (Q&A pre-bank). §3 sends you to §2 for any term that lands cold.
 
 ---
 
@@ -29,7 +41,7 @@ You probably have **individual insurance** — you bought a policy, you pay a pr
 
 The **insurer** sells one policy to the **client** (the organization). The client typically pays the premium (or splits it with members). When a member suffers a covered event, the insurer pays out.
 
-Why this matters for software: the lifecycle of a group policy is fundamentally different from an individual one. You're tracking thousands of members under a single policy, members come and go (employees join and leave the company), the premium is a function of the entire member roster, and the policy itself has a lifecycle separate from any individual member.
+Why this matters for software: the lifecycle of a group policy is fundamentally different from an individual one. You're tracking thousands of members under a single policy. Members come and go as employees join and leave the company. The premium is a function of the entire member roster, not any one person. And the policy itself has a lifecycle separate from any individual member.
 
 ### 1.2 Group Term Life (GTL) — what we're demoing
 
@@ -37,36 +49,38 @@ Three group products are mentioned in the codebase:
 
 | Code | Name | What it covers |
 |---|---|---|
-| **GTL** | Group Term Life | Pays a sum if a covered employee dies during the policy term. The flagship product; what V1 ships. |
-| **GCL** | Group Credit Life | Pays off a borrower's outstanding loan if they die. Sold by banks alongside loans. (Out of V1.) |
+| **GTL** | Group Term Life | Pays a fixed sum if a covered employee dies during the coverage period (typically 1 year, renewed annually). Sum-assured is set per member up-front. The flagship V1 product. |
+| **GCL** | Group Credit Life | Pays off a borrower's outstanding loan balance if they die. Banks bundle this with home/personal loans. Cover is **decreasing-term** (it shrinks as the loan amortises). In our spec each loan disbursement triggers a new `MemberQuote`. (Out of V1 demo.) |
 | **GH** | Group Health | Hospital and medical expense coverage for employees. (Out of V1 demo.) |
 
-All our demo data is GTL. When a business user asks "where's GCL?" — see the GCL placeholder tab on a Quote detail; the answer is "GCL workflow lights up post-V1; the data model already supports it (see `MemberQuote` in the spec) but the screens come later."
+All our demo data is GTL. When a business user asks "where's GCL?" — see the GCL placeholder tab on a Quote detail; the data model already supports it (see `MemberQuote` in the spec), the screens light up post-V1.
 
 ### 1.3 What is a Policy Administration System (PAS)?
 
 A PAS is the back-office system insurers use to:
 - **Quote** — price up a potential policy ("how much would coverage for this employer cost?")
 - **Issue** — turn an accepted quote into a real binding policy
-- **Maintain** — add/remove members, handle renewals, process changes (called "endorsements")
-- **Service** — handle claims, refunds, lapses, cancellations
+- **Maintain** — add/remove members; handle renewals and mid-term changes (post-V1)
+- **Service** — handle claims, refunds, lapses, cancellations (post-V1)
 
-Different vendors split these differently. Our system splits them into three modules that mirror the lifecycle:
+Think of it as the operational system-of-record for every policy the insurer sells, from quote to claim. Different vendors split these differently. Our system splits them into three modules that mirror the lifecycle:
 
 | Module | Owns | URL prefix |
 |---|---|---|
 | **Quotation** | Pre-sale: building and pricing a quote, getting client acceptance | `/quotation` |
 | **Issuance** | Conversion: accepted quote → proposal → master policy + member enrollment | `/issuance` |
-| **Policy Admin (PAM)** | Live policy: active members, premium tracking, cancellations | `/policy-admin` |
+| **Policy Admin Module (PAM)** | Live policy: active members, premium tracking, cancellations | `/policy-admin` |
 
-A single GTL deal flows **left to right**: starts in Quotation, finalizes into Issuance, lives forever in Policy Admin.
+A single GTL deal flows **left to right**: starts in Quotation, finalizes into Issuance, lives forever in PAM. The four lifecycle stages described in §3 map back to these three modules — Stages 2 (Proposal) and 3 (Activation + Member Enrollment) both live inside Issuance; Stage 4 (Live Policy) is PAM.
 
 ### 1.4 The actors (roles)
 
+**Mnemonic:** Maker creates, Checker approves, Ops repairs, Viewer watches.
+
 | Role | Real-world job | What they do in our app |
 |---|---|---|
-| **Maker** | Sales / broker / account exec | Builds and configures quotes, gathers client info, enters members |
-| **Checker** | Approver / underwriting manager | Reviews what the Maker prepared, approves submissions, sends to client, finalizes deals |
+| **Maker** | Salesperson at the insurer or external broker | Builds and configures quotes, gathers client info, enters members |
+| **Checker** | Approver / senior reviewer | Reviews what the Maker prepared, approves submissions, sends to client, finalizes deals |
 | **Ops** | Operations team | Fixes data problems flagged by the workflow (REPAIR queue), archives stuck records |
 | **Viewer** | Read-only stakeholder (compliance, audit, exec dashboards) | Looks but doesn't touch |
 
@@ -92,8 +106,8 @@ Read this once; come back to it during the demo if a term confuses you.
 | **DMN** | Decision Model and Notation — an industry-standard way to express business rules as decision tables. We use it for "given this member's attributes, which plan should they go on?" V1 stores the DMN reference as an opaque file ref; authoring is post-V1 (deferred D3). |
 | **Endorsement** | A formal change to a policy mid-term (e.g. employer increases sum-insured, or adds a new sub-product). Out of V1. |
 | **Finalize** | Verb. Quote.finalize() means "Sales has done all the paperwork; turn this Accepted quote into a Proposal so we can issue the actual policy." Proposal.finalize() means "Ops has reviewed; create the master Policy and start enrolling members." |
-| **Float reservation** | Insurers carry a reserve of money for paying claims. When a new member is added, a small amount is "reserved" against that float to cover their potential claims. If the float doesn't have room (`FLOAT_UNAVAILABLE`), the member can't be enrolled. |
-| **Free cover limit (FCL)** | The maximum sum-assured an insurer will offer to a member without medical underwriting. Anyone wanting more has to fill a Member Application Form. Captured per plan. |
+| **Float reservation** | An accounting reserve in the insurer's separate **Float Management** module. When a new member is added, the workflow asks Float Management to reserve their portion of the premium against the client's pre-funded float account. If Float Management returns `INSUFFICIENT`, enrollment parks at `PENDING_FLOAT_RESERVATION` until the client tops up. (This is **not** a claims reserve — that's a separate actuarial concept out of V1 scope.) |
+| **Free cover limit (FCL)** | The maximum sum-assured an insurer will offer to a member without medical underwriting. Members at-or-below FCL are auto-eligible (STP lane). Members wanting cover **above** FCL fill a Member Application Form (MAF) and route to the REVIEW lane for a human underwriter. Captured per plan. |
 | **GCL** | Group Credit Life — out of V1 demo. |
 | **GH** | Group Health — out of V1 demo. |
 | **GTL** | Group Term Life — what we're demoing. |
@@ -116,16 +130,17 @@ Read this once; come back to it during the demo if a term confuses you.
 | **Proposal** | Mid-stage document between Quote and Policy. Created automatically when a Quote is finalized; carries plan/census/premium snapshot from the quote so the deal can't change underneath the conversion process. |
 | **Proposer** | The legal entity formally proposing the insurance contract — typically the same as the client (employer). |
 | **Quote** | The pre-sale pricing document. Sales builds it, Checker approves it, Client accepts it. State lifecycle: DRAFT → SUBMITTED → SENT_TO_CLIENT → ACCEPTED → FINALIZED. |
-| **Rate card** | The pricing table the actuaries publish per plan. We accept it as an uploaded file ref. |
+| **Rate card** | The pricing table the actuaries publish per plan (typically: rate per ₹1000 of sum-assured, varying by age band and gender). We accept it as an uploaded file ref. Versioning + actuarial governance is a separate Product Configurator module (post-V1). |
+| **Rule Engine** | The backend service that runs business rules for pricing and member classification. Distinct from the workflow engine. In V1 it's mocked: the request-price action returns `headcount × ₹36k` after a 4-second delay. Production integration is post-V1. |
 | **Renewal** | When a policy term ends and the client agrees to extend. Out of V1. |
 | **REPAIR** | Classification lane meaning "this member's data has problems; Ops needs to fix it before we can proceed." |
 | **REVIEW** | Classification lane meaning "this case needs an underwriter's judgment." Routes to an external UW Workbench (separate app — our system signals to it but doesn't render it). |
 | **STP** | Straight-Through Processing — the happy path where no human intervention is needed. The Rule Engine classified the member as STP, the workflow auto-approves. |
-| **Sum insured** / **Sum assured** | The amount of money the insurer will pay if the covered event happens. Often called sum-assured for life products, sum-insured for health. Used interchangeably in the spec. |
+| **Sum insured** / **Sum assured** | The amount of money the insurer will pay if the covered event happens. **Sum-assured** is the technically correct term for life products (GTL/GCL — fixed payout); **sum-insured** is the indemnity term for health products. The spec uses both interchangeably; a domain audit pass would standardise to sum-assured for GTL/GCL — flag it if a reviewer notices. |
 | **Term** | The duration of coverage (typically 1 year for GTL, renewed annually). |
 | **Underwriting (UW)** | The risk-assessment process: deciding whether to cover a person, on what terms, at what price. For STP cases the Rule Engine does this automatically; for REVIEW cases a human underwriter reviews the case in the UW Workbench. |
 | **UW Workbench** | A separate application where underwriters review REVIEW-lane cases. Our PAS sends cases to it and receives back approve/reject decisions. We don't ship the workbench itself in V1. |
-| **VIP client** | A client flagged for white-glove service / priority handling. Visible in the client list; no V1 logic differentiates VIP-vs-standard handling yet. |
+| **VIP client** | A client flagged for white-glove service / priority handling. In V1 this is a list-filter chip only — no special routing or SLA logic; downstream queue prioritisation lands post-V1. |
 
 ---
 
@@ -143,14 +158,14 @@ This is what happens in the real world, and how our app maps to it.
 3. Maker adds one or more **plans** (the bundles of coverage being offered).
 4. Maker uploads or pastes the **census format** (what columns the future member file will have) and an **aggregate census** (rough headcount per plan).
 5. Maker uploads the **member-to-plan mapping** (DMN file — the rules for who goes on which plan).
-6. Maker clicks **Request price** — the Rule Engine computes the total premium. This is asynchronous (takes a few seconds in real life, mocked at 4s in our demo).
+6. Maker clicks **Request price** — the **Rule Engine** (a backend service that runs business rules — see §2) computes the total premium. This is asynchronous (takes a few seconds in real life, mocked at 4s in our demo).
 7. Maker clicks **Send for approval** (UI-only maker-checker overlay).
-8. Checker switches to the Checker role, sees the pending quote, reviews, clicks **Approve** (which calls the real backend `submit` endpoint behind the scenes).
+8. Checker switches to the Checker role, sees the pending quote, reviews, clicks **Approve & submit** (which calls the real backend `submit` endpoint behind the scenes).
 9. Checker clicks **Send to client** — the printed/PDF version goes to the client (we don't render the PDF; just flip the state).
 10. Client says yes. Checker clicks **Accept**.
 11. Checker clicks **Finalize**. Done — Quote is locked.
 
-When the Quote finalizes, **the Issuance module automatically creates a Proposal** for it. That's the workflow handover (called "W2" in the spec).
+When the Quote finalizes, **the Issuance module automatically creates a Proposal** for it. That's the workflow hand-over from sales to operations.
 
 **What's deferred (D-items in the plan):**
 - Editing forms for plans, census, mapping (D1/D2/D3) — for the demo, the fixtures already have these populated.
@@ -163,8 +178,8 @@ When the Quote finalizes, **the Issuance module automatically creates a Proposal
 **Our app:**
 1. Maker (or anyone) navigates to the auto-created Proposal in `/issuance/proposals`.
 2. Proposal starts in DRAFT — Maker can edit the carried-over data.
-3. Maker clicks **Submit** — locks the proposal.
-4. Checker clicks **Finalize** — this triggers Policy creation.
+3. Maker clicks **Submit proposal** — locks the proposal.
+4. Checker clicks **Finalize → create policy** — this triggers Policy creation.
 5. ~4s later, a **Policy** appears in `/policy-admin/policies` (state PENDING).
 6. The Proposal flips to **POLICY_CREATED** state and shows the policy number.
 
@@ -175,8 +190,8 @@ This stage is **mostly read-only in V1**. The demo shows the auto-creation; the 
 **Real world:** A group policy doesn't "go live" the second it's created. It typically waits until a minimum number of members have been successfully enrolled (the **activation threshold** — say 30 members for a GTL policy). Each member individually goes through a workflow:
 1. We collect their data (name, DOB, salary).
 2. We price their portion of the premium.
-3. If they want coverage above the free cover limit, they fill a Member Application Form (MAF).
-4. We classify them — most cases auto-approve (STP); some need data fixes (REPAIR); some go to a human underwriter (REVIEW).
+3. If they want coverage above the free cover limit (FCL), they fill a Member Application Form (MAF).
+4. We classify them — most cases auto-approve (STP — Straight-Through Processing); some need data fixes (REPAIR); some go to a human underwriter (UW) for REVIEW; obvious-no's auto-REJECT.
 5. Once approved, we reserve their portion of the float.
 6. We add them to the master policy.
 7. Once enough members are added, the policy itself activates.
@@ -184,9 +199,9 @@ This stage is **mostly read-only in V1**. The demo shows the auto-creation; the 
 **Our app:**
 1. From the Proposal members tab, Maker clicks **Add member** → fills the single-step form → submits.
 2. A **PolicyMember** appears in CREATED state.
-3. (In a real flow) the workflow runs: PRICED → CLASSIFYING → APPROVED.
-4. Demo shortcut: PMB-0007 (a fixture) is already in **REPAIR_PENDING** — the Rule Engine flagged its salary as zero.
-5. Ops switches role, opens PMB-0007, clicks **Edit & re-classify**, fixes the salary, saves. Member resets to CREATED → re-prices → re-classifies.
+3. (In a real flow) the workflow progresses: CREATED → PRICED (Rule Engine prices the member) → CLASSIFYING (Rule Engine assigns a lane) → APPROVED (STP) or REPAIR_PENDING / REFERRED_TO_UW (other lanes).
+4. Demo shortcut: PMB-0007 (a pre-loaded demo record) is already in **REPAIR_PENDING** — the Rule Engine flagged its salary as zero.
+5. Ops switches role, opens PMB-0007, clicks **Edit & re-classify**, fixes the salary, saves. Member resets to CREATED so the workflow can re-run.
 6. Once a member reaches APPROVED, Checker switches role, clicks **Send for issuance**.
 7. ~4s later, a **PAM Member** materializes on the master policy. The PolicyMember flips to ADDED state.
 8. Click "Open in Policy Admin" — deep-links to the PAM Member detail.
@@ -226,18 +241,28 @@ This catches honest mistakes (typo on a sum-assured) and prevents fraud (Maker c
 
 ### 4.2 How it shows up in our demo
 
-V1 is **UI-only** maker-checker. The backend doesn't enforce it; the UX overlay is a sophisticated facade we built so the demo tells the right story.
+V1 is **UI-only** maker-checker. The backend doesn't enforce it; the UX overlay is a UI-layer simulation built so the demo can show the maker-checker flow end-to-end.
 
 The flow:
-1. **Maker** prepares a quote (in DRAFT). They click **"Send for approval"** — this sets a UI-only flag (`awaitingApproval: true`) on the quote record. The Maker's editing actions (Edit, Send for approval) become locked with the tooltip "Awaiting checker approval".
+1. **Maker** prepares a quote (in DRAFT). They click **"Send for approval"** — this sets a UI-only flag (`awaitingApproval: true`) on the quote record. The Maker's editing actions (Edit, Send for approval) become locked with the tooltip "Awaiting checker approval". Withdraw stays available — Maker can always pull a quote back.
 2. The user **switches role** via the top-right dropdown (Maker → Checker).
-3. **Checker** sees the same quote. Now an "Approve & submit" button is visible (it was hidden for the Maker). Clicking it actually calls the real backend `submit` endpoint (not a mock action) — moving the quote from DRAFT to SUBMITTED. The same Checker can then "Send to client", "Accept", and "Finalize" in sequence.
+3. **Checker** sees the same quote. Now an **"Approve & submit"** button is visible (it was hidden for the Maker). Clicking it calls the real backend `submit` endpoint — moving the quote from DRAFT to SUBMITTED. The same Checker can then "Send to client", "Mark accepted", and "Finalize" in sequence.
 
-**For the demo:** the role switcher in the top-right is a stand-in for a real Single Sign-On (SSO) login. In production this would be Keycloak (the spec calls it out) and your role would be determined by your SSO claims, not a dropdown. We made the dropdown so the demo can show Maker → Checker hand-off without two browser windows.
+**Important honesty disclosure** (memorise this — you'll be asked):
+- The backend has no concept of Maker vs Checker. The `submit` endpoint accepts the call from anyone with API access. The role-specific button visibility is **entirely client-side**.
+- "Approve" is just a UI label on the `submit` state transition. There is no separate Approval record persisted; the only audit artefact today is the `QuoteSubmitted` domain event (which records the actor and timestamp via the standard event envelope, but doesn't carry an explicit "approval" semantic).
+- The role switcher in the top-right is a stand-in for SSO. In production this would be Keycloak (the spec calls it out) and your role would come from your SSO claims, not a dropdown.
 
 ### 4.3 Why backend isn't enforcing it yet
 
-Backend was simplified for V1 to deliver the data model and core workflows first. The frontend overlay lets us tell the maker-checker story now; the backend will harden enforcement post-V1 (per the spec).
+Backend was simplified for V1 to deliver the data model and core workflows first. The frontend overlay lets us tell the maker-checker story now; the backend will harden enforcement post-V1.
+
+**This timeline appears in three places — the same authoritative answer:**
+- §4.3 (here): backend enforcement is the next major hardening pass.
+- §5.4: out-of-V1 list — "Backend-enforced maker-checker" is one entry.
+- §8.3 commercial Q&A: roadmap bucket 2 (Hardening, ~4–6 weeks) covers this work alongside Cerbos PII gating, real Keycloak SSO, and audit-trail UI.
+
+If a sceptic pushes — "so what's stopping me hitting the API directly to bypass approval?" — the honest answer today is "nothing in V1; the gate is in your SSO claims and Cerbos policies which land in Hardening pass." Don't bluff this one.
 
 ---
 
@@ -256,13 +281,14 @@ From the design principles deck v2 you have:
 
 | Claim | Evidence in demo | Honest limitation |
 |---|---|---|
-| Role-adaptive UI | Switch role in top-right; action bar buttons appear/disappear | Backend doesn't enforce — anyone could call the API directly |
-| Schema-driven adaptation | Mention every page is rendered from JSON schemas under `schemas/` | Not relevant to business buyers — keep it brief if asked |
-| Workflow-aware screens | PolicyMember detail (PMB-0007) — different actions appear in REPAIR_PENDING vs APPROVED | The `state-driven section toggling` is action-bar-level; full per-state form UIs come post-V1 |
-| Async backend computations | Quote pricing simulator: click "Request price", watch the page poll until the premium lands | Backend is mocked; real Rule Engine integration is post-V1 |
-| Cross-module hand-off | Quote.Finalize → ~4s later a Proposal appears in Issuance | The poll cadence, error handling, and idempotency are sketched not battle-tested |
-| Activation watch | Policy POL-2026-0002 has the "Activation watch" card showing pending members by reason | The grouping is computed from the in-memory store; in production this would be a backend-enriched response |
-| Reason banners | PAM Member detail (any in PENDING / VOID / CANCELLED state) shows the canonical reason | All reason copy lives in `state-map.ts`; easy to extend |
+| Role-adaptive UI | Switch role in top-right; action bar buttons appear/disappear (F5 in §7) | Backend doesn't enforce — anyone with API access could call submit/finalize directly. Hardening pass adds Cerbos + Keycloak. |
+| Workflow-aware screens | PolicyMember detail (PMB-0007) — different actions appear in REPAIR_PENDING vs APPROVED (F3 in §7) | State-driven toggling is action-bar-level; full per-state form UIs come post-V1. |
+| Async backend computations | Quote pricing simulator: click "Request price", watch the page poll until the premium lands (F1 step 3 in §7) | Backend is mocked; real Rule Engine integration is post-V1. |
+| Cross-module hand-off | Quote.Finalize → ~4s later a Proposal appears in Issuance (F1 step 9–10, F4 in §7) | The poll cadence, error handling, and idempotency are sketched not battle-tested. |
+| Activation watch | Policy POL-2026-0002 has the "Activation watch" card showing pending members by reason (F2 in §7) | The grouping is computed from the in-memory store; in production this would be a backend-enriched response. |
+| Reason banners | PAM Member detail (any in PENDING / VOID / CANCELLED state) shows the canonical reason (F2 step 5 in §7) | All reason copy lives in `state-map.ts`; easy to extend. |
+
+**On "schema-driven" specifically** — every screen is rendered from JSON schemas under `schemas/`. This is the foundation for non-trivial role-adaptive UI (the same engine that gates buttons can also gate sections, fields, and PII masking — without per-page hardcoding). Most business buyers don't care about the implementation; cite it only if a CTO asks how this scales (covered in §8.2).
 
 ### 5.3 What's deferred ("D backlog" in the plan)
 
@@ -279,7 +305,8 @@ From the design principles deck v2 you have:
 | D9 | Client detail page | List-only is enough for the demo |
 | D10 | UW review queue surface (the REVIEW lane) | UW Workbench is a separate app entirely |
 | D11 | Polished WITHDRAWN / EXPIRED / REJECTED Quote screens | No special copy yet — they render with the standard state badge |
-| D12 | Saved-view chip variants on lists ("Pending approval (mine)" etc) | Status filter dropdown covers demo |
+| D12 | Saved-view chip variants on lists ("Pending approval (mine)" etc) | Status filter dropdown covers demo. Subsumes D5 once both ship. |
+| D13 | Auto-activation simulator (Policy PENDING → ACTIVE once member threshold hit) | The fixture POL-2026-0001 is pre-seeded ACTIVE; demo can't show the live transition. Honest answer if asked: "in production, once enough members reach ADDED, the policy auto-activates via PolicyActivationFlow." |
 
 ### 5.4 What's out of V1 entirely (post-V1 product roadmap)
 
@@ -352,17 +379,23 @@ Useful to know which records to use during the demo.
 
 ### 6.5 PAM Members (`/policy-admin/members/[id]`)
 
-| ID | State | Reason | Best for showing |
-|---|---|---|---|
-| MEM-0001 | PENDING | PENDING_FLOAT_RESERVATION | Reason banner — "Awaiting float reservation" with pulsing icon |
-| MEM-0002 | PENDING | PENDING_APPROVAL | "Awaiting approval" reason |
-| MEM-0003 | PENDING | PENDING_POLICY_ACTIVATION | "Awaiting policy activation" |
-| MEM-0005 | ACTIVE | — | The successful end-state. Linked from PMB-0011's "Open in Policy Admin" action. |
-| MEM-0009 | VOID | FLOAT_UNAVAILABLE | Void reason banner |
-| MEM-0010 | VOID | APPROVAL_REJECTED | |
-| MEM-0011 | VOID | POLICY_CANCELLED | |
-| MEM-0012 | VOID | WITHDRAWN_BY_PROPOSER | |
-| **MEM-0013** | **CANCELLED** | "Member resigned from Acme Industries…" | The free-text cancellation reason — the demo's only example of a CANCELLED member |
+Note on which **policy** each member is on:
+- MEM-0001..MEM-0004 sit on **POL-2026-0002** (PENDING) — perfect for demoing the activation watch (F2).
+- MEM-0005..MEM-0008 sit on **POL-2026-0001** (ACTIVE).
+- MEM-0009..MEM-0013 also sit on POL-2026-0001 (mix of VOID + CANCELLED + ACTIVE).
+
+| ID | Policy | State | Reason | Best for showing |
+|---|---|---|---|---|
+| MEM-0001 | POL-2026-0002 | PENDING | PENDING_FLOAT_RESERVATION | Reason banner — "Awaiting float reservation" with pulsing icon |
+| MEM-0002 | POL-2026-0002 | PENDING | PENDING_APPROVAL | "Awaiting approval" reason |
+| MEM-0003 | POL-2026-0002 | PENDING | PENDING_POLICY_ACTIVATION | "Awaiting policy activation" |
+| MEM-0004 | POL-2026-0002 | PENDING | PENDING_POLICY_ACTIVATION | Second example of same reason |
+| MEM-0005 | POL-2026-0001 | ACTIVE | — | The successful end-state. Linked from PMB-0011's "Open in Policy Admin" action. |
+| MEM-0009 | POL-2026-0001 | VOID | FLOAT_UNAVAILABLE | Void reason banner |
+| MEM-0010 | POL-2026-0001 | VOID | APPROVAL_REJECTED | |
+| MEM-0011 | POL-2026-0005 | VOID | POLICY_CANCELLED | (Note: POL-2026-0005 is itself CANCELLED) |
+| MEM-0012 | POL-2026-0001 | VOID | WITHDRAWN_BY_PROPOSER | |
+| **MEM-0013** | POL-2026-0001 | **CANCELLED** | "Member resigned from Acme Industries…" | The free-text cancellation reason — the demo's only example of a CANCELLED member. Reach it via /policy-admin/members/MEM-0013 directly, or via POL-2026-0001 → Members tab. |
 
 ### 6.6 Reset to clean state
 
@@ -372,7 +405,7 @@ If the demo gets messy (you ran "Request price" three times, "Finalized" somethi
 curl -X POST http://localhost:3000/api/dev/reset
 ```
 
-Returns `200 {"ok":true}`. Refresh any page and you're back to fixtures.
+Returns `200 {"ok":true,"message":"Group PAS mock store reset."}`. Refresh any page and you're back to fixtures. The route is disabled if `GROUP_PAS_BACKEND_URL` is set, so it's safe to leave in for the demo deploy.
 
 ---
 
@@ -401,26 +434,25 @@ Five flows. Pick the ones that match the audience. F1 + F4 + F5 is the core 5-mi
 
 4. Click **Send for approval** (top of the page in the action bar).
    - "I've now flagged this for my Approver. Watch the action bar."
-   - Refresh — the Edit button is now disabled with the tooltip "Awaiting checker approval". The Send for approval is also locked.
-   - Withdraw is still available — Maker can always pull a quote back.
+   - The Edit and Send for approval buttons are now disabled with the tooltip "Awaiting checker approval". **Withdraw stays enabled** — Maker can always pull a quote back, even mid-approval.
 
 5. **Switch role to Checker** (top-right dropdown).
    - Refresh.
    - "Now I'm the Approver. The Maker's actions are gone — I never see the Edit button. What I do see is..."
-   - The action bar now shows: **Approve & submit / Clear approval / Withdraw**. Highlight the pulsing "Awaiting approval" reason.
+   - The action bar now shows: **Approve & submit / Clear approval / Withdraw**. Point to the pulsing "Awaiting approval" reason banner above the action bar.
 
 6. Click **Approve & submit**. State flips to **SUBMITTED**.
    - Action bar updates: now shows **Send to client / Withdraw**.
 
-7. Click **Send to client**. State → **SENT_TO_CLIENT**. Action bar updates.
+7. Click **Send to client**. State → **SENT_TO_CLIENT**. Action bar updates to: **Mark accepted / Reject / Withdraw**.
 
-8. Click **Mark accepted**. State → **ACCEPTED**.
+8. Click **Mark accepted**. State → **ACCEPTED**. Action bar: **Finalize / Withdraw**.
 
 9. Click **Finalize**. State → **FINALIZED**.
    - "The quote is now locked. Behind the scenes, the Issuance module is creating a Proposal."
-   - Wait 4 seconds. New action: **Open created proposal**.
+   - Wait ~4 seconds. New action visible in FINALIZED state: **Open created proposal**.
 
-10. Click it. Land on `/issuance/proposals` — the new Proposal is at the top of the list.
+10. Click it. Land on `/issuance/proposals` — the new Proposal is at the top of the list (sort by most recent if needed).
 
 **Total time: 3 minutes if you pre-reset.**
 
@@ -440,9 +472,9 @@ Five flows. Pick the ones that match the audience. F1 + F4 + F5 is the core 5-mi
 4. Click the **Members** tab. Show the per-state filter.
    - Filter to PENDING — see the four members with their reasons.
 
-5. Click on **MEM-0013** (or any link).
+5. Click on **MEM-0001** (any of MEM-0001..MEM-0004 work — all four are PENDING members on POL-2026-0002).
    - "PAM Member detail. The reason banner is canonical — same copy whether on a list cell, a detail header, or an alert."
-   - For MEM-0013 specifically: "Free-text cancellation reason: 'Member resigned from Acme Industries...'"
+   - For the cancellation-reason demo, navigate separately to `/policy-admin/members/MEM-0013` (that one's on POL-2026-0001 not POL-2026-0002): "Free-text cancellation reason: 'Member resigned from Acme Industries...'"
 
 ### F3 — The state-driven member workflow (Issuance / Ops demo)
 
@@ -453,7 +485,7 @@ Five flows. Pick the ones that match the audience. F1 + F4 + F5 is the core 5-mi
 2. Navigate `/issuance/proposals/PRO-2026-0001/members/PMB-0007`.
    - Status: **Repair pending** (warning chip).
    - Reason: classification flagged the salary as zero.
-   - Action bar: **Edit & re-classify / Reject / Archive** (Maker actions for a REPAIR_PENDING member).
+   - Action bar shows **Edit & re-classify** (Maker, Ops). To also see **Reject** and **Archive** in the action bar, switch role to **Ops** first — those two actions are Ops-only by spec.
 
 3. Click **Edit & re-classify**. A modal opens with the form pre-filled with the broken data.
    - "This is the Repair form — Ops fixes the broken fields and re-submits."
@@ -522,6 +554,15 @@ A: Each plan has a Free Cover Limit. Members wanting coverage above that need a 
 **Q: Can I see all the quotes I'm working on?**
 A: That's the "Operational Queue Index" feature, deferred per D5. For now use the status filter on the Quotation list. Post-V1 there'll be a single landing page with "My drafts / Awaiting my approval / In repair / Out for client review" chips.
 
+**Q: What's the SLA on a quote turnaround? How does the system enforce it?**
+A: SLA targets aren't hardcoded — they're operational policy, configured per insurer / per channel. V1 surfaces the data needed to measure SLAs (every state transition emits a timestamped domain event); the dashboards reading that data are post-V1. Escalation paths (e.g. notify a manager if a quote sits in "Awaiting checker approval" for >24h) are also post-V1.
+
+**Q: How is broker commission handled?**
+A: Broker commission accounting isn't in V1 — there's no Commission entity in the spec yet. In a typical group GTL deal the broker earns a percentage of the first-year premium plus trailing renewal commissions. That's a separate Accounting/Commissions module; it'll consume the same domain events V1 emits. Plan for it post-V1.
+
+**Q: How do members or the proposer get notified at each stage?**
+A: Customer Communications Management (CCM) is hinted in the spec — for example, the MAF link is delivered "via CCM-served form link" — but actual integration with email/SMS/portal templates is post-V1.
+
 **Q: I closed my browser mid-edit. Did I lose my work?**
 A: Today we don't have save-as-draft for in-flight forms — only the persisted backend state survives. The Quote itself is auto-saved as you mutate it (each field change is a separate API call). The principle of "save as draft" the deck mentions is real for the Quote object; we don't have it for the small inline forms yet.
 
@@ -547,6 +588,24 @@ A: The data model is event-sourced — every state transition emits a domain eve
 
 **Q: Can it handle 100k members under one policy?**
 A: Untested at that scale. The data model supports it; the polling cadence and pagination are designed around typical 100–10,000 member groups. Performance tuning is post-V1.
+
+**Q: How does the system integrate with our HRIS / payroll / banking stack?**
+A: Three integration surfaces:
+1. **Member onboarding from HRIS** (Workday/SAP/etc) — the bulk-census upload flow (D4) is the V1 mechanism: HR exports a CSV/XLSX, Ops uploads it, the workflow ingests row-by-row. Real-time HRIS connectors (e.g. Workday Studio) are post-V1.
+2. **Premium remittance** (client paying the insurer) — out of V1. Banking-rail integration is its own module typically wired to Razorpay/M2P/HDFC for India.
+3. **Member contribution payroll deduction** (employee-paid component) — also out of V1. Lives in payroll, not PAS.
+
+**Q: How is rate-card governance handled? Who signs off on rate changes?**
+A: Rate cards are uploaded as opaque file references in V1 (the actual file lives in object storage). Versioning, actuarial sign-off, and rate-card publication workflow live in a separate **Product Configurator** module — post-V1. The plan is rate cards are SCD-style versioned with effective-from / effective-to dates.
+
+**Q: Reinsurance — how is treaty / facultative cession handled?**
+A: Reinsurance is a placeholder gate in the spec (`WaitForReinsurerApproval` step in MemberEnrollmentFlow). V1 doesn't surface RI flows. Post-V1 the workflow will route members above an RI cession threshold through reinsurer review before approving for issuance.
+
+**Q: Premium payment frequency — Annual / Single only?**
+A: V1 spec has Annual and Single. Real GTL often supports Monthly / Quarterly / Half-Yearly. Adding them is a small enum extension on the backend + UI; not planned for V1, easy fast-follow.
+
+**Q: Audit trail?**
+A: The data model is event-sourced — every state transition emits a domain event (the spec defines ~40 events across the three modules). The events carry actor, timestamp, before/after state, and the command that triggered them. Persisting them is in scope; UI to query and display the audit log is post-V1 (Hardening pass).
 
 ### 8.3 From the business buyer (a CIO / Head of Insurance Tech)
 
@@ -580,6 +639,28 @@ A: That's the migration conversation — we'd typically build a one-time import 
 **Q: What about reports / dashboards / BI?**
 A: The home page dashboard is mock data only — placeholder for the real reporting layer. Post-V1 we'd integrate a BI tool (Metabase, Superset, your existing stack) reading from the read-side projections.
 
+**Q: Does this conform to IRDAI group insurance regulations?**
+A: V1 is a product/engineering MVP — feature-complete for the core workflow, but regulatory conformance is a separate hardening track. Specifically what's NOT yet in V1:
+- IRDAI master-policy schedule format / RI 1 / RI 2 returns
+- Free-look period enforcement (15 days post-issue cancellation right)
+- Claims TAT compliance (15 / 30 days)
+- Section 10(10D) tax treatment certificate generation
+- GST 18% on premium computation + invoicing
+- IRDAI grievance-redressal SLAs
+The data model captures everything you'd need to compute these; the regulatory output layer (returns, certificates, grievance UI) is post-V1.
+
+**Q: How is proposer KYC handled? CIN, GSTIN, PAN verification?**
+A: Out of V1. The Client master holds CIN-equivalent (`businessRegistrationNumber`), GSTIN, and tax reference number fields, but no validation against MCA / GST portal / Income Tax sources. KYC document upload + sanction-list screening (FATF/CFT/UN OFAC) lands with the Issuance hardening pass.
+
+**Q: Anti-Money Laundering checks?**
+A: Same answer as KYC — out of V1. Hooks exist on the Client domain to plug in PEP/sanction-list checks; integration is post-V1.
+
+**Q: Licensing model — per-tenant, per-policy, per-seat?**
+A: Commercial model isn't fixed yet — typically SaaS we'd price per-tenant + per-active-policy with seat tiers for Maker/Checker/Ops. Source-code escrow + data-export commitments are part of the contract conversation.
+
+**Q: Vendor lock-in — how do we get our data out?**
+A: All Group PAS data is exposed via the same REST APIs you see in the demo. A consumer can query and export any entity. Beyond that, the spec uses standard formats (Frictionless Table Schema for census, DMN for decision tables) so leaving wouldn't require translating proprietary structures. We can also offer scheduled bulk exports to S3/SFTP as part of the contract.
+
 ### 8.4 Defensive plays — when something goes wrong mid-demo
 
 **Q: "Why is this Plans tab so empty?"** (D1 deferred)
@@ -603,17 +684,33 @@ A: "Every state transition emits a domain event with the actor + timestamp on th
 **Q: "What happens if two Checkers approve the same quote at the same time?"**
 A: "Backend enforces optimistic concurrency — the second one would fail with a version mismatch. UI doesn't yet surface that error nicely; today it'd show a generic 'Failed to load' banner. Post-V1 we'd render a 'Refreshed by another user' message with a one-click reload."
 
+**Q: "How is this 'role-adaptive UI' different from any normal app showing/hiding buttons by role?"**
+A: "Two things. First, in V1 alone — yes, it's button visibility from a role flag. Honest. Second, the lift comes from the schema-driven engine: the same JSON schemas that gate buttons also gate sections, mask PII fields, and adapt detail layouts per state. Adding a new role-aware flow doesn't mean writing a new screen — it's a schema change. That's the post-V1 payoff a typical RBAC frontend doesn't get."
+
+**Q: "Show me a policy auto-activating from PENDING to ACTIVE."**
+A: "Auto-activation isn't simulated in V1 — the fixture POL-2026-0001 is pre-seeded ACTIVE. In production, once enough PolicyMembers reach ADDED state, the PolicyActivationFlow workflow fires the activation. We can build the simulator quickly post-demo if you want to see it visually."
+
+**Q: "Where are claims?"**
+A: "Out of V1. Claims is a separate operational module — different actor (claims handler, not maker/checker), different lifecycle (intimation → assessment → settlement), different data model (claim event, beneficiary, settlement). The PAS data model exposes everything claims needs (member roster, policy metadata, premium status), but the claims UI is post-V1."
+
+**Q: "What about the WITHDRAWN / EXPIRED quote screens — they look identical to other states."**
+A: "True — terminal-state screens are deliberately minimal in V1 (D11 in our deferred backlog). Each state has the right StateBadge and the action bar correctly shows no actions, but no special copy or layout per terminal state. Easy fast-follow."
+
+**Q: "Why do I see Configured / Not configured chips for some fields?"**
+A: "Those are intentional V1 placeholders for fields where the underlying data is opaque JSON — a DMN decision table, a Frictionless Table Schema for census, a classification result envelope. For the demo we just signal whether the field is set; full authoring/replace UIs land post-V1 (D1, D2, D3)."
+
 ---
 
 ## 9. Final pre-demo checklist
 
 Five minutes before going live:
 
-1. ✅ Reset the mock store: `curl -X POST http://localhost:3000/api/dev/reset`.
+1. ✅ Reset the mock store (per §6.6): `curl -X POST http://localhost:3000/api/dev/reset`.
 2. ✅ Open three tabs: `/test-dashboard`, `/quotation/QTE-2026-0001`, `/policy-admin/policies/POL-2026-0002`.
 3. ✅ Confirm the role switcher in the top-right shows **Maker — Sales**.
-4. ✅ Have this document open in another window — bookmark §8 (Q&A) for fast lookup.
+4. ✅ Have this document open in another window — bookmark §8 (Q&A) for fast lookup. The two questions you're most likely to be tested on: §8.4 "How is role-adaptive UI different from any RBAC?" and §8.3 "Does this conform to IRDAI?"
 5. ✅ Have the Design Principles deck open as backup if you need to defend a UX choice.
+6. ✅ If asked about backend enforcement of maker-checker, the honest answer is in §4.2 — don't bluff this one.
 
 **If the dev server crashes mid-demo:** restart it (`npm run dev`), wait 10 seconds for it to boot, refresh the browser. The mock store will reset automatically (it's in-memory only).
 
