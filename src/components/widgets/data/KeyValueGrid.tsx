@@ -23,6 +23,45 @@ function getNested(source: unknown, path: string): unknown {
     );
 }
 
+// Best-effort JSON-string parse. Returns the original value if not a string
+// or if parsing throws.
+function tryParseJson(v: unknown): unknown {
+  if (typeof v !== 'string' || v.length === 0) return v;
+  try {
+    return JSON.parse(v);
+  } catch {
+    return v;
+  }
+}
+
+// Resolves a field's value from raw row data, applying parseJson / subPath /
+// nestedParseAt transforms in order. Backend DTOs in this codebase serialize
+// composite shapes as escaped JSON strings (productsJson, censusFileFormatJson,
+// memberToPlanMappingJson) — these flags let schemas drill into them without a
+// per-shape custom renderer.
+function resolveFieldValue(field: KeyValueField, source: unknown): unknown {
+  let value = getNested(source, field.accessorKey);
+  if (field.parseJson) value = tryParseJson(value);
+  if (field.subPath) value = getNested(value, field.subPath);
+  if (field.nestedParseAt && value != null && typeof value === 'object') {
+    const nested = getNested(value, field.nestedParseAt);
+    const parsed = tryParseJson(nested);
+    // Replace the nested string with its parsed form so downstream renderers
+    // see a real object/array.
+    if (parsed !== nested) {
+      const segments = field.nestedParseAt.split('.');
+      const last = segments.pop()!;
+      const parent = segments.length
+        ? (getNested(value, segments.join('.')) as Record<string, unknown> | null)
+        : (value as Record<string, unknown>);
+      if (parent && typeof parent === 'object') {
+        (parent as Record<string, unknown>)[last] = parsed;
+      }
+    }
+  }
+  return value;
+}
+
 function isEmpty(v: unknown): boolean {
   if (v === null || v === undefined) return true;
   if (typeof v === 'string') return v.length === 0 || v === 'null';
@@ -83,9 +122,28 @@ function renderFieldValue(field: KeyValueField, value: unknown): React.ReactNode
       const n = arr ? arr.length : Number(value) || 0;
       return (
         <span>
-          {n} {n === 1 ? (field as { unit?: string }).unit ?? "item" : (field as { unitPlural?: string }).unitPlural ?? `${(field as { unit?: string }).unit ?? "items"}`}
+          {n} {n === 1 ? field.unit ?? "item" : field.unitPlural ?? `${field.unit ?? "items"}`}
         </span>
       );
+    }
+    case "list": {
+      // Render arrays as a comma-separated inline string. If `itemPath` is
+      // declared, drill that path inside each item; otherwise stringify.
+      // Keeps long lists from blowing layout — wraps as plain text.
+      if (!Array.isArray(value) || value.length === 0) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      const formatted = value.map((item) => {
+        if (field.itemPath) {
+          const sub = getNested(item, field.itemPath);
+          if (sub === undefined || sub === null || sub === "") return null;
+          return String(sub);
+        }
+        if (typeof item === "object" || typeof item === "function") return null;
+        return String(item);
+      }).filter((s): s is string => s !== null);
+      if (formatted.length === 0) return <span className="text-muted-foreground">—</span>;
+      return <span>{formatted.join(", ")}</span>;
     }
     default:
       // Empty strings render as "—" so a blank field reads consistently with
@@ -139,7 +197,7 @@ export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => 
       style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
     >
       {fields.map((field: KeyValueField) => {
-        const value = getNested(sourceData, field.accessorKey);
+        const value = resolveFieldValue(field, sourceData);
 
         return (
           <div key={field.id} className="flex flex-col space-y-1.5">

@@ -10,12 +10,35 @@
         "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
       },
       "props": {
-        "title": "Aggregate census (read-only for V1 demo — D2)",
-        "description": "File-format upload + per-plan headcount editing deferred to D2.",
+        "title": "Aggregate census",
+        "description": "Read-only for V1 demo. File-format upload + per-plan headcount editing deferred to D2.",
         "columns": 2,
         "fields": [
-          { "id": "headcount", "label": "Total headcount", "accessorKey": "headcount" },
-          { "id": "censusFileFormat", "label": "Census file format", "accessorKey": "censusFileFormatJson", "type": "presence" }
+          {
+            "id": "headcount",
+            "label": "Total headcount",
+            "accessorKey": "headcount"
+          },
+          {
+            "id": "censusFileType",
+            "label": "File type",
+            "accessorKey": "censusFileFormatJson",
+            "parseJson": true,
+            "subPath": "fileType"
+          },
+          {
+            "id": "censusSheetName",
+            "label": "Sheet name",
+            "accessorKey": "censusFileFormatJson",
+            "parseJson": true,
+            "subPath": "sheetName"
+          },
+          {
+            "id": "censusFileFormat",
+            "label": "Census file format",
+            "accessorKey": "censusFileFormatJson",
+            "type": "presence"
+          }
         ]
       }
     }

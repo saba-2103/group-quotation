@@ -10,11 +10,45 @@
         "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
       },
       "props": {
-        "title": "Member-to-Plan mapping (read-only for V1 demo — D3)",
-        "description": "DMN authoring is out of V1; the demo just signals whether a mapping is set. Replace flow is deferred to D3.",
-        "columns": 1,
+        "title": "Member-to-Plan mapping",
+        "description": "Read-only for V1 demo. DMN authoring out of scope; replace flow deferred to D3. The mapping below is the parsed DMN ref.",
+        "columns": 2,
         "fields": [
-          { "id": "mappingState", "label": "DMN mapping", "accessorKey": "memberToPlanMappingJson", "type": "presence" }
+          {
+            "id": "mappingPolicy",
+            "label": "Hit policy",
+            "accessorKey": "memberToPlanMappingJson",
+            "parseJson": true,
+            "subPath": "hits"
+          },
+          {
+            "id": "ruleCount",
+            "label": "Rules",
+            "accessorKey": "memberToPlanMappingJson",
+            "parseJson": true,
+            "subPath": "rules",
+            "type": "count",
+            "unit": "rule",
+            "unitPlural": "rules"
+          },
+          {
+            "id": "ruleConditions",
+            "label": "Conditions",
+            "accessorKey": "memberToPlanMappingJson",
+            "parseJson": true,
+            "subPath": "rules",
+            "type": "list",
+            "itemPath": "if"
+          },
+          {
+            "id": "ruleTargets",
+            "label": "Target plans",
+            "accessorKey": "memberToPlanMappingJson",
+            "parseJson": true,
+            "subPath": "rules",
+            "type": "list",
+            "itemPath": "then"
+          }
         ]
       }
     }

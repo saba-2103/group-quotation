@@ -10,12 +10,51 @@
         "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
       },
       "props": {
-        "title": "Plan structure (read-only for V1 demo — D1)",
-        "description": "Add / edit / remove deferred to D1; the demo renders the plans configured on the fixture.",
+        "title": "Plan structure",
+        "description": "Read-only for V1 demo. Add / edit / remove deferred to D1; the demo renders the plans configured on the fixture.",
         "columns": 2,
         "fields": [
-          { "id": "plansCount", "label": "Plans configured", "accessorKey": "plans", "type": "count", "unit": "plan", "unitPlural": "plans" },
-          { "id": "headcount", "label": "Census headcount", "accessorKey": "headcount" }
+          {
+            "id": "plansCount",
+            "label": "Plans configured",
+            "accessorKey": "plans",
+            "type": "count",
+            "unit": "plan",
+            "unitPlural": "plans"
+          },
+          {
+            "id": "planNumbers",
+            "label": "Plan numbers",
+            "accessorKey": "plans",
+            "type": "list",
+            "itemPath": "planNo"
+          },
+          {
+            "id": "planNames",
+            "label": "Plan names",
+            "accessorKey": "plans",
+            "type": "list",
+            "itemPath": "planName"
+          },
+          {
+            "id": "rateCardFiles",
+            "label": "Rate-card files",
+            "accessorKey": "plans",
+            "type": "list",
+            "itemPath": "rateCardFile"
+          },
+          {
+            "id": "headcount",
+            "label": "Census headcount",
+            "accessorKey": "headcount"
+          },
+          {
+            "id": "firstPlanCoverFormula",
+            "label": "Cover formula (first plan)",
+            "accessorKey": "plans.0.coverAmountFormulaJson",
+            "parseJson": true,
+            "subPath": "type"
+          }
         ]
       }
     }
