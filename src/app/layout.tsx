@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { AppContextProvider } from "@/components/providers/AppContextProvider";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { Toaster } from "@/components/ui/toast";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -36,12 +37,13 @@ export default function RootLayout({
 					<AppContextProvider>
 						<SidebarProvider defaultOpen={true}>
 							<AppSidebar />
-              				<main className="w-full min-w-0 flex-1 overflow-x-hidden p-6 relative">
+							<main className="w-full min-w-0 flex-1 overflow-x-hidden p-6 relative">
 								<SidebarTrigger className="absolute top-6 left-6 z-50 md:hidden" />
 								{children}
 							</main>
 						</SidebarProvider>
 					</AppContextProvider>
+					<Toaster />
 				</Providers>
 			</body>
 		</html>

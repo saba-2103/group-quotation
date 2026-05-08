@@ -5,6 +5,7 @@ import { ActionConfig } from "@/types/widget";
 import { useRouter } from "next/navigation";
 import { useOverlayStore } from "@/hooks/useOverlayStore";
 import { useWidgetState } from "@/hooks/useWidgetState";
+import { toast } from "@/components/ui/toast";
 
 export const useActionHandler = () => {
   const router = useRouter();
@@ -23,6 +24,13 @@ export const useActionHandler = () => {
         }
       });
       if (!res.ok) {
+        // Backend uses two error envelopes — the V1-default Spring shape
+        //   { timestamp, status, error, message, path }
+        // and the QuotationException shape
+        //   { timestamp, status, error, errorCode, message, path }
+        // Both expose `message` as the human-readable reason. Fall back to
+        // `error` (HTTP-status text) and `errorCode` (machine code) when
+        // `message` is missing. See src/lib/api/error-mapper.ts.
         let errorMessage = `Action failed: ${res.statusText}`;
         try {
           const text = await res.text();
@@ -30,12 +38,14 @@ export const useActionHandler = () => {
             const errorData = JSON.parse(text);
             if (errorData.message) {
               errorMessage = errorData.message;
+            } else if (errorData.errorCode) {
+              errorMessage = errorData.errorCode;
             } else if (errorData.error) {
               errorMessage = errorData.error;
             }
           }
         } catch (e) {
-          // Ignore JSON parsing errors for error responses
+          // Body wasn't JSON — keep the statusText fallback.
         }
         throw new Error(errorMessage);
       }
@@ -58,19 +68,30 @@ export const useActionHandler = () => {
             open(`confirm-${action.id}`, "dialog", action);
             return;
           }
-          await mutateAsync(action);
-          if (action.successMessage) {
-            console.log("Success Toast:", action.successMessage); // Placeholder for toast
-          }
-          if (action.refreshKey) {
-            // Invalidate any query whose first queryKey element starts with the action.refreshKey
-            const refreshKeyStr = action.refreshKey;
-            queryClient.invalidateQueries({
-              predicate: (query) => {
-                const key = query.queryKey[0];
-                return typeof key === "string" && key.startsWith(refreshKeyStr);
-              }
-            });
+          try {
+            await mutateAsync(action);
+            if (action.successMessage) {
+              toast.success(action.successMessage);
+            }
+            if (action.refreshKey) {
+              // Invalidate any query whose first queryKey element starts with the action.refreshKey
+              const refreshKeyStr = action.refreshKey;
+              queryClient.invalidateQueries({
+                predicate: (query) => {
+                  const key = query.queryKey[0];
+                  return typeof key === "string" && key.startsWith(refreshKeyStr);
+                }
+              });
+            }
+          } catch (err) {
+            // Surface the parsed `message` from the backend's error envelope
+            // (or the raw Error message when parsing fell back to statusText).
+            const message =
+              err instanceof Error && err.message
+                ? err.message
+                : "Action failed";
+            toast.error(message);
+            throw err;
           }
         }
         break;
@@ -101,6 +122,10 @@ export const useActionHandler = () => {
             a.remove();
             window.URL.revokeObjectURL(url);
           } catch (error) {
+            const message = error instanceof Error && error.message
+              ? error.message
+              : "Download failed";
+            toast.error(message);
             console.error("Download error:", error);
           }
         }
