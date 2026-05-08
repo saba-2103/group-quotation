@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ControllerRenderProps, Path } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDatePicker } from '../../controls/dateWidget/CalendarDatePicker';
 import { Dropdown } from '../../controls/searchDropDown/dropDown';
-import { FormFieldConfig, FormValues } from './types';
+import { FormFieldConfig, FormValues, SelectOption } from './types';
 import { NATIVE_INPUT_TYPES } from './constants';
 import ViewField from './ViewField';
 import { DateFormat } from '@/contexts/TenantConfigContext';
+import { useSmartQuery } from '@/hooks/useSmartQuery';
 
 interface FieldRendererProps {
     field: FormFieldConfig;
@@ -19,18 +20,54 @@ interface FieldRendererProps {
     dateFormat: DateFormat;
 }
 
-const SelectField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => (
-    <Select onValueChange={fieldProps.onChange} value={fieldProps.value as string} disabled={isDisabled}>
-        <SelectTrigger>
-            <SelectValue placeholder={field.placeholder ?? 'Select an option'} />
-        </SelectTrigger>
-        <SelectContent>
-            {field.options?.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-            ))}
-        </SelectContent>
-    </Select>
-);
+const SelectField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => {
+    // Two ways the field gets its options:
+    //   1. `field.options` — static, schema-declared. Wins if present.
+    //   2. `field.dataSource` + `field.optionLabel` / `field.optionValue` —
+    //      fetch a list from the API and map each row to a {value,label}.
+    // useSmartQuery is always called (hook order rule) but disabled when
+    // dataSource is missing so it's a no-op.
+    const query = useSmartQuery(field.dataSource);
+    const options = useMemo<SelectOption[]>(() => {
+        if (field.options && field.options.length > 0) return field.options;
+        if (!field.dataSource) return [];
+        const rows = query.data;
+        if (!Array.isArray(rows) || !field.optionLabel || !field.optionValue) return [];
+        return rows
+            .map((row: Record<string, unknown>) => {
+                const value = row[field.optionValue!];
+                const label = row[field.optionLabel!];
+                if (value === undefined || value === null) return null;
+                return {
+                    value: String(value),
+                    label: label != null ? String(label) : String(value),
+                };
+            })
+            .filter((opt): opt is SelectOption => opt !== null);
+    }, [field.options, field.dataSource, field.optionLabel, field.optionValue, query.data]);
+
+    const isFetching = Boolean(field.dataSource) && query.isLoading && options.length === 0;
+    const placeholder = isFetching
+        ? 'Loading…'
+        : (field.placeholder ?? 'Select an option');
+
+    return (
+        <Select
+            onValueChange={fieldProps.onChange}
+            value={fieldProps.value as string}
+            disabled={isDisabled || isFetching}
+        >
+            <SelectTrigger>
+                <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+                {options.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
+};
 
 const RadioField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => (
     <div className="flex flex-col space-y-2 mt-2">
