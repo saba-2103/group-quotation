@@ -13,12 +13,96 @@
         "title": "Proposal — read-only data carried from the source quote (W2 step 1)",
         "columns": 3,
         "fields": [
-          { "id": "id", "label": "Proposal ID", "accessorKey": "id" },
-          { "id": "quoteId", "label": "Source quote", "accessorKey": "quoteId" },
-          { "id": "client", "label": "Client", "accessorKey": "clientName" },
-          { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
-          { "id": "memberToPlanMapping", "label": "Member-to-Plan DMN", "accessorKey": "memberToPlanMapping", "type": "presence" },
-          { "id": "policyNumber", "label": "Created policy #", "accessorKey": "policyNumber" }
+          {
+            "id": "id",
+            "label": "Proposal ID",
+            "accessorKey": "id"
+          },
+          {
+            "id": "state",
+            "label": "State",
+            "accessorKey": "state",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "DRAFT", "label": "Draft", "variant": "secondary" },
+              { "value": "SUBMITTED", "label": "Submitted", "variant": "info" },
+              { "value": "FINALIZED", "label": "Finalized", "variant": "teal" },
+              { "value": "POLICY_CREATED", "label": "Policy created", "variant": "success" },
+              { "value": "CANCELLED", "label": "Cancelled", "variant": "destructive" }
+            ]
+          },
+          {
+            "id": "quoteId",
+            "label": "Source quote",
+            "accessorKey": "quoteId"
+          },
+          {
+            "id": "client",
+            "label": "Client",
+            "accessorKey": "clientName"
+          },
+          {
+            "id": "policyType",
+            "label": "Policy type",
+            "accessorKey": "policyType"
+          },
+          {
+            "id": "headcount",
+            "label": "Headcount",
+            "accessorKey": "aggregateCensusJson",
+            "parseJson": true,
+            "subPath": "headcount"
+          },
+          {
+            "id": "plansCount",
+            "label": "Plans configured",
+            "accessorKey": "plansJson",
+            "parseJson": true,
+            "type": "count",
+            "unit": "plan",
+            "unitPlural": "plans"
+          },
+          {
+            "id": "planNumbers",
+            "label": "Plan numbers",
+            "accessorKey": "plansJson",
+            "parseJson": true,
+            "type": "list",
+            "itemPath": "planNo"
+          },
+          {
+            "id": "planNames",
+            "label": "Plan names",
+            "accessorKey": "plansJson",
+            "parseJson": true,
+            "type": "list",
+            "itemPath": "planName"
+          },
+          {
+            "id": "estimatedPremium",
+            "label": "Estimated premium",
+            "accessorKey": "estimatedPremiumJson",
+            "parseJson": true,
+            "subPath": "amount.amount",
+            "type": "currency",
+            "currency": "INR"
+          },
+          {
+            "id": "memberToPlanMapping",
+            "label": "Member-to-Plan DMN",
+            "accessorKey": "memberToPlanMapping",
+            "type": "presence"
+          },
+          {
+            "id": "policyId",
+            "label": "Created policy ID",
+            "accessorKey": "policyId"
+          },
+          {
+            "id": "policyNumber",
+            "label": "Created policy #",
+            "accessorKey": "policyNumber"
+          }
         ]
       }
     }

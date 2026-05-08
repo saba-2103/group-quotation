@@ -1,7 +1,7 @@
 // Mock catch-all for the Issuance API (docs/spec/issuance/IssuanceApi.api).
 // Set GROUP_PAS_BACKEND_URL to short-circuit the mock layer and proxy upstream.
 
-import type { NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import {
   censusRowToDto,
@@ -46,6 +46,59 @@ type RouteContext = { params: Promise<{ path?: string[] }> };
 
 function findProposal(id: string): MockProposal | undefined {
   return store.proposals.find((p) => p.id === id);
+}
+
+// In proxy mode the proposal-scoped /members shortcut is kept local (see
+// MOCK_ONLY_PATTERNS) so that route handlers can resolve the underlying
+// policyId before forwarding. This helper consults the local store first,
+// then falls back to fetching the proposal from the live backend if a
+// proxy URL is configured.
+async function findProposalProxyAware(
+  id: string,
+): Promise<{ id: string; policyId?: string; clientId?: string } | null> {
+  const local = store.proposals.find((p) => p.id === id);
+  if (local) return local;
+  const HOST = process.env.GROUP_PAS_BACKEND_URL;
+  if (!HOST) return null;
+  try {
+    const res = await fetch(`${HOST.replace(/\/$/, '')}/api/issuance/proposals/${id}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as { id: string; policyId?: string; clientId?: string };
+  } catch {
+    return null;
+  }
+}
+
+// Forwards a request to the deployed backend, preserving method/body/query.
+// Returns the upstream response as a NextResponse. Used by the proposal-
+// scoped /members shortcut in proxy mode to redirect to the backend's
+// policy-scoped endpoint.
+async function forwardToBackend(
+  req: NextRequest,
+  upstreamPath: string,
+  options: { method?: string; body?: string } = {},
+): Promise<NextResponse> {
+  const HOST = process.env.GROUP_PAS_BACKEND_URL;
+  if (!HOST) {
+    return NextResponse.json({ error: 'no backend configured' }, { status: 500 });
+  }
+  const search = req.nextUrl.searchParams.toString();
+  const url = `${HOST.replace(/\/$/, '')}${upstreamPath}${search ? `?${search}` : ''}`;
+  const init: RequestInit = {
+    method: options.method ?? req.method,
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+  };
+  if (options.body !== undefined) init.body = options.body;
+  const res = await fetch(url, init);
+  if (res.status === 204) return new NextResponse(null, { status: 204 });
+  const text = await res.text();
+  if (!text) return new NextResponse(null, { status: res.status });
+  return new NextResponse(text, {
+    status: res.status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 function findPolicyMember(id: string): PolicyMember | undefined {
@@ -356,11 +409,18 @@ const routes: RouteEntry[] = [
   // Lets the proposal-detail "Members" tab and add-member form work without
   // hardcoding the policyId. 400s if the proposal hasn't reached POLICY_CREATED
   // (no policy → can't enrol members yet).
+  //
+  // In proxy mode the backend doesn't expose proposal-scoped /members at all
+  // (DSL canon uses /policies/:policyId/members; OpenAPI's proposal-scoped
+  // entries are stale per SESSION_LOG). We keep the route local via
+  // MOCK_ONLY_PATTERNS, look up the proposal's policyId from the proxy if the
+  // local store doesn't have it, then forward to backend's policy-scoped
+  // endpoint. Schema stays unchanged.
   {
     method: 'GET',
     pattern: 'proposals/:proposalId/members',
-    handler: (req, params) => {
-      const p = findProposal(params.proposalId);
+    handler: async (req, params) => {
+      const p = await findProposalProxyAware(params.proposalId);
       if (!p) return notFound(`proposals/${params.proposalId}/members`);
       if (!p.policyId) {
         return json(
@@ -375,6 +435,13 @@ const routes: RouteEntry[] = [
           400,
         );
       }
+      if (process.env.GROUP_PAS_BACKEND_URL) {
+        return forwardToBackend(
+          req,
+          `/api/issuance/policies/${p.policyId}/members`,
+          { method: 'GET' },
+        );
+      }
       const state = req.nextUrl.searchParams.get('state');
       const list = store.policyMembers.filter(
         (m) => m.policyId === p.policyId && (!state || m.state === state),
@@ -386,7 +453,7 @@ const routes: RouteEntry[] = [
     method: 'POST',
     pattern: 'proposals/:proposalId/members',
     handler: async (req, params) => {
-      const p = findProposal(params.proposalId);
+      const p = await findProposalProxyAware(params.proposalId);
       if (!p) return notFound(`proposals/${params.proposalId}/members`);
       if (!p.policyId) {
         return json(
@@ -399,6 +466,14 @@ const routes: RouteEntry[] = [
             path: `/api/issuance/proposals/${params.proposalId}/members`,
           },
           400,
+        );
+      }
+      if (process.env.GROUP_PAS_BACKEND_URL) {
+        const body = await req.text();
+        return forwardToBackend(
+          req,
+          `/api/issuance/policies/${p.policyId}/members`,
+          { method: 'POST', body },
         );
       }
       const body = await readJson<{

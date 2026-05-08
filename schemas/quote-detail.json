@@ -51,6 +51,7 @@
         "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
       },
       "props": {
+        "stateField": "status",
         "stateActions": {
           "DRAFT": ["edit", "send-for-approval", "submit", "withdraw"],
           "SUBMITTED": ["send-to-client", "withdraw"],

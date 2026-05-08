@@ -46,6 +46,7 @@
         "api": { "endpoint": "/api/quotation/member-quotes/{{id}}", "method": "GET" }
       },
       "props": {
+        "stateField": "status",
         "stateActions": {
           "DRAFT": ["set-premium", "submit"],
           "SUBMITTED": ["finalize"],

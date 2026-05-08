@@ -42,6 +42,13 @@ interface ActionBarPropsResolved {
   // When set, the widget pulls `state` from useWidgetState() under this key
   // (e.g. 'quote', 'proposal', 'policy').
   stateKey?: string;
+  // Field on the fetched entity that holds the lifecycle state. Defaults to
+  // `state` (used by Proposal, Policy, PolicyMember, Member). Quote DTOs
+  // expose this as `status`, so the quote-detail action-bar declares
+  // `stateField: "status"`. Without this override the widget reads
+  // `entity.state`, gets undefined for Quotes, applies an empty
+  // stateActions[''] map, and disables every action.
+  stateField?: string;
 }
 
 export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
@@ -51,6 +58,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
     roleActions,
     actions = [],
     stateKey,
+    stateField = 'state',
   } = props;
 
   const { role } = useRole();
@@ -71,8 +79,8 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
     : undefined;
 
   const state =
-    (liveEntity?.state as string | undefined) ??
-    (fetchedEntity?.state as string | undefined) ??
+    (liveEntity?.[stateField] as string | undefined) ??
+    (fetchedEntity?.[stateField] as string | undefined) ??
     props.state ??
     '';
 
