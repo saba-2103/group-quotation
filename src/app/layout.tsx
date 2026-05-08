@@ -7,6 +7,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { RoleSwitcher } from "@/components/widgets/role/RoleSwitcher";
+import { Toaster } from "@/components/ui/toast";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -51,6 +52,7 @@ export default function RootLayout({
 							</SidebarProvider>
 						</AppContextProvider>
 					</RoleProvider>
+					<Toaster />
 				</Providers>
 			</body>
 		</html>
