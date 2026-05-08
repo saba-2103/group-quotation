@@ -10,7 +10,7 @@
             "type": "page-header",
             "props": {
                 "title": "Dashboard",
-                "description": "Group Insurance Overview"
+                "description": "Group PAS V1 — Quotation, Issuance, Policy Admin"
             }
         },
         {
@@ -38,7 +38,7 @@
                     }
                 },
                 {
-                    "id": "metric-new-business",
+                    "id": "metric-quotes-finalized",
                     "type": "metric-card",
                     "dataSource": {
                         "api": {
@@ -47,14 +47,14 @@
                         }
                     },
                     "props": {
-                        "label": "New Business",
-                        "icon": "PlusCircle",
+                        "label": "Quotes Finalized",
+                        "icon": "CheckCircle2",
                         "format": "number",
                         "priority": 1
                     }
                 },
                 {
-                    "id": "metric-pending-alterations",
+                    "id": "metric-active-policies",
                     "type": "metric-card",
                     "dataSource": {
                         "api": {
@@ -63,14 +63,14 @@
                         }
                     },
                     "props": {
-                        "label": "Pending Alterations",
-                        "icon": "Edit",
+                        "label": "Active Policies",
+                        "icon": "ShieldCheck",
                         "format": "number",
                         "priority": 1
                     }
                 },
                 {
-                    "id": "metric-renewals-due",
+                    "id": "metric-members-in-flight",
                     "type": "metric-card",
                     "dataSource": {
                         "api": {
@@ -79,8 +79,8 @@
                         }
                     },
                     "props": {
-                        "label": "Renewals Due",
-                        "icon": "RefreshCw",
+                        "label": "Members in Flight",
+                        "icon": "Users",
                         "format": "number",
                         "priority": 1
                     }
@@ -136,118 +136,8 @@
                                     "type": "navigate",
                                     "target": "/policy-admin/policies"
                                 }
-                            },
-                            {
-                                "id": "group-major-alteration-card",
-                                "label": "Group Major Alteration",
-                                "type": "card",
-                                "icon": "Edit",
-                                "description": "Handle major policy changes",
-                                "action": {
-                                    "type": "navigate",
-                                    "target": "/alterations?type=major"
-                                }
-                            },
-                            {
-                                "id": "group-minor-alteration-card",
-                                "label": "Group Minor Alteration",
-                                "type": "card",
-                                "icon": "Edit",
-                                "description": "Process minor modifications",
-                                "action": {
-                                    "type": "navigate",
-                                    "target": "/alterations?type=minor"
-                                }
-                            },
-                            {
-                                "id": "group-renewals-card",
-                                "label": "Group Renewals",
-                                "type": "card",
-                                "icon": "RefreshCw",
-                                "description": "Manage policy renewals",
-                                "action": {
-                                    "type": "navigate",
-                                    "target": "/renewals"
-                                }
-                            },
-                            {
-                                "id": "short-term-extension-card",
-                                "label": "Short-term Extension",
-                                "type": "card",
-                                "icon": "Clock",
-                                "description": "Process short-term extensions",
-                                "action": {
-                                    "type": "navigate",
-                                    "target": "/extensions"
-                                }
                             }
                         ]
-                    }
-                }
-            ]
-        },
-        {
-            "id": "ai-insights-section",
-            "type": "section-group",
-            "props": {
-                "title": "AI-Powered Insights & Predictions",
-                "columns": 2
-            },
-            "children": [
-                {
-                    "id": "premium-revenue-forecast",
-                    "type": "chart-widget",
-                    "dataSource": {
-                        "api": {
-                            "endpoint": "/api/dashboard/ai/revenue-forecast",
-                            "method": "GET"
-                        }
-                    },
-                    "props": {
-                        "title": "Premium Revenue Forecast",
-                        "chartType": "area"
-                    }
-                },
-                {
-                    "id": "portfolio-risk-analysis",
-                    "type": "chart-widget",
-                    "dataSource": {
-                        "api": {
-                            "endpoint": "/api/dashboard/ai/risk-analysis",
-                            "method": "GET"
-                        }
-                    },
-                    "props": {
-                        "title": "Portfolio Risk Analysis",
-                        "chartType": "donut"
-                    }
-                },
-                {
-                    "id": "conversion-funnel-analysis",
-                    "type": "chart-widget",
-                    "dataSource": {
-                        "api": {
-                            "endpoint": "/api/dashboard/ai/conversion-funnel",
-                            "method": "GET"
-                        }
-                    },
-                    "props": {
-                        "title": "Conversion Funnel Analysis",
-                        "chartType": "bar"
-                    }
-                },
-                {
-                    "id": "claims-prediction-model",
-                    "type": "chart-widget",
-                    "dataSource": {
-                        "api": {
-                            "endpoint": "/api/dashboard/ai/claims-prediction",
-                            "method": "GET"
-                        }
-                    },
-                    "props": {
-                        "title": "Claims Prediction Model",
-                        "chartType": "line"
                     }
                 }
             ]
@@ -277,26 +167,6 @@
                                 "action": {
                                     "type": "navigate",
                                     "target": "/quotation"
-                                }
-                            },
-                            {
-                                "id": "process-renewals-action",
-                                "label": "Process Renewals",
-                                "type": "link",
-                                "icon": "RefreshCw",
-                                "action": {
-                                    "type": "navigate",
-                                    "target": "/renewals/process"
-                                }
-                            },
-                            {
-                                "id": "new-business-action",
-                                "label": "New Business",
-                                "type": "link",
-                                "icon": "FileText",
-                                "action": {
-                                    "type": "open-modal",
-                                    "target": "new-business-form"
                                 }
                             }
                         ]
