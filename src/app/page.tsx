@@ -1,49 +1,19 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
+import { resolveSchemaRefs } from '@/lib/schemaResolver';
+import dashboardSchema from '../../schemas/dashboard.json';
+import type { WidgetConfig } from '@/types/widget';
 
-export default function Home() {
-	return (
-		<div className="min-h-screen bg-background p-8 font-[family-name:var(--font-geist-sans)]">
-			<main className="max-w-4xl mx-auto space-y-8">
-				<div className="space-y-2">
-					<h1 className="text-3xl font-bold tracking-tight">Keystone UI Port</h1>
-					<p className="text-muted-foreground">
-						Welcome to the ported UI components and schema-driven engine.
-					</p>
-				</div>
-
-				<div className="grid gap-4 md:grid-cols-2">
-					<Card>
-						<CardHeader>
-							<CardTitle>Dashboard</CardTitle>
-							<CardDescription>
-								Schema-driven dashboard with metrics and charts.
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<Link href="/test-dashboard">
-								<Button>View Dashboard</Button>
-							</Link>
-						</CardContent>
-					</Card>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>Claims List</CardTitle>
-							<CardDescription>
-								Data table with filters and actions.
-							</CardDescription>
-						</CardHeader>
-						<CardContent>
-							<Link href="/claims">
-								<Button variant="outline">View Claims</Button>
-							</Link>
-						</CardContent>
-					</Card>
-
-				</div>
-			</main>
-		</div>
-	);
+// Group PAS V1 dashboard. Renders schemas/dashboard.json, which surfaces:
+//   - Three module cards (Quotation / Issuance / Policy Admin)
+//   - Key metrics (pending quotes, new business)
+//   - Quick actions
+// The same schema also drives /test-dashboard (kept around for the schema
+// engine smoke tests). Update the schema, both routes pick it up.
+export default async function Home() {
+  const resolved = await resolveSchemaRefs(dashboardSchema);
+  return (
+    <div className="w-full h-full bg-background text-foreground">
+      <WidgetRenderer config={resolved as WidgetConfig} />
+    </div>
+  );
 }
