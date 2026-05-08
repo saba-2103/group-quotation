@@ -139,7 +139,7 @@
             "label": "Edit",
             "icon": "Pencil",
             "type": "open-modal",
-            "target": "create-quote-form",
+            "target": "edit-quote-policy-detail-form",
             "variant": "outline"
           },
           {
