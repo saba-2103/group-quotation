@@ -64,7 +64,11 @@
             "type": "navigate",
             "target": "/policy-admin/members/:id"
           }
-        ]
+        ],
+        "emptyState": {
+          "title": "No members on this policy",
+          "description": "Members appear here once the linked proposal's PolicyMembers reach the ADDED state. Filters above narrow by state."
+        }
       }
     }
   ]

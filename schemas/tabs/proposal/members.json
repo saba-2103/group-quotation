@@ -74,7 +74,11 @@
             "type": "navigate",
             "target": "/issuance/proposals/{{id}}/members/:id"
           }
-        ]
+        ],
+        "emptyState": {
+          "title": "No members in this proposal yet",
+          "description": "Add a single member or bulk-upload a census file to populate this list. Filters above narrow by state."
+        }
       }
     }
   ]

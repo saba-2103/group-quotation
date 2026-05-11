@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 
+import { DetailPageSkeleton } from '@/components/layout/DetailPageSkeleton';
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 import { resolveSchemaRefs } from '@/lib/schemaResolver';
 import type { WidgetConfig } from '@/types/widget';
@@ -34,9 +35,7 @@ export default async function PolicyMemberDetailPage(props: {
 
   return (
     <div className="min-h-screen bg-background">
-      <Suspense
-        fallback={<div className="p-8 text-center text-muted-foreground">Loading…</div>}
-      >
+      <Suspense fallback={<DetailPageSkeleton />}>
         <WidgetRenderer config={config} />
       </Suspense>
     </div>
