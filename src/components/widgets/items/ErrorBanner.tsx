@@ -39,26 +39,26 @@ export const ErrorBanner: React.FC<{ config: WidgetConfig }> = ({ config }) => {
           key={error.error_code}
           className={cn(
             "group relative flex items-start gap-0 overflow-hidden rounded-lg transition-all duration-350 ease-in-out",
-            "border border-red-300 bg-red-50 dark:border-red-900/40 dark:bg-red-950/40",
+            "border border-destructive/40 bg-destructive/10",
             dismissing.has(error.error_code)
               ? "translate-x-full opacity-0 max-h-0 mb-0"
               : "translate-x-0 opacity-100 max-h-24",
           )}
         >
           {/* Left accent bar */}
-          <div className="w-1 self-stretch shrink-0 rounded-l-lg bg-red-500" />
+          <div className="w-1 self-stretch shrink-0 rounded-l-lg bg-destructive" />
 
           {/* Icon */}
           <div className="flex items-start gap-3 flex-1 px-4 py-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
 
             {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-xs font-mono font-semibold text-red-600 dark:text-red-400 tracking-wide">
+                <span className="text-xs font-mono font-semibold text-destructive tracking-wide">
                   {error.error_code}
                 </span>
-                <span className="text-sm text-red-800/80 dark:text-red-200/80 leading-snug">
+                <span className="text-sm text-destructive/85 leading-snug">
                   {error.error_desc}
                 </span>
               </div>
@@ -69,7 +69,7 @@ export const ErrorBanner: React.FC<{ config: WidgetConfig }> = ({ config }) => {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 mt-1.5 mr-1.5 shrink-0 rounded-md text-red-400 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/40"
+            className="h-8 w-8 mt-1.5 mr-1.5 shrink-0 rounded-md text-destructive/70 group-hover:opacity-100 hover:bg-destructive/15 hover:text-destructive"
             onClick={() => handleDismiss(error.error_code)}
             aria-label="Dismiss"
           >
