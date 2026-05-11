@@ -845,3 +845,36 @@ User wanted scripted seeding so proxy-mode demos aren't stuck with the 3-Acme-Co
 **`tsc --noEmit`:** clean.
 
 **Next thread:** unchanged from earlier — demo walkthrough, backend questions, deploy decision, P2.1 dialog, useClientNames polish. Seed script means proxy-mode demo is now actually demo-able for the Quotation list and PAM modules; Issuance module stays sparse (no Proposals seeded since the only path is via finalized Quotes which we can't produce).
+
+### 2026-05-11 — Schema-driven forms: close modal / navigate back after success (`onSuccess`)
+
+**Bug surfaced by user during a demo run-through:**
+1. Create Quote — toast "Quote created" fired but the modal stayed open and the quote table didn't visibly refresh.
+2. Issuance → Add Member — toast "Policy member created" fired but the user was left sitting on `/issuance/proposals/<id>/members/new` instead of being returned to the proposal.
+
+**Root cause:** every schema-driven form submits via [`useActionHandler`](../src/hooks/useActionHandler.ts) → `api-mutation` case, which fires `toast.success` + `queryClient.invalidateQueries` but had no schema hook to express "what to do next on success." So the modal couldn't be closed, the user couldn't be navigated, and the pattern was systemic across **27 form schemas** under `schemas/forms/` (initial scan said 19; a follow-up sweep caught 8 more accounting/journal forms with `submitAction: true, type: "api-mutation"` but no `successMessage`).
+
+**Fix (commit `37adbad`):**
+- [`src/types/widget.ts`](../src/types/widget.ts) — `api-mutation` variant of `ActionConfig` gains `onSuccess?: ActionConfig[]`. Optional; existing schemas keep working unchanged.
+- [`src/hooks/useActionHandler.ts`](../src/hooks/useActionHandler.ts) — anonymous returned dispatcher hoisted to `const dispatch = async (...)` so it can recurse. After the existing `toast.success` + `invalidateQueries` block, loops `action.onSuccess` and `await dispatch(next)` for each entry. Lives inside the same `try` so the existing `catch` keeps error-path semantics untouched — `onSuccess` only fires on resolved mutations.
+- 27 `schemas/forms/*.json` — every form with an `api-mutation` submit action got an `onSuccess` entry:
+  - Modal/sheet-mounted forms (26): `[{ "type": "trigger-event", "target": "<form-id>" }]`. Overlay id matches form id in [`OverlayProvider.tsx`](../src/components/providers/OverlayProvider.tsx), so `close(target)` dismisses the modal.
+  - Page-mounted form (`add-policy-member-form`): `[{ "type": "navigate", "target": "/issuance/proposals/{{proposalId}}" }]`. Page substitutes `{{proposalId}}` server-side in [`src/app/issuance/proposals/[id]/members/new/page.tsx`](../src/app/issuance/proposals/[id]/members/new/page.tsx).
+
+**Why not magic auto-close in the handler:** form-id ↔ overlay-id is a convention, not a guarantee — `add-policy-member-form` already breaks it (page-mounted, not modal). And the page case needs a target route the handler can't infer. Declarative `onSuccess` keeps the contract in the schema, consistent with the rest of the codebase.
+
+**Why not also `onError`:** explicitly chose no — every current form wants "stay open + show backend message" on failure, which already happens. Symmetric API surface with zero callers is the kind of speculative scaffolding [`feedback_build_to_expected_scope.md`](../../../.claude/projects/-Users-seriousblack-dev-anaira-sandbox-keystone-ui/memory/feedback_build_to_expected_scope.md) flags against. Decision recorded in user dialogue this session; trivial to add later if a real `onError` case shows up.
+
+**Verification (preview against mock mode):**
+- Quote create: `POST /api/quotation/quotes → 200` immediately followed by `GET /api/quotation/quotes/search → 200` (cache invalidated), and `role="dialog"` gone from DOM. Full success path proven.
+- Error path: add-member POST returned `400 "proposal has no policy yet"`; URL stayed on `/members/new`, no toast spam — `onSuccess` correctly skipped on failure.
+- Add-member success path: code-path equivalent to the verified quote case (same `dispatch` function, different switch arm). Couldn't drive a 2xx end-to-end without a proposal in `POLICY_CREATED` state; left for the demo walkthrough.
+- `tsc --noEmit`: clean. `npm run lint` errors out because the repo script `next lint` interprets its CLI as a directory — pre-existing repo issue, not caused by this change.
+
+**Files touched (commit `37adbad`):**
+- Code: `src/types/widget.ts`, `src/hooks/useActionHandler.ts`.
+- Schemas (27): all `schemas/forms/*-form.json` files with an `api-mutation` submit action — see `git show 37adbad --stat`.
+
+**Auto-generated artifact:** `schemas/forms/index.ts` is regenerated on `predev`/`prebuild` via [`scripts/generate_form_index.mjs`](../scripts/generate_form_index.mjs) and is gitignored. No manual touch needed; next `npm run dev` picks up the schema edits.
+
+**Next thread should pick up from:** unchanged from prior entries (demo walkthrough, backend questions, deploy decision, P2.1 dialog). This fix unblocks every form-driven create/edit flow in the demo — modals now actually close, the issuance add-member flow now actually returns to the proposal.

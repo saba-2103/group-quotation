@@ -42,6 +42,18 @@ When sources disagree, follow this order. Higher entries win. Same rule lives in
 
 ## Active Workstreams
 
+### archV1 Layer 1 Runtime — Build prep (plan ready, code not started)
+
+The declarative runtime described in [docs/archV1/00..13](../docs/archV1/) has been converted into an executable, multi-agent build plan. **Schema delivery / materialization is deferred (Layer 3); schemas keep being served from `/schemas/` via `src/lib/schemaResolver.ts` as today.**
+
+- **Plan:** [docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md](../docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md) — 11 tracks, dependency graph at [14:99](../docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md#L99), file-ownership table at [14:118](../docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md#L118).
+- **Per-track briefings (AI-agent-ready):** [docs/archV1/tracks/](../docs/archV1/tracks/) — one file per track with exact TS signatures, worked examples, allowed deps, and DoD with concrete test commands. Spec refs cite `file:line`.
+- **Agent handoff wrapper:** [docs/archV1/tracks/AGENT-KICKOFF-TEMPLATE.md](../docs/archV1/tracks/AGENT-KICKOFF-TEMPLATE.md).
+
+**Status:** plan committed and pushed (`6e91be8` on `feat/new-buisiness`). No `src/lib/runtime/` code yet. Layer 2 (schema port) gated on Track 10b passing. This stream runs in parallel with the Group PAS V1 demo stream below.
+
+**Pickup order:** Track 0 (workspace scaffold) → Track 1 (types + version validator) → Track 2 (graph). Tracks 3–9 fan out from there per the graph.
+
 ### Group PAS V1 — Frontend (in progress)
 
 Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md).
@@ -55,6 +67,7 @@ Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [
 | Batch 3 — Issuance + PAM + glue (Phase 3, 4, 5 demo subsets) | **DONE** — Tasks 3.1 (light) + 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 5.1; demo walkthrough (5.3) deferred to a session w/ user. Skipped per cuts: 4.5, 5.2, 5.4. |
 | Post-batch follow-ups (2026-05-07) | **DONE** — pre-demo audit pass (P1.1–P1.9 + P2.2); GCL frontends; backend deployed, proxy mode wired; error envelope updated; FLOAT_UNAVAILABLE fixture removed. See SESSION_LOG.md. |
 | Honesty pass (2026-05-07 late) | **DONE** — removed mock simulators for backend-missing behavior: pricing simulator, maker-checker `awaitingApproval` overlay (incl. `lib/maker-checker.ts`, `/awaiting-approval` mock routes, MOCK_ONLY_PATTERNS carve-out, `awaiting-approval` cell type). Q→P handoff converted from async-in-mock to sync (matches backend). New schema field: `disabledTooltip` on `ActionConfig`. ActionBar tests rewritten. |
+| Form success transitions (2026-05-11) | **DONE** — schema-driven forms had no post-success hook, so create-modals didn't close and the add-member page didn't navigate back. New schema field: `onSuccess?: ActionConfig[]` on `api-mutation`; `useActionHandler` dispatches the array sequentially after toast + query invalidation. Applied to all 27 `schemas/forms/*-form.json` files. Commit `37adbad`. See SESSION_LOG 2026-05-11 entry. |
 
 **Deferred-from-demo backlog (D1–D12)** lives in the same plan section. After demo lands, work that backlog before starting any new feature.
 
