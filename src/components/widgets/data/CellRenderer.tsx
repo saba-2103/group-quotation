@@ -53,6 +53,21 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
       return <StateBadge entity={entity} state={String(value)} />;
     }
 
+    // Boolean → small "Awaiting approval" warning chip when truthy.
+    // The pulse on the dot is the cue for Checkers — "act on this."
+    case "awaiting-approval": {
+      if (!value) return <span className="text-muted-foreground">—</span>;
+      return (
+        <Badge variant="warning" className="gap-1.5">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-warning" />
+          </span>
+          Awaiting approval
+        </Badge>
+      );
+    }
+
     case "number":
       return <span>{Number(value)}</span>;
 

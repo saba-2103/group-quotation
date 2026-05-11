@@ -20,6 +20,7 @@ import {
 } from '@/lib/api-mock/group-pas/http';
 import {
   nextId,
+  setApprovalOverlay,
   store,
 } from '@/lib/api-mock/group-pas/store';
 import type {
@@ -388,6 +389,35 @@ const routes: RouteEntry[] = [
       // the deployed backend's QuoteFinalized → Proposal-creation flow.
       const proposalId = autoCreateProposalFromQuote(q.id);
       return json({ proposalId });
+    },
+  },
+
+  // ── UI-only maker-checker overlay (not in DSL) ──
+  // POST sets, DELETE clears `awaitingApproval`. Persists to a standalone
+  // overlay map (not the entity store) so it works against backend-issued
+  // UUIDs in proxy mode. Restored 2026-05-11 — transitional scaffolding for
+  // the demo until real auth (Keycloak / Cerbos) lands and the backend
+  // adopts the PAM approval pattern at the Quote level.
+  {
+    method: 'POST',
+    pattern: 'quotes/:quoteId/awaiting-approval',
+    handler: (_req, params) => {
+      setApprovalOverlay('quote', params.quoteId, true);
+      // Mirror the flag onto the local fixture too if it happens to be there
+      // (mock mode only — preserves the in-store snapshot for reset).
+      const q = findQuote(params.quoteId);
+      if (q) q.awaitingApproval = true;
+      return ok();
+    },
+  },
+  {
+    method: 'DELETE',
+    pattern: 'quotes/:quoteId/awaiting-approval',
+    handler: (_req, params) => {
+      setApprovalOverlay('quote', params.quoteId, false);
+      const q = findQuote(params.quoteId);
+      if (q) q.awaitingApproval = false;
+      return ok();
     },
   },
 

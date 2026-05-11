@@ -26,12 +26,12 @@ interface RoleMeta {
 const ROLE_META: Record<Role, RoleMeta> = {
   maker: {
     label: 'Maker — Sales',
-    description: 'Builds quotes and proposals; submits to advance state.',
+    description: 'Builds quotes and proposals; can submit for approval.',
     icon: UserRound,
   },
   checker: {
     label: 'Checker — Approver',
-    description: 'Sends to client, accepts, rejects, finalizes.',
+    description: 'Approves submissions, sends to client, finalizes.',
     icon: ShieldCheck,
   },
   ops: {

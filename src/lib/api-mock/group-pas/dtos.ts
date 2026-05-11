@@ -49,9 +49,15 @@ import type {
 
 const ISO_PLACEHOLDER = '';
 
+// `awaitingApproval` is a UI-only mock field for the V1 maker-checker overlay
+// (see context/ARCH_TRANSITION.md). Carried in the response so client gating
+// can read it from the same poll without a separate endpoint. Real backend
+// will never set this — the field is dropped when V1 maker-checker lands.
+//
 // `clientName` is a V1-demo enrichment alongside the raw clientId so the UI
 // can surface a human-readable label without a second fetch.
 export type MockQuoteDto = QuoteDto & {
+  awaitingApproval?: boolean;
   clientName?: string;
 };
 
@@ -86,6 +92,7 @@ export function quoteToDto(q: MockQuote): MockQuoteDto {
     },
     memberToPlanMappingJson: q.memberToPlanMapping ?? '',
     censusFileFormatJson: JSON.stringify(q.censusFileFormat ?? null),
+    awaitingApproval: q.awaitingApproval,
   };
 }
 
@@ -103,7 +110,9 @@ export function quoteToSummary(q: MockQuote): MockQuoteSummaryDto {
   };
 }
 
+// `awaitingApproval` mock-only field — see `MockQuoteDto` note above.
 export type MockProposalDto = ProposalDto & {
+  awaitingApproval?: boolean;
   clientName?: string;
 };
 export type MockProposalSummaryDto = ProposalSummaryDto & {
@@ -124,6 +133,7 @@ export function proposalToDto(p: MockProposal): MockProposalDto {
     estimatedPremiumJson: JSON.stringify(p.estimatedPremium),
     policyId: p.policyId ?? '',
     policyNumber: p.policyNumber ?? '',
+    awaitingApproval: p.awaitingApproval,
   };
 }
 

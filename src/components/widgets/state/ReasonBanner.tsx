@@ -39,8 +39,7 @@ const ICON_BY_GROUP: Record<ReasonGroup, React.ComponentType<{ className?: strin
 };
 
 const VARIANT_CLASSES: Record<string, string> = {
-  warning:
-    'border-yellow-500/30 bg-yellow-500/10 text-yellow-900 dark:text-yellow-200',
+  warning: 'border-warning/40 bg-warning/10 text-warning-foreground dark:text-warning',
   destructive:
     'border-destructive/30 bg-destructive/10 text-destructive dark:text-destructive',
   outline: 'border-border bg-muted text-foreground',
@@ -55,6 +54,25 @@ export const ReasonBanner: React.FC<ReasonBannerProps> = ({ config }) => {
   const fetchedFromRenderer = (config?.props as { data?: Record<string, unknown> } | undefined)?.data;
   const fetchedDirect = useSmartQuery(config?.dataSource);
   const fetched = fetchedFromRenderer ?? fetchedDirect.data ?? undefined;
+  // Surface fetch errors so a failed entity GET doesn't silently hide reason
+  // context the user needs to act on.
+  const ownsFetch = Boolean(config?.dataSource && !fetchedFromRenderer);
+  const fetchError = ownsFetch ? fetchedDirect.error : null;
+
+  if (fetchError) {
+    const message = (fetchError as { message?: string }).message ?? 'Could not load reason details';
+    return (
+      <div
+        role="alert"
+        className={cn(
+          'flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive shadow-sm',
+        )}
+      >
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        <p className="font-medium leading-tight">{message}</p>
+      </div>
+    );
+  }
 
   const entity = props.entity ?? ('member' as EntityKind);
   const state =

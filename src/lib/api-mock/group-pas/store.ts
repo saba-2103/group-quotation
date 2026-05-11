@@ -27,10 +27,10 @@ import type {
 import type { MockQuote } from '@/mocks/group-pas/quotation/quotes';
 import type { MemberQuote } from '@/types/group-pas/quotation';
 
-// Local alias kept for callers that imported MockProposal alongside MockQuote.
-// No mock-only fields today (the `awaitingApproval` overlay was removed once
-// the rule "don't simulate behavior backend can't deliver" landed).
-export type MockProposal = Proposal;
+// `awaitingApproval` is a UI-only overlay flag (see context/ARCH_TRANSITION.md
+// → "Maker-checker UI overlay"). Carried on Proposal mocks the same way the
+// MockQuote type carries it on Quote.
+export type MockProposal = Proposal & { awaitingApproval?: boolean };
 
 interface GroupPasStore {
   quotes: MockQuote[];
@@ -76,6 +76,37 @@ export function nextId(prefix: string): string {
   return `${prefix}-${ts}`;
 }
 
+// Standalone in-memory map for the UI-only `awaitingApproval` overlay,
+// indexed by the entity's id. Decoupled from the entity stores so it
+// works against backend-issued UUIDs (proxy mode) and our seeded
+// fixture IDs alike. Survives hot reload via globalThis.
+declare global {
+  // eslint-disable-next-line no-var
+  var __groupPasApprovalOverlay: Map<string, boolean> | undefined;
+}
+export const approvalOverlay: Map<string, boolean> =
+  globalThis.__groupPasApprovalOverlay ??
+  (globalThis.__groupPasApprovalOverlay = new Map());
+
+function approvalKey(entity: 'quote' | 'proposal', id: string): string {
+  return `${entity}:${id}`;
+}
+
+export function setApprovalOverlay(
+  entity: 'quote' | 'proposal',
+  id: string,
+  value: boolean,
+): void {
+  approvalOverlay.set(approvalKey(entity, id), value);
+}
+
+export function getApprovalOverlay(
+  entity: 'quote' | 'proposal',
+  id: string,
+): boolean {
+  return approvalOverlay.get(approvalKey(entity, id)) ?? false;
+}
+
 // Resets every collection back to its seed list — used by the
 // /api/_mock/reset route so the demo can replay from a clean state without
 // restarting the dev server.
@@ -89,4 +120,5 @@ export function resetMockStore(): void {
   store.clients = structuredClone(CLIENTS);
   store.policies = structuredClone(POLICIES);
   store.members = structuredClone(MEMBERS);
+  approvalOverlay.clear();
 }

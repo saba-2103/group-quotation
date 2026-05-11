@@ -23,6 +23,7 @@ import {
 import {
   nextId,
   scheduleTransition,
+  setApprovalOverlay,
   store,
   type MockProposal,
 } from '@/lib/api-mock/group-pas/store';
@@ -320,6 +321,31 @@ const routes: RouteEntry[] = [
       const body = await readJson<{ reason: string }>(req);
       p.state = 'CANCELLED';
       void body; // reason currently unused on the read side
+      return ok();
+    },
+  },
+
+  // ── UI-only maker-checker overlay (not in DSL) ──
+  // POST sets, DELETE clears `awaitingApproval` for proposals. See the
+  // matching block in src/app/api/quotation/[[...path]]/route.ts for the
+  // backend-handoff plan and removal trigger.
+  {
+    method: 'POST',
+    pattern: 'proposals/:proposalId/awaiting-approval',
+    handler: (_req, params) => {
+      setApprovalOverlay('proposal', params.proposalId, true);
+      const p = findProposal(params.proposalId);
+      if (p) p.awaitingApproval = true;
+      return ok();
+    },
+  },
+  {
+    method: 'DELETE',
+    pattern: 'proposals/:proposalId/awaiting-approval',
+    handler: (_req, params) => {
+      setApprovalOverlay('proposal', params.proposalId, false);
+      const p = findProposal(params.proposalId);
+      if (p) p.awaitingApproval = false;
       return ok();
     },
   },

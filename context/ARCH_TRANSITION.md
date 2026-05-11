@@ -227,25 +227,27 @@ Backend adds `GET /policies/:policyId/pending-breakdown` (or includes the count 
 
 ---
 
-## Maker-checker — role-adaptive UI only (no fictional approval-lock state)
+## Maker-checker — UI-only overlay (transitional, until auth lands)
 
 **Interim contract (V1):**
 Backend has **no Quote-level maker-checker model** — `Quote.submit()` is single-actor in the DSL ("submitter QCs their own work"). Only PAM Member has an approval workflow, via the central Approval module + Cerbos.
 
-We surface what's real and tooltip what isn't:
+We ship a UI-only `awaitingApproval` overlay so the demo can show the Maker → Checker hand-off without backend changes. Without this overlay there is no way to demo segregation-of-duties until real auth (Keycloak / Cerbos) ships:
 
 - **Role switcher** (real UX, kept): top-right widget lets the demo operator switch between roles (Maker / Checker / Ops / Viewer). Current role held in React context (`useRole()`), persisted in `localStorage`. Schemas carry a `roleActions: Record<Role, ActionId[]>` map alongside `stateActions`; ActionBar shows/hides actions per role.
-- **Approval-lock state (gone, 2026-05-07):** the previous `awaitingApproval` UI-state, `/awaiting-approval` mock endpoints, lock-overlay UI, and `MOCK_ONLY_PATTERNS` carve-out have been removed. The Quote `Send for approval` action stays in the schema as a visible-but-disabled button with a `disabledTooltip` explaining the gap ("Quote-level approval workflow not yet wired on backend"). The Maker submits directly; both Maker and Checker have `submit` in `roleActions` (matching backend single-actor reality).
+- **`awaitingApproval` overlay (UI-only):** a boolean carried on Quote and Proposal DTOs (mock-only field), plus a standalone in-memory map keyed by entity id for proxy-mode resilience. Set/cleared via `/api/quotation/quotes/:id/awaiting-approval` (POST / DELETE) and the proposal counterpart. Both endpoints are in `MOCK_ONLY_PATTERNS` so they short-circuit the proxy. The `sendForApproval` / `clearApproval` helpers in `src/lib/maker-checker.ts` wrap the POST/DELETE.
+- **Action gating with overlay:** when `awaitingApproval` is true, the Maker's editing/submit actions render disabled with the tooltip "Awaiting checker approval"; Withdraw and Clear-approval remain enabled. Symmetric on the Checker side — `submit` / `clear-approval` are hidden until the Maker has sent for approval.
 - Roles only gate UI affordances; they do not affect what backend accepts (backend remains unrestricted).
 
-**Why removed:** rule "don't simulate behavior backend can't deliver, surface the gap with a tooltip" — see [feedback_build_to_expected_scope.md](../.claude/projects/-Users-seriousblack-dev-anaira-sandbox-keystone-ui/memory/feedback_build_to_expected_scope.md) rule #6.
+**History:** the overlay was removed on 2026-05-07 under the rule "don't simulate behavior backend can't deliver." Restored 2026-05-11 once it became clear that real auth wasn't shipping in the V1 window — the rule still holds in principle but the demo needs the overlay until backend or Cerbos catches up. Both states are documented here so the reasoning trail is intact.
 
 **Risk:**
 - Role-adaptive UI without backend enforcement is purely cosmetic; once a real auth backend ships, the role assignments need to mirror backend authorization or drift will be visible.
+- The overlay state lives only in the mock layer / browser; restarting the dev server or switching from mock-mode to proxy-mode wipes it. The MOCK_ONLY carve-out keeps the POST/DELETE working in proxy mode, but proxied GETs will not surface `awaitingApproval` so the overlay only fully composes in mock mode.
 
 **Future architecture (target):**
-Option A — backend extends the PAM approval pattern to Quote (`RequestQuoteApprovalCommand` → `QuoteApprovalRequested` event → central Approval module → listener back → Cerbos enforcement on `submit`). Frontend deletes the `disabledTooltip`, replaces `Send for approval` with a real api-mutation calling the new endpoint, and reads any in-flight state from the Quote DTO directly. Question already drafted to backend (in SESSION_LOG end-of-thread snapshot).
+Option A — backend extends the PAM approval pattern to Quote (`RequestQuoteApprovalCommand` → `QuoteApprovalRequested` event → central Approval module → listener back → Cerbos enforcement on `submit`). Delete `src/lib/maker-checker.ts`, the `/awaiting-approval` routes, the `MOCK_ONLY_PATTERNS` carve-out, the `awaitingApproval` DTO field, and the ActionBar overlay branches. Replace `send-for-approval` with a real api-mutation calling the new endpoint, and read any in-flight state from the Quote DTO directly.
 
 Option B — backend ships Cerbos role-aware authorization on `submit` itself (no separate approval state). Frontend `roleActions` becomes a typed mirror of Cerbos rules.
 
-**Convergence trigger:** backend response to the drafted question.
+**Convergence trigger:** real auth (Keycloak + Cerbos) lands or backend extends the PAM approval pattern. Either way, removal is mechanical — every file touched by the restoration is grep-able by `awaitingApproval` or `maker-checker`.

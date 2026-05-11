@@ -12,37 +12,42 @@ function withQueryClient(ui: React.ReactElement) {
   return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
 
-// Mock the role hook so each test can pin the active role.
 let currentRole: Role = 'maker';
 jest.mock('@/hooks/useRole', () => ({
   useRole: () => ({ role: currentRole, setRole: (r: Role) => (currentRole = r) }),
 }));
 
-// Stub the action handler — we only verify dispatch happens, not its effects.
 const mockHandleAction = jest.fn();
 jest.mock('@/hooks/useActionHandler', () => ({
   useActionHandler: () => mockHandleAction,
 }));
 
+// Stub the maker-checker helper so tests don't hit the network.
+const mockSendForApproval = jest.fn().mockResolvedValue(undefined);
+const mockClearApproval = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/lib/maker-checker', () => ({
+  sendForApproval: (...args: unknown[]) => mockSendForApproval(...args),
+  clearApproval: (...args: unknown[]) => mockClearApproval(...args),
+}));
+
 beforeEach(() => {
   currentRole = 'maker';
   mockHandleAction.mockReset();
+  mockSendForApproval.mockReset();
+  mockClearApproval.mockReset();
 });
 
 const ACTIONS: ActionConfig[] = [
   { id: 'edit', label: 'Edit', type: 'open-modal', target: 'edit-quote' },
   {
-    // Visible-but-disabled per disabledTooltip — surfaces a backend gap
-    // without simulating the missing behavior in mock.
     id: 'send-for-approval',
     label: 'Send for approval',
-    type: 'api-mutation',
-    api: { endpoint: '/api/quotation/quotes/Q1/submit', method: 'POST' },
-    disabledTooltip: 'Quote-level approval not yet wired on backend',
+    type: 'trigger-event',
+    target: 'send-for-approval',
   },
   {
     id: 'submit',
-    label: 'Submit',
+    label: 'Approve',
     type: 'api-mutation',
     api: { endpoint: '/api/quotation/quotes/Q1/submit', method: 'POST' },
   },
@@ -52,22 +57,42 @@ const ACTIONS: ActionConfig[] = [
     type: 'api-mutation',
     api: { endpoint: '/api/quotation/quotes/Q1/finalize', method: 'POST' },
   },
+  {
+    // Backend-gap surfacing — disabledTooltip wins over state allow-list.
+    id: 'request-price',
+    label: 'Request price',
+    type: 'api-mutation',
+    api: { endpoint: '/api/quotation/quotes/Q1/request-price', method: 'POST' },
+    disabledTooltip: 'Rule Engine not yet wired on backend',
+  },
 ];
 
+// Test fixture mirrors the real Quote workflow:
+//   DRAFT  → Maker edits + sends for approval; Checker (after maker submits)
+//            calls `submit` (Approve) which transitions DRAFT → SUBMITTED.
+//   SUBMITTED is post-submit; Checker's next action would be 'send-to-client'
+//   etc. — represented here by `finalize` for brevity.
+//
+// `submit` is special-cased in ActionBar: only visible to Checker when
+// awaitingApproval=true (symmetric to the Maker lock).
 const STATE_ACTIONS: Record<string, string[]> = {
-  DRAFT: ['edit', 'send-for-approval', 'submit'],
+  DRAFT: ['edit', 'send-for-approval', 'submit', 'request-price'],
   SUBMITTED: ['finalize'],
   ACCEPTED: ['finalize'],
 };
 
 const ROLE_ACTIONS: Record<string, string[]> = {
-  maker: ['edit', 'send-for-approval', 'submit'],
+  maker: ['edit', 'send-for-approval', 'request-price'],
   checker: ['submit', 'finalize'],
   ops: [],
   viewer: [],
 };
 
-function renderBar(overrides: Partial<{ state: string }> = {}) {
+function renderBar(overrides: Partial<{
+  state: string;
+  awaitingApproval: boolean;
+  entityId: string;
+}> = {}) {
   const config: WidgetConfig = {
     id: 'qte-actions',
     type: 'action-bar',
@@ -76,6 +101,9 @@ function renderBar(overrides: Partial<{ state: string }> = {}) {
       stateActions: STATE_ACTIONS,
       roleActions: ROLE_ACTIONS,
       actions: ACTIONS,
+      awaitingApproval: overrides.awaitingApproval ?? false,
+      entityType: 'quote',
+      entityId: overrides.entityId ?? 'Q1',
     },
   } as unknown as WidgetConfig;
   return render(withQueryClient(<ActionBar config={config} />));
@@ -87,44 +115,52 @@ function buttonByLabel(label: string): HTMLButtonElement {
 }
 
 describe('ActionBar', () => {
-  it('Maker in DRAFT sees their actions; Checker-only actions are HIDDEN', () => {
+  it('Maker in DRAFT sees only Maker actions (Edit, Send for approval); Checker actions are HIDDEN', () => {
     currentRole = 'maker';
     renderBar({ state: 'DRAFT' });
     expect(buttonByLabel('Edit')).not.toBeDisabled();
-    expect(buttonByLabel('Submit')).not.toBeDisabled();
+    expect(buttonByLabel('Send for approval')).not.toBeDisabled();
     const toolbar = screen.getByRole('toolbar');
+    expect(within(toolbar).queryByRole('button', { name: 'Approve' })).toBeNull();
     expect(within(toolbar).queryByRole('button', { name: 'Finalize' })).toBeNull();
   });
 
-  it('Checker in DRAFT sees only their submit; Maker-only actions are HIDDEN', () => {
+  it('Checker in DRAFT awaitingApproval=true sees Approve; Maker-only actions are HIDDEN', () => {
     currentRole = 'checker';
-    renderBar({ state: 'DRAFT' });
-    expect(buttonByLabel('Submit')).not.toBeDisabled();
+    renderBar({ state: 'DRAFT', awaitingApproval: true });
+    expect(buttonByLabel('Approve')).not.toBeDisabled();
     const toolbar = screen.getByRole('toolbar');
     expect(within(toolbar).queryByRole('button', { name: 'Edit' })).toBeNull();
-    expect(within(toolbar).queryByRole('button', { name: 'Send for approval' })).toBeNull();
   });
 
-  it('Action with disabledTooltip renders disabled with the supplied tooltip text, regardless of state allow-list', () => {
+  it('Checker in DRAFT awaitingApproval=false does NOT see Approve (symmetric to maker lock)', () => {
+    currentRole = 'checker';
+    renderBar({ state: 'DRAFT', awaitingApproval: false });
+    const toolbar = screen.getByRole('toolbar');
+    expect(within(toolbar).queryByRole('button', { name: 'Approve' })).toBeNull();
+  });
+
+  it('Maker DRAFT with awaitingApproval=true locks edit + send-for-approval ("Awaiting checker approval")', () => {
+    currentRole = 'maker';
+    renderBar({ state: 'DRAFT', awaitingApproval: true });
+    const edit = buttonByLabel('Edit');
+    expect(edit).toBeDisabled();
+    expect(edit).toHaveAttribute(
+      'data-disabled-reason',
+      'Awaiting checker approval',
+    );
+    const toolbar = screen.getByRole('toolbar');
+    expect(within(toolbar).queryByRole('button', { name: 'Approve' })).toBeNull();
+  });
+
+  it('Action with disabledTooltip renders disabled with the supplied tooltip text, even when state-gating would allow it', () => {
     currentRole = 'maker';
     renderBar({ state: 'DRAFT' });
-    const sendForApproval = buttonByLabel('Send for approval');
-    expect(sendForApproval).toBeDisabled();
-    expect(sendForApproval).toHaveAttribute(
+    const requestPrice = buttonByLabel('Request price');
+    expect(requestPrice).toBeDisabled();
+    expect(requestPrice).toHaveAttribute(
       'data-disabled-reason',
-      'Quote-level approval not yet wired on backend',
-    );
-  });
-
-  it('State-gated action (no disabledTooltip) renders disabled with the standard "Not available in <state>" tooltip', () => {
-    currentRole = 'maker';
-    renderBar({ state: 'SUBMITTED' });
-    // submit is in maker roleActions but not in SUBMITTED stateActions.
-    const submit = buttonByLabel('Submit');
-    expect(submit).toBeDisabled();
-    expect(submit).toHaveAttribute(
-      'data-disabled-reason',
-      'Not available in SUBMITTED',
+      'Rule Engine not yet wired on backend',
     );
   });
 
@@ -134,18 +170,19 @@ describe('ActionBar', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('Clicking an enabled action dispatches through useActionHandler', async () => {
-    currentRole = 'maker';
-    renderBar({ state: 'DRAFT' });
-    await userEvent.click(buttonByLabel('Submit'));
+  it('Checker clicking Approve in DRAFT awaitingApproval=true dispatches the api-mutation through useActionHandler', async () => {
+    currentRole = 'checker';
+    renderBar({ state: 'DRAFT', awaitingApproval: true });
+    await userEvent.click(buttonByLabel('Approve'));
     expect(mockHandleAction).toHaveBeenCalledTimes(1);
     expect(mockHandleAction.mock.calls[0][0].id).toBe('submit');
   });
 
-  it('Disabled-by-tooltip action does not dispatch when wrapper is clicked', async () => {
+  it('Maker clicking Send-for-approval calls maker-checker.sendForApproval(entityType, entityId)', async () => {
     currentRole = 'maker';
-    renderBar({ state: 'DRAFT' });
+    renderBar({ state: 'DRAFT', entityId: 'Q42' });
     await userEvent.click(buttonByLabel('Send for approval'));
+    expect(mockSendForApproval).toHaveBeenCalledWith('quote', 'Q42');
     expect(mockHandleAction).not.toHaveBeenCalled();
   });
 });
