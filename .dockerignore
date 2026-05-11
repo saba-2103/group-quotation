@@ -1,0 +1,17 @@
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+.env
+.env.local
+.env.production.local
+.env.staging.local
+.next
+.git
+.gitignore
+.vscode
+.storybook
+coverage
+*.md
+wrangler.jsonc
+.wrangler
