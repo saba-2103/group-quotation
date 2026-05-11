@@ -64,6 +64,14 @@ Don't touch in this session. Document only.
 
 ---
 
+## Deferred infrastructure (post-demo)
+
+- **Pre-commit hook (lint + typecheck + test)** — requested during the 2026-05-11 audit pass but deferred. Current state of the suite when attempted:
+  - `npm run typecheck` ✅ clean (script added — `tsc --noEmit`).
+  - `npm run lint` ❌ 5,083 errors / 70,127 warnings on existing code (mostly `@typescript-eslint/no-explicit-any` + Storybook `no-renderer-packages`). `next lint` is also deprecated in Next 16 — must call `eslint .` directly.
+  - `npm test` ❌ 56 failing / 68 passing.
+  - Gating commits on these today would force `--no-verify` on every commit. Re-enable only after lint/test debt is brought down, or wire lint-staged for staged-files-only and fix tests first.
+
 ## Already-fixed (from the audit pass committed in `a88e3c6`)
 
 - Hardcoded `POL-2026-0001` in `proposal/members.json` and `add-policy-member-form.json`.
