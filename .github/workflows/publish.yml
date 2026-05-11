@@ -1,6 +1,13 @@
 name: Publish Image to ECR
 
 on:
+  push:
+    branches:
+      - main
+      - feat/new-buisiness
+  pull_request:
+    branches:
+      - main
   workflow_dispatch: {}
 
 permissions:
@@ -30,9 +37,15 @@ jobs:
 
       - name: Generate image tag
         id: image-tag
+        env:
+          # On pull_request, GITHUB_REF points at refs/pull/<n>/merge and
+          # GITHUB_SHA is the merge commit. Fall back to the head ref/sha so
+          # the image tag is the actual branch + commit being built.
+          RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
+          RAW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's/[^a-zA-Z0-9]/-/g')
-          SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)
+          BRANCH_NAME=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9]/-/g')
+          SHORT_SHA=$(echo "$RAW_SHA" | cut -c1-8)
           IMAGE_TAG="${BRANCH_NAME}_${SHORT_SHA}"
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "FULL_IMAGE=${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
