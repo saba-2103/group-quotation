@@ -2,6 +2,7 @@
 // to the PAM detail page. Used by the policy-member-detail "Open in Policy
 // Admin" deep link, which only knows the policyMemberId.
 
+import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -18,9 +19,13 @@ export default async function ByPolicyMemberRedirectPage(props: {
   const { policyMemberId } = await props.params;
   if (!VALID_ID.test(policyMemberId)) notFound();
 
-  // Hit the route handler directly via absolute URL so this works the same in
-  // dev and in build-time SSR. Same-origin fetch.
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+  // Same-origin fetch to our own route handler. Node's server-side fetch has
+  // no default origin, so we derive it from the incoming request headers —
+  // works in dev, in Docker, and behind an ALB (which sets x-forwarded-proto).
+  const h = await headers();
+  const host = h.get('host') ?? 'localhost:3000';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
+  const base = `${proto}://${host}`;
   const res = await fetch(
     `${base}/api/policy-admin/members/by-policy-member/${policyMemberId}`,
     { cache: 'no-store' },
