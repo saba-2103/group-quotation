@@ -878,3 +878,59 @@ User wanted scripted seeding so proxy-mode demos aren't stuck with the 3-Acme-Co
 **Auto-generated artifact:** `schemas/forms/index.ts` is regenerated on `predev`/`prebuild` via [`scripts/generate_form_index.mjs`](../scripts/generate_form_index.mjs) and is gitignored. No manual touch needed; next `npm run dev` picks up the schema edits.
 
 **Next thread should pick up from:** unchanged from prior entries (demo walkthrough, backend questions, deploy decision, P2.1 dialog). This fix unblocks every form-driven create/edit flow in the demo — modals now actually close, the issuance add-member flow now actually returns to the proposal.
+
+### 2026-05-11 — archV1 layered execution plan + per-track AI agent briefings
+
+User asked to convert the archV1 design (`docs/archV1/00..13`) into an executable build plan that can be parallelized across multiple AI coding agents, with schema delivery / materialization explicitly deferred — schemas keep being served from `/schemas/` via `src/lib/schemaResolver.ts` as today. Drafted plan, ran 4 review agents in parallel (completeness vs archV1, task distribution / merge-risk, per-task AI context sufficiency, clarity / ambiguity), then rewrote the plan against their findings.
+
+**What changed:**
+- New plan at [docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md](../docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md). Pre-decided technical choices (Zustand, zod, Vitest, Playwright, wildcard barrels per subdir, wrap-don't-refactor existing widgets), 11 tracks, staged pilot (10a read-only → 10b full workflow), file-ownership table guaranteeing no cross-track writes.
+- 12 self-contained per-track briefings under [docs/archV1/tracks/](../docs/archV1/tracks/), each with exact TS signatures it exports, worked examples, edge cases, allowed deps, DoD with concrete `yarn test ...` commands, and spec references cited as `file:line` for verifiability.
+- Kickoff prompt template at [docs/archV1/tracks/AGENT-KICKOFF-TEMPLATE.md](../docs/archV1/tracks/AGENT-KICKOFF-TEMPLATE.md) — wraps each briefing with hard constraints (owned-dir-only, no new deps, no `any` in exports, no skip-to-green), STOP conditions, and DoD reiteration.
+- README/index at [docs/archV1/tracks/README.md](../docs/archV1/tracks/README.md).
+
+**Gaps the review agents caught that the final plan addresses:**
+- Missing cross-track interface specs (every track now publishes the exact TS shape downstream tracks consume).
+- Missing scope items from archV1: `flow.*` scope, access policy enforcement, schema version validator, `$t` + locale formatters, `announce()`, persistence `clearOn` triggers, test-harness contracts. All folded into the relevant tracks.
+- Pilot too ambitious as a single integration: split into 10a (read-only) and 10b (workflow).
+- Root `src/lib/runtime/index.ts` merge contention: wildcard re-export, written once by Track 0, untouched after.
+- Maker-checker overlay (`src/lib/maker-checker.ts` — already deleted in honesty pass) and runtime devtools explicitly listed as out-of-scope.
+
+**What this is NOT yet:** code. This commit ships the build plan only. Layer 1 implementation hasn't begun. Layer 2 (porting the 26 existing schemas) only starts after Track 10b passes. Layer 3 (schema delivery / materialization) is deferred.
+
+**Files committed in `6e91be8` (pushed to origin `feat/new-buisiness`):** 15 new files under `docs/archV1/`, +2533 lines, no code changes. Other in-flight working-tree changes (the V1 demo schema edits, widget tweaks, the untracked `12-ARCHITECTURE-FREEZE-DECISIONS.md`) left alone.
+
+**Next thread (archV1 stream specifically):** hand `tracks/00-workspace-scaffold.md` through the kickoff template to an agent to lay the `src/lib/runtime/` scaffold, then fan out Tracks 1–9 per the dependency graph at [14:99](../docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md#L99). Coordinator owns Tracks 0, 1, 10a, 10b. The Group PAS V1 demo stream is unchanged — both streams now run in parallel.
+
+### 2026-05-11 (continued) — Audit pass + maker-checker overlay restored
+
+User asked for an audit on Group PAS V1 against the Keystone design deck v2 and the V1 issues backlog. Five parallel Explore agents covered ActionBar state/role gating, detail-page structure, mock-vs-proxy honesty, empty/loading/error state coverage, and design-token drift. Findings synthesized into a 14-item P1/P2/P3 punch list; user applied inline calls on every item; landed as 5 grouped commits on `feat/new-buisiness`.
+
+**Single biggest reversal:** the 2026-05-07 honesty-pass removal of the maker-checker overlay (this log → "New tighter mock rule" entry) was undone for the Quote/Proposal flow. Rationale from user: with real auth (Keycloak/Cerbos) not shipping, the role-switcher + `awaitingApproval` overlay is the only way to demo segregation-of-duties on the Quote workflow. The "don't simulate behavior backend can't deliver" rule still holds in principle — the overlay is restored as **transitional scaffolding** with a documented removal trigger (backend extends the PAM approval pattern to Quote via `RequestQuoteApprovalCommand` + central Approval module, or Cerbos lands and `Quote.submit()` becomes role-aware on the server). Surface fully grep-able for the eventual deletion. See [context/ARCH_TRANSITION.md](ARCH_TRANSITION.md) → "Maker-checker — UI-only overlay (transitional, until auth lands)" — the section documents both the 2026-05-07 removal and 2026-05-11 restoration so the reasoning trail stays intact.
+
+**Restored surface (commit `a26feac`):** `src/lib/maker-checker.ts` (new helper), `awaitingApproval` field on `MockQuote`/`MockProposal` + carried through DTOs, standalone `approvalOverlay` Map keyed by `entity:id` in `src/lib/api-mock/group-pas/store.ts` (globalThis-pinned), `/awaiting-approval` POST/DELETE handlers in both module routes, `MOCK_ONLY_PATTERNS` carve-out so it works in proxy mode, `awaiting-approval` cell renderer back with a pulsing warning dot, ActionBar overlay branches (Maker locked with "Awaiting checker approval" except Withdraw / Clear; Checker's approval-flow actions hidden until Maker sends), RoleSwitcher copy referencing "approval", QTE-2026-0002 seeded with `awaitingApproval:true` for the demo. ActionBar unit tests rewritten — 8/8 pass.
+
+**Other audit items shipped:**
+- **Commit `b6f0396` — refactor(tokens):** added `--warning` / `--warning-foreground` and `--success` / `--success-foreground` semantic tokens to [src/app/globals.css](../src/app/globals.css) (light + dark + `@theme inline`). Swapped hardcoded palettes in `ErrorBanner` (red-* → destructive), `MetricCard` trend (green/red → success/destructive). `Stack`/`Grid` layouts moved from inline `style={{ gap: \`${gap*0.25}rem\` }}` to a static `gapClass()` lookup (new `src/components/widgets/layout/gap-tokens.ts`) so the Tailwind JIT can resolve. Primitive cleanup: `badge` `text-[11px]` → `text-xs`, `tooltip` `rounded-[2px]` → `rounded-sm`.
+- **Commit `138d225` — fix(group-pas):** `schemas/tabs/quote/pricing.json` ActionBar previously hardcoded `state: "DRAFT"`, would have shown the Request-price button as DRAFT-state on any quote; now reads live state via `dataSource` + `stateField:"status"`. `schemas/policy-member-detail.json` `archive` action added to Checker roleActions (Task 1.9 table assigns Reject + Archive to both Checker and Ops; was previously Ops-only).
+- **Commit `a26feac` also bundles:** `expire` action added to Quote `SENT_TO_CLIENT` stateActions (spec'd in plan Task 2.3, was missing). `view-proposal` moved out of the ActionBar's `FINALIZED` stateActions and into the page-header's `actions` array as "Open in Issuance" — FINALIZED is now truly terminal in the action map, matching the role-action-table spec. Fetch-error surfacing added to `ActionBar` and `ReasonBanner`: when the widget owns its `useSmartQuery` and `.error` is truthy, render an inline alert instead of a half-populated shell. Verified by hitting `/quotation/QTE-NONEXISTENT` → "Actions unavailable — Failed to fetch: Not Found".
+- **Commit `63c4b08` — feat(group-pas):** empty-state config added to `schemas/tabs/proposal/members.json` and `schemas/tabs/policy/members.json` (same shape used by the top-level list pages). New shared `<DetailPageSkeleton>` component at `src/components/layout/DetailPageSkeleton.tsx` replaces six per-route `<Suspense fallback="Loading…">` strings — gives the page-header + key-value-grid + action-bar shape a coherent skeleton.
+- **Commit `acb89c6` — chore:** `npm run typecheck` script added (`tsc --noEmit`). Audit also asked for a pre-commit hook running lint + typecheck + test; **deferred** because the existing lint surface has 5,083 errors / 70k warnings (mostly `@typescript-eslint/no-explicit-any` + Storybook renderer-import) and the test suite has 56 pre-existing failures. Gating commits today would force `--no-verify` on every commit. Tracked in [docs/V1_DEMO_ISSUES.md](../docs/V1_DEMO_ISSUES.md) "Deferred infrastructure" for pickup once the lint/test debt is brought down or `lint-staged` is wired.
+
+**Verification:** `tsc --noEmit` clean throughout. `npm test`: 56 pre-existing failures unchanged, 69 passing (was 68 — gained one from the rewritten ActionBar overlay tests). No new regressions. Manual smoke against fixtures in mock mode (`.env.local` temporarily moved aside, restored after) via Claude Preview MCP — confirmed:
+- Maker on QTE-2026-0002 sees Edit + Send-for-approval locked with "Awaiting checker approval"; Withdraw enabled.
+- Checker sees Clear-approval + Approve & submit enabled; state-locked actions tooltipped; Maker-only actions hidden.
+- Mark-expired present in Checker bar (state-disabled in DRAFT, would enable in SENT_TO_CLIENT).
+- "Open in Issuance" in page-header instead of ActionBar.
+- Pricing tab Request-price renders with `disabledTooltip` text (proves `stateField` resolved state correctly — otherwise we'd see the generic "Not available in this state").
+- `/quotation/QTE-NONEXISTENT` surfaces the error inline rather than rendering an empty/half toolbar.
+- Archive enabled for Checker on REPAIR_PENDING PolicyMember.
+- ReasonBanner computed styles confirm `border-warning/40 bg-warning/10 text-warning-foreground` resolving to the new tokens with correct contrast.
+
+**Order matters in the commit graph:** design-token additions (`b6f0396`) had to land before the overlay restore (`a26feac`) because the restored `awaiting-approval` cell renderer uses `bg-warning`, which only resolves once the token exists in `@theme inline`. Dependency order: `acb89c6` (chore) → `b6f0396` (tokens) → `a26feac` (overlay + errors) → `138d225` (pricing + archive) → `63c4b08` (empty-state + skeleton).
+
+**Notable new files:** `src/lib/maker-checker.ts`, `src/components/widgets/layout/gap-tokens.ts`, `src/components/layout/DetailPageSkeleton.tsx`. **Doc updates:** `context/ARCH_TRANSITION.md` (maker-checker section rewritten), `docs/V1_DEMO_ISSUES.md` (Deferred-infrastructure section added).
+
+**No Playwright in the repo.** User asked for Playwright tests; flagged honestly that `playwright` is installed as a dep but there's no `playwright.config.ts`, no `.spec.ts` files. Did the smoke via Claude Preview MCP instead. Pre-commit hook + Playwright bootstrap are both queued in the deferred-infrastructure section.
+
+**Next thread should pick up from:** demo walkthrough Task 5.3 still gated on user attendance. Backend questions (Quote-level approval pattern, file upload S3 wiring) still drafted. Cloudflare deploy decision still pending. Pass-2 polish items (P2.1, P2.5, P2.6). New backlog from this pass: pre-commit hook + the lint/test cleanup it implies; Playwright bootstrap.
