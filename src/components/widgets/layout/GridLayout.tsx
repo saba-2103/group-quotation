@@ -2,6 +2,7 @@ import React from 'react';
 import { WidgetConfig } from '@/types/widget';
 import { cn } from '@/lib/utils';
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
+import { gapClass } from './gap-tokens';
 
 interface GridLayoutProps {
     config: WidgetConfig;
@@ -25,10 +26,12 @@ export const GridLayout: React.FC<GridLayoutProps> = ({ config }) => {
             className={cn(
                 'grid',
                 getGridColsClass(),
+                gapClass(gap),
                 className
             )}
             style={{
-                gap: gap ? `${gap * 0.25}rem` : undefined,
+                // Keep this inline only when columns is a runtime-derived
+                // number; grid-cols-* still can't be JIT-resolved dynamically.
                 gridTemplateColumns: typeof columns === 'number' ? `repeat(${columns}, minmax(0, 1fr))` : undefined
             }}
         >
