@@ -105,7 +105,10 @@
                     "endpoint": "/api/moneyout/config/payout-mode-policies",
                     "method": "PUT"
                 },
-                "successMessage": "Payout Mode updated successfully!"
+                "successMessage": "Payout Mode updated successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "edit-payout-mode-form" }
+                ]
             },
             {
                 "id": "cancel-edit-payout-mode",

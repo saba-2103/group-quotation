@@ -55,7 +55,7 @@ export const useActionHandler = () => {
     }
   });
 
-  return async (action: ActionConfig, rowData?: Record<string, unknown>) => {
+  const dispatch = async (action: ActionConfig, rowData?: Record<string, unknown>): Promise<void> => {
     switch (action.type) {
       case "navigate":
         if (action.target) router.push(action.target);
@@ -82,6 +82,11 @@ export const useActionHandler = () => {
                   return typeof key === "string" && key.startsWith(refreshKeyStr);
                 }
               });
+            }
+            if (action.onSuccess?.length) {
+              for (const next of action.onSuccess) {
+                await dispatch(next, rowData);
+              }
             }
           } catch (err) {
             // Surface the parsed `message` from the backend's error envelope
@@ -151,4 +156,6 @@ export const useActionHandler = () => {
         break;
     }
   };
+
+  return dispatch;
 };

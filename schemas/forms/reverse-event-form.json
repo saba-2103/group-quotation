@@ -27,7 +27,10 @@
                 "api": {
                     "endpoint": "/api/accounting/events/:id/reverse",
                     "method": "POST"
-                }
+                },
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "reverse-event-form" }
+                ]
             }
         ]
     }

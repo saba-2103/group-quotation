@@ -94,6 +94,11 @@ export type ActionConfig = BaseActionConfig & (
             title: string;
             message: string;
         };
+        // Actions to run sequentially after the mutation resolves. The success
+        // toast and refreshKey invalidation fire first, then each entry here is
+        // dispatched through the same action handler. Used to close the host
+        // overlay (`trigger-event`) or navigate back to a list (`navigate`).
+        onSuccess?: ActionConfig[];
     }
     | {
         type: "api-download";

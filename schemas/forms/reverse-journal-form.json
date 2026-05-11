@@ -39,7 +39,10 @@
                 "api": {
                     "endpoint": "/api/accounting/journals/:journalNumber/reverse",
                     "method": "POST"
-                }
+                },
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "reverse-journal-form" }
+                ]
             }
         ]
     }

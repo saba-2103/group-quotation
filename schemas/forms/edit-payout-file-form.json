@@ -99,7 +99,10 @@
                     "endpoint": "/api/moneyout/config/bank-file-field-formats",
                     "method": "PUT"
                 },
-                "successMessage": "Payout File Format updated successfully!"
+                "successMessage": "Payout File Format updated successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "edit-payout-file-form" }
+                ]
             },
             {
                 "id": "cancel-edit-payout-file-format",
