@@ -68,7 +68,7 @@
         },
         "roleActions": {
           "maker": ["repair-edit"],
-          "checker": ["price", "classify", "uw-approve", "uw-reject", "reject", "send-for-issuance", "pam-link"],
+          "checker": ["price", "classify", "uw-approve", "uw-reject", "reject", "archive", "send-for-issuance", "pam-link"],
           "ops": ["repair-edit", "reject", "archive", "pam-link"],
           "viewer": []
         },

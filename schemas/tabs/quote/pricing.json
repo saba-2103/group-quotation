@@ -22,8 +22,11 @@
     {
       "id": "quote-pricing-actions",
       "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
       "props": {
-        "state": "DRAFT",
+        "stateField": "status",
         "stateActions": { "DRAFT": ["request-price"] },
         "roleActions": { "maker": ["request-price"], "checker": [], "ops": [], "viewer": [] },
         "actions": [
