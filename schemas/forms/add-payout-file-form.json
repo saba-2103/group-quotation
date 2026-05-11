@@ -120,7 +120,10 @@
                     "endpoint": "/api/moneyout/config/bank-file-field-formats",
                     "method": "POST"
                 },
-                "successMessage": "Payout File Format added successfully!"
+                "successMessage": "Payout File Format added successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "add-payout-file-form" }
+                ]
             },
             {
                 "id": "cancel-add-payout-file-format",

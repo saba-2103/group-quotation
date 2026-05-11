@@ -26,7 +26,10 @@
           "endpoint": "/api/issuance/policy-members/:id",
           "method": "PUT"
         },
-        "successMessage": "Member saved; re-classification triggered"
+        "successMessage": "Member saved; re-classification triggered",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "repair-policy-member-form" }
+        ]
       },
       {
         "id": "cancel-repair",

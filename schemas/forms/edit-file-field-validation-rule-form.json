@@ -80,7 +80,10 @@
                     "endpoint": "/api/moneyout/config/payout-field-validation-rules/:id",
                     "method": "PUT"
                 },
-                "successMessage": "Validation Rule updated successfully!"
+                "successMessage": "Validation Rule updated successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "edit-file-field-validation-rule-form" }
+                ]
             },
             {
                 "id": "cancel-edit-file-field-validation-rule",

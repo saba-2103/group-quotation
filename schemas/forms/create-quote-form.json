@@ -54,7 +54,10 @@
           "endpoint": "/api/quotation/quotes",
           "method": "POST"
         },
-        "successMessage": "Quote created"
+        "successMessage": "Quote created",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "create-quote-form" }
+        ]
       },
       {
         "id": "cancel-create-quote",

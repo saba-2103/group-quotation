@@ -111,7 +111,10 @@
           "endpoint": "/api/quotation/quotes/:id/policy-detail",
           "method": "PUT"
         },
-        "successMessage": "Quote details saved"
+        "successMessage": "Quote details saved",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "edit-quote-policy-detail-form" }
+        ]
       },
       {
         "id": "cancel-edit-quote",

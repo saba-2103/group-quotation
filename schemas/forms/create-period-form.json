@@ -40,7 +40,10 @@
                 "api": {
                     "endpoint": "/api/accounting/periods",
                     "method": "POST"
-                }
+                },
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "create-period-form" }
+                ]
             }
         ]
     }

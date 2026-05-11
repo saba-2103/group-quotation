@@ -101,7 +101,10 @@
                 "api": {
                     "endpoint": "/api/accounting/posting-rules",
                     "method": "POST"
-                }
+                },
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "create-posting-rule-form" }
+                ]
             }
         ]
     }

@@ -119,7 +119,10 @@
                     "endpoint": "/api/moneyout/config/payout-mode-policies",
                     "method": "POST"
                 },
-                "successMessage": "Payout Mode added successfully!"
+                "successMessage": "Payout Mode added successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "add-payout-mode-form" }
+                ]
             },
             {
                 "id": "cancel-add-payout-mode",

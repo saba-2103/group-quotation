@@ -50,7 +50,10 @@
           "endpoint": "/api/quotation/member-quotes/:id/premium",
           "method": "PUT"
         },
-        "successMessage": "Premium saved"
+        "successMessage": "Premium saved",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "set-member-quote-premium-form" }
+        ]
       },
       {
         "id": "cancel-set-premium",

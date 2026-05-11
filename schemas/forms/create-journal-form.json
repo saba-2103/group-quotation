@@ -99,7 +99,10 @@
                 "api": {
                     "endpoint": "/api/accounting/journals",
                     "method": "POST"
-                }
+                },
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "create-journal-form" }
+                ]
             }
         ]
     }

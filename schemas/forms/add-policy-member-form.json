@@ -96,7 +96,10 @@
           "endpoint": "/api/issuance/proposals/{{proposalId}}/members",
           "method": "POST"
         },
-        "successMessage": "Policy member created"
+        "successMessage": "Policy member created",
+        "onSuccess": [
+          { "type": "navigate", "target": "/issuance/proposals/{{proposalId}}" }
+        ]
       },
       {
         "id": "cancel-add-member",
