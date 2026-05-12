@@ -1,4 +1,4 @@
-import { SideBarType, type AppConfig } from "@shared/types";
+import type { AppConfig } from "@shared/types";
 
 /**
  * Mock App Config for Group Insurance Portal.
@@ -16,7 +16,6 @@ export const groupInsuranceAppConfig: AppConfig = {
     size: 32
   },
   navigation: {
-    sideBarType: SideBarType.DUAL_PANEL,
     menuItems: [
       {
         id: "home",

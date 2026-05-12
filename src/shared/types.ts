@@ -1,9 +1,3 @@
-export enum SideBarType {
-    NESTED = 'NESTED',
-    UNGROUPED = 'UNGROUPED',
-    DUAL_PANEL = 'DUAL_PANEL',
-}
-
 export interface NavigationItem {
     id: string;
     label: string;
@@ -21,7 +15,6 @@ export interface AppConfig {
         size?: number;
     };
     navigation: {
-        sideBarType: SideBarType;
         menuItems: NavigationItem[];
     };
 }

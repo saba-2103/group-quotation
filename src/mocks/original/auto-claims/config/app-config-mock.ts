@@ -1,4 +1,4 @@
-import { SideBarType, type AppConfig } from "@shared/types";
+import type { AppConfig } from "@shared/types";
 
 /**
  * Mock App Config for Auto Claims Portal
@@ -11,7 +11,6 @@ export const autoClaimsAppConfig: AppConfig = {
     size: 32
   },
   navigation: {
-    sideBarType: SideBarType.DUAL_PANEL,
     menuItems: [
       {
         id: "home",
