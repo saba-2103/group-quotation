@@ -93,7 +93,7 @@ The repo has skills under [.claude/skills/](../.claude/skills/). Use them rather
 
 **Context to load:**
 - [src/mocks/original/group-insurance/config/](src/mocks/original/group-insurance/config/) — find the app-config-mock file (likely `app-config-mock.ts`).
-- [src/components/AppSidebar.tsx](src/components/AppSidebar.tsx) for nav rendering.
+- [src/components/navigation/](src/components/navigation/) for nav rendering (two-panel chrome — icon rail + grouped submenu).
 
 **Output:**
 - Replace legacy quotations nav entry with three new top-level entries: **Quotation**, **Issuance**, **Policy Admin**. Each entry's URL should resolve once Phase 2/3/4 ships; for now they point to placeholder routes.
