@@ -1,7 +1,7 @@
 import React from "react";
 import { WidgetConfig } from "@/types/widget";
 import { useSmartQuery } from "@/hooks/useSmartQuery";
-import { KeyValueGridWidgetProps, ApiResponseData, DataRecord, KeyValueField, FieldValue, BadgeValueMapping } from "./types";
+import { KeyValueGridWidgetProps, ApiResponseData, DataRecord, KeyValueField, BadgeValueMapping } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
