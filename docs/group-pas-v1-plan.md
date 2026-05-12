@@ -113,7 +113,7 @@ Auth-branch zombies (bundled into [schemas/forms/index.ts](../schemas/forms/inde
 
 **Context to load:**
 - [src/mocks/original/group-insurance/config/](../src/mocks/original/group-insurance/config/) — find the app-config-mock file (likely `app-config-mock.ts`).
-- [src/components/AppSidebar.tsx](../src/components/AppSidebar.tsx) for nav rendering.
+- [src/components/navigation/](../src/components/navigation/) for nav rendering (two-panel chrome — icon rail + grouped submenu).
 
 **Output:**
 - Replace legacy quotations nav entry with three new top-level entries: **Quotation**, **Issuance**, **Policy Admin**. Each entry's URL should resolve once Phase 2/3/4 ships; for now they point to placeholder routes.
@@ -263,7 +263,7 @@ Auth-branch zombies (bundled into [schemas/forms/index.ts](../schemas/forms/inde
 
 **Context to load:**
 - [context/ARCH_TRANSITION.md](../context/ARCH_TRANSITION.md) → "Maker-checker UI overlay" — the interim contract.
-- Existing top-shell component (likely [src/components/AppSidebar.tsx](../src/components/AppSidebar.tsx) plus a header/topbar; locate during DISCOVER) for placement.
+- Existing top-shell component ([src/components/navigation/](../src/components/navigation/) plus a header/topbar; locate during DISCOVER) for placement.
 - Role-actions convention: per-schema `roleActions: Record<Role, ActionId[]>` map, consumed by `ActionBar` (Task 1.3).
 
 **Output:**

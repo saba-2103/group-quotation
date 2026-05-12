@@ -1035,3 +1035,25 @@ Designer mockup (Motor Insurance "Decisions" screen) showed a VSCode-style two-t
 **Next:** Commit 2 once https://keystone-ui-dev.anairacloud.com renders the new chrome correctly. Commit 2 scope: delete `AppSidebar.tsx`, remove the two stale enum members, sweep references in [docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md](../docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md) and [docs/group-pas-v1-plan.md:116](../docs/group-pas-v1-plan.md). After Commit 2 is live-tested clean, merging `feat/new-buisiness` → `main` becomes a separate piece of work.
 
 **Open question for the next session (intentionally deferred per user):** does Quotation detail's tab structure (Plans / Census / Mapping / Pricing) belong in the submenu panel under uppercase group labels, or stay as in-page tabs? Today's commit assumes in-page tabs and leaves the submenu flat with module-list links only.
+
+### 2026-05-12 (continued) — Commit-hygiene rule + two-panel nav Commit 2
+
+After Commit 1 (`4de1efd`) deployed cleanly to https://keystone-ui-dev.anairacloud.com (live-verified via `gh run view 25720296930` — both `build` and `deploy-dev` jobs green in 2m51s; and via `curl` of the dev URL HTML, which references the new `DualPanelNav` client component and no `AppSidebar`), user flagged a workflow concern: when docs/context updates get bundled with src changes, the CI deploy graph becomes ambiguous (a follow-up docs-only push doesn't move the deploy SHA, so "what's live" requires walking back the commit history). Asked me to make this a standing rule.
+
+**Commit `92dd2b6` — docs(context): split src and docs commits — no mixed deploy/no-op:**
+- New "Commit hygiene — split src from docs" section in [context/CORE_MEMORY.md](CORE_MEMORY.md): never bundle `paths-ignore` paths (`docs/**`, `context/**`, `proposals/**`, `**/*.md`, `.gitignore`, `LICENSE`) with non-ignored changes (`src/**`, `schemas/**`, `helm/**`, `.github/**`, root configs) in the same commit. Land context updates as separate follow-up commits — they'll be skipped by `paths-ignore` as designed, keeping the deploy graph readable.
+- Carve-out preserved: the existing "in the same commit" guidance under Mandatory logging protocol still applies to keeping `proposals/PROP-*.md` frontmatter grouped with `HANDOFF.md` (both are under `paths-ignore` — that group is fine).
+
+**Commit `7d8a913` — chore(nav): remove legacy AppSidebar; collapse SideBarType enum** (src-only, triggers deploy):
+- Deleted `src/components/AppSidebar.tsx` (no remaining importers).
+- [src/shared/types.ts](../src/shared/types.ts): removed `SideBarType` enum entirely. Since `DUAL_PANEL` was the only consumer, the `sideBarType` field on `AppConfig.navigation` was also removed — the runtime always uses `DualPanelNav`. Net: 7 lines removed from the type file.
+- Both mock configs ([group-insurance](../src/mocks/original/group-insurance/config/app-config-mock.ts), [auto-claims](../src/mocks/original/auto-claims/config/app-config-mock.ts)) dropped the `SideBarType` import and the `sideBarType:` line.
+- Pre-commit sweep: `grep -rn "AppSidebar|SideBarType|sideBarType" src schemas docs` returned zero hits.
+- Verification: `tsc --noEmit` clean; preview server still renders rail (80px, 5 items) + submenu (240px) on `/quotation` with active states on both rail and submenu; no console / server errors.
+
+**Commit (this one, docs-only) — docs(context): log Commit 2 + sweep AppSidebar refs in docs:**
+- This entry in [context/SESSION_LOG.md](SESSION_LOG.md) and the Active Workstreams row in [context/HANDOFF.md](HANDOFF.md).
+- [docs/CODEBASE_OVERVIEW.md](../docs/CODEBASE_OVERVIEW.md): file-tree comment updated from `AppSidebar.tsx` → `navigation/`.
+- [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md): two references at Task 0.2 (line 116) and Task 1.9 (line 266) repointed from `src/components/AppSidebar.tsx` to `src/components/navigation/`.
+
+**Two-panel nav workstream status:** Commit 1 (feat) and Commit 2 (cleanup) both shipped and live on `feat/new-buisiness`. Merging to `main` is a separate decision (not blocked by anything in this stream). Open design question about module-detail tabs in the submenu still deferred to a future session per user.
