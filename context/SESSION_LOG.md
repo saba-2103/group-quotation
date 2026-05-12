@@ -1079,3 +1079,48 @@ User asked for a clean PR against `main` carrying just the two-panel nav change.
 **PR URL:** https://github.com/Anaira-AI/keystone-ui/pull/58
 
 **Process note worth keeping:** when the feature branch is far ahead of `main` and you only want a slice on main, **don't** `git cherry-pick` — it drags in conflicts from unrelated changes that happen to touch the same files. **Do** create a fresh branch off `origin/main`, copy the relevant files via `git show <feat-sha>:path > path`, manually apply the minimal source edits (import + JSX swap), and commit as one focused commit. That keeps the PR diff aligned with what a reviewer expects to see for the feature.
+
+### 2026-05-12 (continued) — Schema-engine extraction PR #57 (separate from #58)
+
+Second slice taken to `main` in the same session: the schema-runtime / widget-engine extensions that piggybacked on `feat/new-buisiness` for Group PAS V1 but are useful to any future schema-driven module. User asked for these to land separately so other teams can adopt the engine without inheriting Group PAS mocks, role overlay, or in-flight state machine. Plan file: `~/.claude/plans/read-the-context-logs-starry-sketch.md`.
+
+**Branch:** `extract/schema-engine` off `origin/main` (03c9b7d). 13 commits, **+1591 / −85** across 55 files, all engine-layer. Negative-leakage check passes (no files under `src/lib/api-mock/`, `src/mocks/group-pas/`, `src/types/group-pas/`, `src/lib/api/{quotation,issuance,policy-admin}.ts`, `src/lib/maker-checker.ts`).
+
+**Scope (per user decision):** "pure-engine commits only" widened to also carry the new schema-driven widgets (`ActionBar`, `StateBadge`, `ReasonBanner`, `RoleSwitcher`) with light refactors so they ship domain-agnostic — see refactor commits below.
+
+**Layer 1 — runtime extensions (cherry-pick with conflict surgery):**
+- `bba4b67` (`5b4b0ab` ← `useSmartQuery.stopWhen` + widget types). Dropped doc payload (`docs/spec/**`, `docs/planning/**`, `context/*`).
+- `c30ba14` (`17e4efc` ← poll backoff + Spring-default errors + STANDARD_POLL_SCHEDULE).
+- `5097867` (`483f93b` ← `select.dataSource` + `optionLabel`/`optionValue`).
+- `7a5582e` (`f1611f6` ← KeyValueGrid `parseJson`/`subPath`/`nestedParseAt`/`list`/`presence` cell types). Dropped Group PAS `schemas/tabs/quote/*.json` hunks.
+- `4f81a4f` (`97a8caa` ← KeyValueGrid nested accessors + raw-JSON cleanup). Dropped all Group PAS `schemas/*` hunks.
+- `947b79e` (`b6f0396` ← semantic warning/success tokens + `gap-tokens.ts`).
+- `4710fe1` (`32efd3a` ← native `<Toaster />` + `useActionHandler` toast wiring + Spring error envelope parsing).
+- `0077520` (`37adbad` ← `onSuccess[]` chaining on `api-mutation` + 19 accounting/event/journal/period/posting/payout form schemas). Dropped 4 Group PAS form hunks (`add-policy-member-form.json`, `create-member-quote-form.json`, `create-quote-form.json`, `edit-quote-policy-detail-form.json`, `repair-policy-member-form.json`, `set-member-quote-premium-form.json`).
+
+**Layer 2 — schema-driven widgets:**
+- `021c811` — role-switcher + RoleContext + useRole. Refactored inline to drop `@/types/group-pas/roles` → new generic `@/types/role`. Storage key renamed `group-pas:current-role` → `keystone:current-role`.
+- `50cf515` (`23bc0a6` ← ActionBar widget). Cherry-picked; `@/types/group-pas/roles` import rewritten to `@/types/role`.
+- `0ad1d5a` — StateBadge + ReasonBanner + state-map. **Refactored state-map** into a generic registry (`registerStateMap` / `registerReasonMap` / `registerReasonGroupResolver`) with empty default maps. Group PAS data file stays on feat branch.
+- `558f9b6` — combined commit replacing ActionBar with its post-bfc292c state (no maker-checker overlay, `disabledTooltip` field, `stateField` override) + applies 5cd9968's motion/depth pass on ui primitives + adds `state-badge` cell type to CellRenderer + `ColumnConfig.entity`. ActionBar unit test refreshed from bfc292c snapshot (7/7 pass). The full cherry-pick of `5cd9968` / `bcd1c99` / `bfc292c` was abandoned for being too entangled with intermediate ActionBar commits (`23bc0a6 → 4ead472 → 12a91fe → 5cd9968 → a88e3c6 → bcd1c99 → bfc292c → a26feac`); taking the post-bfc292c snapshot directly was simpler than chaining 7 cherry-picks with conflict surgery.
+
+**Layer 3 — cleanup:**
+- `9722a37` — drop unused `FieldValue` import in KeyValueGrid.
+- `d969827` — PR #57 review feedback (see below).
+
+**PR #57 review feedback addressed in `d969827`:**
+Two reviewers (Copilot bot + nishanthbs1998, `CHANGES_REQUESTED`). 9 fixes landed in one commit:
+- **Must-fix (3):** dropped `throw err` from `useActionHandler.api-mutation` (toast is the user surface; rethrow was producing unhandled-promise rejections at every caller); added defensive try/catch in `ActionBar.onClick` + switched `rowData` to `liveEntity ?? fetchedEntity`; replaced in-place mutation in `KeyValueGrid.resolveFieldValue` with a new `immutableSet()` helper that clones the path so the React Query cache isn't corrupted.
+- **Should-fix (4):** `state-map.__resetRegistriesForTests()` for Jest test pollution; `types/role.ROLES` const array drives `readStoredRole` validation (adding a Role member automatically extends the guard); renamed dead `RoleContext` interface in `types/role.ts` → `RoleClaimPayload` (future Keycloak claims slot) to resolve name collision with the React context object; `gap-tokens.gapClass()` now returns `undefined` + dev `console.warn` for unmapped values instead of silently rendering `gap-4`.
+- **Copilot extras (2):** `useSmartQuery` resets `pollStartRef` via `useEffect` when queryKey inputs (endpoint/method/params/dependent state/pollSchedule on/off) change so a mounted component flipping entity id starts a fresh backoff cycle; `RoleProvider` write-throughs to `useWidgetState` under `global:current-role`, matching what STATE_MANAGEMENT_GUIDE.md §8.4 documents.
+- **Nits (2):** trailing newline on `useSmartQuery.ts`; `catch (e)` → bare `catch` in `useActionHandler` (unused-binding lint).
+- **Declined:** layout entry-animation re-fires on every navigation — design call, kept matching `feat/new-buisiness` behavior; moved-into-per-page wrapper deferred to a follow-up if design confirms.
+
+Verified: `tsc --noEmit` clean; `ActionBar.unit.test.tsx` 7/7 pass; baseline test failures (`92 failed / 113 passed`) match `origin/main` baseline byte-for-byte — no regressions.
+
+**Merge-back impact for `feat/new-buisiness`:** documented in PR body. Rebase will silently skip Layer 1 commits (identical patches) via patch-id matching. Friction expected on Layer 2 / surgical-subset commits where hunks were dropped during extraction — `git checkout --ours` resolves those. Layer 3 refactors (Role type move, state-map registry split) need feat branch to repoint `@/types/group-pas/roles` → `@/types/role` and ship a `state-map.group-pas.ts` data file that registers the maps at module load.
+
+**PR URL:** https://github.com/Anaira-AI/keystone-ui/pull/57
+**Reviewer reply:** https://github.com/Anaira-AI/keystone-ui/pull/57#issuecomment-4431040695
+
+**Process note:** combining 7 messy cherry-picks (`23bc0a6` through `bfc292c`) into a single "snapshot-the-end-state" commit was the right move once it became clear the intermediate commits churned the same file repeatedly with maker-checker add/restore noise. Same lesson as PR #58's process note — when chained cherry-picks fight you, take the final state directly and write one focused commit.
