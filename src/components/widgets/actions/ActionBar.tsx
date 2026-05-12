@@ -118,11 +118,20 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
 
   const onClick = async (action: ActionConfig) => {
     // Pass the live entity as rowData so endpoints with `:id` substitute
-    // correctly (used by overlay forms opened via open-modal).
-    const rowData = (fetchedEntity ?? undefined) as
+    // correctly (used by overlay forms opened via open-modal). Prefer the
+    // stateKey-published `liveEntity` when present — that's the most up-to-date
+    // copy of the row (a sibling widget may have just mutated it) — falling
+    // back to the directly-fetched entity.
+    const rowData = (liveEntity ?? fetchedEntity ?? undefined) as
       | Record<string, unknown>
       | undefined;
-    await handleAction(action, rowData);
+    try {
+      await handleAction(action, rowData);
+    } catch {
+      // useActionHandler already surfaces the error via toast; swallow here so
+      // the click handler doesn't produce an unhandled-promise rejection.
+      // Defensive — useActionHandler's `api-mutation` path no longer rethrows.
+    }
   };
 
   return (

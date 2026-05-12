@@ -89,3 +89,18 @@ export function reasonGroupFor(
   }
   return undefined;
 }
+
+/**
+ * Wipe all registered state / reason maps and resolvers. Module-level
+ * registries persist across test files in the same Jest worker because Node
+ * caches modules; call this in `afterEach` (e.g. via `jest.setup.ts`) so one
+ * test's `registerStateMap` doesn't bleed into the next.
+ *
+ * @internal — production code should never call this.
+ */
+export function __resetRegistriesForTests(): void {
+  for (const k of Object.keys(STATE_MAPS)) delete STATE_MAPS[k];
+  for (const k of Object.keys(REASON_MAPS)) delete REASON_MAPS[k];
+  FREE_TEXT_REASON_GROUPS.clear();
+  REASON_GROUP_RESOLVERS.length = 0;
+}

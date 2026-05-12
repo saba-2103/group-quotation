@@ -30,6 +30,21 @@ function tryParseJson(v: unknown): unknown {
   }
 }
 
+// Returns a shallow-cloned copy of `obj` with `path` set to `val`. Walks the
+// path cloning each segment so the original tree is untouched — important when
+// `obj` is a value held inside the React Query cache.
+function immutableSet(obj: unknown, path: string, val: unknown): unknown {
+  if (obj == null || typeof obj !== 'object' || !path) return obj;
+  const keys = path.split('.');
+  const head = keys[0];
+  const rest = keys.slice(1).join('.');
+  const current = obj as Record<string, unknown>;
+  return {
+    ...current,
+    [head]: rest ? immutableSet(current[head], rest, val) : val,
+  };
+}
+
 function resolveFieldValue(field: KeyValueField, source: unknown): unknown {
   let value = getNested(source, field.accessorKey);
   if (field.parseJson) value = tryParseJson(value);
@@ -38,14 +53,10 @@ function resolveFieldValue(field: KeyValueField, source: unknown): unknown {
     const nested = getNested(value, field.nestedParseAt);
     const parsed = tryParseJson(nested);
     if (parsed !== nested) {
-      const segments = field.nestedParseAt.split('.');
-      const last = segments.pop()!;
-      const parent = segments.length
-        ? (getNested(value, segments.join('.')) as Record<string, unknown> | null)
-        : (value as Record<string, unknown>);
-      if (parent && typeof parent === 'object') {
-        (parent as Record<string, unknown>)[last] = parsed;
-      }
+      // Don't mutate — `value` may be a reference into the React Query cache.
+      // Clone the path from `value` down to the nested slot, replacing the
+      // string with its parsed form.
+      value = immutableSet(value, field.nestedParseAt, parsed);
     }
   }
   return value;

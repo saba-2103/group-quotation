@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DataSourceConfig } from '@/types/widget';
 import { useWidgetState } from './useWidgetState';
@@ -14,6 +14,19 @@ export function useSmartQuery(dataSource?: DataSourceConfig) {
     // polling halts (stopWhen satisfied or maxDurationMs elapsed) so the
     // next cycle starts fresh.
     const pollStartRef = useRef<number | null>(null);
+
+    // Reset the backoff clock whenever the inputs that drive queryKey change
+    // (endpoint, method, params, dependent state, schedule on/off). Without
+    // this, if a component stays mounted while the entity id flips, elapsed
+    // time from the previous cycle would carry over — skipping the fast phase
+    // or hitting maxDurationMs early.
+    const pollResetSignal = useMemo(
+        () => JSON.stringify([api?.endpoint, api?.method, api?.params, stateDependencies, !!pollSchedule]),
+        [api?.endpoint, api?.method, api?.params, stateDependencies, pollSchedule],
+    );
+    useEffect(() => {
+        pollStartRef.current = null;
+    }, [pollResetSignal]);
 
     // Extract relevant state for dependencies
     const dependentState = stateDependencies?.reduce((acc, key) => {
