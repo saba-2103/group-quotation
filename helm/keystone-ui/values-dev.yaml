@@ -1,0 +1,30 @@
+image:
+  repository: 149916142454.dkr.ecr.ap-south-1.amazonaws.com/anaira/keystone-ui
+  tag: "" # overridden by CI via --set image.tag=<tag>
+
+imagePullSecrets:
+  - name: ecr-secret
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/group.name: anaira-dev-tools
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: instance
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:149916142454:certificate/d9beec9e-abdc-4e48-9e3b-b8e3d150e5ba
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-2-2017-01
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/success-codes: "200,302"
+  hosts:
+    - host: keystone-ui-dev.anairacloud.com
+      paths:
+        - path: /
+          pathType: Prefix
