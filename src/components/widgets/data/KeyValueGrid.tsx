@@ -176,7 +176,7 @@ export const KeyValueGrid: React.FC<{ config: WidgetConfig }> = ({ config }) => 
 
   return (
     <div
-      className="grid gap-6 p-6 bg-card rounded-lg border shadow-sm"
+      className="grid gap-6 p-6 bg-card rounded-lg border border-border/80 shadow-sm transition-all duration-200 hover:shadow-md hover:border-border animate-in fade-in slide-in-from-bottom-1 duration-300"
       style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
     >
       {fields.map((field: KeyValueField) => {

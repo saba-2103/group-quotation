@@ -32,6 +32,8 @@ export interface ColumnConfig {
   valueMapping?: ValueMapping[];
   linkRoute?: string;
   format?: string;
+  // Used by the `state-badge` cell type to pick the right map in state-map.ts.
+  entity?: string;
 }
 export interface RowActionProps {
   route?: string;

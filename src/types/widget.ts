@@ -70,6 +70,7 @@ export interface BaseActionConfig {
     variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
     display?: "button" | "icon" | "menu-item";
     refreshKey?: string;
+    disabledTooltip?: string;
     props?: Record<string, any>;
 }
 

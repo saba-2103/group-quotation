@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { ColumnConfig, ValueMapping } from "./DataTable/types";
 import { DateDisplay } from "@/components/widgets/controls/dateWidget/DateDisplay";
 import { BADGE_COLOR_TO_VARIANT } from "./DataTable/constants";
+import { StateBadge } from "@/components/widgets/state/StateBadge";
+import type { EntityKind } from "@/components/widgets/state/state-map";
 
 interface CellRendererProps {
   column: ColumnConfig;
@@ -23,7 +25,7 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
         return (
           <button
             type="button"
-            className="text-primary hover:underline font-medium"
+            className="text-primary font-medium underline-offset-4 transition-all duration-150 hover:underline hover:text-primary/80"
             onClick={() => onLinkClick(column.linkRoute!, rowId)}
           >
             {String(value)}
@@ -42,6 +44,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
           {mapping?.label ?? String(value)}
         </Badge>
       );
+    }
+
+    case "state-badge": {
+      const entity = (column.entity as EntityKind | undefined) ?? "quote";
+      return <StateBadge entity={entity} state={String(value)} />;
     }
 
     case "number":
