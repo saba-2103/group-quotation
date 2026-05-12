@@ -1,4 +1,4 @@
-name: Publish Image to ECR
+name: CI/CD - Build, Push, Deploy
 
 on:
   push:
@@ -15,8 +15,11 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.image-tag.outputs.IMAGE_TAG }}
+      full_image: ${{ steps.image-tag.outputs.FULL_IMAGE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,9 +41,9 @@ jobs:
       - name: Generate image tag
         id: image-tag
         env:
-          # On pull_request, GITHUB_REF points at refs/pull/<n>/merge and
+          # On pull_request events GITHUB_REF is refs/pull/<n>/merge and
           # GITHUB_SHA is the merge commit. Fall back to the head ref/sha so
-          # the image tag is the actual branch + commit being built.
+          # the tag reflects the actual branch + commit being built.
           RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
           RAW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
@@ -63,3 +66,39 @@ jobs:
         run: |
           echo "Image pushed to: ${{ steps.image-tag.outputs.FULL_IMAGE }}"
           echo "::notice title=Published Image::${{ steps.image-tag.outputs.FULL_IMAGE }}"
+
+  deploy-dev:
+    needs: build
+    runs-on: ubuntu-latest
+    # Only auto-deploy on direct push to feat/new-buisiness. Skip on
+    # pull_request (would deploy a merge-commit) and on main until promotion
+    # is wired.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feat/new-buisiness'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.K3S_KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Deploy via Helm
+        run: |
+          helm upgrade --install keystone-ui ./helm/keystone-ui \
+            --namespace dev-env \
+            -f ./helm/keystone-ui/values-dev.yaml \
+            --set image.tag=${{ needs.build.outputs.image_tag }}
+
+      - name: Smoke test
+        run: |
+          sleep 15
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://keystone-ui-dev.anairacloud.com/)
+          if [ "$STATUS" != "200" ]; then
+            echo "Smoke test failed: HTTP $STATUS"
+            exit 1
+          fi
+          echo "Smoke test passed: HTTP $STATUS"
