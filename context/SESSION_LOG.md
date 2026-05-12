@@ -934,3 +934,56 @@ User asked for an audit on Group PAS V1 against the Keystone design deck v2 and 
 **No Playwright in the repo.** User asked for Playwright tests; flagged honestly that `playwright` is installed as a dep but there's no `playwright.config.ts`, no `.spec.ts` files. Did the smoke via Claude Preview MCP instead. Pre-commit hook + Playwright bootstrap are both queued in the deferred-infrastructure section.
 
 **Next thread should pick up from:** demo walkthrough Task 5.3 still gated on user attendance. Backend questions (Quote-level approval pattern, file upload S3 wiring) still drafted. Cloudflare deploy decision still pending. Pass-2 polish items (P2.1, P2.5, P2.6). New backlog from this pass: pre-commit hook + the lint/test cleanup it implies; Playwright bootstrap.
+
+### 2026-05-11 → 2026-05-12 — Off Cloudflare, onto AWS (K3s + ECR + Helm), auto-deploy live
+
+Cloudflare Workers deploy was blocked: the OpenNext build emits an 8.4 MB worker, free-tier limit is 3 MiB. Migrated UI to a container-on-K3s setup using existing Anaira infra (the same K3s box hosting the backend). Site now live at https://keystone-ui-dev.anairacloud.com, auto-deployed on every push to `feat/new-buisiness`.
+
+**Path chosen:** cherry-pick the deploy artifacts from saigita's stalled [PR #28 (`deployment/ci-cd`)](https://github.com/Anaira-AI/keystone-ui/pull/28) (Docker + Helm + ECR push workflow), drop the bits that were quality-debt or out of scope, and fix the one real bug (env-var plumbing). Rebuild-from-scratch was rejected — deadline was today/tomorrow and saigita's chart had already been iterated on for a month.
+
+**What did NOT come over from PR #28:** the eslint rule relaxation (errors → warnings, `no-explicit-any` off, etc.), the `|| true`-masked CI steps, the `useFormContainer.ts` edit, the deletion of `wrangler.jsonc` / `open-next.config.ts` / `cloudflare-env.d.ts` / the `deploy`/`upload`/`preview`/`cf-typegen` scripts — Cloudflare files kept as fallback per user direction until AWS deploy is verified live (it now is; cleanup is a separate decision).
+
+**Commit `6bf8e62` — feat(deploy): AWS container deploy path (Docker + Helm + ECR)**
+- `Dockerfile` (multi-stage Node 24-alpine, standalone Next.js), `.dockerignore`, `docker-compose.yml`.
+- `helm/keystone-ui/`: `Chart.yaml`, `templates/{deployment,service,ingress,_helpers.tpl}`, single `values.yaml` (no env split — user asked for one env for now).
+- `.github/workflows/publish.yml` (workflow_dispatch only at this point).
+- `next.config.ts`: `output: 'standalone'` (required for the Dockerfile's `.next/standalone` copy); CF dev import guarded behind `NODE_ENV === 'development' && !DOCKER_BUILD` with a soft-fail catch so a slim runtime image without `@opennextjs/cloudflare` still works.
+- `package.json`: `docker:up`/`docker:down`/`docker:logs`/`docker:rebuild` scripts added; CF scripts kept.
+- **One real bug fix on top of saigita's chart:** the Helm chart only injected `NODE_ENV`/`PORT`/`HOSTNAME`. `GROUP_PAS_BACKEND_URL` is server-side (see [`src/lib/api-mock/group-pas/http.ts:78`](../src/lib/api-mock/group-pas/http.ts#L78) + the three catch-all proxy routes) — without it, pods would silently serve mock data in prod. Now baked into `values.yaml` (`https://group-pas-dev.anairacloud.com`) and rendered in `deployment.yaml`.
+- **`NEXT_PUBLIC_BASE_URL` removed entirely** rather than plumbed: the sole consumer (`src/app/policy-admin/members/by-policy-member/[policyMemberId]/page.tsx`) constructed an absolute URL because Node's server-side `fetch()` has no default origin. Replaced with `headers()` to derive origin from the incoming request (`x-forwarded-proto` + `host`). No config needed in dev, Docker, or behind ALB.
+
+**Commit `91348df` — ci(publish): trigger on push + pull_request, not just workflow_dispatch**
+- `workflow_dispatch` alone requires the workflow file on the default branch to appear in the Actions UI. Added `push: [main, feat/new-buisiness]` + `pull_request: [main]` so the build fires without first landing on main. Image-tag step rewritten to fall back to `github.head_ref` / `pull_request.head.sha` (on pull_request, `GITHUB_REF`/`GITHUB_SHA` are the merge-test ref/commit, useless as a tag).
+- First successful image: `149916142454.dkr.ecr.ap-south-1.amazonaws.com/anaira/keystone-ui:feat-new-buisiness_91348dfd`. DevOps deployed it manually that day.
+
+**Commit `acba003` — ci(deploy): add deploy-dev job + values-dev.yaml for K3s dev environment** (next morning)
+DevOps sent [`docs/planning/keystone-ui-deployment-guide.md`](../docs/planning/keystone-ui-deployment-guide.md) — "Option A: self-managed CD" — with the exact `values-dev.yaml` template and a `deploy-dev` job pattern that uses a `K3S_KUBECONFIG` GitHub secret (set by infra on 2026-05-12) instead of AWS IAM/OIDC for cluster auth.
+- `helm/keystone-ui/values-dev.yaml` new: `service.type: NodePort` (required for ALB `target-type=instance` — overrides the `ClusterIP` in base `values.yaml`); ALB ingress annotations including `group.name: anaira-dev-tools` (shared ALB), wildcard ACM cert ARN, `healthcheck-path: /`, `success-codes: "200,302"`; hostname `keystone-ui-dev.anairacloud.com`; `ecr-secret` for `imagePullSecrets`.
+- `.github/workflows/publish.yml` → renamed to `ci-cd.yml`. `build` job now exports `image_tag` as a step output. New `deploy-dev` job: installs helm, writes `K3S_KUBECONFIG` to `~/.kube/config`, `helm upgrade --install keystone-ui ./helm/keystone-ui --namespace dev-env -f helm/keystone-ui/values-dev.yaml --set image.tag=${{ needs.build.outputs.image_tag }}`, then a `curl -w "%{http_code}"` smoke test against the URL. Gated to `github.event_name == 'push' && github.ref == 'refs/heads/feat/new-buisiness'` (no PR deploys, no main deploys until promotion is wired).
+- First end-to-end run: build 3m31s → deploy 30s → smoke 200 in 16s. Wall-clock 4m14s. Image `feat-new-buisiness_acba0036` deployed, helm release `keystone-ui` REVISION 2 in namespace `dev-env`.
+
+**GitHub repo configuration that was already in place (set 2026-04-16 by saigita while iterating PR #28):**
+- `vars.ECR_AWS_REGION = ap-south-1`
+- `vars.ECR_REGISTRY = 149916142454.dkr.ecr.ap-south-1.amazonaws.com`
+- `vars.ECR_REPOSITORY = anaira/keystone-ui`
+- `vars.STAGING_AWS_IAM_ROLE_ARN = arn:aws:iam::149916142454:role/GitHubActions-Nonprod` (used only by the build job for ECR push)
+- `secrets.K3S_KUBECONFIG` (added 2026-05-12 by infra) — kubeconfig file content; deploy job writes it to `~/.kube/config` and helm just works. No AWS creds needed for the deploy step.
+
+**AWS-side infra (owned by the DevOps head, no per-deploy work needed):**
+- K3s single-node, EC2 `i-0360bd69f2a893af4`, namespace `dev-env`.
+- AWS Load Balancer Controller installed; shared ALB tagged `anaira-dev-tools` — each service adds its own host rule to the existing ALB via the group annotation rather than provisioning a new one (~$20/mo saved per service).
+- ACM wildcard cert `*.anairacloud.com` — anything `*.anairacloud.com` pointed at the ALB is HTTPS automatically.
+- Route53 A-alias `keystone-ui-dev.anairacloud.com` → shared ALB.
+- `ecr-secret` (kubernetes.io/dockerconfigjson) pre-created in `dev-env` namespace.
+
+**Rollback path:** `helm rollback keystone-ui -n dev-env` (release history is kept by helm; revisions are durable). Or push a known-good commit to retrigger forward. ECR tags are immutable so old images stay available; tag pattern is `feat-new-buisiness_<short-sha>`.
+
+**Migration note from the deployment guide:** infra team plans to replace this "self-managed CD" path with reusable `devops-platform` workflows that handle ECR push + helm deploy + smoke + environment promotion + SonarQube + pre-commit hooks. **No action needed now — infra will guide the migration.** When that lands, expect `.github/workflows/ci-cd.yml` to be replaced by a `uses:` reference.
+
+**Cloudflare files kept on `feat/new-buisiness` for now (intentionally not deleted):** `wrangler.jsonc`, `open-next.config.ts`, `cloudflare-env.d.ts`, `@opennextjs/cloudflare` dep, `deploy`/`upload`/`preview`/`cf-typegen` scripts in `package.json`. Now that AWS is verified live, removing them is a low-risk follow-up but the option is being left open in case AWS needs to be paused.
+
+**Branch dance worth noting for the next AI:** mid-session the user switched local working branches (`feat/new-buisiness` → `extract/schema-engine`) while another change was underway. The deploy-related edits I'd staged on the wrong branch were stashed, then recreated cleanly on `feat/new-buisiness` (rather than popping the stash, since `next.config.ts` had diverged on the two branches). Lesson: when the user shares a deployment-guide-style doc, double-check `git branch` before editing — particularly when multiple workstreams are interleaved.
+
+**Files committed (3 commits, all on `feat/new-buisiness`, pushed):** `6bf8e62`, `91348df`, `acba003`. Together: 16 new files + 3 edits.
+
+**Next thread should pick up from:** Cloudflare-cleanup decision (delete the leftover files / scripts / dep, or keep as fallback indefinitely). PR #56 (`feat/new-buisiness` → `main`) is open and now has a working CD pipeline gating on it. The CI workflow's lint/test masking (`|| true`, tests commented out) is unrelated to deploy and still pending. Infra team's planned migration to `devops-platform` reusable workflows will replace `.github/workflows/ci-cd.yml` eventually.
