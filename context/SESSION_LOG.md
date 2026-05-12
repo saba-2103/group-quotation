@@ -1057,3 +1057,25 @@ After Commit 1 (`4de1efd`) deployed cleanly to https://keystone-ui-dev.anairaclo
 - [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md): two references at Task 0.2 (line 116) and Task 1.9 (line 266) repointed from `src/components/AppSidebar.tsx` to `src/components/navigation/`.
 
 **Two-panel nav workstream status:** Commit 1 (feat) and Commit 2 (cleanup) both shipped and live on `feat/new-buisiness`. Merging to `main` is a separate decision (not blocked by anything in this stream). Open design question about module-detail tabs in the submenu still deferred to a future session per user.
+
+### 2026-05-12 (continued) — Two-panel nav cherry-picked to main as PR #58
+
+User asked for a clean PR against `main` carrying just the two-panel nav change. First attempt (`git cherry-pick 4de1efd 7d8a913` onto a fresh `feat/two-panel-nav` branch off `origin/main`) hit conflicts in `src/app/layout.tsx` and the group-insurance mock config — because `feat/new-buisiness` is 64 commits ahead of `main` and the nav commits were authored alongside unrelated changes (`RoleProvider`, `RoleSwitcher`, `Toaster`, animation wrapper). Pulling those in would have polluted the PR. Aborted and rebuilt the change manually against `main`.
+
+**PR #58 — feat(nav): two-panel navigation (icon rail + grouped submenu)** — single clean commit `025e719` on `feat/two-panel-nav` (off `origin/main`):
+- `src/shared/types.ts`: `NavigationItem` gains `group?: string`; `SideBarType` enum + `sideBarType` field removed entirely (one variant only).
+- New `src/components/navigation/` folder copied verbatim from feat branch (`DualPanelNav`, `IconRail`, `SubmenuPanel`, `groupSubItems`, `navHelpers`).
+- `src/app/layout.tsx`: minimal two-line edit — import swap + `<AppSidebar />` → `<DualPanelNav />`. Everything else on main's layout (no `RoleProvider`/`Toaster` yet) stays untouched.
+- Both mock configs (`group-insurance`, `auto-claims`) replaced with the spec-aligned versions.
+- `src/components/AppSidebar.tsx` deleted.
+- Doc refs in `docs/CODEBASE_OVERVIEW.md` and `docs/group-pas-v1-plan.md` repointed from `AppSidebar.tsx` → `navigation/`.
+- `tsc --noEmit` clean after wiping stale `.next/dev/types/validator.ts` cache (the validator had references to routes only on the feat branch).
+- Preview verified at 1280×800: rail renders all 5 group-insurance items, Home active.
+
+**Diff stats:** 12 files, +290 / −362 (net −72; the legacy mock had 200+ placeholder menu items that never had backing routes).
+
+**Heads-up flagged in PR description:** the spec-aligned rail points at `/quotation`, `/issuance/proposals`, `/policy-admin/clients`, `/policy-admin/policies` — none of which exist on `main` today. The V1 plan ([Task 0.2](../docs/group-pas-v1-plan.md)) explicitly accepts this: "clicking each navigates to a placeholder page (404 acceptable until pages exist)." IA lands first so Phases 2/3/4 can ship into it. Routes that DO work post-merge on main: `/` and `/accounting` (+ Payout via Accounting's submenu).
+
+**PR URL:** https://github.com/Anaira-AI/keystone-ui/pull/58
+
+**Process note worth keeping:** when the feature branch is far ahead of `main` and you only want a slice on main, **don't** `git cherry-pick` — it drags in conflicts from unrelated changes that happen to touch the same files. **Do** create a fresh branch off `origin/main`, copy the relevant files via `git show <feat-sha>:path > path`, manually apply the minimal source edits (import + JSX swap), and commit as one focused commit. That keeps the PR diff aligned with what a reviewer expects to see for the feature.
