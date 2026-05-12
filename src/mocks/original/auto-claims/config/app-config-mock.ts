@@ -15,7 +15,7 @@ export const autoClaimsAppConfig: AppConfig = {
       {
         id: "home",
         label: "Home",
-        url: "/dashboard",
+        url: "/",
         icon: "LayoutDashboard"
       },
       {
