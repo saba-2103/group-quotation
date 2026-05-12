@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AppContextProvider } from "@/components/providers/AppContextProvider";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { DualPanelNav } from "@/components/navigation/DualPanelNav";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { RoleSwitcher } from "@/components/widgets/role/RoleSwitcher";
 import { Toaster } from "@/components/ui/toast";
@@ -39,7 +39,7 @@ export default function RootLayout({
 					<RoleProvider>
 						<AppContextProvider>
 							<SidebarProvider defaultOpen={true}>
-								<AppSidebar />
+								<DualPanelNav />
 								<main className="w-full min-w-0 flex-1 overflow-x-hidden p-6 relative">
 									<SidebarTrigger className="absolute top-6 left-6 z-50 md:hidden" />
 									<div className="absolute top-4 right-6 z-50">

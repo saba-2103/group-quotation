@@ -1,6 +1,7 @@
 export enum SideBarType {
     NESTED = 'NESTED',
     UNGROUPED = 'UNGROUPED',
+    DUAL_PANEL = 'DUAL_PANEL',
 }
 
 export interface NavigationItem {
@@ -8,6 +9,7 @@ export interface NavigationItem {
     label: string;
     url?: string;
     icon?: string;
+    group?: string;
     subMenuItems?: NavigationItem[];
 }
 

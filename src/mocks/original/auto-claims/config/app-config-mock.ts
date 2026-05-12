@@ -7,15 +7,15 @@ export const autoClaimsAppConfig: AppConfig = {
   title: "Auto Claims Portal",
   description: "Manage your auto insurance claims efficiently",
   logo: {
-    icon: "Car", // will be replaced with URL-based icon
+    icon: "Car",
     size: 32
   },
   navigation: {
-    sideBarType: SideBarType.UNGROUPED,
+    sideBarType: SideBarType.DUAL_PANEL,
     menuItems: [
       {
-        id: "dashboard",
-        label: "Dashboard",
+        id: "home",
+        label: "Home",
         url: "/dashboard",
         icon: "LayoutDashboard"
       },
