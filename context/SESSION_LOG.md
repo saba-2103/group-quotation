@@ -991,3 +991,47 @@ DevOps sent [`docs/planning/keystone-ui-deployment-guide.md`](../docs/planning/k
 **Follow-up (same day):**
 - Commit `26fba8d` — added `paths-ignore` to both `push` and `pull_request` triggers in `.github/workflows/ci-cd.yml` for `**/*.md`, `docs/**`, `context/**`, `proposals/**`, `.gitignore`, `LICENSE`. Docs-only commits no longer fire the ~4-min build+deploy cycle.
 - **Stop hook installed at `.claude/settings.json`** (gitignored per repo convention — personal scope, not team-shared) that emits `{"decision":"block","reason":...}` when there are commits on the current branch since the last commit to `context/SESSION_LOG.md` that touched files outside `context/`. Silent on uncommitted-only work and on pure Q&A turns. Reason text points the AI back to the resume protocol in `context/HANDOFF.md`. Invariant: hook fires after code is committed but before logs are updated; goes silent again once a follow-up commit touches `context/SESSION_LOG.md`. Replaces the manual "update repo context logs" nudge in every session.
+
+### 2026-05-12 — Two-panel navigation (icon rail + grouped submenu) — Commit 1 of 2
+
+Designer mockup (Motor Insurance "Decisions" screen) showed a VSCode-style two-tier nav: narrow icon rail + wider submenu panel with uppercase section headers. User asked to adopt the **pattern**, not the mockup's specific items. Replaced the single nested `AppSidebar` with a new dual-panel chrome and migrated both mocked portals (group-insurance, auto-claims) to it.
+
+**Approach decisions captured during planning** (via AskUserQuestion):
+- Two-panel rail + grouped submenu — replaces single nested sidebar (no `SideBarType.NESTED` consumers left).
+- `group?: string` field on `NavigationItem` for the eventual section labels (kept ungrouped for this commit — see below).
+- Both portals migrate now (no opt-in fallback), since they're mocks anyway.
+- Rail expanded by default, Ctrl+B still collapses to icon-only.
+- Rail items follow the V1 spec modules — **not** the mockup's labels. Rationale: user pushed back on the first plan that invented group labels and rail items off-screenshot. Spec-aligned rail uses Home / Quotation / Issuance / Policy Admin / Accounting (from [docs/group-pas-v1-plan.md:119](../docs/group-pas-v1-plan.md) Task 0.2 + [docs/spec/](../docs/spec/) domains).
+
+**Grouping deferred:** the `group` field exists on the type and is honored by `SubmenuPanel`, but no mock config sets it yet. The open question is whether module-detail tabs (e.g. Quotation → Proposal → Members) should appear as submenu rows under uppercase group labels — answered in a separate session once that pattern is decided. For now the submenu is a flat list per rail item.
+
+**Commit-strategy decision:** split into two sequential commits on `feat/new-buisiness` so dev deploys can live-test each independently. Commit 1 is purely additive on the runtime path (old `AppSidebar.tsx` is left in the tree unreferenced) — if a regression shows up on dev, a single revert undoes it without touching the legacy component. Commit 2 deletes `AppSidebar.tsx`, removes `SideBarType.NESTED` / `UNGROUPED`, and is held until Commit 1 is live-verified.
+
+**Commit `4de1efd` — feat(nav): two-panel navigation (icon rail + submenu):**
+- [src/shared/types.ts](../src/shared/types.ts): added `SideBarType.DUAL_PANEL` and optional `group?: string` on `NavigationItem`. `NESTED` / `UNGROUPED` kept for Commit 2.
+- New folder [src/components/navigation/](../src/components/navigation/):
+  - `DualPanelNav.tsx` — top-level shell, derives active rail item from `usePathname()` via `itemMatchesPathname`, renders `<IconRail/>` + (when the active item has `subMenuItems`) `<SubmenuPanel/>`. Owns no state.
+  - `IconRail.tsx` — 80px expanded / 48px collapsed (reads `useSidebar().state`). Icon stacked over label. Active item gets `bg-background shadow-sm ring-1` over `bg-sidebar`.
+  - `SubmenuPanel.tsx` — 240px column. Uses `groupSubItems` helper to bucket items by `group` (preserving first-seen order); rail items without any `group` set render as a single ungrouped list.
+  - `groupSubItems.ts` — pure helper, easy to unit-test.
+  - `navHelpers.ts` — `resolveIcon`, `isActive`, `itemMatchesPathname`, `firstNavigableUrl`. `IconComponent = ComponentType<SVGProps<SVGSVGElement>>` type used to avoid the lucide `createLucideIcon`-factory leakage TS hit on the first attempt.
+- [src/app/layout.tsx](../src/app/layout.tsx): swapped `<AppSidebar />` → `<DualPanelNav />`. `SidebarProvider` left untouched — `IconRail` still uses the existing Ctrl+B collapse state.
+- [src/mocks/original/group-insurance/config/app-config-mock.ts](../src/mocks/original/group-insurance/config/app-config-mock.ts): replaced 250+ lines of placeholder menu (Workflow, Corporate Clients, Channel Maintenance, System Management, Approval — none had backing routes) with the spec-aligned rail. `sideBarType: DUAL_PANEL`.
+- [src/mocks/original/auto-claims/config/app-config-mock.ts](../src/mocks/original/auto-claims/config/app-config-mock.ts): same shape, 4 flat rail items (Home, Claims, Reports, Settings). `sideBarType: DUAL_PANEL`. Aspirational routes preserved — only `/claims` exists today.
+
+**Verification via Claude Preview MCP at 1280×800:**
+- Rail rendered all 5 group-insurance items; "Home" active with white-tile treatment on `/`.
+- `/quotation` → submenu (240px) shows Quotations + Member Quotes; "Quotation" active on rail, "Quotations" active in submenu.
+- `/policy-admin/policies` deep-link → "Policy Admin" active on rail, "Policies" active in submenu, Clients also listed.
+- `/accounting` → submenu shows Accounting + Payout.
+- Ctrl+B keydown collapses rail to 48px, labels hidden; second press restores to 80px.
+- Auto-claims config fetched via `/api/config/app?appId=auto-claims` returns `sideBarType: DUAL_PANEL` + 4 items, confirmed.
+- Layout fits viewport: rail 80 + submenu 240 + main 954 = 1274px in a 1280px viewport.
+- `tsc --noEmit` clean (after one fix on the IconComponent type).
+- No console warnings or errors during navigation.
+
+**Files NOT touched in this commit (per plan, removed in Commit 2):** `src/components/AppSidebar.tsx` (left unreferenced), `SideBarType.NESTED` / `UNGROUPED` enum members.
+
+**Next:** Commit 2 once https://keystone-ui-dev.anairacloud.com renders the new chrome correctly. Commit 2 scope: delete `AppSidebar.tsx`, remove the two stale enum members, sweep references in [docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md](../docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md) and [docs/group-pas-v1-plan.md:116](../docs/group-pas-v1-plan.md). After Commit 2 is live-tested clean, merging `feat/new-buisiness` → `main` becomes a separate piece of work.
+
+**Open question for the next session (intentionally deferred per user):** does Quotation detail's tab structure (Plans / Census / Mapping / Pricing) belong in the submenu panel under uppercase group labels, or stay as in-page tabs? Today's commit assumes in-page tabs and leaves the submenu flat with module-list links only.
