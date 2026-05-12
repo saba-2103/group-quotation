@@ -44,6 +44,19 @@ This is not optional — stale context causes other AIs to redo or contradict co
 - Do NOT create new branches for every change or feature build unless explicitly requested by the user. Stay on the current branch and use sequential commits to save builds and context to avoid excessive branch proliferation.
 - Exception: skills like `/build-feature` and `/execute-proposal` may create a feature branch when the working tree is dirty or when the user is on `main`/`master`. Their branch-hygiene checks are authoritative.
 
+## Commit hygiene — split src from docs
+
+Established 2026-05-12 after a feature commit got rolled into the dev deploy together with a context-log update; this made the deploy status confusing to read and risks the docs-bundling pattern triggering or skipping CI in unintended ways.
+
+**Rule:** never bundle changes under `paths-ignore` (`docs/**`, `context/**`, `proposals/**`, `**/*.md`, `.gitignore`, `LICENSE`) with non-ignored changes (`src/**`, `schemas/**`, `helm/**`, `.github/**`, root configs) in the same commit.
+
+- The CI workflow at [.github/workflows/ci-cd.yml](../.github/workflows/ci-cd.yml) skips a workflow run only when **every** changed path in the push matches `paths-ignore`. A mixed commit still fires the ~4-min build+deploy and burns the CI cycle on a deploy you didn't intend.
+- Keep feature/fix commits to their `src/` (and adjacent runtime) changes. Land the `context/SESSION_LOG.md` + `context/HANDOFF.md` update as a **separate follow-up commit** right after — that one will be skipped by CI as intended.
+- The "in the same commit" guidance under [Mandatory logging protocol](#mandatory-logging-protocol) refers to keeping a `proposals/PROP-*.md` frontmatter update grouped with the matching `HANDOFF.md` update — both are under `paths-ignore`, so the rule still holds for that case. It does **not** mean bundle context updates into the feature commit.
+- Same split applies to git-rebase / squash operations: don't squash a docs-only commit into a code commit when tidying history.
+
+Why this rule and not "just don't push docs after src": context updates often need to happen right after a milestone (so the next AI can resume cleanly). Splitting commits is the cheap solution that keeps the deploy graph readable AND keeps context current.
+
 ## Reference-doc precedence (Group PAS V1)
 
 When planning, mocking, or coding against the backend contract, resolve disagreements in this order. Higher entries win.
