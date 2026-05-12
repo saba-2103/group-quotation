@@ -5,9 +5,23 @@ on:
     branches:
       - main
       - feat/new-buisiness
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "context/**"
+      - "proposals/**"
+      - ".gitignore"
+      - "LICENSE"
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - "context/**"
+      - "proposals/**"
+      - ".gitignore"
+      - "LICENSE"
   workflow_dispatch: {}
 
 permissions:
