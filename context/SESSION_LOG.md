@@ -1496,3 +1496,48 @@ PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now 
 **PROP-0009 status:** `done`. Dev auto-deploys to https://keystone-ui-dev.anairacloud.com within ~4 min via CI/CD.
 
 **Next:** the four deferred portals (PROP-0010..PROP-0013) are unblocked. Sequence determined by user priority — backend contracts are confirmed for all four.
+
+---
+
+### 2026-05-13 (continued) — Playwright e2e suite + 4 PROP-0009 gap fixes shipped
+
+**Why:** post-deploy, user verified PROP-0009 in the browser and confirmed the dev URL was live. Then asked for a Playwright suite covering the demo narrative + extended flows, with the explicit goal of bubbling up gaps before the product team uses it.
+
+**Suite landed:** `tests/e2e/` — 8 spec files, 151 tests. Runs against https://keystone-ui-dev.anairacloud.com by default (override via `PLAYWRIGHT_BASE_URL`). Read + interaction + schema-coherence layers — see [tests/e2e/README.md](../tests/e2e/README.md).
+
+**First pass (read-only):** 64 pass / 14 fail / 8 skip. Surfaced 2 product gaps but missed the New Quote crash because tests didn't click anything.
+
+**Second pass (after user feedback — added interactions.spec.ts and schema-coherence.spec.ts):** 115 pass / 28 fail / 8 skip. Surfaced 4 demo-blocking product gaps:
+
+| Gap | Detail | Failures caught |
+|---|---|---|
+| 3 | `useRole must be used inside <RoleProvider>` — PROP-0009's `useRole()` in WidgetRenderer threw whenever a widget rendered through a portal (form modals, Radix dropdowns). Caused the New Quote crash the user reported. | 13 |
+| 0 | Sales held both halves of the maker-checker overlay (send-for-approval + submit). User flagged this directly. Schema-coherence auditor surfaced it. | 1 |
+| 1 | DataTable never rendered its `title` prop — every list page + every Inbox section was missing its header (pre-existing bug exposed by PROP-0009's multi-section dashboard). | 10 |
+| 2 | UW/Member/Ops Inbox click landed on the PAM-side `member-detail.json` (no policy-member workflow actions) via a redirect from `/policy-admin/members/by-policy-member/:id`. | 4 |
+
+**Fixes (commits `acdb06a` + `ca116c8`):**
+- [src/hooks/useRole.ts](../src/hooks/useRole.ts) — return a `{role: 'sales', setRole: noop}` fallback when context missing instead of throwing.
+- [schemas/quote-detail.json](../schemas/quote-detail.json) — dropped `send-for-approval` + `clear-approval` actions; renamed `submit` label to "Submit quote".
+- [src/components/widgets/data/DataTable/index.tsx](../src/components/widgets/data/DataTable/index.tsx) — toolbar now renders `{title}` to the left of headerActions/Export.
+- [src/app/issuance/policy-members/[policyMemberId]/page.tsx](../src/app/issuance/policy-members/) — new standalone route that loads `policy-member-detail.json` directly (resolves proposalId server-side from the policy-member payload for `{{id}}` substitution).
+- [schemas/dashboard.json](../schemas/dashboard.json) — Inbox `linkRoute`s now point to `/issuance/policy-members/:id`.
+- [tsconfig.json](../tsconfig.json) — exclude `tests/e2e/**` from main type-check so Playwright tests don't pollute the build.
+
+**5th gap surfaced — filed as proposal, not fixed in this pass:**
+- [PROP-0014](../proposals/PROP-0014-proposal-members-wiring.md) — `/api/issuance/proposals/{id}/members` 404s on the live backend (pre-existing). Both GET and POST in `schemas/tabs/proposal/members.json` + `add-policy-member-form.json` wire to a route that doesn't exist; correct path is `/api/issuance/policy-members/search?proposalId=...` for read and `/api/issuance/policies/{policyId}/members` for write. Test `interactions.spec.ts > Sales clicking "Add member"` marked `test.fixme` pending the proposal.
+
+**Verification:**
+- `tsc --noEmit`: PASS.
+- Playwright local (`PLAYWRIGHT_BASE_URL=http://localhost:3000`): **136 pass / 0 fail / 15 skip** (8 data-state skips, 6 no-row-data skips, 1 PROP-0014 fixme).
+- Browser preview: New Quote modal opens cleanly (was crashing); Inbox sections show their titles; no console errors on role switches.
+- Live deploy pushed to `feat/new-buisiness`; CI/CD auto-deploys to https://keystone-ui-dev.anairacloud.com.
+
+**Files changed across the two fix commits:** 6 src/schema files + 1 new route + 1 tsconfig + 1 new proposal + 3 test syncs. Test suite commits: 2 (`3fdf7ec` + `22e2b43`) totaling 8 spec files, helpers, README, gap report.
+
+**Status:**
+- PROP-0009 → `done` (closes the 4 just-shipped gaps; demo-walkable now).
+- PROP-0010..PROP-0013 → still draft (deferred portals).
+- PROP-0014 → draft, ready for `/build-feature` once the proposal Members tab fix is prioritized.
+
+**Next:** monitor the live URL after CI lands, then user can walk the demo end-to-end. Open items: PROP-0014 fix, and the 8 seed-data-skipped tests (need backend admin endpoint or richer seed script to create PENDING policies, SENT_TO_CLIENT quotes, MAF_PENDING / REFERRED_TO_UW / REPAIR_PENDING members).
