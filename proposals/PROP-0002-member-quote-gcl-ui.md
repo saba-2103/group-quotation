@@ -1,8 +1,8 @@
 ---
 id: PROP-0002
 title: Audit + finish Member-Quote (GCL / W4) UI — most of it already exists
-status: in-progress
-next_step: /execute-proposal PROP-0002
+status: done
+next_step: monitor — set-premium modal already worked; new filter chip live after CI deploy
 proposer: agent:claude
 created: 2026-05-13
 category: spec

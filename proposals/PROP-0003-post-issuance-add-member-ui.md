@@ -1,8 +1,8 @@
 ---
 id: PROP-0003
 title: Wire post-issuance AddMember UI on live policy
-status: in-progress
-next_step: /execute-proposal PROP-0003
+status: done
+next_step: monitor — walk Add member as ops role on dev URL after CI deploy
 proposer: agent:claude
 created: 2026-05-13
 category: spec

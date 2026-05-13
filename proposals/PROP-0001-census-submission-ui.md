@@ -1,8 +1,8 @@
 ---
 id: PROP-0001
 title: Wire Census Submission UI (proposal-stage bulk member upload)
-status: in-progress
-next_step: /execute-proposal PROP-0001
+status: done
+next_step: monitor proxy-mode goldenpath on dev URL after CI deploy
 proposer: agent:claude
 created: 2026-05-13
 category: spec
