@@ -1,0 +1,40 @@
+# DISCOVER — PROP-0006 (Pricing breakdown widget enhancements)
+
+run-id: 2026-05-13-datatable-parsejson-join
+input-source: proposals/PROP-0006-quote-detail-pricing-breakdown.md (status: approved; just rewritten with concrete scope)
+
+## Surveyed paths
+
+- `proposals/PROP-0006-quote-detail-pricing-breakdown.md` — design contract.
+- `schemas/tabs/quote/pricing.json` — already declares `dataSource.parseJson + dataSource.dataPath` and a `joinSource/joinKey/joinField`-shaped column for `planName`. Forward-declared in Lane A's earlier commit `c11efb8`.
+- `src/hooks/useDataTable.ts` — current `rawData` resolver. Falls through three paths: `props.data` array, `fetchedData` array, `Object.values(fetchedData).find(Array.isArray)`. No `parseJson` / `dataPath` support; no join.
+- `src/components/widgets/data/DataTable/types.ts:18-40` — `ColumnConfig` shape. No join fields.
+- `src/components/widgets/data/KeyValueGrid.tsx:42-63` — reference: existing `parseJson + subPath + nestedParseAt` resolver pattern (per field, not per dataSource).
+- `src/types/widget.ts` — `DataSourceConfig` interface. Needs `parseJson?: boolean` + `dataPath?: string` added.
+
+## Known (locked)
+
+1. Two enhancements:
+   - **`dataSource.parseJson` + `dataSource.dataPath`** on `data-table`. Drill via `dataPath` (dotted), optionally `JSON.parse` if `parseJson === true`, treat resulting array as the rows. Default behavior (auto-discovery) preserved when both are absent.
+   - **`column.joinSource + joinKey + joinField`** on data-table columns. Look up sibling array on response root by `joinKey`, copy `joinField` value into the row at the column's `accessorKey`. Default behavior preserved when all three are absent.
+2. Lifted pattern, not new architecture: mirrors KeyValueGrid's `parseJson + subPath`. Same shape, applied at the dataSource layer.
+3. Schema for Pricing tab already declares both primitives — the widget enhancement is what makes the declared schema actually render.
+4. No new endpoints, no new widgets.
+
+## Ambiguous
+
+- **What does the join lookup do when no match?** Either (a) leave the cell empty (planName falls back to `—` via existing renderer); (b) keep the original `accessorKey` value if it pre-exists on the row; (c) explicit `joinFallback` config. Reasonable default: leave cell empty (option a). Will go with that unless user pushes back.
+- **Should parseJson silently swallow malformed JSON or throw?** Existing KeyValueGrid `tryParseJson` silently keeps the original value on parse failure. Same pattern here; widget falls through to empty state.
+
+Both decidable from existing patterns. Single confirmation round.
+
+## Derivable (existing patterns reused)
+
+- `getNested(source, path)` helper — already in KeyValueGrid; can lift to a shared utility or duplicate for V1.
+- `tryParseJson` helper — same pattern, silent fail.
+- Pre-enrichment of rows before `useReactTable`: simplest place to apply joins (avoid threading the response root into TanStack table state).
+- `DataSourceConfig` type extension: additive optional fields.
+
+## Next step
+
+CLARIFY confirmation, then DESIGN.

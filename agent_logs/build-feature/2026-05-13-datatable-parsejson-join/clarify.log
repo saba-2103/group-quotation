@@ -1,0 +1,23 @@
+# CLARIFY — PROP-0006
+
+## Round 1 (2026-05-13)
+
+### Q1: parseJson failure mode?
+**Answer:** Throw — surface as a render error. JSON.parse failure on the configured `dataPath` returns an Error state from useDataTable; DataTable renders `ErrorState` like it does for `queryError`. Loud failure mode by design — catches backend response-shape regressions early instead of hiding behind an empty table.
+
+### Q2: Cross-array join — no match behavior?
+**Answer:** Leave cell empty / dash. The existing cell renderer shows `—` for null/undefined values; join miss = `undefined` at that accessor.
+
+## Decisions for DESIGN
+
+1. `useDataTable` adds two pre-processing steps before handing data to TanStack table:
+   - **Step A — resolve + parse**: drill `dataSource.dataPath` (dotted), optionally `JSON.parse` if `dataSource.parseJson === true`. Both optional; default behavior preserved.
+   - **Step B — column join enrichment**: for any column with `joinSource + joinKey + joinField`, look up the matching sibling row on the response root and copy `joinField` into the row at the column's `accessorKey`. No match = leave undefined.
+
+2. `useDataTable` returns a new `dataError` (or extends `queryError`) when the resolve/parse step fails. `DataTable` renders the existing `ErrorState` for it.
+
+3. Type extensions:
+   - `DataSourceConfig` gains `parseJson?: boolean` and `dataPath?: string` (in `src/types/widget.ts`).
+   - `ColumnConfig` gains `joinSource?: string`, `joinKey?: string`, `joinField?: string` (in `src/components/widgets/data/DataTable/types.ts`).
+
+No remaining ambiguity. Proceeding to DESIGN.

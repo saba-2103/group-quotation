@@ -1372,3 +1372,51 @@ Backend gaps surfaced (not papered over):
 - `GET /quotation/quotes/{id}` doesn't echo `aggregateCensus.planBreakdown` — DSL declares it on the entity. After Save + reload, per-plan headcount values render as 0; only the rolled-up `headcount` survives the round trip visibly. Backend ticket warranted.
 
 ARCH_TRANSITION entries added: bespoke `plan-form`, `EditableTable`, OverlaidForm `sourcePath` pre-fill, and `dmn-decision-table` — each with convergence triggers tied to future generic primitives (recursive form repeater, inline-editable DataTable cells, shared schemaAccessor resolver, structured DMN editor).
+
+---
+
+## 2026-05-13 — PROP-0006: data-table dataSource parseJson + cross-array column join
+
+Run-id `2026-05-13-datatable-parsejson-join`. Built via `/build-feature PROP-0006`.
+
+Lifted the KeyValueGrid `parseJson + subPath` pattern up to the data-table dataSource layer, plus added a small cross-array `joinSource/joinKey/joinField` primitive on columns. With both landed, the Pricing tab's forward-declared per-plan breakdown (shipped in setup commit `c11efb8`) now actually renders.
+
+### CLARIFY answers
+
+1. parseJson failure mode: **throw** — surface as ErrorState.
+2. Join miss: **leave cell empty / dash**.
+
+### Commit (`9e37194`) — 5 files, +182/-30
+
+- `src/types/widget.ts` — DataSourceConfig: optional `parseJson?: boolean`, `dataPath?: string`.
+- `src/components/widgets/data/DataTable/types.ts` — ColumnConfig: optional `joinSource`, `joinKey`, `joinField`.
+- `src/hooks/useDataTable.ts` — new resolver: drill dataPath → optional JSON.parse → fall back to auto-discovery → enrich rows with column joins. Returns `dataError` on parse failure.
+- `src/components/widgets/data/DataTable/index.tsx` — surface `dataError` via existing ErrorState; merge `config.dataSource` into props (WidgetRenderer doesn't flatten it); new `cellValue` helper for dotted accessorKey.
+- `schemas/tabs/quote/pricing.json` — drop stale `"data": []`; use dotted `amount.amount` / `amount.currency` (DSL Money shape); wire `planName` cross-array join.
+
+### Bugs caught during VERIFY
+
+1. **dataSource not in props.** WidgetRenderer flattens `config.props` onto the widget but leaves `config.dataSource` separate. useDataTable expects it in props. Fixed by merging at the DataTable call site.
+2. **Dotted accessorKey didn't auto-nest.** TanStack table treats `accessorKey: "amount.amount"` as a flat key. Added `accessorFn` for dotted keys in the columnDef builder + a `cellValue` helper for the explicit row lookups.
+3. **Wire shape was nested Money** (`{amount: {amount, currency}}` from `QuotePlanPremium`). Schema updated to use dotted accessors.
+4. **Dev server stuck on stale chunk error** for census.json. Unrelated; `touch` forced re-parse.
+
+### Verify
+
+- `tsc --noEmit` PASS.
+- ESLint clean on touched files.
+- Live browser smoke: `P1 / Standard Cover / ₹24,192,000 / INR` and `P2 / Enhanced Cover / ₹134,784,000 / INR`; total 158,976,000 = sum.
+
+### Architecture transition
+
+Cross-ref appended under existing "OverlaidForm sourcePath" entry. Three consumers now hold the same parseJson/dataPath pattern (KeyValueGrid field-level, OverlaidForm field-level, data-table dataSource-level + column join). All three converge onto a shared `resolveAccessor` utility when the schema-engine extraction PR #57 lands.
+
+### Status update
+
+PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now fully complete — Pricing was the last lane where the forward-declared schema needed widget enhancements to actually render.
+
+### Remaining approved-but-not-started proposals
+
+- PROP-0001 (Census Submission UI)
+- PROP-0002 (Member-Quote GCL)
+- PROP-0003 (Post-issuance AddMember)

@@ -331,3 +331,7 @@ When (if) a structured DMN editor lands — most likely as part of a multi-row r
 2. A new `dmn-decision-table-editor` widget takes over the tab; `DmnDecisionTable` continues as the read-only renderer for non-DRAFT views.
 
 **Convergence trigger:** a structured DMN editor proposal lands. Removal is mechanical: keep the read renderer or replace it with the editor; the API contract (`PUT /quotation/quotes/{id}/member-to-plan-mapping` body `{mapping: string}`) is stable.
+
+### Cross-ref: data-table dataSource.parseJson + dataPath + column join (PROP-0006, `9e37194`)
+
+The same `parseJson + dataPath` lift documented above for `OverlaidForm.sourcePath` also landed on `useDataTable`'s resolver (`src/hooks/useDataTable.ts`) and the data-table column join (`column.joinSource` / `joinKey` / `joinField` in `src/components/widgets/data/DataTable/types.ts`). Three consumers now hold the same pattern (KeyValueGrid field-level, OverlaidForm field-level, data-table dataSource-level + column join). All three converge onto the same shared `resolveAccessor` utility when the schema-engine extraction (PR #57) lands. No new transition entry — same convergence trigger.
