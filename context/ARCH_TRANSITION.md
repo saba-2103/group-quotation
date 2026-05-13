@@ -270,3 +270,44 @@ The form-container types in `src/components/widgets/forms/formContainer/types.ts
 A `repeater` field type added to `FormContainer` — accepts a nested `fields: FormFieldConfig[]` and renders an add/remove array, threading through the same react-hook-form instance via `useFieldArray`. Recursive support requires lifting `FormFieldValue` to `FormFieldValue | FormFieldValue[] | Record<string, FormFieldValue>` and the Zod schema builder to match. Once that lands, `PlanForm` collapses into a `schemas/forms/plan-edit-form.json` that declares `products` as a repeater field with nested benefits/exclusions sub-repeaters, and `coverAmountFormula` as a `discriminated-union` field type (or a sub-object with `visibleWhen`-driven children).
 
 **Convergence trigger:** the next proposal that needs a nested-array form (likely PROP-0009 — *"Generalize FormContainer to handle nested arrays and discriminated-union sub-forms"* — to be filed when scope expansion forces it). Removal is mechanical: drop `PlanForm.tsx` + `AmountFormulaField.tsx`, update `plan-edit-form.json` to be schema-only, drop the two registry entries.
+
+---
+
+## `EditableTable` — join-shaped numeric-edit escape hatch
+
+**Interim contract (V1):**
+`EditableTable` (`src/components/widgets/data/EditableTable.tsx`) is a bespoke widget that renders N rows by joining a "key" array (e.g. `plans[]`) with a "value" array (e.g. `aggregateCensus.planBreakdown[]`) on a shared key field, edits one numeric column per row, and commits the whole shape as a single PUT on Save. Used by the Census tab's aggregate breakdown.
+
+It does NOT extend `DataTable`'s read-side machinery (paginate / sort / filter / export / bulk / row actions) and it does not try to be a generic inline-editing engine. The contract is narrow: "join-shaped numeric edit with a single Save". `bodyShape` is currently `"aggregate-census"` only.
+
+**Risk:**
+- A second consumer wanting inline-editable rows of a different shape will either fork this widget or pile shape-specific switches into `bodyShape`.
+- DataTable users who want light inline editing (e.g. a status dropdown per row) have no path through this widget.
+
+**Future architecture (target):**
+When a second use case for inline-editable cells lands, one of two things happens:
+1. The pattern gets folded into `DataTable` via per-column `editable: true` + `inputType` + table-level `saveAction`. `EditableTable` retires or becomes a thin facade for the common case.
+2. A small `editable-cell` cell-renderer extension to `DataTable` suffices for the simple cases (single-cell edit-in-place, no batch Save).
+
+**Convergence trigger:** any second consumer of cell-level editing in the repo. Removal is mechanical: drop `EditableTable.tsx`, drop the registry entry, point `schemas/tabs/quote/census.json` at the new path.
+
+---
+
+## OverlaidForm per-field `sourcePath` pre-fill (form-engine extension)
+
+**Interim contract (V1):**
+`OverlaidForm.injectRowData` accepts three optional per-field properties:
+- `sourcePath: string` — dotted path on rowData to read the pre-fill from, instead of the default `rowData[field.name]`
+- `sourceParseJson: boolean` — `JSON.parse` the value at sourcePath before drilling further
+- `sourceSubPath: string` — second dotted-path drill after parse
+
+Default behaviour (no `sourcePath`) unchanged. Mirrors the KeyValueGrid `parseJson + subPath` pattern, applied to the form pre-fill path. Used by the Census file-format edit form to read its four scalar fields from the entity's stringified `censusFileFormatJson` blob.
+
+**Risk:**
+- The convention is duplicated across two read paths (KeyValueGrid and OverlaidForm). A future schema-engine refactor may want a single resolver.
+- The submit side is unchanged: the form still emits `{ [field.name]: value }`, so backends that accept the unwrapped fields on PUT work cleanly. Backends that want the original wrapped blob shape (e.g. PUT body must equal the parsed object, not the unwrapped fields) need explicit body-shaping on the action.
+
+**Future architecture (target):**
+A shared `resolveAccessor({source, accessorKey, parseJson, subPath, nestedParseAt})` utility consumed by both KeyValueGrid and OverlaidForm (and any other read-side consumer that needs it). Either lives in `src/lib/schemaAccessors.ts` or is part of the Layer 1 runtime extraction tracked in `docs/archV1/`.
+
+**Convergence trigger:** the schema-engine extraction PR (PR #57 / Layer 1 runtime) or any consolidation pass on schema-driven accessors.

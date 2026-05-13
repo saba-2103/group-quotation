@@ -1240,3 +1240,55 @@ PROP-0004 status: `done`.
 ### Next steps
 
 PROP-0005 (Census), PROP-0007 (Mapping), PROP-0008 (Edit-bar split) remain. Each is a separate `/build-feature` run. PROP-0006 (Pricing) already shipped via the setup commit; can flip its proposal status to `done` when the registry/widget gaps it noted are filed as their own follow-ups.
+
+---
+
+## 2026-05-13 — PROP-0005: Census tab editable aggregate + file-format editor
+
+Run-id `2026-05-13-census-editable-table`. Built via `/build-feature PROP-0005`.
+
+### CLARIFY answers
+
+1. **Land `json-textarea` + `json` validation rule here** instead of in PROP-0007. PROP-0007's lane shrinks accordingly.
+2. **Bespoke EditableTable** for the aggregate-census join shape — narrow contract (join-shaped numeric edit, single PUT body), not a DataTable refactor.
+
+### Commit (`4aece0a`) — 6 files, +572/-31
+
+- `src/components/widgets/data/EditableTable.tsx` — stub replaced. Joins a key array (`plans[]`) with a value array (`aggregateCensus.planBreakdown[]`) on a `keyField`, renders inline numeric inputs per row in DRAFT+maker, auto-sums total, commits a single PUT via a `bodyShape: "aggregate-census"` builder.
+- `schemas/forms/census-file-format-form.json` — new. FormContainer form with `fileType` (select), `sheetName` (text, visible only for XLSX), `schemaJson` (json-textarea), `dialectJson` (json-textarea). Each field carries `sourcePath: "censusFileFormatJson"` + `sourceParseJson: true` + `sourceSubPath: <field>` to pre-fill from the stringified entity blob.
+- `schemas/tabs/quote/census.json` — rewritten. EditableTable + SectionGroup-wrapped key-value-grid + action-bar.
+- `src/components/widgets/forms/OverlaidForm.tsx` — extended `injectRowData` with per-field `sourcePath` / `sourceParseJson` / `sourceSubPath`. Default behavior unchanged. Mirrors KeyValueGrid pattern.
+- `src/components/widgets/forms/formContainer/FieldRenderer.tsx` — `json-textarea` field type (monospace textarea).
+- `src/components/widgets/forms/formContainer/utils.ts` — `json` validation rule via `.refine(JSON.parse)`.
+
+### Verify
+
+- `tsc --noEmit` PASS.
+- ESLint clean on touched files. 2 pre-existing unused-var warnings on `api-dropdown` handlers left untouched.
+- Live browser smoke against `https://group-pas-dev.anairacloud.com`: edited two rows to 42 + 156 via React props onChange (preview_fill DOM event doesn't propagate to React state — automation quirk). Save PUT round-tripped; re-GET confirmed `headcount: 198`. File-format modal pre-filled all four fields including the doubly-stringified inner schema/dialect blobs.
+
+### Backend gap (surfaced, not papered over)
+
+`GET /quotation/quotes/{id}` doesn't echo `aggregateCensus.planBreakdown`, even though DSL declares it on the Quote entity at `docs/spec/quotation/QuotationDomain.domain:25`. UI shows per-plan values as 0 on reload; only the rolled-up `headcount` survives the round trip visibly. Backend ticket warranted; no UI workaround per CORE_MEMORY honesty pattern.
+
+### Architecture transition entries
+
+- **EditableTable** — join-shaped numeric-edit. Convergence: when a second consumer of cell-level editing lands, fold into DataTable's column API or retire.
+- **OverlaidForm `sourcePath`** — interim form-engine extension. Convergence: shared `resolveAccessor` utility, likely as part of the Layer 1 runtime extraction (PR #57).
+
+### Files changed (this run)
+
+- `src/components/widgets/data/EditableTable.tsx`
+- `src/components/widgets/forms/OverlaidForm.tsx`
+- `src/components/widgets/forms/formContainer/FieldRenderer.tsx`
+- `src/components/widgets/forms/formContainer/utils.ts`
+- `schemas/tabs/quote/census.json`
+- `schemas/forms/census-file-format-form.json`
+- `proposals/PROP-0005-quote-detail-census-editable.md` (status → done)
+- `context/ARCH_TRANSITION.md` (two new entries)
+- `agent_logs/build-feature/2026-05-13-census-editable-table/` (discover/clarify/verify)
+- `context/build-feature/2026-05-13-census-editable-table/design.md`
+
+### Remaining workstreams
+
+PROP-0007 (Mapping DMN view) and PROP-0008 (Edit-bar split) remain. PROP-0007's lane is now smaller — only the mapping-replace flow, since `json-textarea` and `json` validation already shipped here.

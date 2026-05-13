@@ -1,8 +1,9 @@
 ---
 id: PROP-0005
 title: Make Census tab an editable aggregate breakdown table + file-format editor
-status: approved
-next_step: /execute-proposal PROP-0005
+status: done
+next_step: null
+pr: null
 proposer: agent:claude
 created: 2026-05-13
 category: spec
@@ -78,3 +79,37 @@ Widget plumbing: `editable-table` is already pre-registered in [src/components/r
 <!-- Filled by /execute-proposal. -->
 
 ## Implementation notes
+
+Built via `/build-feature PROP-0005` on 2026-05-13. Run-id `2026-05-13-census-editable-table`.
+
+Branch: `feat/new-buisiness` (sequential commits per CLARIFY).
+
+Commits:
+- `4aece0a` — Census tab editable aggregate + file-format editor
+
+Files added:
+- `src/components/widgets/data/EditableTable.tsx` (stub → real impl)
+- `schemas/forms/census-file-format-form.json`
+
+Files modified:
+- `schemas/tabs/quote/census.json` (rewritten)
+- `src/components/widgets/forms/OverlaidForm.tsx` (per-field `sourcePath` pre-fill plumbing)
+- `src/components/widgets/forms/formContainer/FieldRenderer.tsx` (added `json-textarea` field type)
+- `src/components/widgets/forms/formContainer/utils.ts` (added `json` validation rule)
+
+CLARIFY decisions (user):
+1. Land `json-textarea` field type + `json` validation rule here (PROP-0007's lane simplifies accordingly).
+2. Bespoke EditableTable for the aggregate-census join shape; do not refactor DataTable.
+
+Deviations from design:
+- **`OverlaidForm.injectRowData` extended.** Added optional per-field `sourcePath` / `sourceParseJson` / `sourceSubPath` so a form field can read its initial value from a stringified-JSON nested path on the entity (e.g. `censusFileFormatJson.fileType` via parse → subPath). Mirrors the KeyValueGrid `parseJson + subPath` pattern. Backwards-compatible — existing forms keep their `rowData[field.name]` behavior. This was technically beyond the design's "no plumbing change needed" claim but turned out to be the right small extension to make pre-fill work for entity fields that arrive as stringified blobs. Broadly useful to other forms editing stringified entity blobs (e.g. eventual mapping replace in PROP-0007).
+- **Wrapped file-format section in `section-group`** so the "Census file format" header renders. KeyValueGrid silently drops its `title` prop today; section-group gives the section a visible header. Filed as a small UX gap; could be fixed by teaching KeyValueGrid to render `title`/`description`, but that's a wider change.
+
+Backend-side gap surfaced (filed as a note, NOT mock-fixed):
+- `GET /quotation/quotes/{id}` doesn't echo `aggregateCensus.planBreakdown`, even though DSL declares it on the Quote entity (`docs/spec/quotation/QuotationDomain.domain:25`). After a successful PUT, the breakdown is persisted server-side but invisible to the next GET. UI shows per-plan values as 0 on reload (only the rolled-up `headcount` survives the round trip visibly). Backend ticket warranted; no UI workaround per CORE_MEMORY honesty pattern.
+
+Architecture transition: `EditableTable` is deliberately narrow ("join-shaped numeric edit"). See `context/ARCH_TRANSITION.md` "EditableTable — join-shaped numeric edit" entry. Convergence trigger is a second consumer of cell-level editing — either generalize into `DataTable`'s column API or retire EditableTable into a thin facade.
+
+Verified live against `https://group-pas-dev.anairacloud.com`: edited two rows to 42 + 156, Save PUT round-tripped successfully, `headcount: 198` confirmed on re-GET. File-format modal pre-filled all four fields including the doubly-stringified inner `schemaJson` / `dialectJson` blobs.
+
+Logs: `agent_logs/build-feature/2026-05-13-census-editable-table/{discover,clarify,verify}.log` + design at `context/build-feature/2026-05-13-census-editable-table/design.md`.

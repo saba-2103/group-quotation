@@ -1,0 +1,62 @@
+# DISCOVER — PROP-0005 (Census tab editable aggregate table + file-format editor)
+
+run-id: 2026-05-13-census-editable-table
+input-source: proposals/PROP-0005-quote-detail-census-editable.md (status: approved)
+
+## Surveyed paths
+
+- proposals/PROP-0005-quote-detail-census-editable.md — design contract.
+- docs/spec/common/CommonData.data — DSL canonical shapes:
+  - `AggregateCensus { headcount: int, planBreakdown: list<PlanHeadcount{planNo, headcount}> }`
+  - `CensusFileFormat { fileType: CensusFileType, sheetName?, schemaJson, dialectJson? }`
+  - `enum CensusFileType { CSV, XLSX }`
+- docs/spec/quotation/QuotationDomain.domain — `updateAggregateCensus(census)` and `updateCensusFileFormat(format)`; both `precondition isDraft`. No `hasCensusFileFormat` precondition on updateAggregateCensus, so headcount edits are allowed before file format is set (good — UI doesn't need to gate that).
+- schemas/tabs/quote/census.json — current key-value-grid surface (will be rewritten).
+- src/components/widgets/data/EditableTable.tsx — stub already pre-registered as `editable-table` widget in `WidgetRegistry.tsx` (replaced by this run).
+- src/components/widgets/data/DataTable/index.tsx — full-feature table (sort, filter, paginate, export, bulk). Too heavyweight for the small fixed N×{plan,headcount} case; will reuse the shadcn Table primitive directly inside the new widget instead.
+- src/components/ui/table.tsx — primitive (`Table`, `TableHeader`, `TableRow`, `TableCell`, etc.).
+- src/components/widgets/forms/formContainer/ — scalar-only FormContainer. CensusFileFormat fields are all scalar (fileType select, sheetName text, schemaJson + dialectJson as textareas) so the file-format edit form fits cleanly.
+- schemas/forms/edit-quote-policy-detail-form.json — reference for form schema layout.
+- src/hooks/useActionHandler.ts — dispatch path for the PUT mutation + refresh-key invalidation.
+- context/CORE_MEMORY.md — branch hygiene, commit-hygiene split, "build to expected real-backend contract", DSL-canon precedence.
+
+## Live API spot-check (proxy mode against group-pas-dev)
+
+`GET /api/quotation/quotes/170ea9b1-2eeb-4a88-934b-07afa4112ea4`:
+- `status: DRAFT`, `headcount: 10`, `planCount: 2`.
+- `aggregateCensus`: **absent / null** on the response — quote has no planBreakdown set yet. UI must show 0 per plan as the default and let user edit.
+- `censusFileFormatJson` is set: stringified `{ fileType: CSV, sheetName: null, schemaJson: "{\"columns\":[…]}", dialectJson: "{\"delimiter\":\",\",…}" }`. Note the inner schemaJson is itself a stringified JSON (doubly nested).
+
+## Known (locked)
+
+1. Two sections: editable aggregate table + read-only file format display + "Edit file format" modal.
+2. DSL contract:
+   - PUT `/quotation/quotes/{id}/aggregate-census` body `{ headcount: int, planBreakdown: [{planNo, headcount: int}] }`
+   - PUT `/quotation/quotes/{id}/census-file-format` body `{ fileType, sheetName?, schemaJson, dialectJson? }`
+   - Both precondition `isDraft`.
+3. Headcount: integer ≥ 0. Total derived as auto-sum.
+4. Maker-only edit; Checker sees read-only (mirrors PROP-0004 pattern).
+5. Branch strategy already locked from PROP-0004 CLARIFY: stay on `feat/new-buisiness`, sequential commits split src vs context.
+6. `editable-table` widget already pre-registered to a stub; this run replaces the stub.
+
+## Ambiguous (CLARIFY decisions needed)
+
+1. **`schemaJson` / `dialectJson` in the edit form**: PROP-0007 is the lane that introduces `json-textarea` field type with on-submit JSON validation. PROP-0005 lands first per the user's plan ordering. Options:
+   - (A) Plain `textarea` field for V1; PROP-0007 retroactively upgrades to `json-textarea` (small follow-up commit when PROP-0007 lands).
+   - (B) Land `json-textarea` here as a small additive change to `FieldRenderer.tsx` so both PROP-0005 and PROP-0007 use it.
+
+2. **Schema-driven vs bespoke editable widget**: similar choice to PROP-0004. The aggregate-census shape is narrow (N rows × {plan, headcount}); the existing `data-table` widget is too heavyweight. Options:
+   - (A) **Bespoke `editable-table` widget** parameterized to the aggregate-census shape (keyArrayPath, keyField, labelField, valueArrayPath, valueField, saveAction with body-builder). Reasonably generic — the same widget could power future "edit one numeric field per row of a join" use cases.
+   - (B) Reuse `data-table` and add inline-editing cell support. Bigger refactor of an existing widely-used widget; higher blast radius.
+
+## Derivable (will use existing pattern)
+
+- Shadcn Table primitive (`src/components/ui/table.tsx`) for layout.
+- `useActionHandler` for the PUT dispatch + `refreshKey` invalidation (same pattern PROP-0004 used).
+- Modal opening via `open-modal` action → `OverlaidForm` → file-format form schema; pre-fill via `injectRowData` from the action's rowData (existing scalar pre-fill works since CensusFileFormat is scalar-shaped).
+- DSL precondition `isDraft` already mirrored in existing `stateActions` map pattern on action-bar.
+- Commit split (src vs context) per CORE_MEMORY rule.
+
+## Next step
+
+CLARIFY round 1 — two questions above.
