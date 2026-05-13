@@ -1420,3 +1420,45 @@ PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now 
 - PROP-0001 (Census Submission UI)
 - PROP-0002 (Member-Quote GCL)
 - PROP-0003 (Post-issuance AddMember)
+
+---
+
+### 2026-05-13 — Role-workbench planning + 5 new proposals filed (PROP-0009..PROP-0013)
+
+**Why:** [docs/planning/DEMO_NARRATIVE_GTL_GCL.md](../docs/planning/DEMO_NARRATIVE_GTL_GCL.md) walks 6 personas (Sales, Partner Agent, MPH, Member, UW, Ops). Current portal shows the same menu/actions to every role. User asked for a feasibility pass: what's there, what's the gap, what to ask the API team.
+
+**Plan written:** `/Users/seriousblack/.claude/plans/read-docs-planning-demo-narrative-gtl-gc-cosmic-dove.md` (approved by user).
+
+**Findings (against keystone-ui + live OpenAPI at https://group-pas-dev.anairacloud.com/v3/api-docs):**
+- Role type, RoleSwitcher, action-level RBAC (`roleActions` in ActionBar) — all present.
+- Navigation NOT role-aware: `/api/config/app` returns same menu for every role; `NavigationItem` has no `roles` field.
+- No Inbox/workbench concept in `src/`; dashboard is metric-cards-only.
+- No schema-level `visibleRoles` field — `WidgetRenderer` renders every child unconditionally.
+- Backend state-based filtering covers every demo inbox: `quotes/search?status=`, `proposals/search?state=`, `policy-members/search?state=REFERRED_TO_UW`, `members/search?state=REPAIR_PENDING`. UW transitions (`/uw/approve`, `/uw/reject`) and MAF confirm (`POST .../confirm-maf`) all exist.
+- Backend ownership filters NOT needed for V1 — auth is open, role is UI-local, inbox filters by state.
+- `partner_agent` and `mph` are separate backend identities (confirmed by user).
+
+**Five proposals filed:**
+- [PROP-0009](../proposals/PROP-0009-role-workbench-inbox.md) — Role-workbench + Dashboard Inbox in `group-insurance` portal (Sales + Partner Agent). Introduces the three shared primitives (6-role enum sweep, `visibleRoles` renderer field, role-aware `/api/config/app`). **Build first.**
+- [PROP-0010](../proposals/PROP-0010-mph-portal.md) — MPH portal (deferred). Blocking question: MPH-side accept endpoint.
+- [PROP-0011](../proposals/PROP-0011-member-portal.md) — Member portal — MAF landing + OTP (deferred). Backend ready.
+- [PROP-0012](../proposals/PROP-0012-uw-portal.md) — UW workbench portal (deferred). Backend ready.
+- [PROP-0013](../proposals/PROP-0013-ops-portal.md) — Ops repair portal (deferred). Blocking question: post-repair persist endpoint.
+
+**Open questions to API team — all 3 resolved 2026-05-13 by direct investigation of `group-pas` backend source at `/Users/seriousblack/dev_anaira/group-pas`:**
+
+1. **GTL threshold counter** — `activationThreshold` + `pendingReason` ARE returned on `GET /api/policy-admin/policies/{policyId}` via `PolicyDto` ([PolicyDto.java:31-32](file:///Users/seriousblack/dev_anaira/group-pas/group-pas/policyAdmin/PolicyAdminQuery/src-gen/main/java/com/anaira/policyadmin/query/PolicyDto.java)). Current member count is **not** in the response — UI computes it from `GET /api/issuance/policies/{policyId}/members`. Workflow's `memberCount` is private to its `dataAttributes`. PROP-0009 updated.
+
+2. **Ops repair persist + re-classify** — two-step pattern:
+   - `PUT /api/issuance/policy-members/{policyMemberId}` (UpdateMemberRequest) — persists corrections ([PolicyMemberAPI.java:55-68](file:///Users/seriousblack/dev_anaira/group-pas/group-pas/issuance/IssuanceApi/src/main/java/com/anaira/issuance/api/PolicyMemberAPI.java))
+   - `POST /api/issuance/policy-members/{policyMemberId}/send-for-issuance` — re-enters classification (same file:109-112)
+   - Backend gap noted: domain `completeMemberRepair(MemberRepairCorrections)` exists but has no API endpoint. Surface as backend feedback if the two-step UX bites. PROP-0013 updated.
+
+3. **MPH accept** — acceptance is at the **Quote** level, not Proposal. `POST /api/quotation/quotes/{quoteId}/accept` transitions `SENT_TO_CLIENT` → `ACCEPTED` ([QuoteAPI.java:117-120](file:///Users/seriousblack/dev_anaira/group-pas/group-pas/quotation/QuotationApi/src/main/java/com/anaira/quotation/api/QuoteAPI.java)). Proposal has no `SENT_TO_CLIENT` state or accept endpoint — Proposal is created after Quote acceptance. Demo narrative wording needs a small adjustment when PROP-0010 is built: MPH accepts the *quote*, not the proposal. PROP-0010 updated.
+
+**Files changed:** 5 new proposals + 3 proposal updates (PROP-0009, PROP-0010, PROP-0013) reflecting answered questions. No `src/` touched.
+
+**Next steps:**
+- All three API questions are answered; no outbound message to backend team needed.
+- `/build-feature PROP-0009` to kick off the in-scope build (current portal RBAC + Inbox).
+- After PROP-0009 lands, sequence PROP-0010 → PROP-0011 → PROP-0012 → PROP-0013. All four deferred portals are now unblocked from a backend-contract perspective.

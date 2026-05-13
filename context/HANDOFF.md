@@ -85,6 +85,20 @@ Audit (2026-05-13) compared the keystone-ui surface against the OpenAPI spec at 
 | [PROP-0002](../proposals/PROP-0002-member-quote-gcl-ui.md) — Member-Quote (GCL/W4) UI | approved | `member-quote-api` (6) | New API-driven-scope rule (CORE_MEMORY.md 2026-05-13) lifted the prior GCL out-of-V1 lock. Replaces `member-quotes-placeholder` tab. |
 | [PROP-0003](../proposals/PROP-0003-post-issuance-add-member-ui.md) — Post-issuance AddMember UI | approved | `addMember` on `/policies/{id}/members` (1) | Endpoint is `Public` per blueprint §4; UI adds "Add member" action on Policy detail with PENDING→ACTIVE polling. |
 
+### Group PAS — Role-workbench + portal split backlog (2026-05-13)
+
+Plan at `/Users/seriousblack/.claude/plans/read-docs-planning-demo-narrative-gtl-gc-cosmic-dove.md` (approved). Driven by [docs/planning/DEMO_NARRATIVE_GTL_GCL.md](../docs/planning/DEMO_NARRATIVE_GTL_GCL.md) — 6 demo personas, current portal serves only Sales + Partner Agent; MPH / Member / UW / Ops get their own portals.
+
+| Proposal | Status | Build order | Notes |
+|----------|--------|-------------|-------|
+| [PROP-0009](../proposals/PROP-0009-role-workbench-inbox.md) — Role-workbench + Dashboard Inbox in `group-insurance` portal | draft | 1st (build now) | Sweeps role enum to 6 narrative personas, adds `visibleRoles` to `WidgetRenderer`, makes `/api/config/app` role-aware. Introduces the primitives the other 4 portals reuse. |
+| [PROP-0010](../proposals/PROP-0010-mph-portal.md) — MPH portal | draft, deferred | 2nd | New `appId: mph`. **Backend confirmed:** accept is at Quote level (`POST /quotes/{id}/accept`), not Proposal. Demo narrative wording adjustment noted in the proposal. |
+| [PROP-0011](../proposals/PROP-0011-member-portal.md) — Member portal (MAF landing + OTP) | draft, deferred | 3rd | New `appId: member`. Backend ready (`confirm-maf` endpoint exists). |
+| [PROP-0012](../proposals/PROP-0012-uw-portal.md) — UW workbench portal | draft, deferred | 4th | Backend ready (`/uw/approve`, `/uw/reject` exist). Needs product input on UW member-detail layout. |
+| [PROP-0013](../proposals/PROP-0013-ops-portal.md) — Ops repair portal | draft, deferred | 5th | **Backend confirmed:** two-step `PUT /policy-members/{id}` + `POST .../send-for-issuance`. Domain `completeMemberRepair` exists but is not exposed via API — flag if two-step UX bites. |
+
+All three open API-team questions were resolved by direct investigation of `group-pas` backend source (2026-05-13). See SESSION_LOG 2026-05-13 entry for the per-question file:line evidence. No outbound questions remain; all four deferred portals are unblocked from a backend-contract perspective.
+
 ### Open items at this thread close (2026-05-07)
 
 Read [context/SESSION_LOG.md](SESSION_LOG.md) "End-of-thread handoff snapshot" entry first — full state lives there. Quick index of what's outstanding:
