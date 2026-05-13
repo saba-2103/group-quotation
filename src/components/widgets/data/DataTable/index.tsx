@@ -105,7 +105,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     exportData(rows, format);
   };
 
-  const { emptyState, isLoading: propLoading, error: propError, actionsLabel, headerActions } = config.props || {};
+  const { emptyState, isLoading: propLoading, error: propError, actionsLabel, headerActions, title } = config.props || {};
 
   const isLoading = propLoading || isQueryLoading;
   // dataError covers resolver-stage failures (e.g. JSON.parse failure on
@@ -184,8 +184,14 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
             isScrollable ? "overflow-auto overflow-x-auto" : "overflow-hidden"
           )}
         >
-          {/* Toolbar */}
-          <div className="flex items-center justify-end px-3 py-2 border-b gap-2">
+          {/* Toolbar — title on the left, actions + export on the right */}
+          <div className="flex items-center justify-between px-3 py-2 border-b gap-2">
+            {title ? (
+              <h3 className="text-sm font-semibold text-foreground truncate">{title}</h3>
+            ) : (
+              <div aria-hidden="true" />
+            )}
+            <div className="flex items-center gap-2">
             {headerActions?.map((action: ActionConfig) => (
               <ActionRenderer key={action.id} action={action} />
             ))}
@@ -238,6 +244,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
 
           {/* Mobile card view — visible only below md breakpoint */}

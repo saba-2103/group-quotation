@@ -65,7 +65,7 @@
         "entityType": "quote",
         "entityId": "{{id}}",
         "stateActions": {
-          "DRAFT": ["send-for-approval", "submit", "clear-approval", "withdraw"],
+          "DRAFT": ["submit", "withdraw"],
           "SUBMITTED": ["send-to-client", "withdraw"],
           "SENT_TO_CLIENT": ["accept", "reject", "expire", "withdraw"],
           "ACCEPTED": ["finalize", "withdraw"],
@@ -75,7 +75,7 @@
           "EXPIRED": []
         },
         "roleActions": {
-          "sales": ["send-for-approval", "submit", "clear-approval", "send-to-client", "expire", "finalize", "withdraw"],
+          "sales": ["submit", "send-to-client", "expire", "finalize", "withdraw"],
           "partner_agent": [],
           "mph": ["accept", "reject"],
           "member": [],
@@ -84,25 +84,9 @@
         },
         "actions": [
           {
-            "id": "send-for-approval",
-            "label": "Send for approval",
-            "icon": "Send",
-            "type": "trigger-event",
-            "target": "send-for-approval",
-            "variant": "default"
-          },
-          {
-            "id": "clear-approval",
-            "label": "Clear approval",
-            "icon": "Undo2",
-            "type": "trigger-event",
-            "target": "clear-approval",
-            "variant": "outline"
-          },
-          {
             "id": "submit",
-            "label": "Approve & submit",
-            "icon": "Check",
+            "label": "Submit quote",
+            "icon": "Send",
             "type": "api-mutation",
             "refreshKey": "/api/quotation/quotes/{{id}}",
             "api": { "endpoint": "/api/quotation/quotes/{{id}}/submit", "method": "POST" },

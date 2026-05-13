@@ -209,7 +209,7 @@
                     "props": {
                         "title": "Confirm your enrolment",
                         "columns": [
-                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/policy-admin/members/by-policy-member/:id" },
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/issuance/policy-members/:id" },
                             { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
                             { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
                             { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
@@ -234,7 +234,7 @@
                     "props": {
                         "title": "Members referred for review",
                         "columns": [
-                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/policy-admin/members/by-policy-member/:id" },
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/issuance/policy-members/:id" },
                             { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
                             { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
                             { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
@@ -259,7 +259,7 @@
                     "props": {
                         "title": "Members flagged for repair",
                         "columns": [
-                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/policy-admin/members/by-policy-member/:id" },
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/issuance/policy-members/:id" },
                             { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
                             { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
                             { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
