@@ -1,0 +1,43 @@
+# DISCOVER — 2026-05-13-role-workbench-inbox
+
+Input: PROP-0009 (status: approved)
+Plan: ~/.claude/plans/read-docs-planning-demo-narrative-gtl-gc-cosmic-dove.md
+
+## Surveyed
+- HANDOFF.md, CORE_MEMORY.md — fresh in session context
+- proposals/PROP-0009-role-workbench-inbox.md — read in full
+- src/types/group-pas/roles.ts — Role union
+- src/contexts/RoleContext.tsx — provider + storage + DEFAULT_ROLE + readStoredRole validator
+- src/hooks/useRole.ts — wrapper, no role-string literals
+- src/components/widgets/role/RoleSwitcher.tsx — ROLE_META(4), ROLE_ORDER(4)
+- src/components/widgets/actions/ActionBar.tsx — roleActions gate + lines 144/151 maker/checker special cases for maker-checker overlay
+- src/components/widgets/data/EditableTable.tsx:76,159 — editableRoles typed Array<"maker"|...>; default ["maker"]
+- src/components/registry/WidgetRenderer.tsx (49 LOC) — no current visibility hook; called from SectionGroup.tsx in children .map()
+- src/app/api/config/app/route.ts — no `role` param today; static branch on appId
+- src/mocks/original/group-insurance/config/app-config-mock.ts — 5 menu items, no allowedRoles on items
+- src/components/providers/AppContextProvider.tsx — useQuery keyed on [appId] only; staleTime: Infinity
+- src/shared/types.ts:1 NavigationItem — no roles field
+- src/components/navigation/{DualPanelNav,IconRail,SubmenuPanel}.tsx — items.map() unfiltered
+- schemas/dashboard.json (179 LOC) — stack-layout with header + 3 section-groups; no Inbox section
+- src/components/widgets/data/DataTable/index.tsx — config-based props; row link handler already substitutes route params; needs verify for `compact` preset + `rowHref` config-level field
+- src/components/widgets/state/state-map.ts — canonical state names confirmed
+- src/tests/unit/actions/ActionBar.unit.test.tsx — uses 'maker'/'checker'/'viewer' literals in 6+ places
+
+## Known (locked decisions)
+- 6-role enum: sales | partner_agent | mph | member | uw | ops (drop viewer)
+- Server-side menu filter via `/api/config/app?role=`
+- WidgetRenderer gets `visibleRoles?: Role[]` field
+- Dashboard Inbox: section-group with N data-tables, visibleRoles per child
+- Switcher in current portal lists only sales + partner_agent
+
+## Ambiguous (decide in design)
+1. Maker-checker overlay scaffolding (audit pass 2026-05-11 restored it). Decision: collapse `maker` + `checker` schema roleActions keys into `sales` for non-acceptance actions, route `accept`/`reject` to `mph`. Remove the `role === 'maker'/'checker'` special-case branches in ActionBar.tsx:144,151 — state-based gating (`stateActions`) preserves the lock UX without the role asymmetry. Justified by the narrative having no in-portal approver persona.
+2. EditableTable default role: change `editableRoles = ["maker"]` → `["sales"]`.
+3. Partner Agent inbox content. Closest narrative fit: policies in `PENDING` (waiting for members) or `ACTIVE` (still accepting members). Use both: `state=PENDING,ACTIVE`.
+4. Sales "ready to finalize" inbox: proposals in `SUBMITTED` (per state-map.ts).
+5. Sales "my quotes" inbox: quotes in `DRAFT,SUBMITTED`.
+
+## Derivable
+- WidgetRenderer change: 1 useRole() call + 1 early return — matches existing `config.layout?.hidden` pattern.
+- AppContextProvider re-fetch on role change: add role to queryKey.
+- 11 schema sweep: mechanical regex over the file set (5 *-detail + 5 tabs/quote + 1 member-quote).

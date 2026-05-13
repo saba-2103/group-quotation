@@ -1,8 +1,8 @@
 ---
 id: PROP-0009
 title: Role-workbench + Dashboard Inbox in the group-insurance portal
-status: approved
-next_step: /build-feature PROP-0009
+status: done
+next_step: monitor demo, then file PROP-0010 build
 proposer: agent:claude
 created: 2026-05-13
 category: architecture

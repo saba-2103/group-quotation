@@ -91,7 +91,7 @@ Plan at `/Users/seriousblack/.claude/plans/read-docs-planning-demo-narrative-gtl
 
 | Proposal | Status | Build order | Notes |
 |----------|--------|-------------|-------|
-| [PROP-0009](../proposals/PROP-0009-role-workbench-inbox.md) — Role-workbench + Dashboard Inbox in `group-insurance` portal | draft | 1st (build now) | Sweeps role enum to 6 narrative personas, adds `visibleRoles` to `WidgetRenderer`, makes `/api/config/app` role-aware. Introduces the primitives the other 4 portals reuse. |
+| [PROP-0009](../proposals/PROP-0009-role-workbench-inbox.md) — Role-workbench + Dashboard Inbox in `group-insurance` portal | **done (2026-05-13)** | 1st — landed | 6-role enum, `visibleRoles` on `WidgetRenderer`, role-aware `/api/config/app`, schema sweep, Dashboard Inbox (7 sections). Build log: `agent_logs/build-feature/2026-05-13-role-workbench-inbox/`. Commit `16d17d2`. |
 | [PROP-0010](../proposals/PROP-0010-mph-portal.md) — MPH portal | draft, deferred | 2nd | New `appId: mph`. **Backend confirmed:** accept is at Quote level (`POST /quotes/{id}/accept`), not Proposal. Demo narrative wording adjustment noted in the proposal. |
 | [PROP-0011](../proposals/PROP-0011-member-portal.md) — Member portal (MAF landing + OTP) | draft, deferred | 3rd | New `appId: member`. Backend ready (`confirm-maf` endpoint exists). |
 | [PROP-0012](../proposals/PROP-0012-uw-portal.md) — UW workbench portal | draft, deferred | 4th | Backend ready (`/uw/approve`, `/uw/reject` exist). Needs product input on UW member-detail layout. |

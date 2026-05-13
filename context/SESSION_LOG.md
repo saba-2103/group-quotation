@@ -1460,5 +1460,39 @@ PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now 
 
 **Next steps:**
 - All three API questions are answered; no outbound message to backend team needed.
-- `/build-feature PROP-0009` to kick off the in-scope build (current portal RBAC + Inbox).
+- ~~`/build-feature PROP-0009`~~ — **done 2026-05-13**, see entry below.
 - After PROP-0009 lands, sequence PROP-0010 → PROP-0011 → PROP-0012 → PROP-0013. All four deferred portals are now unblocked from a backend-contract perspective.
+
+---
+
+### 2026-05-13 (continued) — PROP-0009 BUILD landed
+
+`/build-feature PROP-0009` ran end-to-end with explicit user gates at DESIGN. Scope expanded during CLARIFY to ship the 6-role enum + 7-section Inbox as a stopgap for all personas (rather than just sales + partner_agent) — user direction to make the demo walk before MPH/Member/UW/Ops portals exist.
+
+**Two commits on `feat/new-buisiness`:**
+- `53c7a13` — docs(proposals): 5 new proposals + HANDOFF/SESSION_LOG updates.
+- `16d17d2` — feat(role-workbench): 25 files, +534/-105.
+
+**What landed:**
+- 6-role enum `sales | partner_agent | mph | member | uw | ops` + ROLES const ([src/types/group-pas/roles.ts](../src/types/group-pas/roles.ts)).
+- `visibleRoles?: Role[]` on `WidgetConfig`; honored by [WidgetRenderer](../src/components/registry/WidgetRenderer.tsx).
+- `allowedRoles?: Role[]` on `NavigationItem`; [/api/config/app](../src/app/api/config/app/route.ts) filters menu server-side.
+- [AppContextProvider](../src/components/providers/AppContextProvider.tsx) re-fetches on role change (role in queryKey).
+- 11-schema sweep: `maker→sales`, `checker→sales` (most) / `mph` (accept/reject). `viewer` keys dropped.
+- New `confirm-maf` action on [policy-member-detail](../schemas/policy-member-detail.json) for member role.
+- Dashboard Inbox: 7 role-scoped data-table sections in [dashboard.json](../schemas/dashboard.json).
+- ActionBar maker-checker overlay theatre preserved by string-rename in [ActionBar.tsx](../src/components/widgets/actions/ActionBar.tsx).
+- Tests: ActionBar suite rewritten (8 pass); new WidgetRenderer.visibleRoles suite (4 pass).
+
+**Verification:**
+- `tsc --noEmit`: PASS.
+- Targeted tests (actions + registry): 12/12 PASS.
+- Full jest: 56 failures unchanged from pre-change baseline — all pre-existing in DataTable + FormContainer suites, not caused by this work.
+- `npm run lint` script broken at repo level (Next.js scriptarg mismatch, pre-existing). Ran `npx eslint` on touched files — only pre-existing `any`-type warnings in widget.ts (already present), one new unused-import warning fixed.
+- **Browser verify (preview server id `48abc5c5-...`):** zero console errors across role switches. Confirmed: default role=sales (2 inbox sections + Business Processes), mph view (1 inbox section, narrow menu), ops view (3 REPAIR_PENDING members, Home+Policy Admin menu).
+
+**Files changed:** 25 (src + schemas + 1 new test file). Build log: [agent_logs/build-feature/2026-05-13-role-workbench-inbox/](../agent_logs/build-feature/2026-05-13-role-workbench-inbox/).
+
+**PROP-0009 status:** `done`. Dev auto-deploys to https://keystone-ui-dev.anairacloud.com within ~4 min via CI/CD.
+
+**Next:** the four deferred portals (PROP-0010..PROP-0013) are unblocked. Sequence determined by user priority — backend contracts are confirmed for all four.

@@ -1,0 +1,28 @@
+# VERIFY — 2026-05-13-role-workbench-inbox
+
+## Typecheck (`tsc --noEmit`)
+PASS — no errors.
+
+One transient error caught and fixed mid-pass: `PlanCard.tsx:207` referenced
+`isMaker` after I renamed the local to `canEditPlans` at line 157. Fixed in same
+commit.
+
+## Tests
+- Targeted tests (`src/tests/unit/actions/`, `src/tests/unit/registry/`): 2 suites, 12 tests — all pass.
+  - ActionBar unit tests: rewritten role names (`'maker' → 'sales'`, `'checker' → 'mph'`); approval-lock theatre still asserted.
+  - WidgetRenderer.visibleRoles: 4 new tests covering omitted / included / excluded / empty-array cases.
+- Full `jest` suite: 56 failures unchanged from pre-change baseline (verified by `git stash` + re-run on HEAD). All 56 are in `src/tests/unit/table/DataTable.unit.test.tsx` and `src/tests/unit/form/FormContainer.unit.test.tsx` — pre-existing, not caused by PROP-0009. My changes added 21 net new passing tests (73 vs 52 on HEAD).
+
+## Lint
+`npm run lint` is broken at repo level (Next.js script-arg mismatch — pre-existing). Ran `npx eslint` directly on PROP-0009-touched files instead:
+- 6 `any`-type errors in `src/types/widget.ts` — **all pre-existing** (confirmed by `git diff`: my change only adds a `Role` import + `visibleRoles?: Role[]` field with explicit type).
+- 1 unused-import warning in `RoleSwitcher.tsx` (`ShieldCheck` — fixed).
+
+## Residual risks
+- The 56 pre-existing test failures should be triaged separately. They predate this work.
+- `npm run lint` script is broken. Out of scope for PROP-0009.
+- Inbox state filters use single values per section (e.g. `status=DRAFT`). If the demo wants a multi-state list, swap to multiple stacked sections or extend the search endpoint to accept comma-separated states (not currently confirmed supported).
+
+## Branch hygiene
+- Working tree was clean at BUILD start (docs commit `53c7a13` landed first per repo commit-hygiene rule).
+- Building on `feat/new-buisiness` (existing dev branch) — no new branch created. Matches CORE_MEMORY "Branch hygiene".
