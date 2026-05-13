@@ -27,6 +27,14 @@ export async function resolveSchemaRefs(node: any, baseDir: string = ''): Promis
                 // Using dynamic import allows the JSON to be bundled in the Cloudflare Worker
                 const imported = await import(`../../schemas/tabs/${filename}`);
                 parsed = imported.default || imported;
+            } else if (node.$ref.startsWith('schemas/tables/')) {
+                const filename = node.$ref.replace('schemas/tables/', '');
+                const imported = await import(`../../schemas/tables/${filename}`);
+                parsed = imported.default || imported;
+            } else if (node.$ref.startsWith('schemas/views/')) {
+                const filename = node.$ref.replace('schemas/views/', '');
+                const imported = await import(`../../schemas/views/${filename}`);
+                parsed = imported.default || imported;
             } else if (node.$ref.startsWith('schemas/forms/')) {
                 const formId = node.$ref.replace('schemas/forms/', '').replace('.json', '');
                 const registryEntry = forms_registry[formId];
