@@ -9,8 +9,46 @@ interface OverlaidFormProps {
     formId: string;
 }
 
-type FieldConfig = { name: string; defaultValue?: unknown; [key: string]: unknown };
+type FieldConfig = {
+    name: string;
+    defaultValue?: unknown;
+    // Optional pre-fill source. When the form field's id doesn't directly map to
+    // a top-level rowData key (e.g. the field is nested inside a stringified
+    // JSON blob on the entity), declare `sourcePath` to read from a dotted path.
+    // Set `sourceParseJson: true` to JSON.parse a string at the path before
+    // drilling further (mirrors KeyValueGrid's parseJson + subPath pattern).
+    sourcePath?: string;
+    sourceParseJson?: boolean;
+    sourceSubPath?: string;
+    [key: string]: unknown;
+};
 type SubmitActionConfig = { api?: { endpoint?: string; [key: string]: unknown }; [key: string]: unknown };
+
+function getNested(source: unknown, path?: string): unknown {
+    if (source == null || !path) return source;
+    return path.split('.').reduce<unknown>(
+        (acc, key) =>
+            acc != null && typeof acc === 'object' && key in (acc as object)
+                ? (acc as Record<string, unknown>)[key]
+                : undefined,
+        source,
+    );
+}
+
+function resolvePreFill(field: FieldConfig, rowData: Record<string, unknown>): unknown {
+    // Default: read by field name (existing behaviour for scalar forms).
+    if (!field.sourcePath) return rowData[field.name];
+    let value = getNested(rowData, field.sourcePath);
+    if (field.sourceParseJson && typeof value === 'string' && value.length > 0) {
+        try {
+            value = JSON.parse(value);
+        } catch {
+            // leave as-is so the user can still edit the malformed blob
+        }
+    }
+    if (field.sourceSubPath) value = getNested(value, field.sourceSubPath);
+    return value;
+}
 
 function injectRowData(node: WidgetConfig, rowData: Record<string, unknown>): WidgetConfig {
     const propsWithFields = node.props?.fields
@@ -18,7 +56,7 @@ function injectRowData(node: WidgetConfig, rowData: Record<string, unknown>): Wi
               ...node.props,
               fields: (node.props.fields as FieldConfig[]).map((field) => ({
                   ...field,
-                  defaultValue: rowData[field.name] ?? field.defaultValue,
+                  defaultValue: resolvePreFill(field, rowData) ?? field.defaultValue,
               })),
           }
         : node.props;

@@ -115,6 +115,18 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
             disabled={isDisabled}
         />
     ),
+    // Monospace textarea for JSON blobs. Pair with the `json` validation rule
+    // (see formContainer/utils.ts) to reject invalid JSON on submit.
+    'json-textarea': ({ field, fieldProps, isDisabled }) => (
+        <Textarea
+            placeholder={field.placeholder}
+            {...fieldProps}
+            value={(fieldProps.value as string) ?? ''}
+            disabled={isDisabled}
+            className="font-mono text-xs min-h-32"
+            spellCheck={false}
+        />
+    ),
     date: ({ field, fieldProps, isDisabled }) => (
         <CalendarDatePicker
             value={(fieldProps.value as string) ?? ''}

@@ -1,0 +1,97 @@
+{
+  "id": "census-file-format-form",
+  "type": "form-container",
+  "props": {
+    "title": "Edit census file format",
+    "description": "Defines how Census uploads are parsed. fileType picks the parser; schemaJson and dialectJson are JSON blobs validated on submit.",
+    "columns": 2,
+    "fields": [
+      {
+        "id": "fileType",
+        "name": "fileType",
+        "label": "File type",
+        "type": "select",
+        "order": 1,
+        "sourcePath": "censusFileFormatJson",
+        "sourceParseJson": true,
+        "sourceSubPath": "fileType",
+        "options": [
+          { "value": "CSV", "label": "CSV" },
+          { "value": "XLSX", "label": "Excel (XLSX)" }
+        ],
+        "validations": [{ "rule": "required", "message": "File type is required" }]
+      },
+      {
+        "id": "sheetName",
+        "name": "sheetName",
+        "label": "Sheet name",
+        "type": "text",
+        "order": 2,
+        "sourcePath": "censusFileFormatJson",
+        "sourceParseJson": true,
+        "sourceSubPath": "sheetName",
+        "placeholder": "e.g. Members",
+        "visibleWhen": { "field": "fileType", "equals": "XLSX" }
+      },
+      {
+        "id": "schemaJson",
+        "name": "schemaJson",
+        "label": "Schema (JSON)",
+        "type": "json-textarea",
+        "order": 3,
+        "span": 2,
+        "sourcePath": "censusFileFormatJson",
+        "sourceParseJson": true,
+        "sourceSubPath": "schemaJson",
+        "placeholder": "{\"columns\":[{\"name\":\"memberId\",\"type\":\"string\",\"required\":true}, ...]}",
+        "helperText": "Frictionless Table Schema describing the columns the uploader expects.",
+        "validations": [
+          { "rule": "required", "message": "Schema is required" },
+          { "rule": "json", "message": "Schema must be valid JSON" }
+        ]
+      },
+      {
+        "id": "dialectJson",
+        "name": "dialectJson",
+        "label": "Dialect (JSON)",
+        "type": "json-textarea",
+        "order": 4,
+        "span": 2,
+        "sourcePath": "censusFileFormatJson",
+        "sourceParseJson": true,
+        "sourceSubPath": "dialectJson",
+        "placeholder": "{\"delimiter\":\",\",\"quote\":\"\\\"\",\"hasHeader\":true}",
+        "helperText": "Optional. CSV/XLSX dialect — delimiter, quote char, header presence, encoding.",
+        "validations": [
+          { "rule": "json", "message": "Dialect must be valid JSON if provided" }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-edit-census-file-format",
+        "label": "Save format",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/quotation/quotes/:id",
+        "api": {
+          "endpoint": "/api/quotation/quotes/:id/census-file-format",
+          "method": "PUT"
+        },
+        "successMessage": "Census file format saved",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "census-file-format-form" }
+        ]
+      },
+      {
+        "id": "cancel-edit-census-file-format",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "census-file-format-form",
+        "submitAction": false
+      }
+    ]
+  }
+}

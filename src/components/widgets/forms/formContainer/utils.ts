@@ -31,6 +31,25 @@ const VALIDATION_APPLIERS: Partial<
     isNumber
       ? (schema as z.ZodNumber).max(Number(v.value), { message: v.message })
       : (schema as z.ZodString).max(Number(v.value), { message: v.message }),
+  // Refines a string schema so it must parse as JSON. Pairs with the
+  // `json-textarea` field type, but is also usable on any string field
+  // that carries a serialized JSON blob (e.g. the DMN mapping replace flow
+  // tracked in PROP-0007).
+  json: (schema, v, _isNumber, isStringType) =>
+    isStringType
+      ? (schema as z.ZodString).refine(
+          (s: string) => {
+            if (s == null || s === "") return true; // empty is allowed; pair with `required` if mandatory
+            try {
+              JSON.parse(s);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          { message: v.message ?? "Must be valid JSON" },
+        ) as unknown as FieldSchema
+      : schema,
 };
 
 export const isRequiredField = (field: FormFieldConfig): boolean =>
