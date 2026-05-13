@@ -1,5 +1,5 @@
 ---
-id: PROP-0014
+id: PROP-0015
 title: Proposal Members tab hits non-existent backend routes — repoint to policy-member endpoints
 status: draft
 proposer: agent:claude

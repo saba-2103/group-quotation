@@ -90,7 +90,7 @@ test.describe('Clicking primary CTAs does not crash the page', () => {
   // Mirror tests for the other primary creation/action buttons on lists.
   // Each one opens a modal — confirming that modal-rendered widgets don't
   // crash on initial paint is the cheapest correctness signal we have.
-  // Pending PROP-0014: the Proposal Members tab + Add Member form wire to
+  // Pending PROP-0015: the Proposal Members tab + Add Member form wire to
   // `/api/issuance/proposals/{id}/members` which 404s on the live backend.
   // Repoint to `/api/issuance/policy-members/search?proposalId=...` and
   // `/api/issuance/policies/{policyId}/members`.

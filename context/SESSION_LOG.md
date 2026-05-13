@@ -1525,11 +1525,11 @@ PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now 
 - [tsconfig.json](../tsconfig.json) — exclude `tests/e2e/**` from main type-check so Playwright tests don't pollute the build.
 
 **5th gap surfaced — filed as proposal, not fixed in this pass:**
-- [PROP-0014](../proposals/PROP-0014-proposal-members-wiring.md) — `/api/issuance/proposals/{id}/members` 404s on the live backend (pre-existing). Both GET and POST in `schemas/tabs/proposal/members.json` + `add-policy-member-form.json` wire to a route that doesn't exist; correct path is `/api/issuance/policy-members/search?proposalId=...` for read and `/api/issuance/policies/{policyId}/members` for write. Test `interactions.spec.ts > Sales clicking "Add member"` marked `test.fixme` pending the proposal.
+- [PROP-0015](../proposals/PROP-0015-proposal-members-wiring.md) — `/api/issuance/proposals/{id}/members` 404s on the live backend (pre-existing). Both GET and POST in `schemas/tabs/proposal/members.json` + `add-policy-member-form.json` wire to a route that doesn't exist; correct path is `/api/issuance/policy-members/search?proposalId=...` for read and `/api/issuance/policies/{policyId}/members` for write. Test `interactions.spec.ts > Sales clicking "Add member"` marked `test.fixme` pending the proposal. (Originally numbered PROP-0014; renumbered after discovering a pre-existing untracked PROP-0014-product-catalog-compose-plan.md.)
 
 **Verification:**
 - `tsc --noEmit`: PASS.
-- Playwright local (`PLAYWRIGHT_BASE_URL=http://localhost:3000`): **136 pass / 0 fail / 15 skip** (8 data-state skips, 6 no-row-data skips, 1 PROP-0014 fixme).
+- Playwright local (`PLAYWRIGHT_BASE_URL=http://localhost:3000`): **136 pass / 0 fail / 15 skip** (8 data-state skips, 6 no-row-data skips, 1 PROP-0015 fixme).
 - Browser preview: New Quote modal opens cleanly (was crashing); Inbox sections show their titles; no console errors on role switches.
 - Live deploy pushed to `feat/new-buisiness`; CI/CD auto-deploys to https://keystone-ui-dev.anairacloud.com.
 
@@ -1538,6 +1538,6 @@ PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now 
 **Status:**
 - PROP-0009 → `done` (closes the 4 just-shipped gaps; demo-walkable now).
 - PROP-0010..PROP-0013 → still draft (deferred portals).
-- PROP-0014 → draft, ready for `/build-feature` once the proposal Members tab fix is prioritized.
+- PROP-0015 → draft, ready for `/build-feature` once the proposal Members tab fix is prioritized.
 
-**Next:** monitor the live URL after CI lands, then user can walk the demo end-to-end. Open items: PROP-0014 fix, and the 8 seed-data-skipped tests (need backend admin endpoint or richer seed script to create PENDING policies, SENT_TO_CLIENT quotes, MAF_PENDING / REFERRED_TO_UW / REPAIR_PENDING members).
+**Next:** monitor the live URL after CI lands, then user can walk the demo end-to-end. Open items: PROP-0015 fix, and the 8 seed-data-skipped tests (need backend admin endpoint or richer seed script to create PENDING policies, SENT_TO_CLIENT quotes, MAF_PENDING / REFERRED_TO_UW / REPAIR_PENDING members).
