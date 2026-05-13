@@ -10,7 +10,7 @@ import { notFound } from 'next/navigation';
 
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 import type { WidgetConfig } from '@/types/widget';
-import { forms_registry } from '../../../../../../../../schemas/forms';
+import { forms_registry } from '../../../../../../../schemas/forms';
 
 export const dynamic = 'force-dynamic';
 
