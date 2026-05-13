@@ -7,6 +7,8 @@ import { MetricCard } from "../widgets/items/MetricCard";
 import { ChartWidget } from "../widgets/items/ChartWidget";
 import { QuickLinksWidget } from "../widgets/items/QuickLinksWidget";
 import { DataTable } from "../widgets/data/DataTable";
+import { CardGrid } from "../widgets/data/CardGrid";
+import { EditableTable } from "../widgets/data/EditableTable";
 import { FilterBar } from "../widgets/controls/FilterBar";
 import { TabsContainer } from "../widgets/container/TabsContainer";
 import { FormContainer } from "../widgets/forms/formContainer";
@@ -29,6 +31,8 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
   "chart-widget": ChartWidget,
   "quick-links-widget": QuickLinksWidget,
   "data-table": DataTable,
+  "card-grid": CardGrid,
+  "editable-table": EditableTable,
   "filter-bar": FilterBar,
   "search-bar": FilterBar,
   "tabs-container": TabsContainer,

@@ -20,6 +20,30 @@
       }
     },
     {
+      "id": "quote-pricing-by-plan",
+      "type": "data-table",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" },
+        "dataPath": "estimatedPremium.byPlanJson",
+        "parseJson": true
+      },
+      "props": {
+        "title": "Per-plan premium breakdown",
+        "description": "Rows are parsed from estimatedPremium.byPlanJson (opaque JSON string on the quote response, implied shape: [{ planNo, amount }]). Plan name is joined from plans[] by planNo. Both behaviours require widget support that does not exist yet — see PROP-0006 Implementation notes. Until then the table stays empty and the empty state below shows.",
+        "data": [],
+        "columns": [
+          { "id": "planNo", "accessorKey": "planNo", "label": "Plan #", "type": "text" },
+          { "id": "planName", "accessorKey": "planName", "label": "Plan name", "type": "text" },
+          { "id": "amount", "accessorKey": "amount", "label": "Annual premium", "type": "currency", "currency": "INR", "align": "right" },
+          { "id": "currency", "accessorKey": "currency", "label": "Currency", "type": "text" }
+        ],
+        "emptyState": {
+          "title": "Pricing not yet computed",
+          "description": "Press Request price to invoke the Rule Engine. Note: the pricing engine is not yet wired on the backend, so the request fires-and-forgets and rows will not populate until the engine ships."
+        }
+      }
+    },
+    {
       "id": "quote-pricing-actions",
       "type": "action-bar",
       "dataSource": {
