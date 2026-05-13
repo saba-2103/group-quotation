@@ -41,6 +41,11 @@
       }
     },
     {
+      "id": "policy-activation-counter",
+      "type": "activation-counter",
+      "props": { "policyId": "{{id}}" }
+    },
+    {
       "id": "policy-actions",
       "type": "action-bar",
       "dataSource": {
