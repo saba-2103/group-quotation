@@ -18,6 +18,12 @@
         "stateKey": "member-quote-filters",
         "filters": [
           {
+            "id": "policyId",
+            "label": "Policy",
+            "type": "text",
+            "placeholder": "Filter by policy ID"
+          },
+          {
             "id": "status",
             "label": "Status",
             "type": "select",
