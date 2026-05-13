@@ -34,6 +34,13 @@ export interface ColumnConfig {
   format?: string;
   // Used by the `state-badge` cell type to pick the right map in state-map.ts.
   entity?: string;
+  // Cross-array join — copy a field from a sibling array on the response root.
+  // All three must be set for the join to fire. No match → cell renders empty.
+  // Scoped tight: only joins against arrays already present on the response
+  // payload that `useDataTable` fetched. See PROP-0006.
+  joinSource?: string;   // dotted path to the sibling array on the response root
+  joinKey?: string;      // row's column whose value matches `joinKey` on each sibling
+  joinField?: string;    // field to pull from the matched sibling row
 }
 export interface RowActionProps {
   route?: string;

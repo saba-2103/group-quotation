@@ -29,13 +29,12 @@
       },
       "props": {
         "title": "Per-plan premium breakdown",
-        "description": "Rows are parsed from estimatedPremium.byPlanJson (opaque JSON string on the quote response, implied shape: [{ planNo, amount }]). Plan name is joined from plans[] by planNo. Both behaviours require widget support that does not exist yet — see PROP-0006 Implementation notes. Until then the table stays empty and the empty state below shows.",
-        "data": [],
+        "description": "Rows are parsed from estimatedPremium.byPlanJson (opaque JSON string on the quote response, implied shape: [{ planNo, amount, currency }]). Plan name is joined from plans[] by planNo via the data-table cross-array join.",
         "columns": [
           { "id": "planNo", "accessorKey": "planNo", "label": "Plan #", "type": "text" },
-          { "id": "planName", "accessorKey": "planName", "label": "Plan name", "type": "text" },
-          { "id": "amount", "accessorKey": "amount", "label": "Annual premium", "type": "currency", "currency": "INR", "align": "right" },
-          { "id": "currency", "accessorKey": "currency", "label": "Currency", "type": "text" }
+          { "id": "planName", "accessorKey": "planName", "label": "Plan name", "type": "text", "joinSource": "plans", "joinKey": "planNo", "joinField": "planName" },
+          { "id": "amount", "accessorKey": "amount.amount", "label": "Annual premium", "type": "currency", "currency": "INR", "align": "right" },
+          { "id": "currency", "accessorKey": "amount.currency", "label": "Currency", "type": "text" }
         ],
         "emptyState": {
           "title": "Pricing not yet computed",

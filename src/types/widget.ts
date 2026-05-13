@@ -20,6 +20,22 @@ export interface DataSourceConfig {
         params?: Record<string, any>;
     };
     /**
+     * Dotted path on the response payload to drill into before treating the
+     * value as the rows array. Mirrors the per-field `accessorKey` pattern
+     * already used by KeyValueGrid. When unset, consumers fall back to their
+     * existing default discovery (e.g. data-table picks the first array-typed
+     * top-level value).
+     */
+    dataPath?: string;
+    /**
+     * When true and the value resolved at `dataPath` is a string, the
+     * consumer JSON.parses it before consuming. Pairs with `dataPath` to
+     * drill into stringified-JSON entity fields (e.g. estimatedPremium.byPlanJson).
+     * Mirrors KeyValueGrid's per-field `parseJson` flag. Parse failure surfaces
+     * as a render-error on widgets that opt into the loud failure mode.
+     */
+    parseJson?: boolean;
+    /**
      * Fixed-interval polling. If set, the query refetches every N ms.
      * For backoff polling (e.g. backend's suggested 2s → 5s schedule),
      * use `pollSchedule` instead. `pollSchedule` takes precedence when both
