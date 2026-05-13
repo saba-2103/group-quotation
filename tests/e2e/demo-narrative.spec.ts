@@ -131,7 +131,7 @@ test.describe('§2B GCL — Per-member MAF / OTP confirm', () => {
       return rows[0]?.id ?? null;
     });
     test.skip(!memberId, 'No MAF_PENDING policy-member in the backend — seed one to validate this beat');
-    await page.goto(`/policy-admin/members/by-policy-member/${memberId}`);
+    await page.goto(`/issuance/policy-members/${memberId}`);
     await page.waitForLoadState('networkidle');
     await expect(
       page.getByRole('toolbar').getByRole('button', { name: /Confirm enrolment/i }),
@@ -154,7 +154,7 @@ test.describe('§3 UW workbench — Non-STP review', () => {
       return rows[0]?.id ?? null;
     });
     test.skip(!memberId, 'No REFERRED_TO_UW policy-member — seed needed for narrative §3');
-    await page.goto(`/policy-admin/members/by-policy-member/${memberId}`);
+    await page.goto(`/issuance/policy-members/${memberId}`);
     await page.waitForLoadState('networkidle');
     await expect(
       page.getByRole('toolbar').getByRole('button', { name: /UW approve/i }),
@@ -185,7 +185,7 @@ test.describe('§4 Ops repair — Non-STP fix', () => {
       return rows[0]?.id ?? null;
     });
     test.skip(!memberId, 'No REPAIR_PENDING policy-member — seed needed for narrative §4');
-    await page.goto(`/policy-admin/members/by-policy-member/${memberId}`);
+    await page.goto(`/issuance/policy-members/${memberId}`);
     await page.waitForLoadState('networkidle');
     await expect(
       page.getByRole('toolbar').getByRole('button', { name: /Edit & re-classify/i }),

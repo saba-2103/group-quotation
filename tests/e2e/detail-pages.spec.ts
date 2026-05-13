@@ -47,7 +47,7 @@ async function gotoFirstPolicyMemberAsRole(
     return rows[0]?.id ?? rows[0]?.policyMemberId ?? null;
   }, state);
   if (!memberId) return null;
-  await page.goto(`/policy-admin/members/by-policy-member/${memberId}`);
+  await page.goto(`/issuance/policy-members/${memberId}`);
   await page.waitForLoadState('networkidle');
   return `/policy-admin/members/by-policy-member/${memberId}`;
 }
@@ -58,13 +58,12 @@ test.describe('Quote-detail ActionBar role gating', () => {
   }) => {
     const url = await gotoFirstDraftQuoteAsSales(page);
     test.skip(!url, 'No DRAFT quote in the backend — seed one to run this assertion');
-    // After PROP-0009 sweep, Sales should see send-for-approval / submit /
-    // send-to-client / clear-approval / withdraw / expire / finalize (per
-    // schemas/quote-detail.json). MPH-only `accept` and `reject` must not
-    // render for Sales (roleActions filter hides them).
-    // State-gated actions for DRAFT: send-for-approval, submit, clear-approval, withdraw.
+    // After PROP-0009 + the maker-checker overlay drop (2026-05-13), Sales
+    // sees: submit / send-to-client / expire / finalize / withdraw. In DRAFT,
+    // state-gated subset is `submit` + `withdraw`. MPH-only `accept` and
+    // `reject` must not render for Sales (roleActions filter hides them).
     await expect(
-      page.getByRole('toolbar').getByRole('button', { name: /Send for approval/i }),
+      page.getByRole('toolbar').getByRole('button', { name: /Submit quote/i }),
     ).toBeVisible();
     await expect(
       page.getByRole('toolbar').getByRole('button', { name: /^Accept$/i }),
@@ -74,23 +73,20 @@ test.describe('Quote-detail ActionBar role gating', () => {
     ).toHaveCount(0);
   });
 
-  test('MPH viewing the same DRAFT quote sees NO action buttons (MPH only acts on SENT_TO_CLIENT)', async ({
+  test('MPH viewing the same DRAFT quote sees NO Sales-side action buttons', async ({
     page,
   }) => {
-    // Locate any quote regardless of state, then switch the active role to MPH.
     const url = await gotoFirstDraftQuoteAsSales(page);
     test.skip(!url, 'No DRAFT quote — skipping');
-    // Switch role and revisit the same detail URL.
     await page.evaluate(() => localStorage.setItem('group-pas:current-role', 'mph'));
     await page.reload({ waitUntil: 'networkidle' });
     // MPH's roleActions = ['accept', 'reject']; neither is in DRAFT's stateActions,
-    // so both render disabled. But the role gate hides ids the role doesn't own —
-    // Sales-side ids like Send-for-approval must NOT render for MPH.
+    // so the bar is empty for MPH. Sales-side ids must NOT render for MPH.
     await expect(
-      page.getByRole('toolbar').getByRole('button', { name: /Send for approval/i }),
+      page.getByRole('toolbar').getByRole('button', { name: /Submit quote/i }),
     ).toHaveCount(0);
     await expect(
-      page.getByRole('toolbar').getByRole('button', { name: /^Submit$/i }),
+      page.getByRole('toolbar').getByRole('button', { name: /Finalize/i }),
     ).toHaveCount(0);
   });
 });
