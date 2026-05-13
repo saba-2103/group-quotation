@@ -27,7 +27,7 @@
         "totalLabel": "Total",
         "stateField": "status",
         "editableStates": ["DRAFT"],
-        "editableRoles": ["maker"],
+        "editableRoles": ["sales"],
         "emptyState": {
           "title": "No plans configured yet",
           "description": "Headcount is allocated per plan. Add plans on the Plans tab first."
@@ -100,10 +100,12 @@
             "stateField": "status",
             "stateActions": { "DRAFT": ["edit-census-file-format"] },
             "roleActions": {
-              "maker": ["edit-census-file-format"],
-              "checker": [],
-              "ops": [],
-              "viewer": []
+              "sales": ["edit-census-file-format"],
+              "partner_agent": ["edit-census-file-format"],
+              "mph": [],
+              "member": [],
+              "uw": [],
+              "ops": []
             },
             "actions": [
               {

@@ -5,9 +5,13 @@
 // schema declares which actions exist and which states/roles unlock them; the
 // widget renders disabled buttons with hover tooltips explaining the gate.
 //
-// V1 maker-checker overlay: when `awaitingApproval` is true, the Maker's
-// editing/submit actions lock and the Checker's Approve action becomes the
-// primary CTA (see context/ARCH_TRANSITION.md → "Maker-checker UI overlay").
+// V1 maker-checker overlay (preserved under new role names PROP-0009 2026-05-13):
+// when `awaitingApproval` is true, the Sales user's editing/submit actions lock
+// and the MPH user's Approve action becomes the primary CTA. The two-role
+// asymmetry is the V1 demo theatre that survives the role-enum rename — when
+// PROP-0010 ships the real MPH portal, this scaffolding can be dismantled
+// since real cross-org acceptance takes its place
+// (see context/ARCH_TRANSITION.md → "Maker-checker UI overlay").
 //
 // Backend-gap surfacing: any action with `disabledTooltip` set on its
 // schema renders disabled (visible-but-inert) regardless of state. Used for
@@ -137,18 +141,18 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
         //     so the UI is honest about what the real backend can't do yet.
         if (!roleOk) return null;
 
-        // Symmetric to the Maker lock: when awaitingApproval is false, the
-        // Checker has nothing to act on for the Maker's draft yet. Hide the
-        // approval-flow actions to keep the bar uncluttered.
+        // Symmetric to the Sales lock: when awaitingApproval is false, the
+        // MPH user has nothing to act on for the Sales user's draft yet. Hide
+        // the approval-flow actions to keep the bar uncluttered.
         const checkerWaiting =
-          role === 'checker' &&
+          role === 'mph' &&
           !awaitingApproval &&
           CHECKER_AWAITING_APPROVAL_ACTIONS.has(id);
         if (checkerWaiting) return null;
 
         const lockedByApproval =
           awaitingApproval &&
-          role === 'maker' &&
+          role === 'sales' &&
           !NOT_LOCKED_BY_APPROVAL.has(id);
 
         let disabledReason: string | undefined;
@@ -157,7 +161,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({ config }) => {
         } else if (!stateOk) {
           disabledReason = `Not available in ${state || 'this state'}`;
         } else if (lockedByApproval) {
-          disabledReason = 'Awaiting checker approval';
+          disabledReason = 'Awaiting MPH approval';
         }
 
         return { action, disabled: Boolean(disabledReason), disabledReason };

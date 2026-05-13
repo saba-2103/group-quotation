@@ -25,10 +25,12 @@
         "stateField": "status",
         "stateActions": { "DRAFT": ["replace-mapping"] },
         "roleActions": {
-          "maker": [],
-          "checker": ["replace-mapping"],
-          "ops": [],
-          "viewer": []
+          "sales": ["replace-mapping"],
+          "partner_agent": ["replace-mapping"],
+          "mph": [],
+          "member": [],
+          "uw": [],
+          "ops": []
         },
         "actions": [
           {

@@ -154,13 +154,13 @@ export const PlanCard: React.FC<PlanCardProps & { config?: { props?: PlanCardPro
   }
 
   const isDraft = parent?.status === "DRAFT";
-  const isMaker = role === "maker";
+  const canEditPlans = role === "sales";
   const fileFormatSet = hasCensusFileFormat(parent);
-  const editEnabled = isDraft && isMaker && fileFormatSet;
+  const editEnabled = isDraft && canEditPlans && fileFormatSet;
   const editDisabledReason = !isDraft
     ? "Plans are read-only outside DRAFT"
-    : !isMaker
-      ? "Only Maker can edit plans"
+    : !canEditPlans
+      ? "Only Sales can edit plans"
       : !fileFormatSet
         ? "Set the Census file format first (Census tab)"
         : "";
@@ -204,7 +204,7 @@ export const PlanCard: React.FC<PlanCardProps & { config?: { props?: PlanCardPro
             {item.planName ?? "(unnamed plan)"}
           </div>
         </div>
-        {isDraft && isMaker && (
+        {isDraft && canEditPlans && (
           <div className="flex shrink-0 items-center gap-2">
             <Button
               size="sm"

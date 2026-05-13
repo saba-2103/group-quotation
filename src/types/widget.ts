@@ -1,3 +1,5 @@
+import type { Role } from '@/types/group-pas/roles';
+
 export type WidgetType = string;
 
 export interface WidgetConfig {
@@ -11,6 +13,13 @@ export interface WidgetConfig {
     };
     dataSource?: DataSourceConfig;
     children?: WidgetConfig[];
+    /**
+     * Optional role-visibility filter. When set, `WidgetRenderer` skips this
+     * node unless the current role (from `useRole()`) is included. When
+     * omitted, the node renders for every role. Used by the Dashboard Inbox
+     * to scope each `data-table` section to one persona (PROP-0009).
+     */
+    visibleRoles?: Role[];
 }
 
 export interface DataSourceConfig {

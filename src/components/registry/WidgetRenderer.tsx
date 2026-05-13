@@ -5,6 +5,7 @@ import { WidgetConfig } from '@/types/widget';
 import { getWidgetComponent } from './WidgetRegistry';
 import { cn } from '@/lib/utils';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
+import { useRole } from '@/hooks/useRole';
 
 interface WidgetRendererProps {
     config: WidgetConfig;
@@ -12,11 +13,18 @@ interface WidgetRendererProps {
 
 export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ config }) => {
     const Component = getWidgetComponent(config.type);
+    const { role } = useRole();
 
     // Basic Data Fetching if configured
     const { data, isLoading, error } = useSmartQuery(config.dataSource);
 
     if (config.layout?.hidden) return null;
+    // Role-visibility gate (PROP-0009). When `visibleRoles` is set on a schema
+    // node, only render it for matching roles. Omitting the field keeps the
+    // node visible to every role (the default).
+    if (config.visibleRoles && config.visibleRoles.length > 0 && !config.visibleRoles.includes(role)) {
+        return null;
+    }
 
     // Enhancing props with data
     const enhancedProps = {

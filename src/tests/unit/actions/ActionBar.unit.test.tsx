@@ -12,7 +12,10 @@ function withQueryClient(ui: React.ReactElement) {
   return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
 
-let currentRole: Role = 'maker';
+// Renamed in PROP-0009: V1 'maker' is now 'sales'; V1 'checker' is now 'mph'.
+// The role-asymmetric awaitingApproval lock survives the rename — 'sales'
+// is the locked side, 'mph' is the unlocking side.
+let currentRole: Role = 'sales';
 jest.mock('@/hooks/useRole', () => ({
   useRole: () => ({ role: currentRole, setRole: (r: Role) => (currentRole = r) }),
 }));
@@ -31,7 +34,7 @@ jest.mock('@/lib/maker-checker', () => ({
 }));
 
 beforeEach(() => {
-  currentRole = 'maker';
+  currentRole = 'sales';
   mockHandleAction.mockReset();
   mockSendForApproval.mockReset();
   mockClearApproval.mockReset();
@@ -82,10 +85,12 @@ const STATE_ACTIONS: Record<string, string[]> = {
 };
 
 const ROLE_ACTIONS: Record<string, string[]> = {
-  maker: ['edit', 'send-for-approval', 'request-price'],
-  checker: ['submit', 'finalize'],
+  sales: ['edit', 'send-for-approval', 'request-price'],
+  partner_agent: [],
+  mph: ['submit', 'finalize'],
+  member: [],
+  uw: [],
   ops: [],
-  viewer: [],
 };
 
 function renderBar(overrides: Partial<{
@@ -115,8 +120,8 @@ function buttonByLabel(label: string): HTMLButtonElement {
 }
 
 describe('ActionBar', () => {
-  it('Maker in DRAFT sees only Maker actions (Edit, Send for approval); Checker actions are HIDDEN', () => {
-    currentRole = 'maker';
+  it('Sales in DRAFT sees only Sales actions (Edit, Send for approval); MPH actions are HIDDEN', () => {
+    currentRole = 'sales';
     renderBar({ state: 'DRAFT' });
     expect(buttonByLabel('Edit')).not.toBeDisabled();
     expect(buttonByLabel('Send for approval')).not.toBeDisabled();
@@ -125,36 +130,36 @@ describe('ActionBar', () => {
     expect(within(toolbar).queryByRole('button', { name: 'Finalize' })).toBeNull();
   });
 
-  it('Checker in DRAFT awaitingApproval=true sees Approve; Maker-only actions are HIDDEN', () => {
-    currentRole = 'checker';
+  it('MPH in DRAFT awaitingApproval=true sees Approve; Sales-only actions are HIDDEN', () => {
+    currentRole = 'mph';
     renderBar({ state: 'DRAFT', awaitingApproval: true });
     expect(buttonByLabel('Approve')).not.toBeDisabled();
     const toolbar = screen.getByRole('toolbar');
     expect(within(toolbar).queryByRole('button', { name: 'Edit' })).toBeNull();
   });
 
-  it('Checker in DRAFT awaitingApproval=false does NOT see Approve (symmetric to maker lock)', () => {
-    currentRole = 'checker';
+  it('MPH in DRAFT awaitingApproval=false does NOT see Approve (symmetric to sales lock)', () => {
+    currentRole = 'mph';
     renderBar({ state: 'DRAFT', awaitingApproval: false });
     const toolbar = screen.getByRole('toolbar');
     expect(within(toolbar).queryByRole('button', { name: 'Approve' })).toBeNull();
   });
 
-  it('Maker DRAFT with awaitingApproval=true locks edit + send-for-approval ("Awaiting checker approval")', () => {
-    currentRole = 'maker';
+  it('Sales DRAFT with awaitingApproval=true locks edit + send-for-approval ("Awaiting MPH approval")', () => {
+    currentRole = 'sales';
     renderBar({ state: 'DRAFT', awaitingApproval: true });
     const edit = buttonByLabel('Edit');
     expect(edit).toBeDisabled();
     expect(edit).toHaveAttribute(
       'data-disabled-reason',
-      'Awaiting checker approval',
+      'Awaiting MPH approval',
     );
     const toolbar = screen.getByRole('toolbar');
     expect(within(toolbar).queryByRole('button', { name: 'Approve' })).toBeNull();
   });
 
   it('Action with disabledTooltip renders disabled with the supplied tooltip text, even when state-gating would allow it', () => {
-    currentRole = 'maker';
+    currentRole = 'sales';
     renderBar({ state: 'DRAFT' });
     const requestPrice = buttonByLabel('Request price');
     expect(requestPrice).toBeDisabled();
@@ -164,22 +169,22 @@ describe('ActionBar', () => {
     );
   });
 
-  it('Viewer sees no actions at all (role-hide rule applied to every action)', () => {
-    currentRole = 'viewer';
+  it('Role with no roleActions entry (e.g. member here) sees no actions at all (role-hide rule applied to every action)', () => {
+    currentRole = 'member';
     const { container } = renderBar({ state: 'DRAFT' });
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('Checker clicking Approve in DRAFT awaitingApproval=true dispatches the api-mutation through useActionHandler', async () => {
-    currentRole = 'checker';
+  it('MPH clicking Approve in DRAFT awaitingApproval=true dispatches the api-mutation through useActionHandler', async () => {
+    currentRole = 'mph';
     renderBar({ state: 'DRAFT', awaitingApproval: true });
     await userEvent.click(buttonByLabel('Approve'));
     expect(mockHandleAction).toHaveBeenCalledTimes(1);
     expect(mockHandleAction.mock.calls[0][0].id).toBe('submit');
   });
 
-  it('Maker clicking Send-for-approval calls maker-checker.sendForApproval(entityType, entityId)', async () => {
-    currentRole = 'maker';
+  it('Sales clicking Send-for-approval calls maker-checker.sendForApproval(entityType, entityId)', async () => {
+    currentRole = 'sales';
     renderBar({ state: 'DRAFT', entityId: 'Q42' });
     await userEvent.click(buttonByLabel('Send for approval'));
     expect(mockSendForApproval).toHaveBeenCalledWith('quote', 'Q42');

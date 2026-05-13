@@ -1,9 +1,22 @@
 'use client';
 
 // Top-shell widget for picking the active V1 demo role. Backed by RoleProvider;
-// changes propagate via useRole() to every consumer (ActionBar gating etc).
+// changes propagate via useRole() to every consumer (ActionBar gating + menu
+// re-fetch via AppContextProvider + Inbox visibleRoles).
+//
+// All 6 narrative personas (PROP-0009 stopgap, 2026-05-13) are selectable here
+// until their dedicated portals (PROP-0010..PROP-0013) land. When a portal
+// ships, drop its entry from ROLE_ORDER — the Role type itself stays untouched.
 
-import { ChevronDown, ShieldCheck, UserCog, UserRound, Wrench } from 'lucide-react';
+import {
+  Building2,
+  ChevronDown,
+  Stethoscope,
+  UserCog,
+  UserRound,
+  Users,
+  Wrench,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,29 +37,47 @@ interface RoleMeta {
 }
 
 const ROLE_META: Record<Role, RoleMeta> = {
-  maker: {
-    label: 'Maker — Sales',
-    description: 'Builds quotes and proposals; can submit for approval.',
+  sales: {
+    label: 'Sales',
+    description: 'Builds quotes and proposals; submits, sends to client, finalizes.',
     icon: UserRound,
   },
-  checker: {
-    label: 'Checker — Approver',
-    description: 'Approves submissions, sends to client, finalizes.',
-    icon: ShieldCheck,
+  partner_agent: {
+    label: 'Partner Agent',
+    description: 'Onboards members; uploads census; runs the post-issuance Add Member flow.',
+    icon: Users,
+  },
+  mph: {
+    label: 'MPH',
+    description: 'Master Policyholder — accepts (or rejects) quotes sent by Sales.',
+    icon: Building2,
+  },
+  member: {
+    label: 'Member',
+    description: 'Self-service: confirms enrolment via the MAF link.',
+    icon: UserCog,
+  },
+  uw: {
+    label: 'Underwriter',
+    description: 'Reviews referred members and approves or rejects them.',
+    icon: Stethoscope,
   },
   ops: {
     label: 'Ops',
-    description: 'Repairs members, archives, manages issuance follow-up.',
+    description: 'Repairs flagged members and resubmits them to classification.',
     icon: Wrench,
-  },
-  viewer: {
-    label: 'Viewer',
-    description: 'Read-only access across all modules.',
-    icon: UserCog,
   },
 };
 
-const ROLE_ORDER: Role[] = ['maker', 'checker', 'ops', 'viewer'];
+// Order = canonical demo walkthrough order from DEMO_NARRATIVE_GTL_GCL.md.
+const ROLE_ORDER: Role[] = [
+  'sales',
+  'partner_agent',
+  'mph',
+  'member',
+  'uw',
+  'ops',
+];
 
 export function RoleSwitcher() {
   const { role, setRole } = useRole();
@@ -67,7 +98,7 @@ export function RoleSwitcher() {
           <ChevronDown className="h-4 w-4 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className="w-72">
         <DropdownMenuLabel>Switch active role</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {ROLE_ORDER.map((r) => {

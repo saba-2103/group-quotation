@@ -75,10 +75,12 @@
           "EXPIRED": []
         },
         "roleActions": {
-          "maker": ["send-for-approval", "withdraw"],
-          "checker": ["submit", "clear-approval", "send-to-client", "accept", "reject", "expire", "finalize", "withdraw"],
-          "ops": [],
-          "viewer": []
+          "sales": ["send-for-approval", "submit", "clear-approval", "send-to-client", "expire", "finalize", "withdraw"],
+          "partner_agent": [],
+          "mph": ["accept", "reject"],
+          "member": [],
+          "uw": [],
+          "ops": []
         },
         "actions": [
           {

@@ -51,7 +51,7 @@
       "props": {
         "stateField": "status",
         "stateActions": { "DRAFT": ["request-price"] },
-        "roleActions": { "maker": ["request-price"], "checker": [], "ops": [], "viewer": [] },
+        "roleActions": { "sales": ["request-price"], "partner_agent": [], "mph": [], "member": [], "uw": [], "ops": [] },
         "actions": [
           {
             "id": "request-price",

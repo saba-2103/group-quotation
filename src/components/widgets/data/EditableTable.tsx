@@ -19,6 +19,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { useSmartQuery } from "@/hooks/useSmartQuery";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { useRole } from "@/hooks/useRole";
+import type { Role } from "@/types/group-pas/roles";
 import type { DataSourceConfig } from "@/types/widget";
 
 // EditableTable — bespoke join-shaped numeric-edit widget.
@@ -73,7 +74,7 @@ interface EditableTableProps {
   // Gating
   stateField?: string; // default 'status'
   editableStates?: string[]; // default ['DRAFT']
-  editableRoles?: Array<"maker" | "checker" | "ops" | "viewer">; // default ['maker']
+  editableRoles?: Role[]; // default ['sales']
   // Pre-injected by WidgetRenderer
   dataSource?: DataSourceConfig;
   data?: unknown;
@@ -156,7 +157,7 @@ export const EditableTable: React.FC<EditableTableProps & { config?: EditableTab
     emptyState,
     stateField = "status",
     editableStates = ["DRAFT"],
-    editableRoles = ["maker"],
+    editableRoles = ["sales"],
     dataSource: propDataSource,
   } = props;
 

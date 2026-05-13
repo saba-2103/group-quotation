@@ -58,10 +58,12 @@
           "CANCELLED": []
         },
         "roleActions": {
-          "maker": ["submit"],
-          "checker": ["finalize", "cancel"],
-          "ops": [],
-          "viewer": []
+          "sales": ["submit", "finalize", "cancel"],
+          "partner_agent": [],
+          "mph": [],
+          "member": [],
+          "uw": [],
+          "ops": []
         },
         "actions": [
           {

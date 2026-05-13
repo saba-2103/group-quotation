@@ -53,10 +53,12 @@
           "FINALIZED": []
         },
         "roleActions": {
-          "maker": ["set-premium", "submit"],
-          "checker": ["finalize"],
-          "ops": [],
-          "viewer": []
+          "sales": ["set-premium", "submit", "finalize"],
+          "partner_agent": [],
+          "mph": [],
+          "member": [],
+          "uw": [],
+          "ops": []
         },
         "actions": [
           {

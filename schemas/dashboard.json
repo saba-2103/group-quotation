@@ -88,8 +88,194 @@
             ]
         },
         {
+            "id": "inbox-section",
+            "type": "section-group",
+            "props": {
+                "title": "Inbox",
+                "columns": 1
+            },
+            "children": [
+                {
+                    "id": "inbox-sales-my-quotes",
+                    "type": "data-table",
+                    "visibleRoles": ["sales"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/quotation/quotes/search",
+                            "method": "GET",
+                            "params": { "status": "DRAFT", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Draft quotes awaiting your action",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Quote ID", "type": "link", "linkRoute": "/quotation/:id" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+                            { "id": "status", "accessorKey": "status", "label": "Status", "type": "state-badge", "entity": "quote" }
+                        ],
+                        "emptyState": {
+                            "title": "No draft quotes",
+                            "description": "Start a new quote from /quotation."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-sales-finalize-proposal",
+                    "type": "data-table",
+                    "visibleRoles": ["sales"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/proposals/search",
+                            "method": "GET",
+                            "params": { "state": "SUBMITTED", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Proposals ready to finalize",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Proposal ID", "type": "link", "linkRoute": "/issuance/proposals/:id" },
+                            { "id": "quoteId", "accessorKey": "quoteId", "label": "Source quote", "type": "text" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "proposal" }
+                        ],
+                        "emptyState": {
+                            "title": "No proposals to finalize",
+                            "description": "Proposals appear here once a client accepts the quote."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-partner-onboard-members",
+                    "type": "data-table",
+                    "visibleRoles": ["partner_agent"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/policy-admin/policies/search",
+                            "method": "GET",
+                            "params": { "state": "PENDING", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Policies needing member onboarding",
+                        "columns": [
+                            { "id": "policyNumber", "accessorKey": "policyNumber", "label": "Policy #", "type": "link", "linkRoute": "/policy-admin/policies/:id" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policy" }
+                        ],
+                        "emptyState": {
+                            "title": "No policies need onboarding",
+                            "description": "Pending policies will appear here once they are created."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-mph-pending-acceptance",
+                    "type": "data-table",
+                    "visibleRoles": ["mph"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/quotation/quotes/search",
+                            "method": "GET",
+                            "params": { "status": "SENT_TO_CLIENT", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Quotes awaiting your acceptance",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Quote ID", "type": "link", "linkRoute": "/quotation/:id" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+                            { "id": "premium", "accessorKey": "premiumAmount.amount", "label": "Annual premium (INR)", "type": "currency", "currency": "INR" }
+                        ],
+                        "emptyState": {
+                            "title": "No quotes awaiting acceptance",
+                            "description": "Quotes from Sales will appear here when they are ready for your sign-off."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-member-confirm-enrolment",
+                    "type": "data-table",
+                    "visibleRoles": ["member"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/policy-members/search",
+                            "method": "GET",
+                            "params": { "state": "MAF_PENDING", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Confirm your enrolment",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/policy-admin/members/by-policy-member/:id" },
+                            { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
+                            { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
+                        ],
+                        "emptyState": {
+                            "title": "Nothing to confirm",
+                            "description": "Your enrolment notifications will appear here."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-uw-referred-members",
+                    "type": "data-table",
+                    "visibleRoles": ["uw"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/policy-members/search",
+                            "method": "GET",
+                            "params": { "state": "REFERRED_TO_UW", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Members referred for review",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/policy-admin/members/by-policy-member/:id" },
+                            { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
+                            { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
+                        ],
+                        "emptyState": {
+                            "title": "Queue is clear",
+                            "description": "No members are currently waiting for UW review."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-ops-repair-members",
+                    "type": "data-table",
+                    "visibleRoles": ["ops"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/policy-members/search",
+                            "method": "GET",
+                            "params": { "state": "REPAIR_PENDING", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Members flagged for repair",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/policy-admin/members/by-policy-member/:id" },
+                            { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
+                            { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
+                        ],
+                        "emptyState": {
+                            "title": "Queue is clear",
+                            "description": "No members are currently flagged for repair."
+                        }
+                    }
+                }
+            ]
+        },
+        {
             "id": "business-processes-section",
             "type": "section-group",
+            "visibleRoles": ["sales"],
             "props": {
                 "title": "Business Processes",
                 "columns": 3
@@ -145,6 +331,7 @@
         {
             "id": "quick-actions-section",
             "type": "section-group",
+            "visibleRoles": ["sales"],
             "props": {
                 "title": "Quick Actions",
                 "columns": 3

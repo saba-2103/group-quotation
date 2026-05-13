@@ -58,6 +58,7 @@
         "stateActions": {
           "CREATED": ["price"],
           "PRICED": ["classify"],
+          "MAF_PENDING": ["confirm-maf"],
           "REPAIR_PENDING": ["repair-edit", "reject", "archive"],
           "REFERRED_TO_UW": ["uw-approve", "uw-reject"],
           "APPROVED": ["send-for-issuance"],
@@ -67,10 +68,12 @@
           "ARCHIVED": []
         },
         "roleActions": {
-          "maker": ["repair-edit"],
-          "checker": ["price", "classify", "uw-approve", "uw-reject", "reject", "archive", "send-for-issuance", "pam-link"],
-          "ops": ["repair-edit", "reject", "archive", "pam-link"],
-          "viewer": []
+          "sales": ["price", "classify", "reject", "archive", "send-for-issuance", "pam-link"],
+          "partner_agent": ["pam-link"],
+          "mph": [],
+          "member": ["confirm-maf"],
+          "uw": ["uw-approve", "uw-reject"],
+          "ops": ["repair-edit", "reject", "archive", "pam-link"]
         },
         "actions": [
           {
@@ -95,6 +98,16 @@
             "icon": "Wrench",
             "type": "open-modal",
             "target": "repair-policy-member-form",
+            "variant": "default"
+          },
+          {
+            "id": "confirm-maf",
+            "label": "Confirm enrolment",
+            "icon": "Check",
+            "type": "api-mutation",
+            "refreshKey": "/api/issuance/policy-members/{{memberId}}",
+            "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}/confirm-maf", "method": "POST" },
+            "successMessage": "Enrolment confirmed; member will be activated shortly.",
             "variant": "default"
           },
           {

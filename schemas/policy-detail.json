@@ -54,10 +54,12 @@
           "CANCELLED": []
         },
         "roleActions": {
-          "maker": [],
-          "checker": ["cancel"],
-          "ops": [],
-          "viewer": []
+          "sales": ["cancel"],
+          "partner_agent": [],
+          "mph": [],
+          "member": [],
+          "uw": [],
+          "ops": []
         },
         "actions": [
           {

@@ -12,7 +12,7 @@
       "props": {
         "stateField": "status",
         "stateActions": { "DRAFT": ["add-plan"] },
-        "roleActions": { "maker": ["add-plan"], "checker": [], "ops": [], "viewer": [] },
+        "roleActions": { "sales": ["add-plan"], "partner_agent": [], "mph": [], "member": [], "uw": [], "ops": [] },
         "actions": [
           {
             "id": "add-plan",

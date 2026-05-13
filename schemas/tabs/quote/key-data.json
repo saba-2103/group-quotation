@@ -37,10 +37,12 @@
         "stateField": "status",
         "stateActions": { "DRAFT": ["edit-policy-detail"] },
         "roleActions": {
-          "maker": ["edit-policy-detail"],
-          "checker": [],
-          "ops": [],
-          "viewer": []
+          "sales": ["edit-policy-detail"],
+          "partner_agent": [],
+          "mph": [],
+          "member": [],
+          "uw": [],
+          "ops": []
         },
         "actions": [
           {

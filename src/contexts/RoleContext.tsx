@@ -13,10 +13,10 @@ import {
   type ReactNode,
 } from 'react';
 
-import type { Role } from '@/types/group-pas/roles';
+import { ROLES, type Role } from '@/types/group-pas/roles';
 
 const STORAGE_KEY = 'group-pas:current-role';
-const DEFAULT_ROLE: Role = 'maker';
+const DEFAULT_ROLE: Role = 'sales';
 
 export interface RoleContextValue {
   role: Role;
@@ -28,8 +28,8 @@ export const RoleContext = createContext<RoleContextValue | undefined>(undefined
 function readStoredRole(): Role {
   if (typeof window === 'undefined') return DEFAULT_ROLE;
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'maker' || stored === 'checker' || stored === 'ops' || stored === 'viewer') {
-    return stored;
+  if (stored && (ROLES as string[]).includes(stored)) {
+    return stored as Role;
   }
   return DEFAULT_ROLE;
 }
