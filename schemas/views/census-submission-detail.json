@@ -1,0 +1,111 @@
+{
+  "id": "census-submission-detail-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "census-detail-header",
+      "type": "page-header",
+      "props": {
+        "backHref": "/issuance/proposals/{{id}}/census",
+        "backLabel": "Back to census history",
+        "title": "Census submission {{submissionId}}",
+        "description": "Parse + validation pipeline view. Once status is INGESTED you can submit to materialise members on the policy."
+      }
+    },
+    {
+      "id": "census-detail-summary",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/census-submissions/{{submissionId}}", "method": "GET" },
+        "pollSchedule": {
+          "initialIntervalMs": 2000,
+          "initialDurationMs": 10000,
+          "fallbackIntervalMs": 5000,
+          "maxDurationMs": 60000
+        },
+        "stopWhen": {
+          "or": [
+            { "==": [{ "var": "status" }, "COMPLETED"] },
+            { "==": [{ "var": "status" }, "FAILED"] }
+          ]
+        }
+      },
+      "props": {
+        "columns": 4,
+        "fields": [
+          {
+            "id": "status",
+            "label": "Status",
+            "accessorKey": "status",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "INITIATED", "label": "Initiated", "variant": "secondary" },
+              { "value": "INGESTED", "label": "Ingested", "variant": "info" },
+              { "value": "SUBMITTED", "label": "Submitted", "variant": "info" },
+              { "value": "COMPLETED", "label": "Completed", "variant": "success" },
+              { "value": "FAILED", "label": "Failed", "variant": "destructive" }
+            ]
+          },
+          { "id": "id", "label": "Submission ID", "accessorKey": "id" },
+          { "id": "totalRows", "label": "Total rows", "accessorKey": "totalRows" },
+          { "id": "acceptedRows", "label": "Accepted", "accessorKey": "acceptedRows" },
+          { "id": "rejectedRows", "label": "Rejected", "accessorKey": "rejectedRows" },
+          { "id": "createdMemberCount", "label": "Members created", "accessorKey": "createdMemberCount" }
+        ]
+      }
+    },
+    {
+      "id": "census-detail-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/census-submissions/{{submissionId}}", "method": "GET" }
+      },
+      "props": {
+        "entityType": "censusSubmission",
+        "entityId": "{{submissionId}}",
+        "stateActions": {
+          "INITIATED": [],
+          "INGESTED": ["submit"],
+          "SUBMITTED": [],
+          "COMPLETED": [],
+          "FAILED": []
+        },
+        "actions": [
+          {
+            "id": "submit",
+            "label": "Submit submission",
+            "icon": "Send",
+            "type": "api-mutation",
+            "refreshKey": "/api/issuance/census-submissions/{{submissionId}}",
+            "api": {
+              "endpoint": "/api/issuance/census-submissions/{{submissionId}}/submit",
+              "method": "POST"
+            },
+            "successMessage": "Submission accepted; materialising policy members…"
+          }
+        ]
+      }
+    },
+    {
+      "id": "census-submission-rows-filters",
+      "type": "filter-bar",
+      "props": {
+        "stateKey": "census-submission-rows-filters",
+        "filters": [
+          {
+            "id": "status",
+            "label": "Row status",
+            "type": "select",
+            "options": [
+              { "value": "VALID", "label": "Valid" },
+              { "value": "WARNING", "label": "Warning" },
+              { "value": "INVALID", "label": "Invalid" }
+            ]
+          }
+        ]
+      }
+    },
+    { "$ref": "schemas/tables/census-submission-rows.json" }
+  ]
+}

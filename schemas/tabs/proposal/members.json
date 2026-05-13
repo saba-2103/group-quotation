@@ -51,6 +51,14 @@
             "type": "navigate",
             "target": "/issuance/proposals/{{id}}/members/new",
             "variant": "default"
+          },
+          {
+            "id": "bulk-upload-btn",
+            "label": "Bulk upload",
+            "icon": "Upload",
+            "type": "navigate",
+            "target": "/issuance/proposals/{{id}}/census",
+            "variant": "outline"
           }
         ],
         "columns": [

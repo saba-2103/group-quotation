@@ -1,0 +1,64 @@
+{
+  "id": "proposal-census-tab",
+  "type": "tab-panel",
+  "props": { "value": "census", "label": "Census", "icon": "Upload" },
+  "children": [
+    {
+      "id": "proposal-census-history-table",
+      "type": "data-table",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/issuance/policies/{{id}}/census-submissions",
+          "method": "GET"
+        }
+      },
+      "props": {
+        "title": "Census submission history",
+        "description": "Each row is a bulk-upload run against this proposal's policy. Click into one to see per-row validation results.",
+        "headerActions": [
+          {
+            "id": "upload-census-btn",
+            "label": "Upload census",
+            "icon": "Upload",
+            "type": "navigate",
+            "target": "/issuance/proposals/{{id}}/census/new",
+            "variant": "default"
+          }
+        ],
+        "columns": [
+          {
+            "id": "id",
+            "accessorKey": "id",
+            "label": "Submission ID",
+            "type": "link",
+            "linkRoute": "/issuance/proposals/{{id}}/census/:id"
+          },
+          {
+            "id": "status",
+            "accessorKey": "status",
+            "label": "Status",
+            "type": "state-badge",
+            "entity": "censusSubmission"
+          },
+          { "id": "totalRows", "accessorKey": "totalRows", "label": "Rows", "type": "number" },
+          { "id": "acceptedRows", "accessorKey": "acceptedRows", "label": "Accepted", "type": "number" },
+          { "id": "rejectedRows", "accessorKey": "rejectedRows", "label": "Rejected", "type": "number" },
+          { "id": "createdMemberCount", "accessorKey": "createdMemberCount", "label": "Members created", "type": "number" }
+        ],
+        "rowActions": [
+          {
+            "id": "view-submission-btn",
+            "label": "View",
+            "icon": "Eye",
+            "type": "navigate",
+            "target": "/issuance/proposals/{{id}}/census/:id"
+          }
+        ],
+        "emptyState": {
+          "title": "No census submissions yet",
+          "description": "Click 'Upload census' to bulk-load members onto this proposal."
+        }
+      }
+    }
+  ]
+}
