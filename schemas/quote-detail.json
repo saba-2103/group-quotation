@@ -65,7 +65,7 @@
         "entityType": "quote",
         "entityId": "{{id}}",
         "stateActions": {
-          "DRAFT": ["edit", "send-for-approval", "submit", "clear-approval", "withdraw"],
+          "DRAFT": ["send-for-approval", "submit", "clear-approval", "withdraw"],
           "SUBMITTED": ["send-to-client", "withdraw"],
           "SENT_TO_CLIENT": ["accept", "reject", "expire", "withdraw"],
           "ACCEPTED": ["finalize", "withdraw"],
@@ -75,7 +75,7 @@
           "EXPIRED": []
         },
         "roleActions": {
-          "maker": ["edit", "send-for-approval", "withdraw"],
+          "maker": ["send-for-approval", "withdraw"],
           "checker": ["submit", "clear-approval", "send-to-client", "accept", "reject", "expire", "finalize", "withdraw"],
           "ops": [],
           "viewer": []
@@ -165,14 +165,6 @@
               "title": "Mark quote expired",
               "message": "Use when the client did not respond within the validity window. Continue?"
             }
-          },
-          {
-            "id": "edit",
-            "label": "Edit",
-            "icon": "Pencil",
-            "type": "open-modal",
-            "target": "edit-quote-policy-detail-form",
-            "variant": "outline"
           }
         ]
       }

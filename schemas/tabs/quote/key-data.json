@@ -11,7 +11,7 @@
       },
       "props": {
         "title": "Quote details",
-        "description": "Read-only for V1. Maker-only edit lands in D-edit.",
+        "description": "Policy-level metadata. Edit affordance is DRAFT + maker only; plans, census, and member-mapping have their own tabs.",
         "columns": 3,
         "fields": [
           { "id": "id", "label": "Quote ID", "accessorKey": "id" },
@@ -24,6 +24,33 @@
           { "id": "effectiveDate", "label": "Effective date", "accessorKey": "effectiveDate", "type": "date" },
           { "id": "expiryDate", "label": "Expiry date", "accessorKey": "expiryDate", "type": "date" },
           { "id": "inceptionDate", "label": "Inception date", "accessorKey": "inceptionDate", "type": "date" }
+        ]
+      }
+    },
+    {
+      "id": "quote-key-data-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "stateField": "status",
+        "stateActions": { "DRAFT": ["edit-policy-detail"] },
+        "roleActions": {
+          "maker": ["edit-policy-detail"],
+          "checker": [],
+          "ops": [],
+          "viewer": []
+        },
+        "actions": [
+          {
+            "id": "edit-policy-detail",
+            "label": "Edit policy details",
+            "icon": "Pencil",
+            "type": "open-modal",
+            "target": "edit-quote-policy-detail-form",
+            "variant": "outline"
+          }
         ]
       }
     }
