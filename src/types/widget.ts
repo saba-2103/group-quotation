@@ -129,6 +129,16 @@ export type ActionConfig = BaseActionConfig & (
         // dispatched through the same action handler. Used to close the host
         // overlay (`trigger-event`) or navigate back to a list (`navigate`).
         onSuccess?: ActionConfig[];
+        // Two-step file-upload semantics for api-mutation submit actions
+        // (PROP-0001). When set, the FormContainer's submit handler:
+        //   1. POSTs the form JSON (with the named file field omitted) to
+        //      `api.endpoint` and expects { submissionId, uploadUrl, ... } back;
+        //   2. PUTs the named File field value to the returned `uploadUrl`;
+        //   3. Dispatches `onSuccess[]` with the initiate response merged into
+        //      rowData so downstream actions can interpolate {{submissionId}}.
+        // Engine-side keeps the schema declarative; future presigned-upload
+        // forms reuse the same primitive.
+        uploadField?: string;
     }
     | {
         type: "api-download";

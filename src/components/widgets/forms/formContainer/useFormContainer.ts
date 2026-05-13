@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useActionHandler } from '@/hooks/useActionHandler';
 import { useTenantConfig, DateFormat } from '@/contexts/TenantConfigContext';
 import { ActionConfig } from '@/types/widget';
+import { toast } from '@/components/ui/toast';
 import { FormFieldConfig, FormAction, BackendError, FormValues } from './types';
 import { buildFormSchema, buildDefaultValues } from './utils';
 import { evaluateCondition } from '@/lib/conditions';
@@ -25,7 +26,7 @@ interface UseFormContainerReturn {
     onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
     isValid: boolean;
     isSubmitting: boolean;
-    handleAction: (action: ActionConfig) => Promise<void>;
+    handleAction: (action: ActionConfig, rowData?: Record<string, unknown>) => Promise<void>;
 }
 
 export const useFormContainer = ({
@@ -75,6 +76,96 @@ export const useFormContainer = ({
 
         const submitAction = actions.find((a) => a.submitAction);
         if (!submitAction) return;
+
+        // Two-step file-upload semantics (PROP-0001 census submission).
+        // When the submit action declares `uploadField`, we:
+        //   1. POST the form body (file field omitted) to api.endpoint and
+        //      expect { submissionId, uploadUrl, ... }
+        //   2. PUT the named File to the returned uploadUrl
+        //   3. Dispatch onSuccess[] with the initiate response merged into
+        //      rowData so downstream `{{submissionId}}` substitutions resolve.
+        if (
+            submitAction.type === 'api-mutation' &&
+            'uploadField' in submitAction &&
+            submitAction.uploadField
+        ) {
+            const fieldName = submitAction.uploadField;
+            const file = visibleData[fieldName];
+            const jsonBody: FormValues = { ...visibleData };
+            delete jsonBody[fieldName];
+
+            if (!(typeof File !== 'undefined' && file instanceof File)) {
+                toast.error('Please select a file to upload');
+                return;
+            }
+
+            try {
+                // Step 1 — initiate
+                const initRes = await fetch(submitAction.api.endpoint, {
+                    method: submitAction.api.method,
+                    body: JSON.stringify(jsonBody),
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                if (!initRes.ok) {
+                    let msg = `Initiate failed: ${initRes.statusText}`;
+                    try {
+                        const text = await initRes.text();
+                        if (text) {
+                            const err = JSON.parse(text);
+                            if (err.message) msg = err.message;
+                            else if (err.error) msg = err.error;
+                        }
+                    } catch { /* keep statusText */ }
+                    throw new Error(msg);
+                }
+                const initData = (await initRes.json()) as Record<string, unknown>;
+                const uploadUrl =
+                    typeof initData?.uploadUrl === 'string' ? initData.uploadUrl : undefined;
+                if (!uploadUrl) {
+                    throw new Error('Initiate response missing uploadUrl');
+                }
+
+                // Step 2 — PUT the file blob to the (proxied) upload URL.
+                const putRes = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: file.type ? { 'Content-Type': file.type } : undefined,
+                });
+                if (!putRes.ok) {
+                    throw new Error(`Upload failed: ${putRes.statusText}`);
+                }
+
+                if (submitAction.successMessage) {
+                    toast.success(submitAction.successMessage);
+                }
+                // Run onSuccess[] with the initiate payload's fields substituted
+                // into `{{key}}` placeholders on each follow-up action so
+                // navigate targets and chained api endpoints can interpolate
+                // {{submissionId}} from the initiate response.
+                if (submitAction.onSuccess?.length) {
+                    const interpolated = submitAction.onSuccess.map((next) => {
+                        let s = JSON.stringify(next);
+                        for (const [k, v] of Object.entries(initData as Record<string, unknown>)) {
+                            if (v === null || v === undefined) continue;
+                            const stringV = typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? String(v) : '';
+                            if (stringV !== '') {
+                                s = s.split(`{{${k}}}`).join(stringV);
+                            }
+                        }
+                        return JSON.parse(s) as ActionConfig;
+                    });
+                    for (const next of interpolated) {
+                        await handleAction(next, initData as Record<string, unknown>);
+                    }
+                }
+            } catch (err) {
+                const message =
+                    err instanceof Error && err.message ? err.message : 'Upload failed';
+                toast.error(message);
+                throw err;
+            }
+            return;
+        }
 
         if (submitAction.type === 'api-mutation') {
             await handleAction({ ...submitAction, api: { ...submitAction.api, body: visibleData } });

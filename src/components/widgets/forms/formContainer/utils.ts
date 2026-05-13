@@ -63,6 +63,18 @@ const buildFieldSchema = (
   field: FormFieldConfig,
   required: boolean,
 ): z.ZodTypeAny => {
+  // File fields carry a runtime `File` object (or null). They bypass the
+  // string/number/boolean ladder; `required` is enforced via a refinement.
+  if (field.type === "file") {
+    const fileSchema: z.ZodTypeAny = z
+      .any()
+      .refine(
+        (v) => !required || (typeof File !== 'undefined' && v instanceof File),
+        { message: field.validations?.find((x) => x.rule === REQUIRED_RULE)?.message ?? `${field.label} is required` },
+      );
+    return required ? fileSchema : fileSchema.optional();
+  }
+
   let schema: z.ZodTypeAny =
     field.type === "number"
       ? z.coerce.number()
@@ -110,6 +122,8 @@ export const buildDefaultValues = (fields: FormFieldConfig[]): FormValues => {
       defaults[field.name] = field.defaultValue;
     } else if (field.type === "checkbox") {
       defaults[field.name] = false;
+    } else if (field.type === "file") {
+      defaults[field.name] = null;
     } else {
       defaults[field.name] = "";
     }
