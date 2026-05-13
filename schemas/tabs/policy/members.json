@@ -4,6 +4,40 @@
   "props": { "value": "members", "label": "Members", "icon": "Users" },
   "children": [
     {
+      "id": "policy-members-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/policies/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "stateField": "state",
+        "stateActions": {
+          "PENDING": ["add-policy-admin-member"],
+          "ACTIVE": ["add-policy-admin-member"],
+          "CREATED": [],
+          "CANCELLED": []
+        },
+        "roleActions": {
+          "sales": [],
+          "partner_agent": [],
+          "mph": [],
+          "member": [],
+          "uw": [],
+          "ops": ["add-policy-admin-member"]
+        },
+        "actions": [
+          {
+            "id": "add-policy-admin-member",
+            "label": "Add member",
+            "icon": "UserPlus",
+            "type": "open-modal",
+            "target": "add-policy-admin-member-form",
+            "variant": "default"
+          }
+        ]
+      }
+    },
+    {
       "id": "policy-members-filters",
       "type": "filter-bar",
       "props": {
