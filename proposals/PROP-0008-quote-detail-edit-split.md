@@ -1,8 +1,9 @@
 ---
 id: PROP-0008
 title: Split monolithic action-bar Edit into per-tab edit ownership
-status: approved
-next_step: /execute-proposal PROP-0008
+status: done
+next_step: null
+pr: null
 proposer: agent:claude
 created: 2026-05-13
 category: spec
@@ -72,3 +73,22 @@ Net result: every tab owns its own edit affordances. Key Data → policy detail.
 <!-- Filled by /execute-proposal. -->
 
 ## Implementation notes
+
+Built via `/build-feature PROP-0008` on 2026-05-13. Run-id `2026-05-13-edit-bar-split`.
+
+Branch: `feat/new-buisiness`.
+
+Commit:
+- `f19d7f2` — split monolithic action-bar Edit into per-tab ownership
+
+Files modified:
+- `schemas/quote-detail.json` — removed `edit` from `stateActions.DRAFT`, from `roleActions.maker`, and the action object itself. Also fixed a trailing-comma artifact from the deletion.
+- `schemas/tabs/quote/key-data.json` — added an inline `action-bar` with a single `edit-policy-detail` action (DRAFT + maker, opens existing `edit-quote-policy-detail-form`). Refreshed the key-value-grid description.
+
+No source code changes. No new widgets. No new endpoints. The existing form schema is untouched.
+
+Verified live: top bar shows only state-transition actions (`Send for approval`, `Withdraw` for Maker + DRAFT); Key Data tab's new Edit button opens the form modal pre-filled with all 8 scalar policy fields (premiumType: ANNUAL, lineOfBusiness: GROUP, ageDefinitionRule: ALB, dates, etc.); Cancel closes cleanly.
+
+This closes the Quotation Detail tab expansion (PROP-0004..0008). Each tab now owns its own edit affordances; the top action bar is purely for state transitions.
+
+Logs: `agent_logs/build-feature/2026-05-13-edit-bar-split/{discover,verify}.log` + design at `context/build-feature/2026-05-13-edit-bar-split/design.md`.

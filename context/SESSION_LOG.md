@@ -1335,3 +1335,40 @@ The proposal text said top-level `hits` + `rules` in the mapping JSON. Live shap
 ### Remaining
 
 One workstream left: PROP-0008 (Edit-bar split — sequencing last per its own design note so users never see both the top-action-bar Edit and per-tab Edit at once).
+
+---
+
+## 2026-05-13 — PROP-0008: Action-bar Edit split (closes Quote Detail expansion)
+
+Run-id `2026-05-13-edit-bar-split`. Built via `/build-feature PROP-0008`. Sequencing-last lane of the 5-proposal Quote Detail batch.
+
+### Commit (`f19d7f2`) — 2 files, +30/-11
+
+- `schemas/quote-detail.json` — removed `edit` from `stateActions.DRAFT`, from `roleActions.maker`, and the action object itself. Also fixed a trailing-comma artifact from the deletion.
+- `schemas/tabs/quote/key-data.json` — added inline `action-bar` with single `edit-policy-detail` action that opens the existing `edit-quote-policy-detail-form` modal. DRAFT + maker gated.
+
+No source code, no new widgets, no API changes.
+
+### Verify
+
+- JSON parse + tsc clean.
+- Browser smoke against group-pas-dev: top action bar shows `Send for approval` + `Withdraw` for maker/DRAFT (no `Edit`); Key Data tab's new Edit button opens the existing form modal pre-filled with all 8 scalar policy fields.
+
+### Quotation Detail batch — summary
+
+The PROP-0004..0008 batch is complete:
+
+| Prop | Surface | Status |
+|------|---------|--------|
+| PROP-0004 | Plans tab card grid + structured editor (PlanCard, PlanForm, AmountFormulaField, CardGrid widget) | done |
+| PROP-0005 | Census tab editable aggregate + file-format editor (EditableTable widget; json-textarea field type + json validation rule + OverlaidForm sourcePath plumbing) | done |
+| PROP-0006 | Pricing tab per-plan premium breakdown (data-table consumer) | done (shipped in setup commit) |
+| PROP-0007 | Member-to-Plan DMN view + blob-replace (DmnDecisionTable widget; reused PROP-0005 form-engine pieces) | done |
+| PROP-0008 | Split monolithic action-bar Edit; per-tab edit ownership | done |
+
+Net new widgets registered: `card-grid`, `editable-table`, `plan-card`, `plan-form`, `dmn-decision-table`. Net new form fields: `json-textarea` + `json` validation rule. Net new OverlaidForm pre-fill primitive: `sourcePath` + `sourceParseJson` + `sourceSubPath`.
+
+Backend gaps surfaced (not papered over):
+- `GET /quotation/quotes/{id}` doesn't echo `aggregateCensus.planBreakdown` — DSL declares it on the entity. After Save + reload, per-plan headcount values render as 0; only the rolled-up `headcount` survives the round trip visibly. Backend ticket warranted.
+
+ARCH_TRANSITION entries added: bespoke `plan-form`, `EditableTable`, OverlaidForm `sourcePath` pre-fill, and `dmn-decision-table` — each with convergence triggers tied to future generic primitives (recursive form repeater, inline-editable DataTable cells, shared schemaAccessor resolver, structured DMN editor).
