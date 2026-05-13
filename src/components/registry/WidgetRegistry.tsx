@@ -11,6 +11,7 @@ import { CardGrid } from "../widgets/data/CardGrid";
 import { EditableTable } from "../widgets/data/EditableTable";
 import { PlanCard } from "../widgets/data/PlanCard";
 import { PlanForm } from "../widgets/forms/PlanForm";
+import { DmnDecisionTable } from "../widgets/data/DmnDecisionTable";
 import { FilterBar } from "../widgets/controls/FilterBar";
 import { TabsContainer } from "../widgets/container/TabsContainer";
 import { FormContainer } from "../widgets/forms/formContainer";
@@ -37,6 +38,7 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
   "editable-table": EditableTable,
   "plan-card": PlanCard,
   "plan-form": PlanForm,
+  "dmn-decision-table": DmnDecisionTable,
   "filter-bar": FilterBar,
   "search-bar": FilterBar,
   "tabs-container": TabsContainer,

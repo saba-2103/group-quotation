@@ -1,0 +1,52 @@
+{
+  "id": "member-mapping-replace-form",
+  "type": "form-container",
+  "props": {
+    "title": "Replace member-to-plan mapping",
+    "description": "The whole DMN decision table is replaced. Edit the JSON below — the backend stores it as an opaque blob. DMN authoring UI is out of V1 scope (spec §5).",
+    "columns": 1,
+    "fields": [
+      {
+        "id": "mapping",
+        "name": "mapping",
+        "label": "DMN JSON",
+        "type": "json-textarea",
+        "order": 1,
+        "span": 1,
+        "sourcePath": "memberToPlanMappingJson",
+        "placeholder": "{\"decisionTable\":{\"hitPolicy\":\"FIRST\",\"inputs\":[...],\"outputs\":[...],\"rules\":[...]}}",
+        "helperText": "Must parse as JSON. Replaces the entire decisionTable.",
+        "validations": [
+          { "rule": "required", "message": "Mapping JSON is required" },
+          { "rule": "json", "message": "Mapping must be valid JSON" }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-replace-mapping",
+        "label": "Replace mapping",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/quotation/quotes/:id",
+        "api": {
+          "endpoint": "/api/quotation/quotes/:id/member-to-plan-mapping",
+          "method": "PUT"
+        },
+        "successMessage": "Member-to-plan mapping replaced",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "member-mapping-replace-form" }
+        ]
+      },
+      {
+        "id": "cancel-replace-mapping",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "member-mapping-replace-form",
+        "submitAction": false
+      }
+    ]
+  }
+}
