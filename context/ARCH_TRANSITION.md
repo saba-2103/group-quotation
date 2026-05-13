@@ -311,3 +311,23 @@ Default behaviour (no `sourcePath`) unchanged. Mirrors the KeyValueGrid `parseJs
 A shared `resolveAccessor({source, accessorKey, parseJson, subPath, nestedParseAt})` utility consumed by both KeyValueGrid and OverlaidForm (and any other read-side consumer that needs it). Either lives in `src/lib/schemaAccessors.ts` or is part of the Layer 1 runtime extraction tracked in `docs/archV1/`.
 
 **Convergence trigger:** the schema-engine extraction PR (PR #57 / Layer 1 runtime) or any consolidation pass on schema-driven accessors.
+
+---
+
+## `dmn-decision-table` — read-only structured DMN view
+
+**Interim contract (V1):**
+`DmnDecisionTable` (`src/components/widgets/data/DmnDecisionTable.tsx`) is a bespoke read-only widget that parses a stringified DMN decision-table JSON, drills `decisionTable.{hitPolicy, inputs, outputs, rules}`, and renders a header (hit policy + chips for inputs/outputs) + a rules table whose columns derive dynamically from `inputs[]` + `outputs[]`. Used by the Quote Detail Member-to-Plan Mapping tab.
+
+It is read-only by design. Edits happen via the blob-replace modal (`member-mapping-replace-form`), not inline — per spec §5 "DMN authoring out of scope; replace flow deferred to D3".
+
+**Risk:**
+- A second consumer wanting any inline DMN editing has no path through this widget.
+- The shape assumed (`decisionTable.{hitPolicy, inputs, outputs, rules}` with per-rule `when`/`then` dicts) is opaque to the backend at the API layer. If the engine that writes the blob changes its schema, this widget needs to adapt.
+
+**Future architecture (target):**
+When (if) a structured DMN editor lands — most likely as part of a multi-row repeater field type (PROP-0009-class) or a dedicated DMN authoring widget — one of two things happens:
+1. `DmnDecisionTable` gains an `editable: true` mode with add-row / remove-row / edit-cell affordances backed by the same blob-PUT contract.
+2. A new `dmn-decision-table-editor` widget takes over the tab; `DmnDecisionTable` continues as the read-only renderer for non-DRAFT views.
+
+**Convergence trigger:** a structured DMN editor proposal lands. Removal is mechanical: keep the read renderer or replace it with the editor; the API contract (`PUT /quotation/quotes/{id}/member-to-plan-mapping` body `{mapping: string}`) is stable.

@@ -1,8 +1,9 @@
 ---
 id: PROP-0007
 title: Show full Member-to-Plan DMN mapping with blob-replace flow
-status: approved
-next_step: /execute-proposal PROP-0007
+status: done
+next_step: null
+pr: null
 proposer: agent:claude
 created: 2026-05-13
 category: spec
@@ -77,3 +78,33 @@ New form-field type `json-textarea`: thin wrapper around the existing `textarea`
 <!-- Filled by /execute-proposal. -->
 
 ## Implementation notes
+
+Built via `/build-feature PROP-0007` on 2026-05-13. Run-id `2026-05-13-mapping-dmn-view`.
+
+Branch: `feat/new-buisiness`.
+
+Commits:
+- `478e29c` — DMN view + blob-replace
+
+Files added:
+- `src/components/widgets/data/DmnDecisionTable.tsx`
+- `schemas/forms/member-mapping-replace-form.json`
+
+Files modified:
+- `schemas/tabs/quote/member-mapping.json` (rewritten)
+- `src/components/registry/WidgetRegistry.tsx` (register `dmn-decision-table`)
+
+CLARIFY decision: Replace action gated to **checker** per the proposal text (deviation from V1's maker-everywhere convention for writes; treated as actuarial-review concern).
+
+Deviations from the proposal text:
+- The live `memberToPlanMappingJson` nests under `decisionTable.{hitPolicy, inputs, outputs, rules}` with per-rule `when`/`then` dicts. The proposal had top-level `hits` and `rules` — wrong. Widget follows the live shape; proposal text is stale.
+- Used the `json-textarea` field type + `json` validation rule + `sourcePath` pre-fill (all landed by PROP-0005), so no new form-engine plumbing in this lane. The proposal's "field-type registration for `json-textarea`" item became a no-op.
+
+Architecture transition: `dmn-decision-table` is bespoke for the DMN shape. See `context/ARCH_TRANSITION.md` "DMN decision-table — read-only structured view" entry. Convergence trigger is a structured DMN rule editor (future PROP-0010+ once a multi-row repeater field type exists), at which point either this widget gains `editable: true` mode or the editor lives in a sibling widget.
+
+Verified live against `https://group-pas-dev.anairacloud.com`:
+- Tab renders seeded DMN (hitPolicy FIRST, salary input, planNo output, 2 rules at the 2000000 threshold).
+- Modal opens with full stringified JSON pre-filled.
+- Malformed JSON disables submit with "Mapping must be valid JSON" error.
+
+Logs: `agent_logs/build-feature/2026-05-13-mapping-dmn-view/{discover,clarify,verify}.log` + design at `context/build-feature/2026-05-13-mapping-dmn-view/design.md`.

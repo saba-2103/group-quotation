@@ -1292,3 +1292,46 @@ Run-id `2026-05-13-census-editable-table`. Built via `/build-feature PROP-0005`.
 ### Remaining workstreams
 
 PROP-0007 (Mapping DMN view) and PROP-0008 (Edit-bar split) remain. PROP-0007's lane is now smaller — only the mapping-replace flow, since `json-textarea` and `json` validation already shipped here.
+
+---
+
+## 2026-05-13 — PROP-0007: Member-to-Plan DMN view + blob-replace
+
+Run-id `2026-05-13-mapping-dmn-view`. Built via `/build-feature PROP-0007`.
+
+### CLARIFY answer
+
+Replace action gated to **checker** per the proposal text (deviates from V1's maker-everywhere convention for writes; intentional — DMN authoring is treated as actuarial review).
+
+### Commit (`478e29c`) — 4 files, +343/-38
+
+- `src/components/widgets/data/DmnDecisionTable.tsx` — new bespoke widget. Parses stringified `memberToPlanMappingJson`, drills `decisionTable.{hitPolicy, inputs, outputs, rules}`, renders header chips + dynamic-column rules table. Accepts both wrapped and unwrapped shapes.
+- `schemas/forms/member-mapping-replace-form.json` — new. Single `mapping` json-textarea field, pre-fills via `sourcePath: "memberToPlanMappingJson"`, validates via `json` rule, submits `PUT /quotation/quotes/{id}/member-to-plan-mapping` body `{mapping: string}`.
+- `schemas/tabs/quote/member-mapping.json` — rewritten. Replaces broken key-value-grid (used wrong field paths `hits`/`rules` vs the live `decisionTable.hitPolicy`/`decisionTable.rules`).
+- `src/components/registry/WidgetRegistry.tsx` — register `dmn-decision-table`.
+
+### Verify
+
+- `tsc --noEmit` PASS.
+- ESLint clean on the new widget.
+- Live browser smoke against group-pas-dev: DMN renders (hitPolicy FIRST, salary input, planNo output, 2 rules). Replace modal pre-fills with full stringified blob. Negative path confirmed: malformed JSON disables submit + surfaces "Mapping must be valid JSON".
+
+### Reused from PROP-0005
+
+- `json-textarea` field type
+- `json` validation rule
+- `sourcePath` per-field pre-fill plumbing
+
+The PROP-0007 lane was lighter than originally specced because PROP-0005 lifted these form-engine pieces forward.
+
+### Architecture transition
+
+`dmn-decision-table` is bespoke read-only. Convergence: a structured DMN editor (future PROP-0009/0010-class) either upgrades this widget to `editable: true` mode or replaces it with a sibling editor. API contract is stable.
+
+### Backend / spec note
+
+The proposal text said top-level `hits` + `rules` in the mapping JSON. Live shape nests under `decisionTable` with per-rule `when`/`then` dicts. Backend is authoritative; proposal text was wrong and is corrected in PROP-0007's Implementation notes.
+
+### Remaining
+
+One workstream left: PROP-0008 (Edit-bar split — sequencing last per its own design note so users never see both the top-action-bar Edit and per-tab Edit at once).
