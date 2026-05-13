@@ -1,8 +1,9 @@
 ---
 id: PROP-0004
 title: Render Plans tab as card grid with products, benefits, formulas
-status: approved
-next_step: /execute-proposal PROP-0004
+status: done
+next_step: null
+pr: null
 proposer: agent:claude
 created: 2026-05-13
 category: spec
@@ -77,3 +78,34 @@ If `open-modal` does not already pre-fill from `rowData` (uncertain per registry
 <!-- Filled by /execute-proposal. -->
 
 ## Implementation notes
+
+Built via `/build-feature PROP-0004` on 2026-05-13. Run-id `2026-05-13-plans-cards-grid`.
+
+Branch: `feat/new-buisiness` (sequential commits per user CLARIFY answer; not a feature branch).
+
+Commits:
+- `c11efb8` — scaffold card-grid/editable-table widgets + PROP-0006 pricing breakdown (setup + Lane A)
+- `4f42cf9` — file PROP-0004..0008 markdowns
+- `b1718a6` — Plans tab card grid + structured plan editor
+
+Files added:
+- `src/components/widgets/data/PlanCard.tsx`
+- `src/components/widgets/forms/PlanForm.tsx`
+- `src/components/widgets/forms/AmountFormulaField.tsx`
+- `schemas/forms/plan-edit-form.json`
+
+Files modified:
+- `src/components/widgets/data/CardGrid.tsx` (stub → real impl)
+- `src/components/registry/WidgetRegistry.tsx` (register plan-card, plan-form)
+- `schemas/tabs/quote/plans.json` (rewritten to action-bar + card-grid)
+
+Deviations from the design doc:
+- **OverlaidForm pre-fill plumbing dropped.** The original design claimed this needed adding. Investigation found `OverlaidForm.injectRowData` (lines 15-42) already does scalar-field pre-fill via `defaultValue`; the bespoke PlanForm bypasses that path entirely and reads `useOverlayStore` directly. Zero changes to OverlaidForm / useFormContainer needed.
+- **`disabledTooltip` removed from Add Plan action.** The ActionBar contract is "visible-but-disabled" when `disabledTooltip` is set; not the right tool for an enabled-in-DRAFT precondition. The button is now state+role gated; precondition `hasCensusFileFormat` surfaces via the server's toast on submit per CORE_MEMORY honesty pattern.
+- **No unit tests added.** Live browser smoke test covers the happy path; a Jest interaction suite for PlanForm validation + repeater behavior is deferred as a small follow-up. Noted in `agent_logs/build-feature/2026-05-13-plans-cards-grid/verify.log`.
+
+Architecture transition: `PlanForm` is a deliberately-bespoke widget that bypasses the scalar-only FormContainer. See `context/ARCH_TRANSITION.md` "Bespoke plan-form widget" entry — collapses into a schema-driven form once a generic `repeater` field type lands.
+
+Verified live against `https://group-pas-dev.anairacloud.com` via the local dev server: 2 seeded plans render with full composition, Edit modal opens with all nested fields pre-filled.
+
+Logs: `agent_logs/build-feature/2026-05-13-plans-cards-grid/{discover,clarify,verify}.log` + design at `context/build-feature/2026-05-13-plans-cards-grid/design.md`.

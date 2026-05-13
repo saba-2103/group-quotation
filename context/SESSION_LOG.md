@@ -1124,3 +1124,119 @@ Verified: `tsc --noEmit` clean; `ActionBar.unit.test.tsx` 7/7 pass; baseline tes
 **Reviewer reply:** https://github.com/Anaira-AI/keystone-ui/pull/57#issuecomment-4431040695
 
 **Process note:** combining 7 messy cherry-picks (`23bc0a6` through `bfc292c`) into a single "snapshot-the-end-state" commit was the right move once it became clear the intermediate commits churned the same file repeatedly with maker-checker add/restore noise. Same lesson as PR #58's process note — when chained cherry-picks fight you, take the final state directly and write one focused commit.
+
+### 2026-05-13 — Group PAS API coverage audit + PROP-0001/2/3 approved + scope policy shift
+
+**Trigger:** user asked whether the keystone-ui frontend uses every endpoint in `https://group-pas-dev.anairacloud.com/v3/api-docs`, suspecting Member GCL existed in backend but not in UI.
+
+**Audit findings** (full report at `/Users/seriousblack/.claude/plans/do-you-have-repo-clever-diffie.md`):
+- 21 + 11 + 9 + 13 + 7 + 3 + 3 = 67 endpoints across `quote/proposal/policy/policy-member/client/commons/catalog` — all wired.
+- 6 `census-submission-api` endpoints — **0 UI wired**. Biggest gap; same scope as V1 plan Task 4.5 (deferred-from-demo backlog D4).
+- 6 `member-quote-api` endpoints — client wrappers + types + form schemas exist; no pages.
+- 1 `policy-admin.addMember` endpoint — wrapper exists, no UI for post-issuance member add.
+- ~30 accounting endpoints — entire domain unwired. Out of scope per user.
+
+**Proposals filed:**
+- [proposals/PROP-0001-census-submission-ui.md](../proposals/PROP-0001-census-submission-ui.md) — Census Submission UI · high · l · **approved**
+- [proposals/PROP-0002-member-quote-gcl-ui.md](../proposals/PROP-0002-member-quote-gcl-ui.md) — Member-Quote (GCL/W4) UI · medium · m · **approved**
+- [proposals/PROP-0003-post-issuance-add-member-ui.md](../proposals/PROP-0003-post-issuance-add-member-ui.md) — Post-issuance AddMember UI · medium · s · **approved**
+
+**Policy shift (user, 2026-05-13):** scope-lock list at [CORE_MEMORY.md "Group PAS V1 — scope locks"](CORE_MEMORY.md) had GCL MemberQuote and (implicitly) post-issuance AddMember in "Out of V1". User decision: **"if backend API exists and behaviour is understood, build the UI"** — don't gate on conceptual buckets like GCL / endorsement / post-issuance when the API surface is there.
+
+**CORE_MEMORY changes:**
+- New principle "API-driven scope (2026-05-13)" added to Group PAS V1 — scope locks.
+- "Out of V1" trimmed to backend-absent capabilities only: real auth (Keycloak), backend-enforced maker-checker, PII/Cerbos UI gating, PDF's UW/RI review states. GCL MemberQuote and post-issuance AddMember moved in-scope.
+- Interim assumption #7 "GCL endpoints" rewritten — endpoints are DSL-canonical at [docs/spec/quotation/MemberQuoteWorkflow.workflow](../docs/spec/quotation/MemberQuoteWorkflow.workflow); UI builds, runtime-stub behaviour surfaced via disabled-with-tooltip pattern.
+
+**Next steps:**
+- `/build-feature PROP-0001` first (largest impact, replaces V1 plan D4 tracking).
+- Update [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md) D4/Task 4.5 to point at PROP-0001 to avoid duplicate tracking.
+- PROP-0002 build needs to remove the `member-quotes-placeholder` tab (Task 2.4.6) as part of CLARIFY.
+- PROP-0003 build needs CLARIFY pass on affordance copy so "Add member" doesn't imply full endorsement-lifecycle support.
+
+**Files changed (docs-only — separate commit per [commit-hygiene rule](CORE_MEMORY.md#commit-hygiene--split-src-from-docs)):**
+- [context/CORE_MEMORY.md](CORE_MEMORY.md) — scope-lock policy update
+- [context/SESSION_LOG.md](SESSION_LOG.md) — this entry
+- [context/HANDOFF.md](HANDOFF.md) — Active Workstreams updated
+- `proposals/PROP-0001-census-submission-ui.md` (new, approved)
+- `proposals/PROP-0002-member-quote-gcl-ui.md` (new, approved)
+- `proposals/PROP-0003-post-issuance-add-member-ui.md` (new, approved)
+- `proposals/_index.md` (new)
+
+---
+
+## 2026-05-13 — Quotation Detail tab expansion (PROP-0004..0008): plan + first lane
+
+### Planning
+
+Plan written at `/Users/seriousblack/.claude/plans/quotation-detail-pages-view-happy-bee.md`. Five proposals filed to lift the demo cuts D1/D2/D3 plus surface API data the schemas were dropping on the floor:
+
+- PROP-0004 — Plans tab card grid + structured plan editor
+- PROP-0005 — Census tab aggregate breakdown editable table + file-format editor
+- PROP-0006 — Pricing tab per-plan premium breakdown
+- PROP-0007 — Member-to-Plan mapping DMN view + blob-replace flow
+- PROP-0008 — Split monolithic action-bar Edit into per-tab edit ownership
+
+Parallelism plan: file footprints disjoint except for `WidgetRegistry.tsx` (PROP-0004/0005 both register a new widget) → pre-register stubs in a setup step so the parallel lanes don't collide.
+
+### Setup commit (`c11efb8`)
+
+- Pre-registered `card-grid` and `editable-table` widget types in `WidgetRegistry.tsx` with stub components at `src/components/widgets/data/{CardGrid,EditableTable}.tsx`.
+- Folded in Lane A's earlier PROP-0006 work on `schemas/tabs/quote/pricing.json` (per-plan breakdown via `data-table` against `estimatedPremium.byPlanJson`).
+
+### Proposals commit (`4f42cf9`)
+
+- Five new proposal markdowns under `proposals/`. Status: `approved`. Pre-existing PROP-0001..0003 + `_index.md` left untracked (other workstreams).
+
+### PROP-0004 BUILD (`b1718a6`) — via `/build-feature` skill
+
+Run-id `2026-05-13-plans-cards-grid`. Followed the CLARIFY → DESIGN → BUILD → VERIFY pipeline.
+
+CLARIFY decisions (user):
+1. Branch: stay on `feat/new-buisiness`, sequential commits split src vs context.
+2. Per-card Edit affordance: wire pre-fill plumbing in this lane.
+3. Plan edit form: structured editor for products/benefits/formula now (not raw JSON).
+
+DESIGN doc at `context/build-feature/2026-05-13-plans-cards-grid/design.md` — bespoke `PlanForm` widget escape hatch to avoid the recursive form-container refactor. Arch transition note appended to `context/ARCH_TRANSITION.md`.
+
+BUILD: 7 files changed, +1331/-58.
+- `src/components/widgets/data/CardGrid.tsx` — stub replaced; iterates array at `arrayPath` from `dataSource`, renders a registered card widget per item with `item` + `parent` props.
+- `src/components/widgets/data/PlanCard.tsx` — new; parses wire's stringified `productsJson` / `coverAmountFormulaJson` / `freeCoverLimitFormulaJson`. Edit/Delete buttons DRAFT + maker gated.
+- `src/components/widgets/forms/PlanForm.tsx` — new; bespoke structured editor for the nested Plan shape (products[] repeater with nested benefits/exclusions, AmountFormulaField for cover and FCL).
+- `src/components/widgets/forms/AmountFormulaField.tsx` — new; discriminated-union sub-form switching by `AmountFormulaType`.
+- `schemas/tabs/quote/plans.json` — rewritten to `action-bar` + `card-grid`.
+- `schemas/forms/plan-edit-form.json` — new; registers `plan-form` for OverlaidForm.
+- `src/components/registry/WidgetRegistry.tsx` — register `plan-card` + `plan-form`.
+
+Deviations from design:
+- OverlaidForm pre-fill plumbing **not needed** — `injectRowData` already handles scalar pre-fill, and PlanForm reads `useOverlayStore` directly for the nested shape it owns. Zero changes to OverlaidForm / useFormContainer.
+- `disabledTooltip` removed from Add Plan during VERIFY — it forces always-disabled per ActionBar contract; precondition `hasCensusFileFormat` now surfaces via server-toast on submit (CORE_MEMORY honesty pattern).
+
+VERIFY:
+- `tsc --noEmit` PASS.
+- ESLint clean on new files. Pre-existing `any` in `WidgetRegistry.tsx:23` left untouched.
+- Live browser smoke test against `https://group-pas-dev.anairacloud.com` via dev proxy: quote `170ea9b1-2eeb-4a88-934b-07afa4112ea4` (2 plans) renders both cards with full product/benefit/formula detail; Edit modal pre-fills nested fields; Add Plan enabled in DRAFT+maker.
+- Coverage gap: no Jest tests added (deferred follow-up).
+
+PROP-0004 status: `done`.
+
+### Files changed
+
+- `src/components/registry/WidgetRegistry.tsx` (setup + PROP-0004)
+- `src/components/widgets/data/CardGrid.tsx` (new, real impl)
+- `src/components/widgets/data/EditableTable.tsx` (new stub, awaiting PROP-0005)
+- `src/components/widgets/data/PlanCard.tsx` (new)
+- `src/components/widgets/forms/PlanForm.tsx` (new)
+- `src/components/widgets/forms/AmountFormulaField.tsx` (new)
+- `schemas/tabs/quote/plans.json` (rewritten)
+- `schemas/tabs/quote/pricing.json` (Lane A, PROP-0006)
+- `schemas/forms/plan-edit-form.json` (new)
+- `proposals/PROP-0004..0008-*.md` (new)
+- `proposals/PROP-0004-quote-detail-plans-cards.md` (status → done, implementation notes)
+- `context/ARCH_TRANSITION.md` (new entry: bespoke plan-form widget)
+- `agent_logs/build-feature/2026-05-13-plans-cards-grid/` (discover/clarify/verify logs)
+- `context/build-feature/2026-05-13-plans-cards-grid/design.md` (design doc)
+
+### Next steps
+
+PROP-0005 (Census), PROP-0007 (Mapping), PROP-0008 (Edit-bar split) remain. Each is a separate `/build-feature` run. PROP-0006 (Pricing) already shipped via the setup commit; can flip its proposal status to `done` when the registry/widget gaps it noted are filed as their own follow-ups.

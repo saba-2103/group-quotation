@@ -75,6 +75,16 @@ Demo target: internal demo by 2026-05-08 (Friday of plan-locked week). Plan in [
 
 **Deferred-from-demo backlog (D1–D12)** lives in the same plan section. After demo lands, work that backlog before starting any new feature.
 
+### Group PAS — API-coverage backlog (2026-05-13)
+
+Audit (2026-05-13) compared the keystone-ui surface against the OpenAPI spec at `https://group-pas-dev.anairacloud.com/v3/api-docs`. Three gaps approved as proposals; accounting suite (~30 endpoints) excluded by user.
+
+| Proposal | Status | Endpoints | Note |
+|----------|--------|-----------|------|
+| [PROP-0001](../proposals/PROP-0001-census-submission-ui.md) — Census Submission UI | approved | `census-submission-api` (6) | Equivalent to V1 plan Task 4.5 / D4; pick up via `/build-feature PROP-0001`. Update [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md) D4 to point here. |
+| [PROP-0002](../proposals/PROP-0002-member-quote-gcl-ui.md) — Member-Quote (GCL/W4) UI | approved | `member-quote-api` (6) | New API-driven-scope rule (CORE_MEMORY.md 2026-05-13) lifted the prior GCL out-of-V1 lock. Replaces `member-quotes-placeholder` tab. |
+| [PROP-0003](../proposals/PROP-0003-post-issuance-add-member-ui.md) — Post-issuance AddMember UI | approved | `addMember` on `/policies/{id}/members` (1) | Endpoint is `Public` per blueprint §4; UI adds "Add member" action on Policy detail with PENDING→ACTIVE polling. |
+
 ### Open items at this thread close (2026-05-07)
 
 Read [context/SESSION_LOG.md](SESSION_LOG.md) "End-of-thread handoff snapshot" entry first — full state lives there. Quick index of what's outstanding:

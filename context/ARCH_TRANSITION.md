@@ -251,3 +251,22 @@ Option A — backend extends the PAM approval pattern to Quote (`RequestQuoteApp
 Option B — backend ships Cerbos role-aware authorization on `submit` itself (no separate approval state). Frontend `roleActions` becomes a typed mirror of Cerbos rules.
 
 **Convergence trigger:** real auth (Keycloak + Cerbos) lands or backend extends the PAM approval pattern. Either way, removal is mechanical — every file touched by the restoration is grep-able by `awaitingApproval` or `maker-checker`.
+
+---
+
+## Bespoke `plan-form` widget — scalar-only FormContainer escape hatch
+
+**Interim contract (V1):**
+`PlanForm` (`src/components/widgets/forms/PlanForm.tsx`) is a registered widget that bypasses `FormContainer` to handle the nested DSL `Plan` shape (`products: list<PlanProduct>` with sub-arrays for benefits/exclusions, plus the discriminated-union `AmountFormula` for cover and free-cover-limit formulas). The widget manages its own `useState` shape, validation, and submit. `AmountFormulaField` is an internal subcomponent — not registered, intentionally bespoke.
+
+The form-container types in `src/components/widgets/forms/formContainer/types.ts` lock `FormFieldValue = string | number | boolean` and `FieldSchema` to Zod scalars. `FormContainer` cannot today represent a Plan's nested-array shape.
+
+**Risk:**
+- Plan-form duplicates form-engine concerns (validation, dirty tracking, submit) instead of inheriting them.
+- AmountFormula's discriminated-union behavior is reimplemented inside `AmountFormulaField` rather than using the form-engine's existing `visibleWhen` primitive.
+- If multiple proposals need similar nested-array editors, the duplication compounds.
+
+**Future architecture (target):**
+A `repeater` field type added to `FormContainer` — accepts a nested `fields: FormFieldConfig[]` and renders an add/remove array, threading through the same react-hook-form instance via `useFieldArray`. Recursive support requires lifting `FormFieldValue` to `FormFieldValue | FormFieldValue[] | Record<string, FormFieldValue>` and the Zod schema builder to match. Once that lands, `PlanForm` collapses into a `schemas/forms/plan-edit-form.json` that declares `products` as a repeater field with nested benefits/exclusions sub-repeaters, and `coverAmountFormula` as a `discriminated-union` field type (or a sub-object with `visibleWhen`-driven children).
+
+**Convergence trigger:** the next proposal that needs a nested-array form (likely PROP-0009 — *"Generalize FormContainer to handle nested arrays and discriminated-union sub-forms"* — to be filed when scope expansion forces it). Removal is mechanical: drop `PlanForm.tsx` + `AmountFormulaField.tsx`, update `plan-edit-form.json` to be schema-only, drop the two registry entries.
