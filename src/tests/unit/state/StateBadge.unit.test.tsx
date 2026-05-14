@@ -27,6 +27,7 @@ const ENTITY_STATES: Record<EntityKind, string[]> = {
     'EXPIRED',
     'FINALIZED',
   ],
+  memberQuote: ['DRAFT', 'SUBMITTED', 'FINALIZED'],
   proposal: ['DRAFT', 'SUBMITTED', 'FINALIZED', 'POLICY_CREATED', 'CANCELLED'],
   policyMember: [
     'CREATED',

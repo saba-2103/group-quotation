@@ -6,6 +6,7 @@ import {
   CENSUS_ROWS,
   CENSUS_SUBMISSIONS,
   CLIENTS,
+  MEMBER_QUOTES,
   MEMBERS,
   POLICIES,
   POLICY_MEMBERS,
@@ -24,6 +25,7 @@ import type {
   Policy,
 } from '@/types/group-pas/policy-admin';
 import type { MockQuote } from '@/mocks/group-pas/quotation/quotes';
+import type { MemberQuote } from '@/types/group-pas/quotation';
 
 // `awaitingApproval` is a UI-only overlay flag (see context/ARCH_TRANSITION.md
 // → "Maker-checker UI overlay"). Carried on Proposal mocks the same way the
@@ -32,6 +34,7 @@ export type MockProposal = Proposal & { awaitingApproval?: boolean };
 
 interface GroupPasStore {
   quotes: MockQuote[];
+  memberQuotes: MemberQuote[];
   proposals: MockProposal[];
   policyMembers: PolicyMember[];
   censusSubmissions: CensusSubmission[];
@@ -50,6 +53,7 @@ export const store: GroupPasStore =
   globalThis.__groupPasStore ??
   (globalThis.__groupPasStore = {
     quotes: structuredClone(QUOTES),
+    memberQuotes: structuredClone(MEMBER_QUOTES),
     proposals: structuredClone(PROPOSALS),
     policyMembers: structuredClone(POLICY_MEMBERS),
     censusSubmissions: structuredClone(CENSUS_SUBMISSIONS),
@@ -108,6 +112,7 @@ export function getApprovalOverlay(
 // restarting the dev server.
 export function resetMockStore(): void {
   store.quotes = structuredClone(QUOTES);
+  store.memberQuotes = structuredClone(MEMBER_QUOTES);
   store.proposals = structuredClone(PROPOSALS);
   store.policyMembers = structuredClone(POLICY_MEMBERS);
   store.censusSubmissions = structuredClone(CENSUS_SUBMISSIONS);

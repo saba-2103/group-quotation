@@ -171,7 +171,8 @@
         { "$ref": "schemas/tabs/quote/plans.json" },
         { "$ref": "schemas/tabs/quote/census.json" },
         { "$ref": "schemas/tabs/quote/member-mapping.json" },
-        { "$ref": "schemas/tabs/quote/pricing.json" }
+        { "$ref": "schemas/tabs/quote/pricing.json" },
+        { "$ref": "schemas/tabs/quote/member-quotes-placeholder.json" }
       ]
     }
   ]

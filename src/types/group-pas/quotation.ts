@@ -4,8 +4,10 @@
 import type {
   AggregateCensus,
   ISODate,
+  MemberData,
   Money,
   Plan,
+  PremiumBreakupItem,
   QuotePremium,
 } from './common';
 
@@ -20,6 +22,8 @@ export type QuoteStatus =
   | 'WITHDRAWN'
   | 'EXPIRED'
   | 'FINALIZED';
+
+export type MemberQuoteStatus = 'DRAFT' | 'SUBMITTED' | 'FINALIZED';
 
 export type PolicyType = 'GTL' | 'GCL' | 'GH';
 
@@ -46,10 +50,20 @@ export interface CensusFileFormat {
   dialectJson?: string;
 }
 
+export interface MemberQuotePremium {
+  amount: Money;
+  breakup: PremiumBreakupItem[];
+}
+
 export interface QuoteCase {
   quoteId: string;
   clientId: string;
   policyType: string;
+}
+
+export interface MemberQuoteCase {
+  memberQuoteId: string;
+  policyId: string;
 }
 
 // ── Domain entities ──
@@ -74,6 +88,16 @@ export interface Quote {
   aggregateCensus?: AggregateCensus;
   censusFileFormat?: CensusFileFormat;
   premium?: QuotePremium;
+}
+
+export interface MemberQuote {
+  id: string;
+  policyId: string;
+  planNo?: string;
+  sumAssured?: Money;
+  status: MemberQuoteStatus;
+  memberData: MemberData;
+  premium?: MemberQuotePremium;
 }
 
 // ── Wire DTOs (response shapes) ──
@@ -127,3 +151,17 @@ export interface EstimatedPremiumDto {
   byPlanJson: string;
 }
 
+export interface MemberQuoteDto {
+  id: string;
+  policyId: string;
+  planNo: string;
+  status: string;
+  name: string;
+  dob: ISODate;
+  gender: string;
+  salary: number;
+  sumAssured: number;
+  annualPremiumAmount: number;
+  annualPremiumCurrency: string;
+  premiumBreakupJson: string;
+}

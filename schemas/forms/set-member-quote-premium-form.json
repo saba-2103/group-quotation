@@ -1,0 +1,68 @@
+{
+  "id": "set-member-quote-premium-form",
+  "type": "form-container",
+  "props": {
+    "title": "Set premium",
+    "description": "Manually enter the per-member annual premium. (Real backend will populate this via the Rule Engine once integrated.)",
+    "columns": 2,
+    "fields": [
+      {
+        "id": "name",
+        "name": "name",
+        "label": "Member name (re-confirm)",
+        "type": "text",
+        "order": 1,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Name is required" }]
+      },
+      {
+        "id": "annualPremiumAmount",
+        "name": "annualPremiumAmount",
+        "label": "Annual premium (INR)",
+        "type": "number",
+        "order": 2,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Premium is required" }]
+      },
+      {
+        "id": "currency",
+        "name": "currency",
+        "label": "Currency",
+        "type": "select",
+        "order": 3,
+        "size": "sm",
+        "defaultValue": "INR",
+        "options": [
+          { "value": "INR", "label": "INR" },
+          { "value": "USD", "label": "USD" }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-set-premium",
+        "label": "Save premium",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/quotation/member-quotes",
+        "api": {
+          "endpoint": "/api/quotation/member-quotes/:id/premium",
+          "method": "PUT"
+        },
+        "successMessage": "Premium saved",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "set-member-quote-premium-form" }
+        ]
+      },
+      {
+        "id": "cancel-set-premium",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "set-member-quote-premium-form",
+        "submitAction": false
+      }
+    ]
+  }
+}
