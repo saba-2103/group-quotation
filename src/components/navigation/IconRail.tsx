@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import type { NavigationItem } from "@shared/types";
@@ -13,10 +14,9 @@ interface IconRailProps {
     logoIconName?: string;
 }
 
-export function IconRail({ items, activeItemId, title, logoIconName }: IconRailProps) {
+export function IconRail({ items, activeItemId, title }: IconRailProps) {
     const { state } = useSidebar();
     const collapsed = state === "collapsed";
-    const LogoIcon = resolveIcon(logoIconName);
 
     return (
         <aside
@@ -29,10 +29,18 @@ export function IconRail({ items, activeItemId, title, logoIconName }: IconRailP
             <div className="flex items-center justify-center h-14 border-b border-sidebar-border">
                 <Link
                     href="/"
-                    title={title}
-                    className="flex aspect-square size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+                    title={title ?? "Anaira"}
+                    aria-label={title ?? "Anaira"}
+                    className="flex aspect-square size-9 items-center justify-center"
                 >
-                    <LogoIcon className="size-4" />
+                    <Image
+                        src="/anaira-logomark.svg"
+                        alt=""
+                        width={32}
+                        height={32}
+                        priority
+                        className="size-8"
+                    />
                 </Link>
             </div>
 
