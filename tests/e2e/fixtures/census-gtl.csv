@@ -1,0 +1,8 @@
+memberId,planNo,name,dob,gender,salary,occupation,sumInsured
+M-001,P1,Aarav Mehta,1985-04-12,M,1200000,Software Engineer,2400000
+M-002,P1,Priya Iyer,1990-09-23,F,950000,Analyst,1900000
+M-003,P1,Rohit Sharma,1978-01-05,M,1800000,Manager,3600000
+M-004,P1,Sneha Kapoor,1995-12-30,F,720000,Designer,1440000
+M-005,P1,Kunal Verma,1988-07-17,M,1100000,Consultant,2200000
+M-UW1,P1,Vikram Singh,1962-03-08,M,2500000,Pilot,5000000
+M-RP1,P1,,1992-06-14,F,,Operator,0

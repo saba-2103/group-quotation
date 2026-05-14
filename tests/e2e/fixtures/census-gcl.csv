@@ -1,0 +1,6 @@
+memberId,planNo,name,dob,gender,salary,occupation,sumInsured
+M-101,P1,Devika Rao,1986-02-19,F,1300000,Loan Officer,2600000
+M-102,P1,Sundar Pillai,1980-11-04,M,1500000,Branch Manager,3000000
+M-103,P1,Anjali Nair,1993-08-21,F,800000,Customer Service,1600000
+M-104,P1,Raghav Joshi,1989-06-09,M,1050000,Engineer,2100000
+M-105,P1,Meera Bhat,1991-04-28,F,920000,Accountant,1840000
