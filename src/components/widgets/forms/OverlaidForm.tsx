@@ -22,7 +22,11 @@ type FieldConfig = {
     sourceSubPath?: string;
     [key: string]: unknown;
 };
-type SubmitActionConfig = { api?: { endpoint?: string; [key: string]: unknown }; [key: string]: unknown };
+type SubmitActionConfig = {
+    api?: { endpoint?: string; [key: string]: unknown };
+    refreshKey?: string;
+    [key: string]: unknown;
+};
 
 function getNested(source: unknown, path?: string): unknown {
     if (source == null || !path) return source;
@@ -50,7 +54,10 @@ function resolvePreFill(field: FieldConfig, rowData: Record<string, unknown>): u
     return value;
 }
 
-function injectRowData(node: WidgetConfig, rowData: Record<string, unknown>): WidgetConfig {
+// Exported for unit tests — covers the rowData-substitution contract
+// (`:id` placeholders in `api.endpoint` and `refreshKey`, pre-fill from
+// `sourcePath` + `sourceSubPath`).
+export function injectRowData(node: WidgetConfig, rowData: Record<string, unknown>): WidgetConfig {
     const propsWithFields = node.props?.fields
         ? {
               ...node.props,
@@ -64,11 +71,28 @@ function injectRowData(node: WidgetConfig, rowData: Record<string, unknown>): Wi
     const enrichedProps = propsWithFields?.actions
         ? {
               ...propsWithFields,
-              actions: (propsWithFields.actions as SubmitActionConfig[]).map((action) =>
-                  action.api?.endpoint
-                      ? { ...action, api: { ...action.api, endpoint: substituteEndpointParams(action.api.endpoint, rowData) } }
-                      : action
-              ),
+              actions: (propsWithFields.actions as SubmitActionConfig[]).map((action) => {
+                  let next: SubmitActionConfig = action;
+                  if (action.api?.endpoint) {
+                      next = {
+                          ...next,
+                          api: { ...action.api, endpoint: substituteEndpointParams(action.api.endpoint, rowData) },
+                      };
+                  }
+                  // `refreshKey` participates in the same `:id` placeholder
+                  // contract as `api.endpoint`. Without substitution, the
+                  // invalidation predicate compares literal ":id" against
+                  // queryKeys that hold real UUIDs and matches nothing — the
+                  // KeyValueGrid above the form keeps stale data after a
+                  // 204-success PUT.
+                  if (typeof action.refreshKey === "string" && action.refreshKey.includes(":")) {
+                      next = {
+                          ...next,
+                          refreshKey: substituteEndpointParams(action.refreshKey, rowData),
+                      };
+                  }
+                  return next;
+              }),
           }
         : propsWithFields;
 
