@@ -1760,3 +1760,42 @@ User flagged that some dashboards/lists/detail headers still showed raw IDs (`qu
 **Backend dependency:** these `fallbackKey`s are inert today wherever the backend payload omits the number field (e.g. proposal list/detail, GCL `quoteNumber` on `MemberQuote`). They keep the page usable but the real win lands once the API populates `proposalNumber` / surfaces `quoteNumber` in cross-entity payloads (proposal → source quote, policy → source proposal). Same drift logged on 2026-05-14 for quote-detail still applies.
 
 **Files touched / commit:** 5 files, commit `27f7bd5` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+### 2026-05-14 (continued) — Surface DRAFT proposals on the sales dashboard + array-param infra
+
+User opened the sales dashboard and noticed draft proposals were absent from the inbox, even though `/issuance/proposals` showed them. Root cause: the only proposals inbox widget ([schemas/dashboard.json](../schemas/dashboard.json) `inbox-sales-finalize-proposal`) hardcoded `params.state: "SUBMITTED"`, and `/api/issuance/proposals/search` filters with strict equality. Per the demo narrative ([PROP-0010](../proposals/PROP-0010-mph-portal.md)) DRAFT (sales still completing) and SUBMITTED (awaiting MPH/UW) both belong in sales' worklist.
+
+**Approach (per user direction):** wanted to express OR in the schema declaratively. Split into two commits so the infra piece can cherry-pick to `main` independently of the demo schema change.
+
+**Commit 1 — `cae20af` `feat(infra): support array-valued params in schema-driven fetch`** (cherry-pickable to `main`):
+
+- [src/hooks/useSmartQuery.ts:33-52](../src/hooks/useSmartQuery.ts) — added `Array.isArray` branch ahead of the existing `typeof === 'object'` nested-spread branch. Array values now serialize as repeated keys (`state=DRAFT&state=SUBMITTED`) instead of being mistreated as objects with numeric keys `0`, `1`. Generic — every schema-driven data-table benefits.
+- [src/app/api/issuance/[[...path]]/route.ts:215](../src/app/api/issuance/[[...path]]/route.ts) — `proposals/search` handler swapped `sp.get('state')` for `sp.getAll('state')` and filter to `states.length === 0 || states.includes(p.state)`. Single-state callers unaffected.
+
+**Commit 2 — `b290391` `fix(sales-dashboard): surface DRAFT proposals as a sibling inbox`:**
+
+Originally planned as a single widget with `params.state: ["DRAFT","SUBMITTED"]`. During verification I discovered `GROUP_PAS_BACKEND_URL` is set on the dev environment, so the catch-all route proxies to the live Group PAS backend ([src/lib/api-mock/group-pas/http.ts:74-106](../src/lib/api-mock/group-pas/http.ts)). Probed the live backend with 5 multi-value conventions:
+
+| Query | Result |
+| --- | --- |
+| `state=POLICY_CREATED&state=DRAFT` | 0 (binds last value only) |
+| `state=POLICY_CREATED,DRAFT` | 0 (literal comparison) |
+| `state=POLICY_CREATED\|DRAFT` | 0 |
+| `state[]=...&state[]=...` | 5 (unknown param ignored — no filter applied) |
+| `states=...&states=...` | 5 (same — silent ignore) |
+| `state.in=POLICY_CREATED,DRAFT` | 5 (same — silent ignore) |
+
+None give true OR. **Pivoted commit 2 from "one OR widget" to "two single-state widgets"** so both modes work. Added a new `inbox-sales-draft-proposal` data-table ("Draft proposals — complete and submit", `state=DRAFT`) above the existing `inbox-sales-finalize-proposal` (renamed copy: "Proposals ready to finalize", `state=SUBMITTED`, empty-state description updated to "Proposals appear here once they have been submitted for review.").
+
+**Why keep commit 1 despite the pivot:** the array-param infra is generic and self-contained — useful for any future endpoint (mock or backend) that does support repeated keys. Zero UX impact in isolation. Pre-applied so the OR-widget design becomes a one-line schema change if/when the backend grows multi-state filtering.
+
+**Verification (browser via preview-mcp on running dev server, proxy mode):**
+
+- Both widgets render with correct empty states ("No draft proposals" / "No proposals to finalize") — confirmed via snapshot + screenshot. Backend currently holds 5 `POLICY_CREATED` proposals, zero DRAFT, zero SUBMITTED.
+- `/api/issuance/proposals/search?state=DRAFT` → 200 OK, `state=SUBMITTED` → 200 OK, `state=POLICY_CREATED` → 5 rows (backwards-compat confirmed).
+- `/api/issuance/proposals/search?state=DRAFT&state=SUBMITTED` → 200 OK from the proxy (returns 0 because the live backend collapses to last value; doesn't error).
+- `git log` shows two distinct commits, infra parent of feature; infra commit touches only `useSmartQuery.ts` + `route.ts`, feature commit touches only `schemas/dashboard.json`.
+
+**Follow-up to file (offered to user):** propose multi-state filtering on `/api/issuance/proposals/search` upstream so the OR-widget design becomes viable. Until then, two widgets stay.
+
+**Files touched / commits:** 3 files across 2 commits (`cae20af` infra, `b290391` feature) on `feat/new-buisiness` — not yet pushed.
