@@ -1837,3 +1837,20 @@ Not mine — left for the originating sessions to commit:
 - Untracked: `docs/DEMO_FRONTEND_PAM.md`, `src/tests/unit/navigation/navHelpers.unit.test.tsx`.
 
 **Lesson recorded for future me:** when a "broken upload" bug exists in proxy mode, do a same-origin `PUT` probe **before** patching the local mock layer. The presence of `/api/_mock/uploads/...` not existing was a red herring — the pure-mock path was never being hit in dev. The real failure was cross-origin CORS, only visible by either (a) reading the network panel for `OPTIONS → 403`, or (b) `curl -X OPTIONS` directly against the backend with `Origin` set.
+
+### 2026-05-14 (continued) — Census submission detail polish: errors cell + polling stop + manual test material
+
+Two observations from the user once the bulk upload itself worked:
+
+**1. Errors column was dumping JSON.** [schemas/tables/census-submission-rows.json](../schemas/tables/census-submission-rows.json) declared `type: "truncate"` for the `ingestionErrorsJson` field. CellRenderer has no `truncate` case so it fell through to `default → String(value)`. Compounding that, the issuance backend wraps the spec's `list<CensusRowError>` under `.errors` and echoes parsed memberData alongside (`{"errors":[...], "memberData":{...}}`), so even valid rows displayed a full JSON dump. Added `case "errors-list"` to [CellRenderer](../src/components/widgets/data/CellRenderer.tsx) — JSON-parses, drills into `.errors` (accepting either a top-level array or `{errors:[...]}`), renders one `field: message` line per entry in destructive red, muted dash on empty/parse-fail. Schema pointed at `errors-list`.
+
+**2. Polling never stopped at INGESTED.** [schemas/views/census-submission-detail.json](../schemas/views/census-submission-detail.json) `stopWhen` only halted on `COMPLETED`/`FAILED`. After parse completes the submission sits at `INGESTED` waiting for the user to click *Submit submission* — meanwhile the summary endpoint was getting polled every 5s for the full `maxDurationMs: 60000`. Added `INGESTED` to `stopWhen`. When the user clicks Submit the status flips to `SUBMITTED` (not in stopWhen), polling resumes via the refresh, then settles on `COMPLETED`. Verified: 0 summary fetches in 12s after landing on a sticky INGESTED page.
+
+**Verified end-to-end** by uploading a 3-row mixed file (one valid, one bad-DOB, one PLAN-XYZ): rejected row shows `dob: dob must be ISO-8601 (yyyy-MM-dd)` formatted with field bold + message red; accepted rows show `—`. Backend behavior note for the test script: `PLAN-XYZ` does **not** reject at the parse layer — the backend accepts the row and surfaces plan-existence errors downstream during member materialization.
+
+**Manual test material shipped alongside** (separate commit, `test(issuance): big census fixtures + manual upload test script`):
+- [tests/e2e/fixtures/census-{gtl,gcl}-big-{clean,mixed}.csv](../tests/e2e/fixtures/) — four 200-row fixtures (clean = all valid; mixed = 180 valid + 20 deterministic errors at fixed row numbers). Error map in the test doc lists which rows trigger which validation.
+- [scripts/generate_census_fixtures.mjs](../scripts/generate_census_fixtures.mjs) — deterministic generator (seeded LCG, fixed pools, fixed error positions). Re-running yields byte-identical output.
+- [tests/e2e/CENSUS_UPLOAD_MANUAL_TEST.md](../tests/e2e/CENSUS_UPLOAD_MANUAL_TEST.md) — five-test walkthrough (GTL happy, GTL validation, GCL happy, GCL validation, negative edge cases). Preflight section includes the CORS curl + a note that the test proposal needs plans `P1` and `P2`.
+
+**Commits on `feat/new-buisiness`:** `1ba1ee5` (fix), plus the test material commit + this log entry. Pushed.
