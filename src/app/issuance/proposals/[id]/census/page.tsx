@@ -37,6 +37,18 @@ export default async function ProposalCensusListPage(props: {
   const rawTab = JSON.parse(readFileSync(tabSchemaPath, 'utf-8')) as object;
   const resolvedTab = await resolveSchemaRefs(rawTab, process.cwd());
 
+  // The schema is authored as a `tab-panel` (it's normally a child of the
+  // proposal-detail tabs-container). Standalone here, we unwrap it and
+  // splice its children into our stack-layout, otherwise WidgetRenderer
+  // bails with "Unknown Widget: tab-panel".
+  const resolvedTabConfig = JSON.parse(
+    JSON.stringify(resolvedTab).replaceAll('{{id}}', id),
+  ) as WidgetConfig;
+  const tabBodyChildren =
+    resolvedTabConfig.type === 'tab-panel'
+      ? resolvedTabConfig.children ?? []
+      : [resolvedTabConfig];
+
   const page: WidgetConfig = {
     id: 'proposal-census-page',
     type: 'stack-layout',
@@ -53,9 +65,7 @@ export default async function ProposalCensusListPage(props: {
             'Bulk-upload member census files. Each submission is parsed, validated row-by-row, and finalised to materialise members on the policy.',
         },
       },
-      JSON.parse(
-        JSON.stringify(resolvedTab).replaceAll('{{id}}', id),
-      ) as WidgetConfig,
+      ...tabBodyChildren,
     ],
   };
 
