@@ -1680,3 +1680,35 @@ User reported the *"Pricing computing…"* banner shipped earlier today was firi
 - The full success path (`200` → flag flips → banner shows → premium populates → banner clears) couldn't be exercised end-to-end against the dev cluster because every existing DRAFT either has no plans or already has a premium. Wiring uses the same `onSuccess[].update-widget-state` → `useWidgetState` pattern that ships in RoleSwitcher and form `onSuccess[]` flows, so confidence is high; flagged in the user-facing summary so the next person can demo with a fresh fixture.
 
 **Files touched / commit:** 2 files, commit `98d9ba4` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+### 2026-05-14 (continued) — Anaira logomark wired as brand mark
+
+User dropped the official Anaira logomark at [docs/Logomark - Anaira.svg](../docs/Logomark%20-%20Anaira.svg) and asked for it to show up at minimum as the tab favicon, plus suggestions for other surfaces.
+
+**Brand changes (commit `8191b06`):**
+
+- [public/favicon.svg](../public/favicon.svg) — replaced the old "AN" letter mark with the radial-gradient Anaira logomark.
+- [public/anaira-logomark.svg](../public/anaira-logomark.svg) — same asset under a stable name so app UI (sidebar, future PDFs/emails) references the brand path instead of `favicon.svg`.
+- [docs/Logomark - Anaira.svg](../docs/Logomark%20-%20Anaira.svg) — committed the source asset alongside the public copies so designers and devs share one origin.
+- [src/app/layout.tsx](../src/app/layout.tsx) — metadata title flipped from `Create Next App` → `Anaira`, description updated, and `icons` registered for `icon`, `shortcut`, and `apple` (apple-touch picks up the SVG too).
+- [src/components/navigation/IconRail.tsx](../src/components/navigation/IconRail.tsx) — rail header now renders `<Image src="/anaira-logomark.svg" />` inside the home link; dropped the `bg-primary` square wrapper since the gradient logomark carries its own colour. `logoIconName` prop kept on the interface so existing nav configs (`logo: { icon: "Users" }`) still type-check, but the prop is no longer read.
+
+**Verified on dev (proxy mode, 1280×800):**
+
+- Tab favicon resolves to `/favicon.svg` and the SVG body contains the `radial-gradient` (confirmed via `fetch('/favicon.svg')` in-browser).
+- `document.title === "Anaira"`.
+- Sidebar rail header shows the gradient logomark (32×32 inside a 36×36 link container); no console errors.
+
+**Suggested next surfaces for the logomark** (presented to user; not yet built):
+
+1. Sidebar rail header — ✅ done in this commit.
+2. Login / auth screen — when the screen lands.
+3. Loading / splash state before role context resolves.
+4. 404 / empty-state illustration corners.
+5. Generated PDFs (quote, policy schedule, claim receipt).
+6. Email templates (quote-sent, claim-acknowledged, payout notice).
+7. Print stylesheet header for screens users `Cmd+P`.
+8. Open Graph image (`app/opengraph-image.png`) for link previews.
+9. Desktop toast / system-notification icon (favicon is reused automatically once metadata is set).
+
+**Files touched / commit:** 5 files, commit `8191b06` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
