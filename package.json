@@ -13,7 +13,7 @@
     "format:check": "prettier --check .",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "test:runtime": "vitest run --project unit",
+    "test:vitest": "vitest run --project unit",
     "test:unit": "jest --selectProjects unit",
     "test:schemas": "jest --selectProjects schemas",
     "test:watch": "jest --watch",
