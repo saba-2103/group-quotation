@@ -1799,3 +1799,41 @@ None give true OR. **Pivoted commit 2 from "one OR widget" to "two single-state 
 **Follow-up to file (offered to user):** propose multi-state filtering on `/api/issuance/proposals/search` upstream so the OR-widget design becomes viable. Until then, two widgets stay.
 
 **Files touched / commits:** 3 files across 2 commits (`cae20af` infra, `b290391` feature) on `feat/new-buisiness` — not yet pushed.
+
+### 2026-05-14 (continued) — Issuance bulk-upload: fix broken flow + solid upload screen + backend CORS unblock (PROP-0017)
+
+User report: "Bulk upload in issuance screen is broken — can we fix that, and build a solid bulk upload screen described by specs and backend scope."
+
+**Root cause (real one, took two passes to find):** in proxy mode the dev backend returns a cross-origin `uploadUrl` (`https://group-pas-dev.anairacloud.com/api/issuance/_dev/census-uploads/{fileRef}`). Browser preflight `OPTIONS` got `403 Invalid CORS request` from Spring's `CorsFilter` — no `Access-Control-Allow-*` headers, no allowlist match. The `PUT` was silently dropped after a successful `POST .../census-submissions`, so initiate worked but the actual file never landed. Frontend was always correct against [docs/spec/issuance/IssuanceApi.api:201-232](../docs/spec/issuance/IssuanceApi.api) (`CensusSubmissionAPI`).
+
+**First-pass fix (built then reverted at user request):** added a Next.js same-origin forwarder in [src/app/api/issuance/[[...path]]/route.ts](../src/app/api/issuance/[[...path]]/route.ts) — `rewriteCensusInitiateUpload()` rewrote the cross-origin `uploadUrl` to a relative path, and `forwardCensusUpload()` streamed the binary body to backend with the original content-type. Verified end-to-end. Reverted because user preferred the fix at the backend boundary rather than maintaining a binary-streaming forwarder kept in sync with whatever shape the real presigned URLs eventually take. `route.ts` is back to HEAD.
+
+**Filed [PROP-0017](../proposals/PROP-0017-backend-cors-census-upload.md) → backend team → resolved same day:** explicit ask was an allowlist entry on `/api/issuance/_dev/census-uploads/**` for `http://localhost:3000` and `https://keystone-ui-dev.anairacloud.com` with `Access-Control-Allow-Methods: PUT, OPTIONS`, `Access-Control-Allow-Headers: Content-Type`, OPTIONS preflight returning 204 (not 403). Backend deployed it; verified via `curl -X OPTIONS` returning 200 with the allow-headers, then through the form in the browser (initiate 200 → cross-origin PUT 204 → ingest 204 → detail page renders parsed rows with the correct "Ingested" badge). Marked `status: done` with `resolution:` capturing the verification.
+
+**UI work shipped on `feat/new-buisiness` (commit pending — see "what's uncommitted"):**
+
+- [src/app/issuance/proposals/[id]/census/new/page.tsx](../src/app/issuance/proposals/[id]/census/new/page.tsx) — solid upload screen. Now: page-header → "Start from a template" quick-links row (two `api-download` cards pulling `public/templates/census-{gtl,gcl}.csv`) → two-column grid with the upload form on the left and a static "Expected columns" reference table on the right (column name, Required/Optional badge, example, notes — eight columns aligned to `CreatePolicyMemberRequest` in the spec).
+- [schemas/tables/census-submission-rows.json](../schemas/tables/census-submission-rows.json) and [schemas/views/census-submission-detail.json](../schemas/views/census-submission-detail.json) — **badge mapping bug fix.** Both files mapped row status to `VALID/WARNING/INVALID`, but the actual enum on the wire is `ACCEPTED/INGESTED/REJECTED` ([src/types/group-pas/issuance.ts:52](../src/types/group-pas/issuance.ts) — `CensusSubmissionRowStatus`). Every uploaded row was rendering as "Unknown". Fixed both the badge `valueMapping` and the filter `select` options.
+- [schemas/forms/upload-census-form.json](../schemas/forms/upload-census-form.json) — clearer helper-text + form description. Registry regenerated via `node scripts/generate_form_index.mjs`.
+- [public/templates/census-gtl.csv](../public/templates/census-gtl.csv), [public/templates/census-gcl.csv](../public/templates/census-gcl.csv) — sample CSV templates (3 example rows each), served as static assets.
+- [src/app/api/_mock/uploads/[[...path]]/route.ts](../src/app/api/_mock/uploads/[[...path]]/route.ts) — pure-mock upload sink for `PUT/POST/PATCH`. Only fires when `GROUP_PAS_BACKEND_URL` is unset; in proxy mode this path is never hit. Returns 200 with `{ ok: true, receivedBytes, contentType }` so the mock-only initiate response's `uploadUrl: /api/_mock/uploads/{id}` doesn't 404 (it did before — was the symptom I initially patched and then realised wasn't the actual bug).
+
+**Specs question: do we need a member-level upload on the *quote* census tab?** Audited [schemas/tabs/quote/census.json](../schemas/tabs/quote/census.json) and [docs/spec/quotation/QuotationApi.api](../docs/spec/quotation/QuotationApi.api). **No, by design.** Quote census tab is aggregate-only:
+
+- `aggregate-census` editable-table — headcount per plan, PUT `/api/quotation/quotes/:id/aggregate-census`. Drives pricing.
+- `census-file-format` viewer + editor (PROP-0005, done) — metadata only (file type, sheet name, schema, dialect) configuring how the *future* upload will be parsed.
+
+The Quotation API has no member-level census submission endpoint (only the generic `POST /files/upload-url` for arbitrary attachments like rate-card files: `GenerateFileUploadUrlCommand(fileName, contentType): string`). The full `Initiate → PUT → Ingest → Submit` lifecycle lives entirely under Issuance's `CensusSubmissionAPI`. Intent is clear: at quote time you size with headcounts; the per-member roster lands once the quote becomes a proposal. **Recommendation: don't add a quote-census upload — current aggregate-only layout matches the spec.**
+
+**What's uncommitted on `feat/new-buisiness` after this session:**
+
+Mine (this session) — to be committed:
+- `src/app/issuance/proposals/[id]/census/new/page.tsx`, the three census schemas (`schemas/forms/upload-census-form.json`, `schemas/tables/census-submission-rows.json`, `schemas/views/census-submission-detail.json`), `public/templates/`, `src/app/api/_mock/uploads/[[...path]]/route.ts`.
+- New: `proposals/PROP-0017-backend-cors-census-upload.md` (status `done`).
+- `proposals/_index.md` carries my PROP-0017 row plus state moves below.
+
+Not mine — left for the originating sessions to commit:
+- PROP-0010..0014, PROP-0016 `draft → under-review` from a parallel `/review-proposals` run (also lands in `_index.md`).
+- Untracked: `docs/DEMO_FRONTEND_PAM.md`, `src/tests/unit/navigation/navHelpers.unit.test.tsx`.
+
+**Lesson recorded for future me:** when a "broken upload" bug exists in proxy mode, do a same-origin `PUT` probe **before** patching the local mock layer. The presence of `/api/_mock/uploads/...` not existing was a red herring — the pure-mock path was never being hit in dev. The real failure was cross-origin CORS, only visible by either (a) reading the network panel for `OPTIONS → 403`, or (b) `curl -X OPTIONS` directly against the backend with `Origin` set.
