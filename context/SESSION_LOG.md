@@ -1866,3 +1866,23 @@ User report: "Submit submission" button on the census detail page rendered disab
 **Fix:** added `"stateField": "status"` to the action-bar props in [schemas/views/census-submission-detail.json](../schemas/views/census-submission-detail.json). Verified in preview — button no longer disabled (`disabled: false`, no `data-disabled-reason`). Commit `370aadb`, pushed to `feat/new-buisiness`.
 
 **Lesson for future schemas:** any entity whose DTO uses `status` (CensusSubmission, possibly others) needs the explicit `stateField` override in action-bar props. Worth a sweep of remaining action-bar usages to catch other latent versions of this bug.
+
+### 2026-05-14 (continued) — Member-to-plan mapping: replace json-textarea with row-per-rule editor
+
+User pushback on the existing modal: "the JSON mapping isn't user-friendly — plan names are already known, why not an editable table with a plan dropdown?" Spec check first: [docs/spec/quotation/QuotationDomain.domain:24](../docs/spec/quotation/QuotationDomain.domain) and [QuotationApi.api:161](../docs/spec/quotation/QuotationApi.api) only require the field be stored as an opaque DMN JSON string. The "DMN authoring UI is out of V1 scope" copy in [Demo_Prep_Business_Context.md:147,743](../docs/Demo_Prep_Business_Context.md) is a scope statement, not a contract one — so a friendlier editor is allowed if we accept the scope expansion.
+
+Picked flavor B over per-member assignment: row-per-rule table with the **output column** as a plan dropdown, free-text input columns for conditions. Per-member tables don't fit DMN's rules-over-attributes model and break at >50 members; the row-per-rule shape is what real DMN editors (Camunda etc.) use and matches the existing read-only [DmnDecisionTable.tsx](../src/components/widgets/data/DmnDecisionTable.tsx) renderer.
+
+**Shipped:**
+- New [DmnRulesEditor.tsx](../src/components/widgets/forms/formContainer/DmnRulesEditor.tsx) — hit-policy selector, editable rules table with plan dropdown on the `planNo` output column, add/remove rules, raw-JSON escape-hatch toggle, legacy `{hits,rules:[{if,then}]}` mock-format migrated to canonical DMN on read.
+- New field type `dmn-rules-editor` in [FieldRenderer.tsx](../src/components/widgets/forms/formContainer/FieldRenderer.tsx). Value is the canonical DMN JSON string; existing `json` validator still applies on submit.
+- [OverlaidForm.tsx](../src/components/widgets/forms/OverlaidForm.tsx) `injectRowData` learned `optionsFromRowData: { path, valueField, labelField }` — field-level options resolved from the open entity's rowData, avoiding a second network round-trip. Backwards-compatible.
+- Schema [member-mapping-replace-form.json](../schemas/forms/member-mapping-replace-form.json) — field type → `dmn-rules-editor`, options bound to `quote.plans` (`planNo` → `planName`), copy refreshed ("Edit mapping", "Save mapping").
+- Tab schema [quote/member-mapping.json](../schemas/tabs/quote/member-mapping.json) — action renamed Edit mapping / Pencil icon; "out of V1 scope" copy removed from the read-only renderer's description.
+- Mock fixtures ([quotes.ts](../src/mocks/group-pas/quotation/quotes.ts), [issuance/proposals.ts](../src/mocks/group-pas/issuance/proposals.ts)) migrated from the legacy `{hits,rules:[{if,then}]}` shorthand to canonical DMN so the read-only renderer and the editor round-trip cleanly.
+
+**Verification (live against real backend, quote `e0a9d21b…` plans P1/P2):** modal opens with existing rules pre-filled (`>= 2000000` → Enhanced Cover, `< 2000000` → Standard Cover); plan dropdown only shows the two plans attached to that quote; "Edit raw JSON" toggle exposes the canonical DMN payload and round-trips back; "Add rule" appends a blank row with correctly-shaped `when`/`then` keyed by input/output ids; serialized `rules.length` increments. No console errors. The action-bar `stateField: status` gate was temporarily relaxed during verification and reverted before the commit.
+
+**Commit `87d0acf` on `feat/new-buisiness`, pushed.** Files: the new DmnRulesEditor + FieldRenderer + OverlaidForm + the two schemas + the two mock fixtures. Pre-existing uncommitted proposal/*.md edits and untracked agent_logs/context dirs were intentionally left out of the commit.
+
+**Scope-expansion note for review:** this knowingly steps past the deferred-D3 line that called full mapping authoring "post-V1." The data contract is unchanged (same canonical DMN, same `PUT /quotes/:id/member-to-plan-mapping` blob-replace), so the line moves on UX scope, not API scope. Worth a follow-up `/propose` if we want it formally tracked.
