@@ -1541,3 +1541,54 @@ PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now 
 - PROP-0015 → draft, ready for `/build-feature` once the proposal Members tab fix is prioritized.
 
 **Next:** monitor the live URL after CI lands, then user can walk the demo end-to-end. Open items: PROP-0015 fix, and the 8 seed-data-skipped tests (need backend admin endpoint or richer seed script to create PENDING policies, SENT_TO_CLIENT quotes, MAF_PENDING / REFERRED_TO_UW / REPAIR_PENDING members).
+
+---
+
+### 2026-05-14 — Narrative walkthrough suite + two Quote-detail fixes
+
+**Why:** user asked to verify how walkable the GTL/GCL demo narrative is on the live dev URL against a freshly-scrubbed backend, AND to seed entities at every workflow stage *through the portal* (no API calls) so QA can browse each state per role.
+
+**Two phases shipped:**
+
+1. **Portal-driven narrative walkthrough** (Phase A). One `test()` per beat of [docs/planning/DEMO_NARRATIVE_GTL_GCL.md](../docs/planning/DEMO_NARRATIVE_GTL_GCL.md); soft-records gaps via [tests/e2e/lib/coverage.ts](../tests/e2e/lib/coverage.ts) so an early gap doesn't cascade-skip independent beats downstream. [scripts/render-narrative-coverage.ts](../scripts/render-narrative-coverage.ts) compiles the JSONL into `tests/e2e/NARRATIVE_COVERAGE_<date>.md`.
+
+2. **State-matrix seeder** (Phase B). [tests/e2e/seed-portal.spec.ts](../tests/e2e/seed-portal.spec.ts) drives the portal `SEED_COUNT` times (default 3) producing 9 distinct workflow-stage groups (Quote DRAFT/SENT_TO_CLIENT/ACCEPTED, Proposal DRAFT, Policy PENDING/ACTIVE, PolicyMember MAF_PENDING/REFERRED_TO_UW/REPAIR_PENDING/ACTIVE). [scripts/render-seeded-state.ts](../scripts/render-seeded-state.ts) emits a click-through index.
+
+**Reusable verbs:** [tests/e2e/helpers/portal-actions.ts](../tests/e2e/helpers/portal-actions.ts) — `createQuote`, `submitAndSendToClient`, `mphAccept`, `finalizeQuote`/`Proposal`, `uploadCensus`, `confirmMaf`, `uwApprove`, `opsRepair`, `switchRole`. Every helper detects `data-disabled-reason` and returns a gap-note rather than failing the test, so the walkthrough reports backend blockers as data points instead of red Xs.
+
+**Initial coverage run (pre-fix):** 6/17 walkable, 10 gaps, 1 fail. **Root cause** for every gap past beat 1.4: backend `Quote.submit` requires `estimatedPremium`, which the UI was preventing the user from requesting. Backend reality check against `/Users/seriousblack/dev_anaira/group-pas/group-pas/quotation/`: the pricing path IS wired via the Temporal workflow `CalculateQuotePremiumState.java` (2%-of-cover deterministic mock). The disabledTooltip on the schema's `request-price` action was a stale lie from before that workflow shipped.
+
+**Two Quote-detail fixes landed in commit `6edbb02`:**
+
+1. **GCL Member Quotes tab leaked onto GTL.** Added data-conditioned visibility to `TabsContainer`:
+   - [src/types/widget.ts](../src/types/widget.ts) — `visibleWhen?: Record<string, unknown>` (json-logic) on `WidgetConfig`.
+   - [src/components/widgets/container/TabsContainer.tsx](../src/components/widgets/container/TabsContainer.tsx) — when the container declares a `dataSource`, fetches the entity (deduped by `useSmartQuery`, no extra request), filters tabs whose `visibleWhen` rejects. Snaps active tab to first visible if current disappears.
+   - [schemas/quote-detail.json](../schemas/quote-detail.json) — tabs-container declares `/api/quotation/quotes/{{id}}` as its dataSource.
+   - [schemas/tabs/quote/member-quotes-placeholder.json](../schemas/tabs/quote/member-quotes-placeholder.json) — `visibleWhen: { "==": [{var:"policyType"},"GCL"] }`.
+
+2. **Request Pricing was rendered disabled.** Backend was already wired; copy was stale.
+   - [schemas/tabs/quote/pricing.json](../schemas/tabs/quote/pricing.json) — dropped `disabledTooltip`, added `successMessage`, rewrote tab description + empty-state copy.
+   - [src/app/api/quotation/[[...path]]/route.ts](../src/app/api/quotation/[[...path]]/route.ts) — updated mock-handler comment so offline mode no longer perpetuates the "engine not shipped" myth.
+
+**Verification:**
+- New spec [tests/e2e/verify-fixes.spec.ts](../tests/e2e/verify-fixes.spec.ts) — 3/3 pass against `localhost:3000` (proxy → live backend): GTL hides the GCL tab, GCL shows it, Request Price button is enabled on DRAFT.
+- ActionBar unit tests (8/8) still pass — generic `disabledTooltip` machinery untouched.
+- Phase A coverage post-fix: **8/17 walkable** (beat 1.4 Request Pricing now ✅ for both LoBs). Remaining gaps are timing-related — the Temporal workflow that computes premium is async, so test races it when clicking Submit. Next move is a test-side `useSmartQuery.stopWhen` poll for premium to populate. Not a UI/backend gap.
+
+**Commits pushed to `feat/new-buisiness`:**
+- `a142a64` feat(tests): narrative walkthrough + state-matrix seeder for GTL/GCL demo
+- `6edbb02` fix(quote): hide GCL Member Quotes tab on GTL + un-gate Request Pricing
+
+**Files added:**
+- `tests/e2e/helpers/portal-actions.ts`, `tests/e2e/lib/coverage.ts`
+- `tests/e2e/narrative-walkthrough-{gtl,gcl}.spec.ts`, `tests/e2e/seed-portal.spec.ts`, `tests/e2e/verify-fixes.spec.ts`
+- `tests/e2e/fixtures/census-{gtl,gcl,with-uw-row,with-repair-row}.csv`
+- `scripts/render-{narrative-coverage,seeded-state}.ts`
+- `tests/e2e/NARRATIVE_COVERAGE_2026-05-14.md`, `tests/e2e/SEEDED_STATE_2026-05-13.md`
+
+**Status:** dev URL auto-deploys from the push (~4 min). After deploy, the live `New Quote → Pricing tab → Request price` button should fire the backend workflow and populate `estimatedPremium`. Once verified, the test-side polling tweak unblocks the rest of the narrative path.
+
+**Open items:**
+- Add `stopWhen` poll on the quote-detail data source so the walkthrough can wait for `estimatedPremium` before clicking Submit, then re-run Phase A and Phase B for a fuller coverage number.
+- PROP-0015 (Proposal Members tab wiring) still draft.
+- Ops Inbox click-through to repair-edit still missing (PROP-0010-style routing) — surfaced as GTL §4 gap.
