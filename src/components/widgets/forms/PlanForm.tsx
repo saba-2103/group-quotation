@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, Plus, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,20 +17,26 @@ import {
 } from "@/components/ui/select";
 import { useOverlayStore } from "@/hooks/useOverlayStore";
 import { useActionHandler } from "@/hooks/useActionHandler";
+import * as productCatalog from "@/lib/api/productCatalog";
+import type {
+  AmountFormula,
+  Plan,
+  PlanBenefit,
+  PlanExclusion,
+  PlanProduct,
+} from "@/types/group-pas/common";
 import {
   AmountFormulaField,
   type AmountFormulaValue,
 } from "./AmountFormulaField";
 
-// PlanForm — bespoke structured editor for a Quote `Plan` (DSL shape in
-// docs/spec/common/CommonData.data). Handles the nested `products[]` array
-// with sub-arrays for benefits/exclusions plus a discriminated-union
-// AmountFormula sub-form for cover and free-cover formulas.
-//
-// Lives outside the scalar-only FormContainer (types.ts: FormFieldValue =
-// string|number|boolean) deliberately — see context/ARCH_TRANSITION.md
-// "Bespoke plan-form" entry. A future generic `repeater` field type retires
-// this widget by collapsing it into a schema-driven FormContainer form.
+// PlanForm — structured editor for a Quote `Plan` (DSL shape in
+// docs/spec/common/CommonData.data). PROP-0014 reworked this from raw-JSON
+// textareas to a compose flow driven by the Product Catalog
+// (/api/product-catalog/{plans,products,benefits}). Per
+// context/ARCH_TRANSITION.md "Bespoke plan-form" entry, this widget lives
+// outside the scalar-only FormContainer until a future schema-driven
+// `repeater` field type retires it.
 
 interface PlanBenefitDraft {
   code: string;
@@ -59,12 +67,10 @@ interface PlanFormState {
   freeCoverLimitFormula: AmountFormulaValue;
 }
 
-// rowData payload coming through useOverlayStore — set by PlanCard's Edit
-// click or by an Add-plan trigger (`_mode: 'add'` or `'edit'`).
 interface OverlayPlanPayload {
   _mode?: "edit" | "add";
   quoteId?: string;
-  // existing plan fields when editing:
+  id?: string;
   planNo?: string;
   planName?: string;
   rateCardFile?: string;
@@ -74,20 +80,25 @@ interface OverlayPlanPayload {
   products?: unknown;
   coverAmountFormula?: unknown;
   freeCoverLimitFormula?: unknown;
+  // Parent quote fields the ActionBar passes through as rowData. We only
+  // read `censusFileFormat` to gate submit per the backend constraint
+  // (POST /quotes/{id}/plans rejects when the format is unset).
+  censusFileFormat?: unknown;
+  censusFileFormatJson?: unknown;
 }
 
-const PRODUCT_TYPES = ["TERM", "RIDER", "WAIVER", "OTHER"];
+function hasCensusFileFormat(payload: OverlayPlanPayload | undefined): boolean {
+  if (!payload) return true; // edit-only path or missing context — don't over-block
+  if (payload.censusFileFormat && typeof payload.censusFileFormat === "object") return true;
+  const blob = payload.censusFileFormatJson;
+  if (!blob) return false;
+  if (typeof blob === "string" && blob.length > 0 && blob !== "null") return true;
+  return false;
+}
+
 const FORM_OVERLAY_ID = "plan-edit-form";
 
 const emptyFormula = (): AmountFormulaValue => ({ type: "FIXED", fixedAmount: undefined });
-
-const emptyProduct = (): PlanProductDraft => ({
-  productCode: "",
-  productName: "",
-  productType: "TERM",
-  benefits: [],
-  exclusions: [],
-});
 
 function tryParse<T>(v: unknown): T | null {
   if (v == null) return null;
@@ -98,6 +109,24 @@ function tryParse<T>(v: unknown): T | null {
   } catch {
     return null;
   }
+}
+
+function benefitToDraft(b: PlanBenefit): PlanBenefitDraft {
+  return { code: b.code, name: b.name ?? "", mandatory: b.mandatory };
+}
+
+function exclusionToDraft(e: PlanExclusion): PlanExclusionDraft {
+  return { code: e.code, name: e.name ?? "" };
+}
+
+function productToDraft(p: PlanProduct): PlanProductDraft {
+  return {
+    productCode: p.productCode,
+    productName: p.productName ?? "",
+    productType: p.productType,
+    benefits: p.benefits.map(benefitToDraft),
+    exclusions: p.exclusions.map(exclusionToDraft),
+  };
 }
 
 function normalizeProducts(input: unknown): PlanProductDraft[] {
@@ -120,7 +149,7 @@ function normalizeProducts(input: unknown): PlanProductDraft[] {
     return {
       productCode: String(p.productCode ?? ""),
       productName: String(p.productName ?? ""),
-      productType: String(p.productType ?? "TERM"),
+      productType: String(p.productType ?? "BASE"),
       benefits,
       exclusions,
     };
@@ -147,13 +176,24 @@ function normalizeFormula(input: unknown): AmountFormulaValue | null {
   };
 }
 
+function formulaToValue(f: AmountFormula): AmountFormulaValue {
+  return {
+    type: f.type,
+    multiplicationFactor: f.multiplicationFactor,
+    memberAttributeName: f.memberAttributeName,
+    lookupTableJson: f.lookupTableJson,
+    fixedAmount: f.fixedAmount,
+    dmnTableFile: f.dmnTableFile,
+  };
+}
+
 function buildInitialState(payload: OverlayPlanPayload | undefined): PlanFormState {
   if (!payload || payload._mode === "add") {
     return {
       planNo: "",
       planName: "",
       rateCardFile: "",
-      products: [emptyProduct()],
+      products: [],
       coverAmountFormula: emptyFormula(),
       freeCoverEnabled: false,
       freeCoverLimitFormula: emptyFormula(),
@@ -170,7 +210,7 @@ function buildInitialState(payload: OverlayPlanPayload | undefined): PlanFormSta
     planNo: payload.planNo ?? "",
     planName: payload.planName ?? "",
     rateCardFile: payload.rateCardFile ?? "",
-    products: products.length > 0 ? products : [emptyProduct()],
+    products,
     coverAmountFormula: cover,
     freeCoverEnabled: fcl != null,
     freeCoverLimitFormula: fcl ?? emptyFormula(),
@@ -218,12 +258,7 @@ function validate(state: PlanFormState): FormErrors {
     const productIssues = state.products
       .map((p, i) => {
         if (!p.productCode.trim()) return `Product ${i + 1}: code required`;
-        if (!p.productType.trim()) return `Product ${i + 1}: type required`;
-        if (p.benefits.length === 0) return `Product ${i + 1}: at least one benefit required`;
-        const benefitIssue = p.benefits.find((b) => !b.code.trim());
-        if (benefitIssue) return `Product ${i + 1}: benefit code required`;
-        const exclusionIssue = p.exclusions.find((e) => !e.code.trim());
-        if (exclusionIssue) return `Product ${i + 1}: exclusion code required`;
+        if (p.benefits.length === 0) return `${p.productCode}: at least one benefit required`;
         return null;
       })
       .filter((m): m is string => m != null);
@@ -255,6 +290,14 @@ function serializeFormula(f: AmountFormulaValue) {
   };
 }
 
+// Order BASE products before RIDER for the add-product dropdown.
+function compareProducts(a: PlanProduct, b: PlanProduct) {
+  if (a.productType === b.productType) return a.productCode.localeCompare(b.productCode);
+  if (a.productType === "BASE") return -1;
+  if (b.productType === "BASE") return 1;
+  return a.productType.localeCompare(b.productType);
+}
+
 export const PlanForm: React.FC = () => {
   const params = useParams<{ id?: string }>();
   const dispatch = useActionHandler();
@@ -268,19 +311,74 @@ export const PlanForm: React.FC = () => {
 
   const [state, setState] = useState<PlanFormState>(() => buildInitialState(overlayPayload));
   const [submitting, setSubmitting] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedJson, setAdvancedJson] = useState("");
+  const [advancedError, setAdvancedError] = useState<string | null>(null);
+  const [templateChoice, setTemplateChoice] = useState<string>("");
+  const [productPicker, setProductPicker] = useState<string>("");
+
+  const plansQuery = useQuery({
+    queryKey: ["product-catalog", "plans"],
+    queryFn: productCatalog.listPlans,
+    staleTime: 5 * 60 * 1000,
+  });
+  const productsQuery = useQuery({
+    queryKey: ["product-catalog", "products"],
+    queryFn: productCatalog.listProducts,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const errors = useMemo(() => validate(state), [state]);
   const isValid = Object.keys(errors).length === 0;
 
-  const update = (patch: Partial<PlanFormState>) => setState((prev) => ({ ...prev, ...patch }));
+  // When the overlay payload changes (open/edit switching), rebuild state.
+  useEffect(() => {
+    setState(buildInitialState(overlayPayload));
+    setTemplateChoice("");
+    setProductPicker("");
+    setAdvancedOpen(false);
+    setAdvancedJson("");
+    setAdvancedError(null);
+  }, [overlayPayload]);
 
-  const setProduct = (idx: number, patch: Partial<PlanProductDraft>) =>
+  const update = (patch: Partial<PlanFormState>) =>
+    setState((prev) => ({ ...prev, ...patch }));
+
+  const applyTemplate = (planNo: string) => {
+    const tpl = plansQuery.data?.find((p) => p.planNo === planNo);
+    if (!tpl) return;
+    if (
+      state.products.length > 0 &&
+      !window.confirm("Replace current products with template?")
+    ) {
+      return;
+    }
     setState((prev) => ({
       ...prev,
-      products: prev.products.map((p, i) => (i === idx ? { ...p, ...patch } : p)),
+      // Don't overwrite a custom plan number; only seed it when blank or in edit-of-template
+      planNo: prev.planNo || tpl.planNo,
+      planName: prev.planName || tpl.planName || "",
+      rateCardFile: tpl.rateCardFile,
+      products: tpl.products.map(productToDraft),
+      coverAmountFormula: formulaToValue(tpl.coverAmountFormula),
+      freeCoverEnabled: !!tpl.freeCoverLimitFormula,
+      freeCoverLimitFormula: tpl.freeCoverLimitFormula
+        ? formulaToValue(tpl.freeCoverLimitFormula)
+        : emptyFormula(),
     }));
+    setTemplateChoice(planNo);
+  };
 
-  const addProduct = () =>
-    setState((prev) => ({ ...prev, products: [...prev.products, emptyProduct()] }));
+  const addProductByCode = (code: string) => {
+    const src = productsQuery.data?.find((p) => p.productCode === code);
+    if (!src) return;
+    if (state.products.some((p) => p.productCode === code)) return;
+    setState((prev) => ({
+      ...prev,
+      products: [...prev.products, productToDraft(src)],
+    }));
+    setProductPicker("");
+  };
 
   const removeProduct = (idx: number) =>
     setState((prev) => ({
@@ -288,56 +386,44 @@ export const PlanForm: React.FC = () => {
       products: prev.products.filter((_, i) => i !== idx),
     }));
 
-  const addBenefit = (productIdx: number) =>
-    setProduct(productIdx, {
-      benefits: [
-        ...state.products[productIdx].benefits,
-        { code: "", name: "", mandatory: false },
-      ],
-    });
-
-  const setBenefit = (
-    productIdx: number,
-    benefitIdx: number,
-    patch: Partial<PlanBenefitDraft>,
-  ) =>
-    setProduct(productIdx, {
-      benefits: state.products[productIdx].benefits.map((b, i) =>
-        i === benefitIdx ? { ...b, ...patch } : b,
-      ),
-    });
-
   const removeBenefit = (productIdx: number, benefitIdx: number) =>
-    setProduct(productIdx, {
-      benefits: state.products[productIdx].benefits.filter((_, i) => i !== benefitIdx),
-    });
-
-  const addExclusion = (productIdx: number) =>
-    setProduct(productIdx, {
-      exclusions: [...state.products[productIdx].exclusions, { code: "", name: "" }],
-    });
-
-  const setExclusion = (
-    productIdx: number,
-    exclusionIdx: number,
-    patch: Partial<PlanExclusionDraft>,
-  ) =>
-    setProduct(productIdx, {
-      exclusions: state.products[productIdx].exclusions.map((e, i) =>
-        i === exclusionIdx ? { ...e, ...patch } : e,
+    setState((prev) => ({
+      ...prev,
+      products: prev.products.map((p, i) =>
+        i === productIdx
+          ? { ...p, benefits: p.benefits.filter((_, bi) => bi !== benefitIdx) }
+          : p,
       ),
-    });
+    }));
 
   const removeExclusion = (productIdx: number, exclusionIdx: number) =>
-    setProduct(productIdx, {
-      exclusions: state.products[productIdx].exclusions.filter((_, i) => i !== exclusionIdx),
-    });
+    setState((prev) => ({
+      ...prev,
+      products: prev.products.map((p, i) =>
+        i === productIdx
+          ? { ...p, exclusions: p.exclusions.filter((_, ei) => ei !== exclusionIdx) }
+          : p,
+      ),
+    }));
+
+  const applyAdvancedJson = () => {
+    try {
+      const parsed = JSON.parse(advancedJson);
+      if (!Array.isArray(parsed)) throw new Error("Expected an array of products");
+      const drafts = normalizeProducts(parsed);
+      if (drafts.length === 0) throw new Error("Array must contain at least one product");
+      setState((prev) => ({ ...prev, products: drafts }));
+      setAdvancedError(null);
+    } catch (e) {
+      setAdvancedError(e instanceof Error ? e.message : "Invalid JSON");
+    }
+  };
 
   const onSubmit = async () => {
     if (!isValid || !quoteId) return;
     setSubmitting(true);
     try {
-      const body = {
+      const body: Plan = {
         planNo: state.planNo,
         planName: state.planName || undefined,
         rateCardFile: state.rateCardFile,
@@ -355,9 +441,9 @@ export const PlanForm: React.FC = () => {
             name: e.name || undefined,
           })),
         })),
-        coverAmountFormula: serializeFormula(state.coverAmountFormula),
+        coverAmountFormula: serializeFormula(state.coverAmountFormula) as AmountFormula,
         freeCoverLimitFormula: state.freeCoverEnabled
-          ? serializeFormula(state.freeCoverLimitFormula)
+          ? (serializeFormula(state.freeCoverLimitFormula) as AmountFormula)
           : undefined,
       };
 
@@ -378,6 +464,19 @@ export const PlanForm: React.FC = () => {
     }
   };
 
+  const availableProducts = useMemo(() => {
+    const taken = new Set(state.products.map((p) => p.productCode));
+    return [...(productsQuery.data ?? [])]
+      .filter((p) => !taken.has(p.productCode))
+      .sort(compareProducts);
+  }, [productsQuery.data, state.products]);
+
+  const catalogUnavailable = plansQuery.isError && productsQuery.isError;
+  const censusReady = hasCensusFileFormat(overlayPayload);
+  const submitBlockReason = !censusReady
+    ? "Set the Census file format on the Census tab before adding a plan."
+    : null;
+
   return (
     <div className="space-y-4">
       <div>
@@ -385,10 +484,64 @@ export const PlanForm: React.FC = () => {
           {isEdit ? `Edit plan ${state.planNo}` : "Add plan"}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Plans drive premium calculation. All edits require Quote to be in DRAFT and
-          the Census file format to be set.
+          Compose a plan by picking a template or adding products from the catalog.
+          All edits require Quote to be in DRAFT and the Census file format set.
         </p>
+        {!censusReady && (
+          <p
+            data-testid="census-format-warning"
+            className="mt-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-warning-foreground"
+          >
+            Census file format is not set on this quote. The backend will reject
+            the plan until you configure it on the Census tab.
+          </p>
+        )}
+        {catalogUnavailable && (
+          <p
+            data-testid="catalog-unavailable"
+            className="mt-2 rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-warning-foreground"
+          >
+            Product catalog is unavailable — you can still edit the rate card and
+            cover formula, or paste a product list under Advanced.
+          </p>
+        )}
       </div>
+
+      {!isEdit && (
+        <section>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            Start from template
+          </Label>
+          <Select
+            value={templateChoice}
+            onValueChange={(v) => applyTemplate(v)}
+            disabled={plansQuery.isLoading || plansQuery.isError}
+          >
+            <SelectTrigger data-testid="template-trigger" className="mt-1">
+              <SelectValue
+                placeholder={
+                  plansQuery.isLoading
+                    ? "Loading templates…"
+                    : plansQuery.isError
+                    ? "Templates unavailable"
+                    : "Choose a starting template (optional)"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {(plansQuery.data ?? []).map((p) => (
+                <SelectItem key={p.planNo} value={p.planNo}>
+                  {p.planNo} — {p.planName ?? "Untitled plan"}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Picking a template seeds products, formulas, and rate card. You can edit
+            anything after.
+          </p>
+        </section>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -413,181 +566,147 @@ export const PlanForm: React.FC = () => {
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="rate-card">Rate card file</Label>
-        <Input
-          id="rate-card"
-          value={state.rateCardFile}
-          onChange={(e) => update({ rateCardFile: e.target.value })}
-          placeholder="ratecard-2026-exec.csv"
-        />
-        {errors.rateCardFile && (
-          <p className="mt-1 text-xs text-destructive">{errors.rateCardFile}</p>
-        )}
-      </div>
-
       <section>
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2 flex items-center justify-between gap-3">
           <h3 className="text-sm font-semibold">Products</h3>
-          <Button type="button" size="sm" variant="outline" onClick={addProduct}>
-            <Plus className="mr-1 h-3.5 w-3.5" />
-            Add product
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select
+              value={productPicker}
+              onValueChange={(v) => addProductByCode(v)}
+              disabled={
+                productsQuery.isLoading ||
+                productsQuery.isError ||
+                availableProducts.length === 0
+              }
+            >
+              <SelectTrigger
+                data-testid="add-product-trigger"
+                className="h-8 w-56 text-xs"
+              >
+                <SelectValue
+                  placeholder={
+                    productsQuery.isLoading
+                      ? "Loading products…"
+                      : productsQuery.isError
+                      ? "Products unavailable"
+                      : availableProducts.length === 0
+                      ? "All products added"
+                      : "Add product…"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {availableProducts.map((p) => (
+                  <SelectItem key={p.productCode} value={p.productCode}>
+                    [{p.productType}] {p.productCode} — {p.productName ?? ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         {errors.products && <p className="mb-2 text-xs text-destructive">{errors.products}</p>}
+        {state.products.length === 0 && (
+          <p
+            data-testid="products-empty"
+            className="rounded border border-dashed border-border/60 p-4 text-center text-xs text-muted-foreground"
+          >
+            No products yet. Pick a template or add a product from the catalog.
+          </p>
+        )}
         <div className="space-y-3">
           {state.products.map((p, pi) => (
-            <div key={pi} className="rounded border border-border/60 p-3">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Product {pi + 1}
-                </span>
-                {state.products.length > 1 && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => removeProduct(pi)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-xs">Code</Label>
-                  <Input
-                    value={p.productCode}
-                    onChange={(e) => setProduct(pi, { productCode: e.target.value })}
-                    placeholder="LIFE"
-                  />
+            <div
+              key={`${p.productCode}-${pi}`}
+              data-testid={`product-card-${p.productCode}`}
+              className="rounded border border-border/60 p-3"
+            >
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant={p.productType === "BASE" ? "default" : "secondary"}>
+                    {p.productType}
+                  </Badge>
+                  <span className="text-sm font-medium">{p.productCode}</span>
+                  {p.productName && (
+                    <span className="text-xs text-muted-foreground">— {p.productName}</span>
+                  )}
                 </div>
-                <div>
-                  <Label className="text-xs">Name</Label>
-                  <Input
-                    value={p.productName}
-                    onChange={(e) => setProduct(pi, { productName: e.target.value })}
-                    placeholder="Group Term Life"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Type</Label>
-                  <Select
-                    value={p.productType}
-                    onValueChange={(v) => setProduct(pi, { productType: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRODUCT_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeProduct(pi)}
+                  aria-label={`Remove ${p.productCode}`}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
               </div>
 
-              <div className="mt-3">
-                <div className="mb-1 flex items-center justify-between">
-                  <Label className="text-xs">Benefits</Label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => addBenefit(pi)}
-                  >
-                    <Plus className="mr-1 h-3 w-3" />
-                    Add benefit
-                  </Button>
-                </div>
-                <div className="space-y-1.5">
+              <div className="mt-2">
+                <Label className="text-xs">Benefits</Label>
+                <div className="mt-1 space-y-1">
                   {p.benefits.map((b, bi) => (
-                    <div key={bi} className="flex items-center gap-2">
-                      <Input
-                        className="flex-1"
-                        value={b.code}
-                        onChange={(e) => setBenefit(pi, bi, { code: e.target.value })}
-                        placeholder="DEATH"
-                      />
-                      <Input
-                        className="flex-1"
-                        value={b.name}
-                        onChange={(e) => setBenefit(pi, bi, { name: e.target.value })}
-                        placeholder="Death cover"
-                      />
-                      <label className="flex shrink-0 items-center gap-1 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={b.mandatory}
-                          onChange={(e) =>
-                            setBenefit(pi, bi, { mandatory: e.target.checked })
-                          }
-                          className="h-4 w-4"
-                        />
-                        Mandatory
-                      </label>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeBenefit(pi, bi)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
+                    <div
+                      key={b.code}
+                      data-testid={`benefit-row-${b.code}`}
+                      className="flex items-start justify-between gap-2 rounded bg-muted/40 px-2 py-1.5"
+                    >
+                      <div className="min-w-0">
+                        <span className="font-mono text-xs">{b.code}</span>
+                        {b.name && (
+                          <span className="ml-2 text-xs text-muted-foreground">{b.name}</span>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        {b.mandatory ? (
+                          <Badge variant="outline" className="text-[10px]">
+                            Mandatory
+                          </Badge>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeBenefit(pi, bi)}
+                            aria-label={`Remove benefit ${b.code}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                   {p.benefits.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No benefits added.</p>
+                    <p className="text-xs text-destructive">At least one benefit required.</p>
                   )}
                 </div>
               </div>
 
-              <div className="mt-3">
-                <div className="mb-1 flex items-center justify-between">
+              {p.exclusions.length > 0 && (
+                <div className="mt-3">
                   <Label className="text-xs">Exclusions</Label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => addExclusion(pi)}
-                  >
-                    <Plus className="mr-1 h-3 w-3" />
-                    Add exclusion
-                  </Button>
-                </div>
-                <div className="space-y-1.5">
-                  {p.exclusions.map((e, ei) => (
-                    <div key={ei} className="flex items-center gap-2">
-                      <Input
-                        className="flex-1"
-                        value={e.code}
-                        onChange={(ev) => setExclusion(pi, ei, { code: ev.target.value })}
-                        placeholder="WAR"
-                      />
-                      <Input
-                        className="flex-1"
-                        value={e.name}
-                        onChange={(ev) => setExclusion(pi, ei, { name: ev.target.value })}
-                        placeholder="War risk"
-                      />
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeExclusion(pi, ei)}
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {p.exclusions.map((e, ei) => (
+                      <Badge
+                        key={e.code}
+                        variant="outline"
+                        className="gap-1 font-normal"
+                        data-testid={`exclusion-chip-${e.code}`}
                       >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  {p.exclusions.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No exclusions.</p>
-                  )}
+                        <span className="font-mono text-[10px]">{e.code}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeExclusion(pi, ei)}
+                          aria-label={`Remove exclusion ${e.code}`}
+                          className="ml-1 text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
@@ -627,11 +746,71 @@ export const PlanForm: React.FC = () => {
         )}
       </section>
 
+      <div>
+        <Label htmlFor="rate-card">Rate card file</Label>
+        <Input
+          id="rate-card"
+          value={state.rateCardFile}
+          onChange={(e) => update({ rateCardFile: e.target.value })}
+          placeholder="rate-cards/gtl-standard-2026.dmn"
+        />
+        {errors.rateCardFile && (
+          <p className="mt-1 text-xs text-destructive">{errors.rateCardFile}</p>
+        )}
+      </div>
+
+      <details
+        className="rounded border border-border/60"
+        open={advancedOpen}
+        onToggle={(e) => setAdvancedOpen((e.target as HTMLDetailsElement).open)}
+      >
+        <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground">
+          <ChevronDown className="h-3 w-3" />
+          Advanced — paste product JSON (escape hatch for catalog gaps)
+        </summary>
+        <div className="space-y-2 border-t border-border/60 p-3">
+          <p className="text-xs text-muted-foreground">
+            Paste a JSON array of <code>PlanProduct</code> objects to replace the
+            composed product list. Use this only if a needed product is not in the
+            catalog.
+          </p>
+          <textarea
+            value={advancedJson}
+            onChange={(e) => setAdvancedJson(e.target.value)}
+            className="h-32 w-full rounded border border-border/60 p-2 font-mono text-xs"
+            placeholder='[{"productCode":"CUSTOM","productType":"BASE","benefits":[{"code":"X","mandatory":true}],"exclusions":[]}]'
+          />
+          {advancedError && (
+            <p className="text-xs text-destructive">{advancedError}</p>
+          )}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={applyAdvancedJson}
+              disabled={!advancedJson.trim()}
+            >
+              <Plus className="mr-1 h-3 w-3" /> Apply JSON
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              This replaces the current product list.
+            </span>
+          </div>
+        </div>
+      </details>
+
       <div className="flex justify-end gap-2 border-t border-border/60 pt-4">
         <Button type="button" variant="outline" onClick={() => closeOverlay(FORM_OVERLAY_ID)}>
           Cancel
         </Button>
-        <Button type="button" onClick={onSubmit} disabled={!isValid || submitting || !quoteId}>
+        <Button
+          type="button"
+          onClick={onSubmit}
+          disabled={!isValid || submitting || !quoteId || !censusReady}
+          data-testid="plan-form-submit"
+          title={submitBlockReason ?? undefined}
+        >
           {submitting ? "Saving…" : isEdit ? "Save plan" : "Add plan"}
         </Button>
       </div>

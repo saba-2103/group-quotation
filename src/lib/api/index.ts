@@ -10,3 +10,4 @@ export * from './error-mapper';
 export * as quotation from './quotation';
 export * as issuance from './issuance';
 export * as policyAdmin from './policy-admin';
+export * as productCatalog from './productCatalog';
