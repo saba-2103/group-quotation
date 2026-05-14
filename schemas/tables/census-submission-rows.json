@@ -35,8 +35,7 @@
         "id": "ingestionErrors",
         "accessorKey": "ingestionErrorsJson",
         "label": "Errors",
-        "type": "truncate",
-        "maxLength": 80
+        "type": "errors-list"
       }
     ],
     "emptyState": {

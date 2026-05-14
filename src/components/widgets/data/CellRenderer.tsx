@@ -89,6 +89,42 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
     case "date":
       return <DateDisplay value={String(value)} />;
 
+    // Renders an array of {field, code, message} ingestion errors. Accepts
+    // either a raw array OR an object shaped {errors: [...]} (the issuance
+    // backend wraps the array under `.errors` and echoes parsed memberData
+    // alongside — only the errors are user-relevant). Empty → muted dash.
+    case "errors-list": {
+      const raw = String(value);
+      if (!raw) return <span className="text-muted-foreground">—</span>;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      const list = Array.isArray(parsed)
+        ? parsed
+        : (parsed && typeof parsed === "object" && Array.isArray((parsed as { errors?: unknown }).errors))
+          ? (parsed as { errors: unknown[] }).errors
+          : [];
+      if (list.length === 0) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      return (
+        <ul className="space-y-0.5 text-sm">
+          {list.map((e, i) => {
+            const err = (e ?? {}) as { field?: string; code?: string; message?: string };
+            return (
+              <li key={i} className="leading-snug">
+                {err.field ? <span className="font-medium text-foreground">{err.field}: </span> : null}
+                <span className="text-destructive">{err.message ?? err.code ?? "Error"}</span>
+              </li>
+            );
+          })}
+        </ul>
+      );
+    }
+
     default:
       return <span>{String(value)}</span>;
   }

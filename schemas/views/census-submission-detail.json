@@ -26,6 +26,7 @@
         },
         "stopWhen": {
           "or": [
+            { "==": [{ "var": "status" }, "INGESTED"] },
             { "==": [{ "var": "status" }, "COMPLETED"] },
             { "==": [{ "var": "status" }, "FAILED"] }
           ]
