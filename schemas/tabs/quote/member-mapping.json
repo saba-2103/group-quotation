@@ -11,7 +11,7 @@
       },
       "props": {
         "title": "Member-to-Plan mapping",
-        "description": "DMN decision table that routes each member to a plan. Read-only here; replace the whole blob via the action below. DMN authoring UI is out of V1 scope (spec §5).",
+        "description": "Decision table that routes each member to a plan. Edit rules inline via the action below.",
         "mappingPath": "memberToPlanMappingJson"
       }
     },
@@ -35,8 +35,8 @@
         "actions": [
           {
             "id": "replace-mapping",
-            "label": "Replace mapping",
-            "icon": "Replace",
+            "label": "Edit mapping",
+            "icon": "Pencil",
             "type": "open-modal",
             "target": "member-mapping-replace-form",
             "variant": "outline"

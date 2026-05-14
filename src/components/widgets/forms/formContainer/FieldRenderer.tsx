@@ -10,6 +10,7 @@ import { NATIVE_INPUT_TYPES } from './constants';
 import ViewField from './ViewField';
 import { DateFormat } from '@/contexts/TenantConfigContext';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
+import { DmnRulesEditor } from './DmnRulesEditor';
 
 interface FieldRendererProps {
     field: FormFieldConfig;
@@ -165,6 +166,19 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
             disabled={isDisabled}
             className="font-mono text-xs min-h-32"
             spellCheck={false}
+        />
+    ),
+    // Row-per-rule DMN editor. Field value is the JSON string the backend
+    // stores; the editor parses/serializes on every change. Plan options are
+    // pre-filled by OverlaidForm.injectRowData from the quote's `plans`.
+    'dmn-rules-editor': ({ field, fieldProps, isDisabled }) => (
+        <DmnRulesEditor
+            value={(fieldProps.value as string) ?? ''}
+            onChange={fieldProps.onChange}
+            onBlur={fieldProps.onBlur}
+            disabled={isDisabled}
+            plans={field.options}
+            placeholder={field.placeholder}
         />
     ),
     date: ({ field, fieldProps, isDisabled }) => (

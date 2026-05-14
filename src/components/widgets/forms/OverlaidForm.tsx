@@ -20,6 +20,16 @@ type FieldConfig = {
     sourcePath?: string;
     sourceParseJson?: boolean;
     sourceSubPath?: string;
+    // Optional dropdown-options source from the parent rowData. Avoids a second
+    // network round-trip when the modal already has the data it needs (e.g.
+    // the DMN rules editor pulling plans off the open quote). Resolves to
+    // `field.options: [{value,label}]` so the renderer treats them as static.
+    optionsFromRowData?: {
+        path: string;
+        valueField: string;
+        labelField: string;
+    };
+    options?: Array<{ value: string; label: string }>;
     [key: string]: unknown;
 };
 type SubmitActionConfig = {
@@ -57,14 +67,41 @@ function resolvePreFill(field: FieldConfig, rowData: Record<string, unknown>): u
 // Exported for unit tests — covers the rowData-substitution contract
 // (`:id` placeholders in `api.endpoint` and `refreshKey`, pre-fill from
 // `sourcePath` + `sourceSubPath`).
+function resolveOptions(
+    field: FieldConfig,
+    rowData: Record<string, unknown>,
+): Array<{ value: string; label: string }> | undefined {
+    const cfg = field.optionsFromRowData;
+    if (!cfg) return field.options;
+    const raw = getNested(rowData, cfg.path);
+    if (!Array.isArray(raw)) return field.options;
+    return raw
+        .map((row) => {
+            if (row == null || typeof row !== "object") return null;
+            const r = row as Record<string, unknown>;
+            const value = r[cfg.valueField];
+            const label = r[cfg.labelField];
+            if (value === undefined || value === null) return null;
+            return {
+                value: String(value),
+                label: label != null ? String(label) : String(value),
+            };
+        })
+        .filter((o): o is { value: string; label: string } => o !== null);
+}
+
 export function injectRowData(node: WidgetConfig, rowData: Record<string, unknown>): WidgetConfig {
     const propsWithFields = node.props?.fields
         ? {
               ...node.props,
-              fields: (node.props.fields as FieldConfig[]).map((field) => ({
-                  ...field,
-                  defaultValue: resolvePreFill(field, rowData) ?? field.defaultValue,
-              })),
+              fields: (node.props.fields as FieldConfig[]).map((field) => {
+                  const resolvedOptions = resolveOptions(field, rowData);
+                  return {
+                      ...field,
+                      defaultValue: resolvePreFill(field, rowData) ?? field.defaultValue,
+                      ...(resolvedOptions ? { options: resolvedOptions } : {}),
+                  };
+              }),
           }
         : node.props;
 

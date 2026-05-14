@@ -57,7 +57,14 @@ const premium = (totalInr: number): QuotePremium => ({
   ],
 });
 
-const dmnMapping = '{"hits":"FIRST","rules":[{"if":"true","then":"PLAN-GTL-001"}]}';
+const dmnMapping = JSON.stringify({
+  decisionTable: {
+    hitPolicy: 'FIRST',
+    inputs: [{ id: 'criteria', label: 'Member criteria', typeRef: 'string' }],
+    outputs: [{ id: 'planNo', label: 'Plan', typeRef: 'string' }],
+    rules: [{ when: { criteria: 'true' }, then: { planNo: 'PLAN-GTL-001' } }],
+  },
+});
 
 export const PROPOSALS: Proposal[] = [
   {

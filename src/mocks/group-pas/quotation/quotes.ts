@@ -90,6 +90,33 @@ const censusFileFormat: CensusFileFormat = {
   }),
 };
 
+// Canonical DMN envelope helper for the member-to-plan mapping. The editor
+// (DmnRulesEditor) and the read-only renderer (DmnDecisionTable) both read
+// this shape directly; mocks use it instead of the legacy `{hits, rules:[{if,then}]}`
+// shorthand so the demo round-trips cleanly between view and edit.
+const dmnSingleRule = (planNo: string): string =>
+  JSON.stringify({
+    decisionTable: {
+      hitPolicy: 'FIRST',
+      inputs: [{ id: 'criteria', label: 'Member criteria', typeRef: 'string' }],
+      outputs: [{ id: 'planNo', label: 'Plan', typeRef: 'string' }],
+      rules: [{ when: { criteria: 'true' }, then: { planNo } }],
+    },
+  });
+
+const dmnSalarySplit = (highPlan: string, basePlan: string): string =>
+  JSON.stringify({
+    decisionTable: {
+      hitPolicy: 'FIRST',
+      inputs: [{ id: 'criteria', label: 'Member criteria', typeRef: 'string' }],
+      outputs: [{ id: 'planNo', label: 'Plan', typeRef: 'string' }],
+      rules: [
+        { when: { criteria: 'salary > 1500000' }, then: { planNo: highPlan } },
+        { when: { criteria: 'true' }, then: { planNo: basePlan } },
+      ],
+    },
+  });
+
 const premium = (totalInr: number): QuotePremium => ({
   amount: { amount: totalInr, currency: 'INR' },
   breakup: [
@@ -131,8 +158,7 @@ export const QUOTES: MockQuote[] = [
     plans: [planTermLife, planTermLifeEnhanced],
     aggregateCensus: census120,
     censusFileFormat,
-    memberToPlanMapping:
-      '{"hits":"FIRST","rules":[{"if":"salary > 1500000","then":"PLAN-GTL-002"},{"if":"true","then":"PLAN-GTL-001"}]}',
+    memberToPlanMapping: dmnSalarySplit('PLAN-GTL-002', 'PLAN-GTL-001'),
     premium: premium(4_320_000),
     premiumType: 'ANNUAL',
     effectiveDate: '2026-07-01',
@@ -152,8 +178,7 @@ export const QUOTES: MockQuote[] = [
     plans: [planTermLife],
     aggregateCensus: census45,
     censusFileFormat,
-    memberToPlanMapping:
-      '{"hits":"FIRST","rules":[{"if":"true","then":"PLAN-GTL-001"}]}',
+    memberToPlanMapping: dmnSingleRule('PLAN-GTL-001'),
     premium: premium(1_620_000),
     premiumType: 'ANNUAL',
     effectiveDate: '2026-06-15',
@@ -171,8 +196,7 @@ export const QUOTES: MockQuote[] = [
     plans: [planTermLife, planTermLifeEnhanced],
     aggregateCensus: census120,
     censusFileFormat,
-    memberToPlanMapping:
-      '{"hits":"FIRST","rules":[{"if":"salary > 1500000","then":"PLAN-GTL-002"},{"if":"true","then":"PLAN-GTL-001"}]}',
+    memberToPlanMapping: dmnSalarySplit('PLAN-GTL-002', 'PLAN-GTL-001'),
     premium: premium(4_320_000),
     premiumType: 'ANNUAL',
     effectiveDate: '2026-08-01',
@@ -190,8 +214,7 @@ export const QUOTES: MockQuote[] = [
     plans: [planTermLife],
     aggregateCensus: census45,
     censusFileFormat,
-    memberToPlanMapping:
-      '{"hits":"FIRST","rules":[{"if":"true","then":"PLAN-GTL-001"}]}',
+    memberToPlanMapping: dmnSingleRule('PLAN-GTL-001'),
     premium: premium(1_620_000),
     premiumType: 'ANNUAL',
     effectiveDate: '2026-06-01',
@@ -209,8 +232,7 @@ export const QUOTES: MockQuote[] = [
     plans: [planTermLife],
     aggregateCensus: census45,
     censusFileFormat,
-    memberToPlanMapping:
-      '{"hits":"FIRST","rules":[{"if":"true","then":"PLAN-GTL-001"}]}',
+    memberToPlanMapping: dmnSingleRule('PLAN-GTL-001'),
     premium: premium(1_620_000),
     premiumType: 'ANNUAL',
     effectiveDate: '2026-05-01',
@@ -263,8 +285,7 @@ export const QUOTES: MockQuote[] = [
     plans: [planTermLife],
     aggregateCensus: census45,
     censusFileFormat,
-    memberToPlanMapping:
-      '{"hits":"FIRST","rules":[{"if":"true","then":"PLAN-GTL-001"}]}',
+    memberToPlanMapping: dmnSingleRule('PLAN-GTL-001'),
     premium: premium(1_620_000),
     premiumType: 'ANNUAL',
     effectiveDate: '2026-03-01',
