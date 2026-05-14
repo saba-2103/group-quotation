@@ -79,7 +79,10 @@
                     "endpoint": "/api/moneyout/config/payout-field-validation-rules",
                     "method": "POST"
                 },
-                "successMessage": "Validation Rule added successfully!"
+                "successMessage": "Validation Rule added successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "add-file-field-validation-rule-form" }
+                ]
             },
             {
                 "id": "cancel-add-file-field-validation-rule",

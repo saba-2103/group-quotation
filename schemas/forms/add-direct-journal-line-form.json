@@ -93,7 +93,10 @@
                 "api": {
                     "endpoint": "/api/accounting/direct-journals/{{id}}/lines",
                     "method": "POST"
-                }
+                },
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "add-direct-journal-line-form" }
+                ]
             }
         ]
     }

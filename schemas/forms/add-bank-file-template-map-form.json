@@ -102,7 +102,10 @@
                     "endpoint": "/api/moneyout/config/bank-file-template-assignments",
                     "method": "POST"
                 },
-                "successMessage": "Bank File Template Map added successfully!"
+                "successMessage": "Bank File Template Map added successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "add-bank-file-template-map-form" }
+                ]
             },
             {
                 "id": "cancel-add-bank-file-template-map",

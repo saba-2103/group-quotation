@@ -134,7 +134,10 @@
                     "endpoint": "/api/moneyout/config/bank-file-templates",
                     "method": "POST"
                 },
-                "successMessage": "Payout Template added successfully!"
+                "successMessage": "Payout Template added successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "add-payout-template-form" }
+                ]
             },
             {
                 "id": "cancel-add-payout-template",

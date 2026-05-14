@@ -87,7 +87,10 @@
                 "api": {
                     "endpoint": "/api/accounting/events",
                     "method": "POST"
-                }
+                },
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "create-event-form" }
+                ]
             }
         ]
     }
