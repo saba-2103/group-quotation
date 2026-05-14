@@ -34,7 +34,14 @@ export function useSmartQuery(dataSource?: DataSourceConfig) {
                 const searchParams = new URLSearchParams();
                 Object.entries(allParams).forEach(([key, val]) => {
                     if (val !== undefined && val !== null && val !== '') {
-                        if (typeof val === 'object') {
+                        if (Array.isArray(val)) {
+                            // Repeat the key for each value: state=DRAFT&state=SUBMITTED
+                            val.forEach((v) => {
+                                if (v !== undefined && v !== null && v !== '') {
+                                    searchParams.append(key, String(v));
+                                }
+                            });
+                        } else if (typeof val === 'object') {
                             // If it's an object (like filters), spread it
                             Object.entries(val).forEach(([innerKey, innerVal]) => {
                                 if (innerVal !== undefined && innerVal !== null && innerVal !== '') {

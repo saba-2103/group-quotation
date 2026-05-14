@@ -212,13 +212,13 @@ const routes: RouteEntry[] = [
     handler: (req) => {
       const sp = req.nextUrl.searchParams;
       const clientId = sp.get('clientId');
-      const state = sp.get('state');
+      const states = sp.getAll('state');
       const page = Number(sp.get('page') ?? '0');
       const size = Number(sp.get('size') ?? '20');
       const filtered = store.proposals.filter(
         (p) =>
           (!clientId || p.clientId === clientId) &&
-          (!state || p.state === state),
+          (states.length === 0 || states.includes(p.state)),
       );
       return json(
         filtered.slice(page * size, page * size + size).map(proposalToSummary),
