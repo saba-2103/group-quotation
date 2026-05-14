@@ -107,6 +107,7 @@ const premium = (totalInr: number): QuotePremium => ({
 export const QUOTES: MockQuote[] = [
   {
     id: 'QTE-2026-0001',
+    quoteNumber: 'QN-2026-0001',
     clientId: 'CLI-0001',
     policyType: 'GTL',
     status: 'DRAFT',
@@ -144,6 +145,7 @@ export const QUOTES: MockQuote[] = [
   },
   {
     id: 'QTE-2026-0003',
+    quoteNumber: 'QN-2026-0003',
     clientId: 'CLI-0001',
     policyType: 'GTL',
     status: 'SUBMITTED',
@@ -287,6 +289,7 @@ export const QUOTES: MockQuote[] = [
 
 export const QUOTE_SUMMARIES: QuoteSummaryDto[] = QUOTES.map((q) => ({
   id: q.id,
+  quoteNumber: q.quoteNumber,
   clientId: q.clientId,
   policyType: q.policyType,
   status: q.status,

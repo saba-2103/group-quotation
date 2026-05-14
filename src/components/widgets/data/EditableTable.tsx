@@ -55,6 +55,11 @@ interface EditableTableProps {
   keyField: string; // e.g. "planNo"
   labelField?: string; // e.g. "planName"
   valueArrayPath: string; // e.g. "aggregateCensus.planBreakdown"
+  // Optional extra paths consulted in order when `valueArrayPath` is missing
+  // from the response. Lets a schema read post-save state from whichever
+  // shape the backend currently returns (e.g. `planBreakdown` at root,
+  // `plan.breakdown`, or per-plan `plans[].headcount`) without UI rework.
+  valueArrayPathFallbacks?: string[];
   valueField: string; // e.g. "headcount"
   // Column headers
   keyLabel?: string; // default "Key"
@@ -145,6 +150,7 @@ export const EditableTable: React.FC<EditableTableProps & { config?: EditableTab
     keyField,
     labelField,
     valueArrayPath,
+    valueArrayPathFallbacks,
     valueField,
     keyLabel = "Key",
     labelLabel = "Name",
@@ -183,9 +189,27 @@ export const EditableTable: React.FC<EditableTableProps & { config?: EditableTab
   }, [data, keyArrayPath]);
 
   const valueRows = useMemo<Record<string, unknown>[]>(() => {
-    const arr = getNested(data, valueArrayPath);
-    return Array.isArray(arr) ? (arr as Record<string, unknown>[]) : [];
-  }, [data, valueArrayPath]);
+    const candidates = [valueArrayPath, ...(valueArrayPathFallbacks ?? [])];
+    for (const path of candidates) {
+      const arr = getNested(data, path);
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr as Record<string, unknown>[];
+      }
+    }
+    // Final fallback: derive rows from the key array itself when the
+    // `valueField` lives inline on each key row (e.g. real backend returns
+    // `plans[].headcount`). Lets the join still resolve without a separate
+    // breakdown array.
+    const keyArr = getNested(data, keyArrayPath);
+    if (Array.isArray(keyArr) && keyArr.length > 0) {
+      const hasInlineValue = keyArr.some(
+        (row): row is Record<string, unknown> =>
+          row != null && typeof row === 'object' && valueField in row,
+      );
+      if (hasInlineValue) return keyArr as Record<string, unknown>[];
+    }
+    return [];
+  }, [data, valueArrayPath, valueArrayPathFallbacks, keyArrayPath, valueField]);
 
   const serverRows = useMemo<JoinedRow[]>(() => {
     const byKey = new Map<string, number>();

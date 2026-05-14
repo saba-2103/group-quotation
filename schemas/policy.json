@@ -58,6 +58,7 @@
           {
             "id": "policyNumber",
             "accessorKey": "policyNumber",
+            "fallbackKey": "id",
             "label": "Policy #",
             "type": "link",
             "linkRoute": "/policy-admin/policies/:id"

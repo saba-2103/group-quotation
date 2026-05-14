@@ -64,6 +64,7 @@ export type MockQuoteDto = QuoteDto & {
 export function quoteToDto(q: MockQuote): MockQuoteDto {
   return {
     id: q.id,
+    quoteNumber: q.quoteNumber,
     clientId: q.clientId,
     clientName: clientNameFor(q.clientId),
     policyType: q.policyType,
@@ -101,6 +102,7 @@ export type MockQuoteSummaryDto = QuoteSummaryDto & { clientName?: string };
 export function quoteToSummary(q: MockQuote): MockQuoteSummaryDto {
   return {
     id: q.id,
+    quoteNumber: q.quoteNumber,
     clientId: q.clientId,
     clientName: clientNameFor(q.clientId),
     policyType: q.policyType,

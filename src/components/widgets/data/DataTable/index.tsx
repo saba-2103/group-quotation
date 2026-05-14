@@ -24,6 +24,20 @@ function cellValue(row: Record<string, unknown>, key: string): string | number |
   if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return v;
   return undefined; // non-primitives can't be rendered as a cell value
 }
+
+// Resolve a column's value, falling back to `fallbackKey` when the primary
+// accessor returns a blank (undefined / null / empty string). Real backends
+// often expose both an opaque id and a human-friendly number that may not yet
+// be populated; this lets schemas declare both without per-row branching.
+function resolveColumnValue(
+  row: Record<string, unknown>,
+  col: { accessorKey: string; fallbackKey?: string },
+): string | number | boolean | null | undefined {
+  const primary = cellValue(row, col.accessorKey);
+  const isBlank = primary === undefined || primary === null || primary === "";
+  if (isBlank && col.fallbackKey) return cellValue(row, col.fallbackKey);
+  return primary;
+}
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
@@ -295,7 +309,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                             <dd className="min-w-0 flex-1 text-right text-sm text-foreground">
                               <CellRenderer
                                 column={col}
-                                value={cellValue(rowData, col.accessorKey)}
+                                value={resolveColumnValue(rowData, col)}
                                 rowId={rowId}
                                 onLinkClick={buildLinkHandler(rowData)}
                               />
@@ -472,7 +486,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                           >
                             <CellRenderer
                               column={col}
-                              value={cellValue(rowData, col.accessorKey)}
+                              value={resolveColumnValue(rowData, col)}
                               rowId={rowId}
                               onLinkClick={buildLinkHandler(rowData)}
                             />

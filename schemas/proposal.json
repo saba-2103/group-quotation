@@ -47,9 +47,10 @@
         "title": "Proposals",
         "columns": [
           {
-            "id": "id",
-            "accessorKey": "id",
-            "label": "Proposal ID",
+            "id": "proposalNumber",
+            "accessorKey": "proposalNumber",
+            "fallbackKey": "id",
+            "label": "Proposal #",
             "type": "link",
             "linkRoute": "/issuance/proposals/:id"
           },

@@ -71,9 +71,10 @@
         ],
         "columns": [
           {
-            "id": "id",
-            "accessorKey": "id",
-            "label": "Quote ID",
+            "id": "quoteNumber",
+            "accessorKey": "quoteNumber",
+            "fallbackKey": "id",
+            "label": "Quote #",
             "type": "link",
             "linkRoute": "/quotation/:id"
           },

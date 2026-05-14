@@ -4,6 +4,24 @@
   "props": { "value": "pricing", "label": "Pricing", "icon": "Calculator" },
   "children": [
     {
+      "id": "quote-pricing-status",
+      "type": "polling-banner",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" },
+        "pollSchedule": {
+          "initialIntervalMs": 2000,
+          "initialDurationMs": 10000,
+          "fallbackIntervalMs": 5000,
+          "maxDurationMs": 60000
+        },
+        "stopWhen": { ">": [{ "var": "estimatedPremium.totalAmount" }, 0] }
+      },
+      "props": {
+        "pendingMessage": "Pricing computing… The page will update automatically when the workflow completes.",
+        "pendingWhenMissing": ["estimatedPremium.totalAmount"]
+      }
+    },
+    {
       "id": "quote-pricing-grid",
       "type": "key-value-grid",
       "dataSource": {

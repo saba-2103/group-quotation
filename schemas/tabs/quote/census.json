@@ -16,6 +16,7 @@
         "keyField": "planNo",
         "labelField": "planName",
         "valueArrayPath": "aggregateCensus.planBreakdown",
+        "valueArrayPathFallbacks": ["plan.breakdown", "planBreakdown"],
         "valueField": "headcount",
         "keyLabel": "Plan #",
         "labelLabel": "Plan name",

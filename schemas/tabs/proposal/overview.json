@@ -14,9 +14,10 @@
         "columns": 3,
         "fields": [
           {
-            "id": "id",
-            "label": "Proposal ID",
-            "accessorKey": "id"
+            "id": "proposalNumber",
+            "label": "Proposal #",
+            "accessorKey": "proposalNumber",
+            "fallbackKey": "id"
           },
           {
             "id": "state",
@@ -39,7 +40,8 @@
           {
             "id": "client",
             "label": "Client",
-            "accessorKey": "clientName"
+            "accessorKey": "clientName",
+            "fallbackKey": "clientId"
           },
           {
             "id": "policyType",

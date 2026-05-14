@@ -72,6 +72,7 @@ export interface MemberQuoteCase {
 
 export interface Quote {
   id: string;
+  quoteNumber?: string;
   clientId: string;
   policyType: PolicyType;
   premiumType?: PremiumType;
@@ -103,6 +104,10 @@ export interface MemberQuote {
 
 export interface QuoteDto {
   id: string;
+  // Human-friendly quote number assigned by the backend (e.g. "QN-2026-0001").
+  // Display surfaces prefer this over the opaque UUID `id`. The backend may
+  // populate it asynchronously, so consumers must tolerate it being absent.
+  quoteNumber?: string;
   clientId: string;
   policyType: string;
   premiumType: string;
@@ -122,6 +127,7 @@ export interface QuoteDto {
 
 export interface QuoteSummaryDto {
   id: string;
+  quoteNumber?: string;
   clientId: string;
   policyType: string;
   status: string;

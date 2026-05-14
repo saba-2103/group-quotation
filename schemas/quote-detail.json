@@ -6,10 +6,14 @@
     {
       "id": "quote-detail-header",
       "type": "page-header",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
       "props": {
         "backHref": "/quotation",
         "backLabel": "All quotes",
         "title": "Quote {{id}}",
+        "titleTemplate": "Quote {quoteNumber|id}",
         "description": "State-aware quote detail. Available actions depend on the current state and your active role.",
         "actions": [
           {
@@ -48,7 +52,7 @@
               { "value": "EXPIRED", "label": "Expired", "variant": "grey" }
             ]
           },
-          { "id": "client", "label": "Client", "accessorKey": "clientName" },
+          { "id": "client", "label": "Client", "accessorKey": "clientName", "fallbackKey": "clientId" },
           { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
           { "id": "headcount", "label": "Headcount", "accessorKey": "headcount" }
         ]

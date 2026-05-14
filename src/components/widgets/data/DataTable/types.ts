@@ -32,6 +32,11 @@ export interface ColumnConfig {
   valueMapping?: ValueMapping[];
   linkRoute?: string;
   format?: string;
+  // Optional accessor consulted when `accessorKey` resolves to an empty value
+  // (null / undefined / empty string). Lets a column show a human-friendly
+  // identifier (e.g. `quoteNumber`) with a deterministic fallback (`id`) when
+  // the friendly field isn't populated yet.
+  fallbackKey?: string;
   // Used by the `state-badge` cell type to pick the right map in state-map.ts.
   entity?: string;
   // Cross-array join — copy a field from a sibling array on the response root.

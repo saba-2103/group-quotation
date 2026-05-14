@@ -14,8 +14,8 @@
         "description": "Policy-level metadata. Edit affordance is DRAFT + maker only; plans, census, and member-mapping have their own tabs.",
         "columns": 3,
         "fields": [
-          { "id": "id", "label": "Quote ID", "accessorKey": "id" },
-          { "id": "client", "label": "Client", "accessorKey": "clientName" },
+          { "id": "quoteNumber", "label": "Quote #", "accessorKey": "quoteNumber", "fallbackKey": "id" },
+          { "id": "client", "label": "Client", "accessorKey": "clientName", "fallbackKey": "clientId" },
           { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
           { "id": "premiumType", "label": "Premium type", "accessorKey": "premiumType" },
           { "id": "lineOfBusiness", "label": "Line of business", "accessorKey": "lineOfBusiness" },

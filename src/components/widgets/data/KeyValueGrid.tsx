@@ -41,6 +41,12 @@ function tryParseJson(v: unknown): unknown {
 // per-shape custom renderer.
 function resolveFieldValue(field: KeyValueField, source: unknown): unknown {
   let value = getNested(source, field.accessorKey);
+  if (
+    field.fallbackKey &&
+    (value === undefined || value === null || value === '')
+  ) {
+    value = getNested(source, field.fallbackKey);
+  }
   if (field.parseJson) value = tryParseJson(value);
   if (field.subPath) value = getNested(value, field.subPath);
   if (field.nestedParseAt && value != null && typeof value === 'object') {

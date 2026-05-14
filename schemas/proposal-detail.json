@@ -36,7 +36,7 @@
             ]
           },
           { "id": "quoteId", "label": "Source quote", "accessorKey": "quoteId" },
-          { "id": "client", "label": "Client", "accessorKey": "clientName" },
+          { "id": "client", "label": "Client", "accessorKey": "clientName", "fallbackKey": "clientId" },
           { "id": "policyId", "label": "Created policy", "accessorKey": "policyId" }
         ]
       }
