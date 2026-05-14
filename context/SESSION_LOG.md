@@ -1854,3 +1854,15 @@ Two observations from the user once the bulk upload itself worked:
 - [tests/e2e/CENSUS_UPLOAD_MANUAL_TEST.md](../tests/e2e/CENSUS_UPLOAD_MANUAL_TEST.md) — five-test walkthrough (GTL happy, GTL validation, GCL happy, GCL validation, negative edge cases). Preflight section includes the CORS curl + a note that the test proposal needs plans `P1` and `P2`.
 
 **Commits on `feat/new-buisiness`:** `1ba1ee5` (fix), plus the test material commit + this log entry. Pushed.
+
+### 2026-05-14 (continued) — Census Submit button: action-bar reads wrong field name
+
+User report: "Submit submission" button on the census detail page rendered disabled with tooltip "Not available in this state", even though submission was at INGESTED with 200 accepted rows.
+
+**Spec check (asked + answered):** [docs/spec/issuance/IssuanceDomain.domain](../docs/spec/issuance/IssuanceDomain.domain) `canSubmit()` precondition is "CensusSubmission must be INGESTED with at least one accepted row" — clearly satisfied. State machine is `INITIATED → INGESTED → SUBMITTED → COMPLETED`. Spec wanted the button enabled.
+
+**Root cause was schema, not spec.** `ActionBar` defaults `stateField: "state"` (documented in [ActionBar.tsx:58](../src/components/widgets/actions/ActionBar.tsx)). The `CensusSubmissionDto` exposes the lifecycle field as `status`, not `state`. So `entity.state → undefined → '' → stateActions[''] = [] → submit not in list → disabled`. The schema declared `stateActions: { INGESTED: ["submit"] }` correctly but forgot the `stateField: "status"` override.
+
+**Fix:** added `"stateField": "status"` to the action-bar props in [schemas/views/census-submission-detail.json](../schemas/views/census-submission-detail.json). Verified in preview — button no longer disabled (`disabled: false`, no `data-disabled-reason`). Commit `370aadb`, pushed to `feat/new-buisiness`.
+
+**Lesson for future schemas:** any entity whose DTO uses `status` (CensusSubmission, possibly others) needs the explicit `stateField` override in action-bar props. Worth a sweep of remaining action-bar usages to catch other latent versions of this bug.
