@@ -1732,3 +1732,31 @@ Misunderstanding earlier in the session led to deleting the entire MemberQuote (
 3. Sidebar "Member Quotes" link is live but unscoped (cross-policy view). Worth a label tweak / scoping pass if the in-quote UX lands first.
 
 **Lesson recorded for future me:** when a user says "X isn't a requirement", read it as a scope question, not a deletion order — confirm intent before deleting whole entities. Especially when the spec explicitly defines them.
+
+### 2026-05-14 (continued) — Display quote/proposal numbers, not IDs, on remaining list/detail surfaces
+
+User flagged that some dashboards/lists/detail headers still showed raw IDs (`quote.id`, `proposal.id`) where the prior rollout had already switched most surfaces to the human-friendly number with an ID fallback. Goal: tighten display-only — keep IDs for navigation, route params, GETs/POSTs.
+
+**Pattern reused (no renderer changes):**
+
+- `data-table` column: `accessorKey: "<entity>Number"` + `fallbackKey: "id"` (or `<entity>Id`). Renderer falls back when the primary is blank (`DataTable/index.tsx:38`).
+- `key-value-grid` field: same `accessorKey`/`fallbackKey` (`KeyValueGrid.tsx:45-48`).
+- `page-header`: `dataSource` + `titleTemplate: "Proposal {proposalNumber|id}"` — mirrors what `schemas/quote-detail.json:16` already did for quote-detail.
+- `linkRoute` continues to substitute `row.id` from the row object (`DataTable/index.tsx:282,458`), so display changes don't affect navigation.
+
+**Schemas touched (commit `27f7bd5`):**
+
+- [schemas/dashboard.json](../schemas/dashboard.json) — three inbox tables: Sales draft quotes (`:112`), Sales proposals-to-finalize (`:137`, both "Proposal #" and "Source quote" prefer `quoteNumber`), MPH quotes-awaiting-acceptance (`:187`).
+- [schemas/proposal.json:57](../schemas/proposal.json) — list "Source Quote" column → `quoteNumber` w/ fallback `quoteId`.
+- [schemas/proposal-detail.json](../schemas/proposal-detail.json) — header gets a `dataSource` and `titleTemplate: "Proposal {proposalNumber|id}"`; state-summary "Source quote" prefers `quoteNumber`.
+- [schemas/tabs/proposal/overview.json:36](../schemas/tabs/proposal/overview.json) — "Source quote" → `quoteNumber` w/ fallback.
+- [schemas/tabs/policy/overview.json:27](../schemas/tabs/policy/overview.json) — "Source proposal" → `proposalNumber` w/ fallback `proposalId`.
+
+**Left alone:**
+
+- `schemas/member-quote.json:65` ("Member Quote ID") — no `memberQuoteNumber` exists on `MemberQuoteDto`, nothing to prefer.
+- All `linkRoute`s, all `dataSource.endpoint`s, all `{{id}}` route params — unchanged. ID remains canonical for fetches and writes.
+
+**Backend dependency:** these `fallbackKey`s are inert today wherever the backend payload omits the number field (e.g. proposal list/detail, GCL `quoteNumber` on `MemberQuote`). They keep the page usable but the real win lands once the API populates `proposalNumber` / surfaces `quoteNumber` in cross-entity payloads (proposal → source quote, policy → source proposal). Same drift logged on 2026-05-14 for quote-detail still applies.
+
+**Files touched / commit:** 5 files, commit `27f7bd5` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
