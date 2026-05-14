@@ -6,10 +6,14 @@
     {
       "id": "proposal-detail-header",
       "type": "page-header",
+      "dataSource": {
+        "api": { "endpoint": "/api/issuance/proposals/{{id}}", "method": "GET" }
+      },
       "props": {
         "backHref": "/issuance/proposals",
         "backLabel": "All proposals",
         "title": "Proposal {{id}}",
+        "titleTemplate": "Proposal {proposalNumber|id}",
         "description": "Operate the Quote → Policy hand-off here. Submit locks the proposal; Finalize triggers Policy creation."
       }
     },
@@ -35,7 +39,7 @@
               { "value": "CANCELLED", "label": "Cancelled", "variant": "destructive" }
             ]
           },
-          { "id": "quoteId", "label": "Source quote", "accessorKey": "quoteId" },
+          { "id": "quoteId", "label": "Source quote", "accessorKey": "quoteNumber", "fallbackKey": "quoteId" },
           { "id": "client", "label": "Client", "accessorKey": "clientName", "fallbackKey": "clientId" },
           { "id": "policyId", "label": "Created policy", "accessorKey": "policyId" }
         ]

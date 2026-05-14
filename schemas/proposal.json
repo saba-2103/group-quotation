@@ -54,7 +54,7 @@
             "type": "link",
             "linkRoute": "/issuance/proposals/:id"
           },
-          { "id": "quoteId", "accessorKey": "quoteId", "label": "Source Quote", "type": "text" },
+          { "id": "quoteId", "accessorKey": "quoteNumber", "fallbackKey": "quoteId", "label": "Source Quote", "type": "text" },
           { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
           { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
           { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "proposal" },

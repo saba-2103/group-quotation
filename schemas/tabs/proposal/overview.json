@@ -35,7 +35,8 @@
           {
             "id": "quoteId",
             "label": "Source quote",
-            "accessorKey": "quoteId"
+            "accessorKey": "quoteNumber",
+            "fallbackKey": "quoteId"
           },
           {
             "id": "client",

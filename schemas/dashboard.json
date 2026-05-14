@@ -109,7 +109,7 @@
                     "props": {
                         "title": "Draft quotes awaiting your action",
                         "columns": [
-                            { "id": "id", "accessorKey": "id", "label": "Quote ID", "type": "link", "linkRoute": "/quotation/:id" },
+                            { "id": "quoteNumber", "accessorKey": "quoteNumber", "fallbackKey": "id", "label": "Quote #", "type": "link", "linkRoute": "/quotation/:id" },
                             { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
                             { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
                             { "id": "status", "accessorKey": "status", "label": "Status", "type": "state-badge", "entity": "quote" }
@@ -134,8 +134,8 @@
                     "props": {
                         "title": "Proposals ready to finalize",
                         "columns": [
-                            { "id": "id", "accessorKey": "id", "label": "Proposal ID", "type": "link", "linkRoute": "/issuance/proposals/:id" },
-                            { "id": "quoteId", "accessorKey": "quoteId", "label": "Source quote", "type": "text" },
+                            { "id": "proposalNumber", "accessorKey": "proposalNumber", "fallbackKey": "id", "label": "Proposal #", "type": "link", "linkRoute": "/issuance/proposals/:id" },
+                            { "id": "quoteId", "accessorKey": "quoteNumber", "fallbackKey": "quoteId", "label": "Source quote", "type": "text" },
                             { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
                             { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "proposal" }
                         ],
@@ -184,7 +184,7 @@
                     "props": {
                         "title": "Quotes awaiting your acceptance",
                         "columns": [
-                            { "id": "id", "accessorKey": "id", "label": "Quote ID", "type": "link", "linkRoute": "/quotation/:id" },
+                            { "id": "quoteNumber", "accessorKey": "quoteNumber", "fallbackKey": "id", "label": "Quote #", "type": "link", "linkRoute": "/quotation/:id" },
                             { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
                             { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
                             { "id": "premium", "accessorKey": "premiumAmount.amount", "label": "Annual premium (INR)", "type": "currency", "currency": "INR" }

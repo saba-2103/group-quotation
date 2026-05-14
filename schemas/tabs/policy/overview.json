@@ -24,7 +24,7 @@
           { "id": "inceptionDate", "label": "Inception date", "accessorKey": "inceptionDate", "type": "date" },
           { "id": "activationThreshold", "label": "Activation threshold (members)", "accessorKey": "activationThreshold" },
           { "id": "premiumAmount", "label": "Estimated premium", "accessorKey": "estimatedPremium.amount", "type": "currency", "currency": "INR" },
-          { "id": "proposalLink", "label": "Source proposal", "accessorKey": "proposalId" }
+          { "id": "proposalLink", "label": "Source proposal", "accessorKey": "proposalNumber", "fallbackKey": "proposalId" }
         ]
       }
     },
