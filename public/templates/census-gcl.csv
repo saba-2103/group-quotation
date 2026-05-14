@@ -1,0 +1,4 @@
+memberId,planNo,name,dob,gender,salary,occupation,sumInsured
+LOAN-2001,PLAN-PERSONAL,Vikram Joshi,1980-02-14,M,1800000,Operations Lead,500000
+LOAN-2002,PLAN-HOME,Neha Bansal,1987-06-23,F,1600000,Finance Manager,2500000
+LOAN-2003,PLAN-AUTO,Karan Singh,1994-12-01,M,1100000,Sales Associate,800000

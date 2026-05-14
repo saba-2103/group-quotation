@@ -98,9 +98,9 @@
             "label": "Row status",
             "type": "select",
             "options": [
-              { "value": "VALID", "label": "Valid" },
-              { "value": "WARNING", "label": "Warning" },
-              { "value": "INVALID", "label": "Invalid" }
+              { "value": "ACCEPTED", "label": "Accepted" },
+              { "value": "INGESTED", "label": "Ingested (parsed, not yet member)" },
+              { "value": "REJECTED", "label": "Rejected" }
             ]
           }
         ]

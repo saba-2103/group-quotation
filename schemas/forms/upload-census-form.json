@@ -3,7 +3,7 @@
   "type": "form-container",
   "props": {
     "title": "Upload census",
-    "description": "Bulk-upload a member census file. We initiate the submission, upload the file to backend storage, then parse it.",
+    "description": "Pick the file you want to bulk-load. We'll initiate the submission, upload your file to backend storage, parse it, and take you to the per-row validation view.",
     "columns": 1,
     "fields": [
       {
@@ -12,7 +12,7 @@
         "label": "Census file",
         "type": "file",
         "accept": ".csv,.xlsx",
-        "helperText": "Accepted formats: .csv, .xlsx",
+        "helperText": "CSV or XLSX. One row per member, header row in row 1. Use the template above if you're starting from scratch.",
         "validations": [
           { "rule": "required", "message": "Choose a census file to upload" }
         ]
@@ -26,7 +26,7 @@
           { "value": "STANDARD_GTL", "label": "Standard GTL census" },
           { "value": "STANDARD_GCL", "label": "Standard GCL census" }
         ],
-        "helperText": "Optional. Tells the parser which column-map to apply."
+        "helperText": "Tells the parser which column-map to apply. Pick the one matching the template you downloaded."
       }
     ],
     "actions": [

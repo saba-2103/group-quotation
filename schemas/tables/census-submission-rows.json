@@ -19,9 +19,9 @@
         "label": "Status",
         "type": "badge",
         "valueMapping": [
-          { "value": "VALID", "label": "Valid", "variant": "success" },
-          { "value": "WARNING", "label": "Warning", "variant": "warning" },
-          { "value": "INVALID", "label": "Invalid", "variant": "destructive" }
+          { "value": "ACCEPTED", "label": "Accepted", "variant": "success" },
+          { "value": "INGESTED", "label": "Ingested", "variant": "info" },
+          { "value": "REJECTED", "label": "Rejected", "variant": "destructive" }
         ]
       },
       {
