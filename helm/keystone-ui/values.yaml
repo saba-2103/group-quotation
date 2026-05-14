@@ -1,0 +1,94 @@
+# Number of pod replicas
+replicaCount: 1
+
+# Container image configuration
+image:
+  repository: "" # Set during deployment
+  pullPolicy: IfNotPresent
+  tag: "" # Set during deployment
+
+# Image pull secrets for private registries
+imagePullSecrets: [] # Set via environment-specific values
+
+# Chart naming
+nameOverride: ""
+fullnameOverride: ""
+
+# Service configuration
+service:
+  type: ClusterIP # Use with ingress controller
+  port: 80
+  targetPort: 3000
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+# Node selection
+nodeSelector: {}
+
+# Pod tolerations
+tolerations: []
+
+# Pod affinity rules
+affinity: {}
+
+# Environment variables
+env:
+  NODE_ENV: production
+  PORT: "3000"
+  HOSTNAME: "0.0.0.0"
+  # Backend base URL for the Next.js API route proxies.
+  # TODO: route handlers in src/app/api/{accounting,moneyout}/ currently
+  # hardcode the backend host. This env var is wired through the chart so the
+  # app can read it once those handlers are switched to process.env-driven
+  # config. Until then, the value is informational.
+  GROUP_PAS_BACKEND_URL: "https://group-pas-dev.anairacloud.com"
+
+# Health check configuration
+healthCheck:
+  enabled: true
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http  # Uses the named port from deployment
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /
+      port: http  # Uses the named port from deployment
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+# Ingress configuration
+ingress:
+  enabled: false # Set to true when deploying to k3s
+  className: "alb" # AWS ALB Ingress Controller
+  annotations: {} # Will be set during deployment
+  hosts:
+    - host: "" # Will be set during deployment (e.g., app.anairacloud.com)
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: [] # TLS handled by ALB with ACM certificate
+
+# Storage configuration (placeholder)
+# TODO: there is no templates/pvc.yaml yet, so flipping `enabled: true` here
+# is a no-op. Add a PersistentVolumeClaim template before relying on this.
+persistence:
+  enabled: false
+  storageClass: "local-path" # Same as backend services
+  size: 1Gi

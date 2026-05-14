@@ -1,0 +1,34 @@
+image:
+  repository: "" # injected by CI: --set image.repository=${vars.ECR_REGISTRY}/${vars.ECR_REPOSITORY}
+  tag: "" # overridden by CI via --set image.tag=<tag>
+
+imagePullSecrets:
+  - name: ecr-secret
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: true
+  className: alb
+  # NOTE: TLS is terminated by the ALB using the ACM certificate referenced in
+  # the annotation below. The cert is a wildcard for *.anairacloud.com so it
+  # also covers per-PR preview hosts (keystone-ui-pr-<N>.anairacloud.com).
+  annotations:
+    alb.ingress.kubernetes.io/group.name: anaira-dev-tools
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: instance
+    # injected by CI: --set 'ingress.annotations.alb\.ingress\.kubernetes\.io/certificate-arn=${vars.ACM_CERT_ARN}'
+    alb.ingress.kubernetes.io/certificate-arn: ""
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-2-2017-01
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/success-codes: "200,302"
+  hosts:
+    - host: keystone-ui-dev.anairacloud.com
+      paths:
+        - path: /
+          pathType: Prefix
