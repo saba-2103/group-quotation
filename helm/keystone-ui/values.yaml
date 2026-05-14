@@ -50,8 +50,11 @@ env:
   NODE_ENV: production
   PORT: "3000"
   HOSTNAME: "0.0.0.0"
-  # Server-side proxy target for /api/{quotation,issuance,policy-admin}.
-  # Unset -> the app serves local mock data instead of hitting the backend.
+  # Backend base URL for the Next.js API route proxies.
+  # TODO: route handlers in src/app/api/{accounting,moneyout}/ currently
+  # hardcode the backend host. This env var is wired through the chart so the
+  # app can read it once those handlers are switched to process.env-driven
+  # config. Until then, the value is informational.
   GROUP_PAS_BACKEND_URL: "https://group-pas-dev.anairacloud.com"
 
 # Health check configuration
@@ -82,7 +85,9 @@ ingress:
           pathType: Prefix
   tls: [] # TLS handled by ALB with ACM certificate
 
-# Storage configuration (if needed in future)
+# Storage configuration (placeholder)
+# TODO: there is no templates/pvc.yaml yet, so flipping `enabled: true` here
+# is a no-op. Add a PersistentVolumeClaim template before relying on this.
 persistence:
   enabled: false
   storageClass: "local-path" # Same as backend services

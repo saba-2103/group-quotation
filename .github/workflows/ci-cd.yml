@@ -29,6 +29,11 @@ permissions:
   contents: read
   pull-requests: write # for posting preview-URL comments on PRs
 
+env:
+  HELM_VERSION: v3.17.3
+  KUBECTL_VERSION: v1.30.4
+  ROLLOUT_TIMEOUT: 180s
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -89,11 +94,21 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    env:
+      RELEASE_NAME: keystone-ui
+      CANONICAL_HOST: keystone-ui-dev.anairacloud.com
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Helm
-        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
 
       - name: Setup kubeconfig
         run: |
@@ -103,20 +118,32 @@ jobs:
 
       - name: Deploy via Helm (canonical)
         run: |
-          helm upgrade --install keystone-ui ./helm/keystone-ui \
+          helm upgrade --install "$RELEASE_NAME" ./helm/keystone-ui \
             --namespace dev-env \
             -f ./helm/keystone-ui/values-dev.yaml \
-            --set image.tag=${{ needs.build.outputs.image_tag }}
+            --set image.repository="${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}" \
+            --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set "ingress.annotations.alb\.ingress\.kubernetes\.io/certificate-arn=${{ vars.ACM_CERT_ARN }}"
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/"$RELEASE_NAME" \
+            --namespace dev-env --timeout=${{ env.ROLLOUT_TIMEOUT }}
 
       - name: Smoke test
         run: |
-          sleep 15
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://keystone-ui-dev.anairacloud.com/)
+          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -L "https://$CANONICAL_HOST/")
           if [ "$STATUS" != "200" ]; then
             echo "Smoke test failed: HTTP $STATUS"
+            echo "Response headers for debugging:"
+            curl -sSI "https://$CANONICAL_HOST/" || true
             exit 1
           fi
           echo "Smoke test passed: HTTP $STATUS"
+
+      - name: Cleanup kubeconfig
+        if: always()
+        run: rm -f ~/.kube/config
 
   # Deploys each open PR to its own host
   # https://keystone-ui-pr-<N>.anairacloud.com
@@ -133,7 +160,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Helm
-        run: curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
 
       - name: Setup kubeconfig
         run: |
@@ -143,21 +177,38 @@ jobs:
 
       - name: Deploy preview via Helm
         run: |
+          # ALB TLS is wildcard-cert based (*.anairacloud.com via ACM), so
+          # overriding only the host route is sufficient; no TLS-host --set
+          # needed because the chart's ingress.tls section is empty.
           helm upgrade --install "$RELEASE_NAME" ./helm/keystone-ui \
             --namespace dev-env \
             -f ./helm/keystone-ui/values-dev.yaml \
+            --set image.repository="${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}" \
             --set image.tag=${{ needs.build.outputs.image_tag }} \
+            --set "ingress.annotations.alb\.ingress\.kubernetes\.io/certificate-arn=${{ vars.ACM_CERT_ARN }}" \
             --set ingress.hosts[0].host="$PREVIEW_HOST"
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/"$RELEASE_NAME" \
+            --namespace dev-env --timeout=${{ env.ROLLOUT_TIMEOUT }}
 
       - name: Smoke test
         id: smoke
         continue-on-error: true # don't fail the PR if DNS isn't wildcarded yet
         run: |
-          sleep 20
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$PREVIEW_HOST/")
+          # Retry up to ~60s to absorb ALB target-group warmup / DNS propagation.
+          STATUS=000
+          for i in 1 2 3 4 5 6; do
+            STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 10 "https://$PREVIEW_HOST/" || echo "000")
+            if [ "$STATUS" = "200" ]; then break; fi
+            echo "Attempt $i: HTTP $STATUS — retrying in 10s..."
+            sleep 10
+          done
           echo "smoke_status=$STATUS" >> $GITHUB_OUTPUT
           if [ "$STATUS" != "200" ]; then
-            echo "Preview returned HTTP $STATUS (may indicate wildcard DNS not yet configured)"
+            echo "Preview returned HTTP $STATUS after retries (may indicate wildcard DNS not yet configured)"
+            curl -sSI "https://$PREVIEW_HOST/" || true
             exit 1
           fi
           echo "Preview live at https://$PREVIEW_HOST/"
@@ -165,21 +216,29 @@ jobs:
       - name: Comment preview URL on PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FULL_IMAGE: ${{ needs.build.outputs.full_image }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          SMOKE_STATUS: ${{ steps.smoke.outputs.smoke_status }}
         run: |
-          if [ "${{ steps.smoke.outcome }}" = "success" ]; then
-            BODY="🚀 **Preview deployed:** https://${PREVIEW_HOST}/
-            \`\`\`
-            Image:   ${{ needs.build.outputs.full_image }}
-            Release: ${RELEASE_NAME} (namespace: dev-env)
-            \`\`\`
-            This environment is torn down when the PR closes."
+          # Build the body with printf so the rendered markdown has no leading
+          # indentation (CommonMark allows ≤3 leading spaces before a fence —
+          # YAML's run-script indent would otherwise break ``` rendering).
+          if [ "$SMOKE_OUTCOME" = "success" ]; then
+            printf '%s\n\n```\n%s\n%s\n```\n\n%s\n' \
+              "🚀 **Preview deployed:** https://${PREVIEW_HOST}/" \
+              "Image:   ${FULL_IMAGE}" \
+              "Release: ${RELEASE_NAME} (namespace: dev-env)" \
+              "This environment is torn down when the PR closes." > /tmp/pr-body.md
           else
-            BODY="⚠️ **Preview helm-deployed but smoke test failed** (HTTP ${{ steps.smoke.outputs.smoke_status }}).
-            URL: https://${PREVIEW_HOST}/
-            \`\`\`
-            Image:   ${{ needs.build.outputs.full_image }}
-            Release: ${RELEASE_NAME} (namespace: dev-env)
-            \`\`\`
-            Most likely cause on first PR: wildcard DNS \`*.anairacloud.com\` not yet pointed at the shared ALB. Ping infra to add the Route53 record."
+            printf '%s\n%s\n\n```\n%s\n%s\n```\n\n%s\n' \
+              "⚠️ **Preview helm-deployed but smoke test failed** (HTTP ${SMOKE_STATUS})." \
+              "URL: https://${PREVIEW_HOST}/" \
+              "Image:   ${FULL_IMAGE}" \
+              "Release: ${RELEASE_NAME} (namespace: dev-env)" \
+              "Most likely cause on first PR: wildcard DNS \`*.anairacloud.com\` not yet pointed at the shared ALB. Ping infra to add the Route53 record." > /tmp/pr-body.md
           fi
-          gh pr comment "$PR_NUMBER" --body "$BODY"
+          gh pr comment "$PR_NUMBER" --body-file /tmp/pr-body.md
+
+      - name: Cleanup kubeconfig
+        if: always()
+        run: rm -f ~/.kube/config
