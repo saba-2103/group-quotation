@@ -1592,3 +1592,12 @@ PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now 
 - Add `stopWhen` poll on the quote-detail data source so the walkthrough can wait for `estimatedPremium` before clicking Submit, then re-run Phase A and Phase B for a fuller coverage number.
 - PROP-0015 (Proposal Members tab wiring) still draft.
 - Ops Inbox click-through to repair-edit still missing (PROP-0010-style routing) — surfaced as GTL §4 gap.
+
+### 2026-05-14 (continued) — Error toast legibility fix
+
+User reported the error toast was illegible: red background with white text. Root cause was [src/components/ui/toast.tsx:82](../src/components/ui/toast.tsx) using `text-destructive-foreground` (which resolves to `#ffffff` in light mode per `globals.css`) on a `bg-destructive/10` tint — white on near-white. The sibling banners (`ErrorBanner`, `ReasonBanner`) already use `text-destructive` on the same tint; aligned the toast to match (added `dark:text-destructive` for symmetry with the existing `dark:bg-destructive/20`).
+
+Verified via `preview_start` + injected probe: computed color is now `rgb(239, 68, 68)` (destructive red) on the tinted background — legible.
+
+**Files touched:** `src/components/ui/toast.tsx` (one line).
+**Commit:** `196f969` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
