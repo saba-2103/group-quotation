@@ -1662,3 +1662,21 @@ UI fallbacks are intentionally inert once the backend ships the enrichments list
 
 - Backend enrichment work tracked in the drift doc; once it lands, the `fallbackKey`s and `valueArrayPathFallbacks` declared in the schemas above become inert and can be cleaned up.
 - Quote detail header still shows the UUID because the detail endpoint omits `quoteNumber`; the fallback in `titleTemplate` keeps the page usable but it's the backend gap surfacing.
+
+### 2026-05-14 (continued) — Polling banner gated on user action
+
+User reported the *"Pricing computing…"* banner shipped earlier today was firing on every DRAFT page load — including quotes that couldn't even be priced yet (no plans) — instead of only after pressing **Request price**.
+
+**Fix (commit `98d9ba4`):**
+
+- [src/components/widgets/state/PollingBanner.tsx](../src/components/widgets/state/PollingBanner.tsx) — added optional `stateKey` prop. When set, the banner is opt-in: it reads `useWidgetState().values[stateKey]` and only polls/renders while that flag is truthy. When the response satisfies `pendingWhenMissing`, a `useEffect` clears the flag so the banner self-dismisses. Without a `stateKey` the prior always-on behaviour is preserved.
+- [schemas/tabs/quote/pricing.json](../schemas/tabs/quote/pricing.json) — polling-banner gets `stateKey: "pricing-pending:{{id}}"`. The Request-price action's `onSuccess[]` now dispatches an `update-widget-state` step that sets the same key to `true`. Failures (e.g. 400 from the no-plans case) skip `onSuccess` entirely (useActionHandler throws), so the flag never flips and the banner stays hidden.
+- Reload-resilient: a hard refresh drops the flag, so a stale request can't leave the banner stuck forever; the next poll's response is the source of truth.
+
+**Verified on dev (proxy):**
+
+- DRAFT quote w/ plans + premium already populated (`QUO-035` ACCEPTED state, Pricing tab open) → banner hidden ✅.
+- DRAFT quote w/o plans (`QUO-041`) → Request price click → 400 from backend → banner stays hidden ✅ (correct: don't claim "computing" when the request was rejected).
+- The full success path (`200` → flag flips → banner shows → premium populates → banner clears) couldn't be exercised end-to-end against the dev cluster because every existing DRAFT either has no plans or already has a premium. Wiring uses the same `onSuccess[].update-widget-state` → `useWidgetState` pattern that ships in RoleSwitcher and form `onSuccess[]` flows, so confidence is high; flagged in the user-facing summary so the next person can demo with a fresh fixture.
+
+**Files touched / commit:** 2 files, commit `98d9ba4` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
