@@ -25,7 +25,7 @@ export function DualPanelNav() {
     const items = navigation.menuItems;
 
     const activeItem =
-        items.find((item) => itemMatchesPathname(pathname, item)) ?? items[0] ?? null;
+        items.find((item) => itemMatchesPathname(pathname, item)) ?? null;
     const activeItemId = activeItem?.id ?? null;
     const showSubmenu =
         activeItem != null &&
