@@ -7,15 +7,11 @@ import { useSmartQuery } from "@/hooks/useSmartQuery";
 
 // ActivationCounter — compact header tile for the Master Policy detail page.
 //
-// Composes `activeMembers / activationThreshold` from two existing endpoints,
-// then surfaces `state` (badge) + `pendingReason` (chip) alongside.
-//
-// Why bespoke: a single key-value-grid can only read from one dataSource, but
-// the counter combines values from /policies/{id} (threshold + state +
-// reason) and /policies/{id}/pending-breakdown (active count). Building a
-// generic per-field dataSource primitive is a bigger lift (tracked under the
-// schema-engine extraction PR convergence note in ARCH_TRANSITION); this
-// widget is the narrow, header-shaped consumer that unblocks the demo today.
+// Combines `activeMembers / activationThreshold`, plus the policy `state` +
+// `pendingReason` chips. activeMembers is derived client-side from the
+// members list because the backend has no aggregate-count endpoint (verified
+// against group-pas-dev OpenAPI on 2026-05-14; the previous mock-only
+// /pending-breakdown route has been dropped).
 
 interface PolicyDto {
   activationThreshold?: number | null;
@@ -23,11 +19,8 @@ interface PolicyDto {
   state?: string | null;
 }
 
-interface PendingBreakdownDto {
-  activeMembers?: number | null;
-  totalMembers?: number | null;
-  policyState?: string | null;
-  policyPendingReason?: string | null;
+interface MemberSummaryDto {
+  state?: string | null;
 }
 
 interface ActivationCounterProps {
@@ -57,26 +50,29 @@ export const ActivationCounter: React.FC<ActivationCounterProps & { config?: { p
   const policyQuery = useSmartQuery(
     id ? { api: { endpoint: `/api/policy-admin/policies/${id}`, method: "GET" } } : undefined,
   );
-  const breakdownQuery = useSmartQuery(
+  const membersQuery = useSmartQuery(
     id
-      ? { api: { endpoint: `/api/policy-admin/policies/${id}/pending-breakdown`, method: "GET" } }
+      ? { api: { endpoint: `/api/policy-admin/policies/${id}/members`, method: "GET" } }
       : undefined,
   );
-
-  const isLoading = policyQuery.isLoading || breakdownQuery.isLoading;
 
   if (!id) {
     return null;
   }
 
   const policy = policyQuery.data as PolicyDto | undefined;
-  const breakdown = breakdownQuery.data as PendingBreakdownDto | undefined;
-  // Prefer top-level PolicyDto fields; fall back to the breakdown's mirror
-  // (the existing overview tab populates those from the same data).
-  const state = policy?.state ?? breakdown?.policyState ?? null;
-  const pendingReason = policy?.pendingReason ?? breakdown?.policyPendingReason ?? null;
-  const activeMembers = breakdown?.activeMembers ?? 0;
+  const state = policy?.state ?? null;
+
+  if (state === "ACTIVE") {
+    return null;
+  }
+
+  const pendingReason = policy?.pendingReason ?? null;
   const threshold = policy?.activationThreshold ?? null;
+  const members = membersQuery.data as MemberSummaryDto[] | undefined;
+  const activeMembers = members
+    ? members.filter((m) => m?.state === "ACTIVE").length
+    : undefined;
 
   return (
     <div className="rounded-lg border border-border/80 bg-card p-4 shadow-sm">
@@ -85,17 +81,22 @@ export const ActivationCounter: React.FC<ActivationCounterProps & { config?: { p
           <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Activation
           </div>
-          <div className="mt-1 flex items-baseline gap-1">
+          <div
+            className="mt-1 flex items-baseline gap-1"
+            title="Active members / minimum required to activate (activationThreshold on the master policy)"
+          >
             <span className="text-2xl font-semibold tabular-nums text-foreground">
-              {isLoading ? "—" : activeMembers}
+              {activeMembers ?? "—"}
             </span>
             <span className="text-2xl font-normal text-muted-foreground">/</span>
             <span className="text-2xl font-semibold tabular-nums text-foreground">
-              {threshold != null ? threshold : "—"}
+              {threshold ?? "—"}
             </span>
-            <span className="ml-1 text-sm text-muted-foreground">members</span>
+            <span className="ml-1 text-sm text-muted-foreground">
+              members <span className="text-muted-foreground/70">(min to activate)</span>
+            </span>
           </div>
-          {threshold == null && !isLoading && (
+          {policy && threshold == null && (
             <p className="mt-1 text-xs text-muted-foreground">Activation threshold not set</p>
           )}
         </div>

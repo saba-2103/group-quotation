@@ -18,7 +18,6 @@ import type {
   MemberSummaryDto,
   MemberUwDecision,
   PolicyDto,
-  PolicyPendingBreakdownDto,
   PolicyPlanConfig,
   PolicySummaryDto,
 } from '@/types/group-pas/policy-admin';
@@ -138,12 +137,6 @@ export const searchPolicies = (params: SearchPoliciesParams) =>
 
 export const listAllPolicies = (page: number, size: number) =>
   api.get<PolicySummaryDto[]>(`${BASE}/policies/list`, { page, size });
-
-// V1 derived endpoint — see Task 1.4 + interim assumption #5.
-export const getPolicyPendingBreakdown = (policyId: string) =>
-  api.get<PolicyPendingBreakdownDto>(
-    `${BASE}/policies/${policyId}/pending-breakdown`,
-  );
 
 // ── Member ──
 

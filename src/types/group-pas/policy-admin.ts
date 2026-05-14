@@ -347,19 +347,3 @@ export interface MemberSummaryDto {
   annualPremium: Money;
 }
 
-export interface ReasonCount {
-  reason: string;
-  count: number;
-}
-
-export interface PolicyPendingBreakdownDto {
-  policyId: string;
-  policyState: string;
-  policyPendingReason: string;
-  totalMembers: number;
-  activeMembers: number;
-  pendingMembers: number;
-  pendingByReason: ReasonCount[];
-  voidMembers: number;
-  voidByReason: ReasonCount[];
-}

@@ -64,8 +64,6 @@ export function notFound(path: string): NextResponse {
 const MOCK_ONLY_PATTERNS: RegExp[] = [
   // UI-only maker-checker overlay (Quote + Proposal). Restored 2026-05-11.
   /\/awaiting-approval$/,
-  // Client-derived breakdown — V1 interim assumption #5; backend has no equiv.
-  /\/pending-breakdown$/,
   // Proposal-scoped member shortcuts; backend uses /policies/:id/members.
   /\/issuance\/proposals\/[^/]+\/members\b/,
 ];

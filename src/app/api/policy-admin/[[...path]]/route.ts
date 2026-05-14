@@ -28,8 +28,6 @@ import type {
   Member,
   Policy,
   PolicyPlanConfig,
-  PolicyPendingBreakdownDto,
-  ReasonCount,
 } from '@/types/group-pas/policy-admin';
 
 type RouteContext = { params: Promise<{ path?: string[] }> };
@@ -51,12 +49,6 @@ const PAM_ENUM_VALUES: Record<string, string[]> = {
   ],
   CommunicationPreference: ['EMAIL', 'LETTER', 'PORTAL'],
 };
-
-function tally(items: string[]): ReasonCount[] {
-  const map = new Map<string, number>();
-  for (const r of items) map.set(r, (map.get(r) ?? 0) + 1);
-  return [...map.entries()].map(([reason, count]) => ({ reason, count }));
-}
 
 const routes: RouteEntry[] = [
   // ── Common ──
@@ -357,38 +349,6 @@ const routes: RouteEntry[] = [
       return ok();
     },
   },
-  {
-    method: 'GET',
-    pattern: 'policies/:policyId/pending-breakdown',
-    handler: (_req, params) => {
-      const p = store.policies.find((x) => x.id === params.policyId);
-      if (!p) return notFound(`policies/${params.policyId}/pending-breakdown`);
-      const policyMembers = store.members.filter(
-        (m) => m.policyId === params.policyId,
-      );
-      const breakdown: PolicyPendingBreakdownDto = {
-        policyId: p.id,
-        policyState: p.state,
-        policyPendingReason: p.pendingReason ?? '',
-        totalMembers: policyMembers.length,
-        activeMembers: policyMembers.filter((m) => m.state === 'ACTIVE').length,
-        pendingMembers: policyMembers.filter((m) => m.state === 'PENDING').length,
-        pendingByReason: tally(
-          policyMembers
-            .filter((m) => m.state === 'PENDING' && m.pendingReason)
-            .map((m) => m.pendingReason!),
-        ),
-        voidMembers: policyMembers.filter((m) => m.state === 'VOID').length,
-        voidByReason: tally(
-          policyMembers
-            .filter((m) => m.state === 'VOID' && m.voidReason)
-            .map((m) => m.voidReason!),
-        ),
-      };
-      return json(breakdown);
-    },
-  },
-
   // ── Member endpoints ──
   {
     method: 'GET',
