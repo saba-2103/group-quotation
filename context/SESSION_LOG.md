@@ -1712,3 +1712,23 @@ User dropped the official Anaira logomark at [docs/Logomark - Anaira.svg](../doc
 9. Desktop toast / system-notification icon (favicon is reused automatically once metadata is set).
 
 **Files touched / commit:** 5 files, commit `8191b06` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+### 2026-05-14 (continued) — MemberQuote (GCL) deletion reverted — actually required
+
+Misunderstanding earlier in the session led to deleting the entire MemberQuote (GCL) surface (commit `381945c`, logged in `a7e15e6`). User clarified after the push: MemberQuote IS required for GCL-type quotes — per-loan-disbursement member quotes hanging off the GCL master Policy, exactly as [docs/spec/quotation/QuotationDomain.domain:202](../docs/spec/quotation/QuotationDomain.domain) describes. The "GCL only - W4" spec note meant gated by policy type, not "not in scope".
+
+**Reverted (commits `1d770e7` for the log entry, `1e2e364` for the code, both via `git revert`):**
+
+- All deleted files restored: `src/app/quotation/member-quotes/`, `schemas/member-quote.json`, `schemas/member-quote-detail.json`, `schemas/forms/{create-member-quote,set-member-quote-premium}-form.json`, `schemas/tabs/quote/member-quotes-placeholder.json`, `src/mocks/group-pas/quotation/member-quotes.ts`.
+- All type/handler/registry edits reverted in: [src/types/group-pas/quotation.ts](../src/types/group-pas/quotation.ts), [src/lib/api/quotation.ts](../src/lib/api/quotation.ts), [src/lib/api-mock/group-pas/{dtos,store}.ts](../src/lib/api-mock/group-pas/), [src/app/api/quotation/[[...path]]/route.ts](../src/app/api/quotation/[[...path]]/route.ts), [src/mocks/group-pas/index.ts](../src/mocks/group-pas/index.ts), [src/components/widgets/state/state-map.ts](../src/components/widgets/state/state-map.ts), [src/tests/unit/state/StateBadge.unit.test.tsx](../src/tests/unit/state/StateBadge.unit.test.tsx), [schemas/quote-detail.json](../schemas/quote-detail.json), [src/mocks/original/group-insurance/config/app-config-mock.ts](../src/mocks/original/group-insurance/config/app-config-mock.ts).
+- `schemas/forms/index.ts` regenerated; `tsc --noEmit` clean.
+
+**Net effect of `381945c` + `1e2e364` on `feat/new-buisiness`:** zero — the code on disk matches `68a8dd1` for the MemberQuote surface. History preserved (no force-push).
+
+**Open follow-ups for the next session:**
+
+1. The quote-detail tab `member-quotes-placeholder.json` is gated `visibleWhen: policyType === 'GCL'` — content is still a directional placeholder pointing at `/quotation/member-quotes`. Decision pending whether to embed the real list + add-member action inline on the GCL quote-detail tab, or keep the placeholder-then-deep-link UX.
+2. Backend question still open: `QuoteDto` carries no `policyId`, and `MemberQuote.policyId` only resolves once the GCL quote has been `finalize()`d into a Policy. UI scoping the in-quote-detail list needs either (a) `policyId` nullable on `QuoteDto`, (b) a `?quoteId=` filter on `GET /member-quotes`, or (c) explicit "available once finalized" empty state.
+3. Sidebar "Member Quotes" link is live but unscoped (cross-policy view). Worth a label tweak / scoping pass if the in-quote UX lands first.
+
+**Lesson recorded for future me:** when a user says "X isn't a requirement", read it as a scope question, not a deletion order — confirm intent before deleting whole entities. Especially when the spec explicitly defines them.
