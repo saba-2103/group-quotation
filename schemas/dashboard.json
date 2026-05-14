@@ -121,6 +121,31 @@
                     }
                 },
                 {
+                    "id": "inbox-sales-draft-proposal",
+                    "type": "data-table",
+                    "visibleRoles": ["sales"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/proposals/search",
+                            "method": "GET",
+                            "params": { "state": "DRAFT", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Draft proposals — complete and submit",
+                        "columns": [
+                            { "id": "proposalNumber", "accessorKey": "proposalNumber", "fallbackKey": "id", "label": "Proposal #", "type": "link", "linkRoute": "/issuance/proposals/:id" },
+                            { "id": "quoteId", "accessorKey": "quoteNumber", "fallbackKey": "quoteId", "label": "Source quote", "type": "text" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "proposal" }
+                        ],
+                        "emptyState": {
+                            "title": "No draft proposals",
+                            "description": "Draft proposals appear here once a client accepts the quote and a proposal is created."
+                        }
+                    }
+                },
+                {
                     "id": "inbox-sales-finalize-proposal",
                     "type": "data-table",
                     "visibleRoles": ["sales"],
@@ -141,7 +166,7 @@
                         ],
                         "emptyState": {
                             "title": "No proposals to finalize",
-                            "description": "Proposals appear here once a client accepts the quote."
+                            "description": "Proposals appear here once they have been submitted for review."
                         }
                     }
                 },
