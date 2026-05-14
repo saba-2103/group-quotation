@@ -1601,3 +1601,64 @@ Verified via `preview_start` + injected probe: computed color is now `rgb(239, 6
 
 **Files touched:** `src/components/ui/toast.tsx` (one line).
 **Commit:** `196f969` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+### 2026-05-14 (continued) — Quote display polish + API drift sweep
+
+User flagged three live-backend issues and asked for a drift sweep:
+
+1. **Show `quote.quoteNumber` instead of `quote.id`, fallback to `id` where blank.** Backend now returns a friendly `quoteNumber` (e.g. `QUO-042`) alongside the opaque UUID `id` on the summary endpoint but **not** on the detail endpoint.
+2. **No visual signal that a pricing request was made.** Pressing *Request price* toasted "Pricing requested" but nothing on the Pricing tab updated until manual reload — the schema was missing the `pollSchedule` the rest of the codebase already uses.
+3. **Headcount resets to 0 after save.** PUT body matches the spec (`{headcount, planBreakdown[]}` under `aggregateCensus`), but the GET response returns `planBreakdown[]` at the **root** and omits `aggregateCensus`. EditableTable was joining against `aggregateCensus.planBreakdown` and seeing nothing.
+
+**Pattern landed (UI side, not backend):**
+
+- `fallbackKey` on DataTable columns ([src/components/widgets/data/DataTable/types.ts](../src/components/widgets/data/DataTable/types.ts), [index.tsx:28](../src/components/widgets/data/DataTable/index.tsx)) — primary accessor with deterministic fallback.
+- `fallbackKey` on KeyValueGrid fields ([src/components/widgets/data/types.ts](../src/components/widgets/data/types.ts), [KeyValueGrid.tsx:43](../src/components/widgets/data/KeyValueGrid.tsx)).
+- `titleTemplate` on PageHeader ([src/components/widgets/layout/PageHeader/index.tsx](../src/components/widgets/layout/PageHeader/index.tsx)) with `{accessor|fallback}` chain, sourced from `config.dataSource` — fetches only when the template is declared.
+- `valueArrayPathFallbacks` on EditableTable ([src/components/widgets/data/EditableTable.tsx:185](../src/components/widgets/data/EditableTable.tsx)) — tries `valueArrayPath` first, then each fallback, then derives rows inline from the key array if the value field lives on each key row.
+- New widget `polling-banner` ([src/components/widgets/state/PollingBanner.tsx](../src/components/widgets/state/PollingBanner.tsx)) — registered in [WidgetRegistry](../src/components/registry/WidgetRegistry.tsx). Polls via `useSmartQuery` and renders spinner+message when the configured `pendingWhenMissing[]` accessors all resolve blank. Stops when the backend populates the value (relies on dataSource's `stopWhen`).
+
+**Schemas wired up:**
+
+- [schemas/quote.json](../schemas/quote.json) Quote column → `quoteNumber` w/ `fallbackKey: id`.
+- [schemas/proposal.json](../schemas/proposal.json) Proposal column → `proposalNumber` w/ `fallbackKey: id`.
+- [schemas/policy.json](../schemas/policy.json) Policy column → `policyNumber` w/ `fallbackKey: id`.
+- [schemas/quote-detail.json](../schemas/quote-detail.json) — PageHeader `titleTemplate: "Quote {quoteNumber|id}"` + dataSource; Client KVG field gains `fallbackKey: clientId`.
+- [schemas/proposal-detail.json](../schemas/proposal-detail.json), [schemas/policy-detail.json](../schemas/policy-detail.json) — Client KVG field gains `fallbackKey: clientId`.
+- [schemas/tabs/quote/key-data.json](../schemas/tabs/quote/key-data.json) — Quote ID → Quote # with fallback; Client with fallback.
+- [schemas/tabs/proposal/overview.json](../schemas/tabs/proposal/overview.json) — Proposal ID → Proposal # with fallback; Client with fallback.
+- [schemas/tabs/quote/census.json](../schemas/tabs/quote/census.json) — `valueArrayPathFallbacks: ["plan.breakdown", "planBreakdown"]` so the EditableTable picks up the real backend's root-level `planBreakdown[]`.
+- [schemas/tabs/quote/pricing.json](../schemas/tabs/quote/pricing.json) — new `polling-banner` at the top with `pollSchedule` (2s/5s/60s cap) and `stopWhen: { ">": [{var:"estimatedPremium.totalAmount"}, 0] }`. `>` was deliberate over `!=` because json-logic loose-equality treats `null != 0` as true — would have stopped polling on the missing-field case.
+
+**Types/mocks:**
+
+- `Quote`, `QuoteDto`, `QuoteSummaryDto` gained optional `quoteNumber` ([src/types/group-pas/quotation.ts](../src/types/group-pas/quotation.ts)).
+- Mock fixtures + mappers pass it through ([src/mocks/group-pas/quotation/quotes.ts](../src/mocks/group-pas/quotation/quotes.ts), [src/lib/api-mock/group-pas/dtos.ts](../src/lib/api-mock/group-pas/dtos.ts)).
+
+**Drift sweep — full table in [docs/API_DRIFT_2026-05-14.md](../docs/API_DRIFT_2026-05-14.md).** Headline findings:
+
+- **Quote detail** is missing `quoteNumber`, `clientName`, `clientNumber` (all present on summary).
+- **Quote detail** returns `planBreakdown[]` at the root — spec puts it under `aggregateCensus`.
+- **Proposal detail** is missing `proposalNumber`, `clientName`, `clientNumber`.
+- **Policy detail** is missing `clientName`, `clientNumber`; `estimatedPremium` shape disagrees with summary (object vs flat `estimatedPremiumAmount` + `estimatedPremiumCurrency`).
+- **Policy member detail** is missing `policyMemberNumber`, `mobile`, `pendingReason`/`voidReason`/`cancellationReason` — last three are what ReasonBanner consumes.
+- **`PolicySummaryDto` spec is stale** — backend already returns the extended set.
+
+UI fallbacks are intentionally inert once the backend ships the enrichments listed in the drift doc's action-items section.
+
+**Verified on dev (proxy mode):**
+
+- Quote list shows `QUO-042` (from `quoteNumber`) and falls back to UUID for rows where `quoteNumber` is empty.
+- Quote detail (FINALIZED) — Census tab renders P1=8 / P2=2 / total 10 from root-level `planBreakdown[]`.
+- Quote detail (DRAFT, no premium) — Pricing tab shows *"Pricing computing… The page will update automatically when the workflow completes."* with spinner; banner disappears once `estimatedPremium.totalAmount > 0`.
+- No console errors after edits.
+
+**Files touched / commit:**
+
+- 22 files; new: [docs/API_DRIFT_2026-05-14.md](../docs/API_DRIFT_2026-05-14.md), [src/components/widgets/state/PollingBanner.tsx](../src/components/widgets/state/PollingBanner.tsx).
+- Commit `db53240` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+**Open items:**
+
+- Backend enrichment work tracked in the drift doc; once it lands, the `fallbackKey`s and `valueArrayPathFallbacks` declared in the schemas above become inert and can be cleaned up.
+- Quote detail header still shows the UUID because the detail endpoint omits `quoteNumber`; the fallback in `titleTemplate` keeps the page usable but it's the backend gap surfacing.
