@@ -17,6 +17,7 @@
         "stopWhen": { ">": [{ "var": "estimatedPremium.totalAmount" }, 0] }
       },
       "props": {
+        "stateKey": "pricing-pending:{{id}}",
         "pendingMessage": "Pricing computing… The page will update automatically when the workflow completes.",
         "pendingWhenMissing": ["estimatedPremium.totalAmount"]
       }
@@ -81,7 +82,18 @@
               "endpoint": "/api/quotation/quotes/{{id}}/request-price",
               "method": "POST"
             },
-            "successMessage": "Pricing requested — premium will populate once the workflow completes."
+            "successMessage": "Pricing requested — premium will populate once the workflow completes.",
+            "onSuccess": [
+              {
+                "id": "mark-pricing-pending",
+                "type": "update-widget-state",
+                "props": {
+                  "key": "pricing-pending:{{id}}",
+                  "operation": "set",
+                  "value": true
+                }
+              }
+            ]
           }
         ]
       }
