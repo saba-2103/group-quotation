@@ -41,8 +41,6 @@ import type {
   PolicySummaryDto,
 } from '@/types/group-pas/policy-admin';
 import type {
-  MemberQuote,
-  MemberQuoteDto,
   QuoteDto,
   QuoteSummaryDto,
 } from '@/types/group-pas/quotation';
@@ -342,24 +340,5 @@ export function memberToSummary(m: Member): MemberSummaryDto {
     mobile: m.mobile ?? '',
     sumInsured: m.sumInsured,
     annualPremium: m.premium.annualPremium,
-  };
-}
-
-// MemberQuote (GCL) — see src/mocks/group-pas/quotation/member-quotes.ts.
-export function memberQuoteToDto(q: MemberQuote): MemberQuoteDto {
-  const md = q.memberData;
-  return {
-    id: q.id,
-    policyId: q.policyId,
-    planNo: q.planNo ?? '',
-    status: q.status,
-    name: md.name,
-    dob: md.dob ?? '',
-    gender: md.gender ?? '',
-    salary: md.salary ?? 0,
-    sumAssured: q.sumAssured?.amount ?? 0,
-    annualPremiumAmount: q.premium?.amount.amount ?? 0,
-    annualPremiumCurrency: q.premium?.amount.currency ?? 'INR',
-    premiumBreakupJson: JSON.stringify(q.premium?.breakup ?? []),
   };
 }

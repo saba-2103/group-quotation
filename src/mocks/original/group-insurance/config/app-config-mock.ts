@@ -42,13 +42,6 @@ export const groupInsuranceAppConfig: AppConfig = {
             url: "/quotation",
             icon: "FileText",
             allowedRoles: ["sales", "partner_agent", "mph"]
-          },
-          {
-            id: "member-quotes",
-            label: "Member Quotes",
-            url: "/quotation/member-quotes",
-            icon: "Users",
-            allowedRoles: ["sales"]
           }
         ]
       },

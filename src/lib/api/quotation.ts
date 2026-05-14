@@ -12,7 +12,6 @@ import type {
 } from '@/types/group-pas/common';
 import type {
   CensusFileFormat,
-  MemberQuoteDto,
   QuoteDto,
   QuoteSummaryDto,
 } from '@/types/group-pas/quotation';
@@ -138,54 +137,3 @@ export const searchQuotes = (params: SearchQuotesParams) =>
 
 export const listAllQuotes = (page: number, size: number) =>
   api.get<QuoteSummaryDto[]>(`${BASE}/quotes/list`, { page, size });
-
-// ── MemberQuote (GCL) — placeholder per V1 scope ──
-
-export interface CreateMemberQuoteRequest {
-  policyId: string;
-  name: string;
-  dob?: string;
-  gender?: string;
-  salary?: number;
-  occupation?: string;
-  sumAssured?: number;
-}
-export interface CreateMemberQuoteResponse {
-  memberQuoteId: string;
-}
-
-export const createMemberQuote = (request: CreateMemberQuoteRequest) =>
-  api.post<CreateMemberQuoteResponse>(`${BASE}/member-quotes`, request);
-
-export interface UpdateMemberPremiumRequest {
-  name: string;
-  dob?: string;
-  gender?: string;
-  salary?: number;
-  occupation?: string;
-  annualPremiumAmount: number;
-  currency: string;
-  breakup: Array<{
-    productCode: string;
-    benefitCode?: string;
-    premiumAmount: number;
-    currency: string;
-  }>;
-}
-
-export const updateMemberPremium = (
-  memberQuoteId: string,
-  request: UpdateMemberPremiumRequest,
-) => api.put<void>(`${BASE}/member-quotes/${memberQuoteId}/premium`, request);
-
-export const submitMemberQuote = (memberQuoteId: string) =>
-  api.post<void>(`${BASE}/member-quotes/${memberQuoteId}/submit`);
-
-export const finalizeMemberQuote = (memberQuoteId: string) =>
-  api.post<void>(`${BASE}/member-quotes/${memberQuoteId}/finalize`);
-
-export const getMemberQuoteById = (memberQuoteId: string) =>
-  api.get<MemberQuoteDto>(`${BASE}/member-quotes/${memberQuoteId}`);
-
-export const findMemberQuotes = (params: { policyId?: string; status?: string }) =>
-  api.get<MemberQuoteDto[]>(`${BASE}/member-quotes`, params);

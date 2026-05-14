@@ -2,7 +2,6 @@
 // Consumed by `src/app/api/(quotation|issuance|policy-admin)/**/route.ts` mock handlers (Task 1.4).
 
 export * from './quotation/quotes';
-export * from './quotation/member-quotes';
 export * from './issuance/proposals';
 export * from './issuance/policy-members';
 export * from './issuance/census';
