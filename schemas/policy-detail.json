@@ -89,6 +89,7 @@
       "props": { "defaultValue": "overview" },
       "children": [
         { "$ref": "schemas/tabs/policy/overview.json" },
+        { "$ref": "schemas/tabs/policy/plans.json" },
         { "$ref": "schemas/tabs/policy/members.json" }
       ]
     }

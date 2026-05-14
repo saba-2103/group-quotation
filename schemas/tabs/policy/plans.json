@@ -1,0 +1,23 @@
+{
+  "id": "policy-plans-tab",
+  "type": "tab-panel",
+  "props": { "value": "plans", "label": "Plans", "icon": "Layers" },
+  "children": [
+    {
+      "id": "policy-plans-grid",
+      "type": "card-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/policies/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "arrayPath": "plans",
+        "cardWidgetType": "plan-card",
+        "columns": 2,
+        "emptyState": {
+          "title": "No plans on this policy",
+          "description": "Plans are pinned from the originating quote at policy creation."
+        }
+      }
+    }
+  ]
+}

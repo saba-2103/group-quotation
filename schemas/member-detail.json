@@ -63,7 +63,9 @@
           { "id": "gender", "label": "Gender", "accessorKey": "gender" },
           { "id": "occupation", "label": "Occupation", "accessorKey": "occupation" },
           { "id": "mobile", "label": "Mobile", "accessorKey": "mobile" },
-          { "id": "email", "label": "Email", "accessorKey": "email" }
+          { "id": "email", "label": "Email", "accessorKey": "email" },
+          { "id": "governmentIdType", "label": "Government ID type", "accessorKey": "governmentIdType" },
+          { "id": "governmentIdNumber", "label": "Government ID #", "accessorKey": "governmentIdNumber" }
         ]
       }
     },
@@ -80,8 +82,37 @@
           { "id": "salary", "label": "Salary", "accessorKey": "salary", "type": "currency", "currency": "INR" },
           { "id": "sumInsured", "label": "Sum insured", "accessorKey": "sumInsured", "type": "currency", "currency": "INR" },
           { "id": "annualPremium", "label": "Annual premium", "accessorKey": "premium.annualPremium.amount", "type": "currency", "currency": "INR" },
+          {
+            "id": "premiumBreakup",
+            "label": "Premium breakup",
+            "accessorKey": "premium.breakup",
+            "type": "list",
+            "itemPath": "productCode"
+          },
           { "id": "policyMemberId", "label": "PolicyMember ref", "accessorKey": "policyMemberId" },
           { "id": "floatReservationId", "label": "Float reservation", "accessorKey": "floatReservationId" }
+        ]
+      }
+    },
+    {
+      "id": "member-uw-decision",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "UW decision",
+        "description": "Underwriting outcome on this member. Empty if no UW pass has been recorded.",
+        "columns": 2,
+        "fields": [
+          {
+            "id": "uwExclusions",
+            "label": "Exclusions",
+            "accessorKey": "uwDecision.exclusions",
+            "type": "list",
+            "itemPath": "code"
+          },
+          { "id": "uwNotes", "label": "Notes", "accessorKey": "uwDecision.notes" }
         ]
       }
     },

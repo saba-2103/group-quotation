@@ -79,6 +79,7 @@
             "linkRoute": "/policy-admin/members/:id"
           },
           { "id": "name", "accessorKey": "name", "label": "Name", "type": "text" },
+          { "id": "mobile", "accessorKey": "mobile", "label": "Mobile", "type": "text" },
           { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
           { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "member" },
           {

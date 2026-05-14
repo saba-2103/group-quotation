@@ -65,6 +65,15 @@
           },
           { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
           { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+          { "id": "effectiveDate", "accessorKey": "effectiveDate", "label": "Effective", "type": "date" },
+          { "id": "expiryDate", "accessorKey": "expiryDate", "label": "Expiry", "type": "date" },
+          {
+            "id": "estimatedPremium",
+            "accessorKey": "estimatedPremiumAmount",
+            "label": "Premium",
+            "type": "currency",
+            "currency": "INR"
+          },
           { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policy" }
         ],
         "rowActions": [

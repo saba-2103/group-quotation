@@ -8,7 +8,7 @@
       "type": "page-header",
       "props": {
         "title": "Clients",
-        "description": "Group policyholders. Detail page is deferred to D9."
+        "description": "Group policyholders. Click a client to see profile and their policies."
       }
     },
     {
@@ -44,12 +44,28 @@
       "props": {
         "title": "Clients",
         "columns": [
-          { "id": "clientNumber", "accessorKey": "clientNumber", "label": "Client #", "type": "text" },
+          {
+            "id": "clientNumber",
+            "accessorKey": "clientNumber",
+            "fallbackKey": "id",
+            "label": "Client #",
+            "type": "link",
+            "linkRoute": "/policy-admin/clients/:id"
+          },
           { "id": "name", "accessorKey": "name", "label": "Name", "type": "text" },
           { "id": "industryCategory", "accessorKey": "industryCategory", "label": "Industry", "type": "text" },
           { "id": "countryCode", "accessorKey": "countryCode", "label": "Country", "type": "text" },
           { "id": "isVip", "accessorKey": "isVip", "label": "VIP", "type": "text" },
           { "id": "state", "accessorKey": "state", "label": "Status", "type": "text" }
+        ],
+        "rowActions": [
+          {
+            "id": "view-client-btn",
+            "label": "View",
+            "icon": "Eye",
+            "type": "navigate",
+            "target": "/policy-admin/clients/:id"
+          }
         ],
         "emptyState": {
           "title": "No clients yet",
