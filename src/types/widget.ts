@@ -20,6 +20,14 @@ export interface WidgetConfig {
      * to scope each `data-table` section to one persona (PROP-0009).
      */
     visibleRoles?: Role[];
+    /**
+     * Optional data-conditioned visibility (json-logic). Currently honored by
+     * `TabsContainer`: when the container declares a `dataSource`, it fetches
+     * the entity and skips any child whose `visibleWhen` evaluates false
+     * against the response. Used to hide LoB-specific tabs (e.g. GCL Member
+     * Quotes on a GTL quote-detail page).
+     */
+    visibleWhen?: Record<string, unknown>;
 }
 
 export interface DataSourceConfig {

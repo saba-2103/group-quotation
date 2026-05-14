@@ -1,6 +1,7 @@
 {
   "id": "quote-member-quotes-tab",
   "type": "tab-panel",
+  "visibleWhen": { "==": [{ "var": "policyType" }, "GCL"] },
   "props": { "value": "member-quotes", "label": "Member Quotes (GCL)", "icon": "Users2" },
   "children": [
     {

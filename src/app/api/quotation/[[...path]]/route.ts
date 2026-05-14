@@ -309,10 +309,12 @@ const routes: RouteEntry[] = [
     method: 'POST',
     pattern: 'quotes/:quoteId/request-price',
     handler: (_req, params) => {
-      // Mirrors the deployed backend: emits a Kafka event with no listener
-      // wired (Rule Engine not yet shipped). Returns ok() but does not
-      // populate `premium`. UI surfaces this via the disabledTooltip on the
-      // schema action — the button is rendered disabled.
+      // Local mock for offline mode only — proxy mode forwards this to the
+      // real backend, where the Temporal workflow `CalculateQuotePremiumState`
+      // computes a deterministic premium (2% of cover) and saves it via
+      // UpdatePremiumCommand. We don't simulate the premium here; consumers
+      // running purely offline can keep `estimatedPremium` zero or set it
+      // manually if they need to advance state past DRAFT.
       const q = findQuote(params.quoteId);
       if (!q) return notFound('request-price');
       return ok();

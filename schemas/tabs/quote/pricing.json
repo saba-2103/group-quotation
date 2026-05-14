@@ -11,7 +11,7 @@
       },
       "props": {
         "title": "Pricing",
-        "description": "Premium is computed by the Rule Engine on Quote.requestPrice. The pricing engine is not yet wired on the backend, so requests fire-and-forget and the premium does not populate. The fields below stay zero until backend ships the engine.",
+        "description": "Press Request price to invoke the pricing workflow. Backend computes a deterministic premium (mock Rule Engine, 2% of cover) and the fields below populate once the workflow completes.",
         "columns": 2,
         "fields": [
           { "id": "premiumTotal", "label": "Annual premium (total)", "accessorKey": "estimatedPremium.totalAmount" },
@@ -38,7 +38,7 @@
         ],
         "emptyState": {
           "title": "Pricing not yet computed",
-          "description": "Press Request price to invoke the Rule Engine. Note: the pricing engine is not yet wired on the backend, so the request fires-and-forgets and rows will not populate until the engine ships."
+          "description": "Press Request price to invoke the pricing workflow. Rows populate once the backend mock Rule Engine returns a per-plan breakdown."
         }
       }
     },
@@ -63,7 +63,7 @@
               "endpoint": "/api/quotation/quotes/{{id}}/request-price",
               "method": "POST"
             },
-            "disabledTooltip": "Pricing engine not yet wired on backend — request fires-and-forgets to no listener. Button enabled once Rule Engine ships."
+            "successMessage": "Pricing requested — premium will populate once the workflow completes."
           }
         ]
       }

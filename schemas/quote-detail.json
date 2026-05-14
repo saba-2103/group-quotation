@@ -158,6 +158,9 @@
     {
       "id": "quote-detail-tabs",
       "type": "tabs-container",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
       "props": { "defaultValue": "key-data" },
       "children": [
         { "$ref": "schemas/tabs/quote/key-data.json" },
