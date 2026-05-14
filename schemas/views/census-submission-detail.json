@@ -65,6 +65,7 @@
       "props": {
         "entityType": "censusSubmission",
         "entityId": "{{submissionId}}",
+        "stateField": "status",
         "stateActions": {
           "INITIATED": [],
           "INGESTED": ["submit"],
