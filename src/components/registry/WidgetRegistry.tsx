@@ -24,6 +24,7 @@ import { SearchableDropdownWidget } from "../widgets/controls/searchDropDown/ind
 import { ContextHelpTooltipWidget } from "../widgets/items/ContextHelpTooltip";
 import { RoleSwitcher } from "../widgets/role/RoleSwitcher";
 import { ActionBar } from "../widgets/actions/ActionBar";
+import { ConfirmMafButton } from "../widgets/actions/ConfirmMafButton";
 import { StateBadge } from "../widgets/state/StateBadge";
 import { ReasonBanner } from "../widgets/state/ReasonBanner";
 import { PollingBanner } from "../widgets/state/PollingBanner";
@@ -55,6 +56,7 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
   "context-help-tooltip": ContextHelpTooltipWidget,
   "role-switcher": RoleSwitcher,
   "action-bar": ActionBar,
+  "confirm-maf-button": ConfirmMafButton,
   "state-badge": StateBadge,
   "reason-banner": ReasonBanner,
   "polling-banner": PollingBanner
