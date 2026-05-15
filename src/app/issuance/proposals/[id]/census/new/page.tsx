@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 
 import { WidgetRenderer } from '@/components/registry/WidgetRenderer';
 import type { WidgetConfig } from '@/types/widget';
@@ -46,8 +47,40 @@ export default async function ProposalCensusUploadPage(props: {
     | undefined;
   if (!formTemplate) notFound();
 
+  // Census submissions are policy-scoped on the backend, but this route is
+  // keyed by proposalId. Resolve the proposal's policyId via a same-origin
+  // fetch so the form's API endpoints can target /policies/:policyId/... .
+  const h = await headers();
+  const host = h.get('host') ?? 'localhost:3000';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
+  const res = await fetch(`${proto}://${host}/api/issuance/proposals/${id}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) notFound();
+  const proposal = (await res.json()) as { policyId?: string };
+  const policyId = proposal.policyId;
+
+  if (!policyId) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-2xl rounded-lg border border-border/80 bg-card p-6 shadow-sm">
+          <h1 className="mb-2 text-xl font-semibold">
+            Census upload not available yet
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Proposal {id} has not reached POLICY_CREATED. Submit and finalize the
+            proposal first so the master policy is created — then return here to
+            bulk-load members.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const formConfig = JSON.parse(
-    JSON.stringify(formTemplate).replaceAll('{{policyId}}', id),
+    JSON.stringify(formTemplate)
+      .replaceAll('{{policyId}}', policyId)
+      .replaceAll('{{proposalId}}', id),
   ) as WidgetConfig;
 
   const config: WidgetConfig = {
