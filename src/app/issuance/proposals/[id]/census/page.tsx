@@ -51,7 +51,28 @@ export default async function ProposalCensusListPage(props: {
   });
   if (!res.ok) notFound();
   const proposal = (await res.json()) as { policyId?: string };
-  const policyId = proposal.policyId ?? '';
+  const policyId = proposal.policyId;
+
+  // Mirror the upload page: when the proposal hasn't reached POLICY_CREATED
+  // there's no policyId to scope the history fetch by, so the data-table
+  // would silently hit `/policies//census-submissions` and 404. Render the
+  // same friendly notice instead.
+  if (!policyId) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-2xl rounded-lg border border-border/80 bg-card p-6 shadow-sm">
+          <h1 className="mb-2 text-xl font-semibold">
+            Census not available yet
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Proposal {id} has not reached POLICY_CREATED. Submit and finalize the
+            proposal first so the master policy is created — then return here to
+            see census submissions.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // The schema is authored as a `tab-panel` (it's normally a child of the
   // proposal-detail tabs-container). Standalone here, we unwrap it and
