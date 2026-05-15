@@ -7,11 +7,11 @@ import { useSmartQuery } from "@/hooks/useSmartQuery";
 
 // ActivationCounter — compact header tile for the Master Policy detail page.
 //
-// Combines `activeMembers / activationThreshold`, plus the policy `state` +
-// `pendingReason` chips. activeMembers is derived client-side from the
-// members list because the backend has no aggregate-count endpoint (verified
-// against group-pas-dev OpenAPI on 2026-05-14; the previous mock-only
-// /pending-breakdown route has been dropped).
+// Combines `pendingMembers / activationThreshold`, plus the policy `state` +
+// `pendingReason` chips. The numerator comes from the policy
+// `/pending-breakdown` endpoint, which counts only members with
+// pendingReason=PENDING_POLICY_ACTIVATION (excludes float-reservation and
+// approval-pending members — those don't count toward the threshold).
 
 interface PolicyDto {
   activationThreshold?: number | null;
@@ -19,8 +19,8 @@ interface PolicyDto {
   state?: string | null;
 }
 
-interface MemberSummaryDto {
-  state?: string | null;
+interface PendingBreakdownDto {
+  pendingMembers?: number | null;
 }
 
 interface ActivationCounterProps {
@@ -50,9 +50,9 @@ export const ActivationCounter: React.FC<ActivationCounterProps & { config?: { p
   const policyQuery = useSmartQuery(
     id ? { api: { endpoint: `/api/policy-admin/policies/${id}`, method: "GET" } } : undefined,
   );
-  const membersQuery = useSmartQuery(
+  const breakdownQuery = useSmartQuery(
     id
-      ? { api: { endpoint: `/api/policy-admin/policies/${id}/members`, method: "GET" } }
+      ? { api: { endpoint: `/api/policy-admin/policies/${id}/pending-breakdown`, method: "GET" } }
       : undefined,
   );
 
@@ -69,10 +69,8 @@ export const ActivationCounter: React.FC<ActivationCounterProps & { config?: { p
 
   const pendingReason = policy?.pendingReason ?? null;
   const threshold = policy?.activationThreshold ?? null;
-  const members = membersQuery.data as MemberSummaryDto[] | undefined;
-  const activeMembers = members
-    ? members.filter((m) => m?.state === "ACTIVE").length
-    : undefined;
+  const breakdown = breakdownQuery.data as PendingBreakdownDto | undefined;
+  const approvedForActivation = breakdown?.pendingMembers ?? undefined;
 
   return (
     <div className="rounded-lg border border-border/80 bg-card p-4 shadow-sm">
@@ -86,7 +84,7 @@ export const ActivationCounter: React.FC<ActivationCounterProps & { config?: { p
             title="Active members / minimum required to activate (activationThreshold on the master policy)"
           >
             <span className="text-2xl font-semibold tabular-nums text-foreground">
-              {activeMembers ?? "—"}
+              {approvedForActivation ?? "—"}
             </span>
             <span className="text-2xl font-normal text-muted-foreground">/</span>
             <span className="text-2xl font-semibold tabular-nums text-foreground">
