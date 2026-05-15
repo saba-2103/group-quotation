@@ -1886,3 +1886,13 @@ Picked flavor B over per-member assignment: row-per-rule table with the **output
 **Commit `87d0acf` on `feat/new-buisiness`, pushed.** Files: the new DmnRulesEditor + FieldRenderer + OverlaidForm + the two schemas + the two mock fixtures. Pre-existing uncommitted proposal/*.md edits and untracked agent_logs/context dirs were intentionally left out of the commit.
 
 **Scope-expansion note for review:** this knowingly steps past the deferred-D3 line that called full mapping authoring "post-V1." The data contract is unchanged (same canonical DMN, same `PUT /quotes/:id/member-to-plan-mapping` blob-replace), so the line moves on UX scope, not API scope. Worth a follow-up `/propose` if we want it formally tracked.
+
+### 2026-05-15 — ActivationCounter: fix 0/10 → 5/10 numerator via /pending-breakdown
+
+User flagged [src/components/widgets/data/ActivationCounter.tsx](../src/components/widgets/data/ActivationCounter.tsx) lines 67-70: numerator filtered members on `state === "ACTIVE"`, which is always 0 pre-threshold (members sit in `PENDING` with reasons `PENDING_POLICY_ACTIVATION`, `PENDING_FLOAT_RESERVATION`, `PENDING_APPROVAL`). Widget showed `0/N` until the threshold tripped, then jumped to `N/N`. The accompanying comment ("backend has no aggregate-count endpoint, /pending-breakdown was dropped") was also stale — `/pending-breakdown` shipped to group-pas-dev in PR #77 today.
+
+**Fix (Option B per user recommendation — cleaner, single round trip):** swapped the members-list fetch for `/api/policy-admin/policies/:id/pending-breakdown`. Numerator now binds to `breakdown.pendingMembers`, which the server pre-filters to `PENDING_POLICY_ACTIVATION` only — float-reservation and approval-pending members correctly excluded. Removed the unused `MemberSummaryDto` and the stale comment.
+
+**Verification (local preview, POL-010 = `3b3e11a8-2fe1-432c-9cce-811a7ad7fad2`):** breakdown endpoint returns `pendingMembers: 5, activationThreshold: 10` with `pendingByReason: [{PENDING_FLOAT_RESERVATION: 2}, {PENDING_POLICY_ACTIVATION: 5}]`. Widget renders `5 / 10 members (min to activate)`, matching the server count. No console errors. Screenshot captured.
+
+**Commit `99869dc` on `feat/new-buisiness`.** Single file changed. Unrelated uncommitted proposal/hook/schema edits in the working tree were intentionally left out of the commit.
