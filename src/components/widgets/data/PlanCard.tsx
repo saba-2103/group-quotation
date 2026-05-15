@@ -167,7 +167,7 @@ export const PlanCard: React.FC<PlanCardProps & { config?: { props?: PlanCardPro
 
   const handleEdit = () => {
     dispatch(
-      { id: "edit-plan", type: "open-modal", target: "plan-edit-form" },
+      { id: "edit-plan", type: "open-modal", target: "plan-edit-form", size: "3xl" },
       { ...item, quoteId, _mode: "edit" },
     );
   };
