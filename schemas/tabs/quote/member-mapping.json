@@ -39,6 +39,7 @@
             "icon": "Pencil",
             "type": "open-modal",
             "target": "member-mapping-replace-form",
+            "size": "3xl",
             "variant": "outline"
           }
         ]

@@ -119,6 +119,11 @@ export type ActionConfig = BaseActionConfig & (
     | {
         type: "open-modal" | "open-sheet";
         target: string;
+        // Optional width override for the overlay shell. Maps to a tailwind
+        // max-width class on the DialogContent/SheetContent. Default is "lg"
+        // (~512px); use larger sizes for forms that render wide content (e.g.
+        // editable tables). Accepts the standard tailwind max-w-* tokens.
+        size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl";
     }
     | {
         type: "api-mutation";

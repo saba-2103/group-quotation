@@ -101,10 +101,10 @@ export const useActionHandler = () => {
         }
         break;
       case "open-modal":
-        if (action.target) open(action.target, "modal", rowData);
+        if (action.target) open(action.target, "modal", rowData, action.size ? { size: action.size } : undefined);
         break;
       case "open-sheet":
-        if (action.target) open(action.target, "sheet", rowData);
+        if (action.target) open(action.target, "sheet", rowData, action.size ? { size: action.size } : undefined);
         break;
       case "api-download":
         if (action.api) {

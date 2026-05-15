@@ -2,19 +2,23 @@ import { create } from 'zustand';
 
 type OverlayType = "sheet" | "modal" | "dialog";
 
+interface OverlayOptions {
+    size?: string;
+}
+
 interface OverlayState {
-    openOverlays: Record<string, { type: OverlayType, data?: any }>;
-    open: (id: string, type: OverlayType, data?: any) => void;
+    openOverlays: Record<string, { type: OverlayType, data?: any, options?: OverlayOptions }>;
+    open: (id: string, type: OverlayType, data?: any, options?: OverlayOptions) => void;
     close: (id: string) => void;
     closeAll: () => void;
 }
 
 export const useOverlayStore = create<OverlayState>((set) => ({
     openOverlays: {},
-    open: (id, type, data) => set((state) => ({
+    open: (id, type, data, options) => set((state) => ({
         openOverlays: {
             ...state.openOverlays,
-            [id]: { type, data }
+            [id]: { type, data, options }
         }
     })),
     close: (id) => set((state) => {
