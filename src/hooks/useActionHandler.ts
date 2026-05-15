@@ -7,21 +7,6 @@ import { useOverlayStore } from "@/hooks/useOverlayStore";
 import { useWidgetState } from "@/hooks/useWidgetState";
 import { toast } from "@/components/ui/toast";
 
-// Replace `{{now}}` tokens with the current ISO-8601 timestamp so schemas can
-// declare a confirmation time without hardcoding it. Returns `{}` when the
-// body is missing so endpoints requiring a JSON body still get one.
-const resolveBodyTokens = (body: unknown): unknown => {
-  if (body === undefined || body === null) return {};
-  if (typeof body === "string") return body === "{{now}}" ? new Date().toISOString() : body;
-  if (Array.isArray(body)) return body.map(resolveBodyTokens);
-  if (typeof body === "object") {
-    return Object.fromEntries(
-      Object.entries(body as Record<string, unknown>).map(([k, v]) => [k, resolveBodyTokens(v)]),
-    );
-  }
-  return body;
-};
-
 export const useActionHandler = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -33,7 +18,7 @@ export const useActionHandler = () => {
       if (action.type !== "api-mutation" || !action.api) return;
       const res = await fetch(action.api.endpoint, {
         method: action.api.method,
-        body: action.api.method === "GET" ? undefined : JSON.stringify(resolveBodyTokens(action.api.body)),
+        body: JSON.stringify(action.api.body),
         headers: {
           "Content-Type": "application/json"
         }

@@ -106,11 +106,7 @@
             "icon": "Check",
             "type": "api-mutation",
             "refreshKey": "/api/issuance/policy-members/{{memberId}}",
-            "api": {
-              "endpoint": "/api/issuance/policy-members/{{memberId}}/confirm-maf",
-              "method": "POST",
-              "body": { "confirmedAt": "{{now}}" }
-            },
+            "api": { "endpoint": "/api/issuance/policy-members/{{memberId}}/confirm-maf", "method": "POST" },
             "successMessage": "Enrolment confirmed; member will be activated shortly.",
             "variant": "default"
           },
