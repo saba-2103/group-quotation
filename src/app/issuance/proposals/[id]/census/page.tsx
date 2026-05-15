@@ -7,6 +7,7 @@
 
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 
@@ -37,12 +38,50 @@ export default async function ProposalCensusListPage(props: {
   const rawTab = JSON.parse(readFileSync(tabSchemaPath, 'utf-8')) as object;
   const resolvedTab = await resolveSchemaRefs(rawTab, process.cwd());
 
+  // Census submissions are policy-scoped; resolve the proposal's policyId
+  // so the history data-table's `/policies/:policyId/census-submissions`
+  // GET targets the right entity. `{{id}}` continues to substitute the
+  // proposalId for navigate/back-link targets that live on the proposal
+  // route tree.
+  const h = await headers();
+  const host = h.get('host') ?? 'localhost:3000';
+  const proto = h.get('x-forwarded-proto') ?? 'http';
+  const res = await fetch(`${proto}://${host}/api/issuance/proposals/${id}`, {
+    cache: 'no-store',
+  });
+  if (!res.ok) notFound();
+  const proposal = (await res.json()) as { policyId?: string };
+  const policyId = proposal.policyId;
+
+  // Mirror the upload page: when the proposal hasn't reached POLICY_CREATED
+  // there's no policyId to scope the history fetch by, so the data-table
+  // would silently hit `/policies//census-submissions` and 404. Render the
+  // same friendly notice instead.
+  if (!policyId) {
+    return (
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-2xl rounded-lg border border-border/80 bg-card p-6 shadow-sm">
+          <h1 className="mb-2 text-xl font-semibold">
+            Census not available yet
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Proposal {id} has not reached POLICY_CREATED. Submit and finalize the
+            proposal first so the master policy is created — then return here to
+            see census submissions.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // The schema is authored as a `tab-panel` (it's normally a child of the
   // proposal-detail tabs-container). Standalone here, we unwrap it and
   // splice its children into our stack-layout, otherwise WidgetRenderer
   // bails with "Unknown Widget: tab-panel".
   const resolvedTabConfig = JSON.parse(
-    JSON.stringify(resolvedTab).replaceAll('{{id}}', id),
+    JSON.stringify(resolvedTab)
+      .replaceAll('{{policyId}}', policyId)
+      .replaceAll('{{id}}', id),
   ) as WidgetConfig;
   const tabBodyChildren =
     resolvedTabConfig.type === 'tab-panel'

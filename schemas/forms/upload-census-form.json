@@ -55,7 +55,7 @@
           {
             "id": "go-to-submission",
             "type": "navigate",
-            "target": "/issuance/proposals/{{policyId}}/census/{{submissionId}}"
+            "target": "/issuance/proposals/{{proposalId}}/census/{{submissionId}}"
           }
         ]
       },

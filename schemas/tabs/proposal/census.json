@@ -8,7 +8,7 @@
       "type": "data-table",
       "dataSource": {
         "api": {
-          "endpoint": "/api/issuance/policies/{{id}}/census-submissions",
+          "endpoint": "/api/issuance/policies/{{policyId}}/census-submissions",
           "method": "GET"
         }
       },
