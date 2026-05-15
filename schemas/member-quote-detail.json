@@ -48,12 +48,12 @@
       "props": {
         "stateField": "status",
         "stateActions": {
-          "DRAFT": ["set-premium", "submit"],
+          "DRAFT": ["submit"],
           "SUBMITTED": ["finalize"],
           "FINALIZED": []
         },
         "roleActions": {
-          "sales": ["set-premium", "submit", "finalize"],
+          "sales": ["submit", "finalize"],
           "partner_agent": [],
           "mph": [],
           "member": [],
@@ -61,14 +61,6 @@
           "ops": []
         },
         "actions": [
-          {
-            "id": "set-premium",
-            "label": "Set premium",
-            "icon": "Calculator",
-            "type": "open-modal",
-            "target": "set-member-quote-premium-form",
-            "variant": "outline"
-          },
           {
             "id": "submit",
             "label": "Submit",
