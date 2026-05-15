@@ -1896,3 +1896,11 @@ User flagged [src/components/widgets/data/ActivationCounter.tsx](../src/componen
 **Verification (local preview, POL-010 = `3b3e11a8-2fe1-432c-9cce-811a7ad7fad2`):** breakdown endpoint returns `pendingMembers: 5, activationThreshold: 10` with `pendingByReason: [{PENDING_FLOAT_RESERVATION: 2}, {PENDING_POLICY_ACTIVATION: 5}]`. Widget renders `5 / 10 members (min to activate)`, matching the server count. No console errors. Screenshot captured.
 
 **Commit `99869dc` on `feat/new-buisiness`.** Single file changed. Unrelated uncommitted proposal/hook/schema edits in the working tree were intentionally left out of the commit.
+
+### 2026-05-15 (continued) — Widen Plan editor modal to 3xl
+
+User flagged the Add plan modal in quote detail as too cramped for comfortable editing/viewing. The shared overlay shell defaults to `max-w-lg` (512px) but PlanForm has a two-column grid (plan number / plan name), a products list with nested benefits + exclusions, and a JSON-shaped cover/free-cover formula editor — clearly more than `lg` can hold.
+
+**Fix:** added `size: "3xl"` to the action declarations for both Add (in [schemas/tabs/quote/plans.json](../schemas/tabs/quote/plans.json)) and Edit (in [PlanCard.tsx](../src/components/widgets/data/PlanCard.tsx)). Uses the existing per-action size override added in `754ce0f`. Matches the convention set by the DMN rules editor (also `3xl`).
+
+**Verified live:** opened Add plan on quote `706c8878…` — dialog renders at `max-w-3xl` (768px cap), Plan number / Plan name sit side-by-side with room, formula editor uses the full width. No console errors. Commit `207e5dc`.
