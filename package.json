@@ -12,6 +12,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "test:vitest": "vitest run --project unit",
     "test:unit": "jest --selectProjects unit",
     "test:schemas": "jest --selectProjects schemas",
     "test:watch": "jest --watch",
@@ -21,7 +23,11 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview --ip 0.0.0.0 --port 8787",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "docker:up": "docker compose down && docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:rebuild": "docker compose down && docker compose build --no-cache && docker compose up -d"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

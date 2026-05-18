@@ -48,7 +48,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ config }) => {
                 {showTrend && trend !== undefined && !isLoading && (
                     <div className={cn(
                         "flex items-center gap-1 text-sm font-medium",
-                        trend >= 0 ? "text-green-600" : "text-red-600"
+                        trend >= 0 ? "text-success" : "text-destructive"
                     )}>
                         {trend >= 0
                             ? <TrendingUp className="h-4 w-4" />

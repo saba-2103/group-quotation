@@ -76,7 +76,10 @@
                     "endpoint": "/api/moneyout/config/bank-file-template-assignments/:id",
                     "method": "PUT"
                 },
-                "successMessage": "Bank File Template Map updated successfully!"
+                "successMessage": "Bank File Template Map updated successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "edit-bank-file-template-map-form" }
+                ]
             },
             {
                 "id": "cancel-edit-bank-file-template-map",

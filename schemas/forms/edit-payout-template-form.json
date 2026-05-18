@@ -106,7 +106,10 @@
                     "endpoint": "/api/moneyout/config/bank-file-templates",
                     "method": "PUT"
                 },
-                "successMessage": "Payout Template updated successfully!"
+                "successMessage": "Payout Template updated successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "edit-payout-template-form" }
+                ]
             },
             {
                 "id": "cancel-edit-payout-template",

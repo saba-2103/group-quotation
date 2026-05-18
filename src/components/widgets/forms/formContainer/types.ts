@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { ActionConfig } from '@/types/widget';
+import { ActionConfig, DataSourceConfig } from '@/types/widget';
 import { VisibilityCondition } from '@/lib/conditions';
 
 export type ScreenAction = string;
@@ -31,6 +31,15 @@ export interface FormFieldConfig {
     defaultValue?: FormFieldValue;
     validations?: FieldValidation[];
     options?: SelectOption[];
+    /**
+     * Dynamic-options binding for `select` (and api-dropdown) fields. When set,
+     * the field issues a useSmartQuery against `dataSource` and maps the
+     * response array using `optionLabel` / `optionValue` to populate the
+     * dropdown. `options` (static) wins if both are present.
+     */
+    dataSource?: DataSourceConfig;
+    optionLabel?: string;
+    optionValue?: string;
     visibleWhen?: VisibilityCondition;
     span?: number;
     // api-dropdown fields

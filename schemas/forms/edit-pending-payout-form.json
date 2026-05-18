@@ -195,7 +195,10 @@
                     "endpoint": "/api/moneyout/payouts/:payout_request_id",
                     "method": "PUT"
                 },
-                "successMessage": "Pending Payout updated successfully!"
+                "successMessage": "Pending Payout updated successfully!",
+                "onSuccess": [
+                    { "type": "trigger-event", "target": "edit-pending-payout-form" }
+                ]
             },
             {
                 "id": "cancel-edit-pending-payout",
