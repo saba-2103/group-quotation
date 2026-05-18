@@ -31,7 +31,7 @@ Keystone UI is a **schema-driven portal framework** — a runtime that converts 
 │   │       └── dashboard/      # KPI metric endpoints
 │   │
 │   ├── components/
-│   │   ├── AppSidebar.tsx      # Dynamic nav sidebar from AppConfig
+│   │   ├── navigation/         # Two-panel nav (icon rail + grouped submenu) from AppConfig
 │   │   ├── providers.tsx       # React Query + Overlay providers root
 │   │   ├── providers/
 │   │   │   ├── AppContextProvider.tsx   # App config context + loader
