@@ -273,3 +273,22 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
   - Promote the page-envelope pattern to default story in [docs/schema-design-reference/04-data-sources.md](../docs/schema-design-reference/04-data-sources.md) — it's currently undocumented post-commit. Lives on the `docs/schema-design-reference` branch, not here.
   - Aggregate-shaped `refreshAggregates` alongside the URL-shaped `refreshKey` so a mutation can invalidate "the Policy aggregate" without listing every projection URL.
   - Pushing `{{id}}` substitution into `useSmartQuery` (already mentioned in the data-sources doc as proposed) — removes the per-page walker and aligns with how `fromParent` works (framework-resolved, not page-resolved).
+### 2026-05-22 — PR #72 docs refresh + multi-agent review
+
+- **Branch:** `docs/schema-design-reference`.
+- Updated docs to reflect PR #72 (cherry-pick-core-arch) reality: framework primitives now on `main` (typed API client, DetailPageSkeleton, `visibleRoles` gate, overlay `size`, `schemas/tables/`+`schemas/views/` `$ref`, `dataPath`/`parseJson`, array-valued params, cross-array join). Domain code (9 widgets, mock backend, Group PAS schemas/pages) still on `feat/new-buisiness`.
+- **Multi-agent review** (correctness / hallucination / readability) ran in parallel against the updated docs.
+- **Findings + fixes:**
+  - `TabsContainer.visibleWhen` is NOT on main post-PR-#72 — the consumer ships only on `feat/new-buisiness`. Corrected docs in 03, 07, 13.
+  - `JSON.stringify(undefined)` rationale in 09 was wrong (it returns JS undefined, not the string "undefined"). Dropped the rationale; kept the behaviour claim.
+  - `disabledTooltip` is only honoured by `action-bar`, not framework-wide. Softened 05.
+  - `parseSpringError` vs `useActionHandler` envelope parsers DIVERGE (the former reads message→error; the latter adds errorCode). Flagged as known consolidation TODO.
+  - `useSmartQuery`/`useActionHandler` on `main` post-PR-#72 do NOT inject auth headers; only the typed `api` client does. Corrected 09's claim that auth lives in two places.
+  - Nested accessors existed pre-PR-#72; PR #72 hardened the walker. Walked back the attribution in 02.
+  - `useDataTable.dataError` is hook-level; the default consumer doesn't render it distinctly. Removed the misleading "renders same way as fetch failure" claim from 02/04.
+  - Glossary refreshed: stale field-type and validation-rule entries fixed (`file` removed; `pattern`/`email`/`url` flagged as no-op). Added `visibleRoles`, `OverlaySize`, `dataPath`, `parseJson`, typed API client entries. `visibleWhen` entry rewritten. `$ref` entry updated to mention all four prefixes.
+  - 12-troubleshooting role-gating fix replaced — now recommends `visibleRoles` instead of the unimplemented `layout.visibleWhen`.
+  - Overlay size section in 05 gained a `size`→`max-w-*`→approx-width table.
+  - Error-envelope content consolidated: 04 now links to 09's canonical reference instead of duplicating.
+- **Commit:** `25e7cdb6 docs(schema-ref): refresh for PR #72 reality + multi-agent review fixes` (213 +, 73 −, 10 files).
+- **Branch state:** `docs/schema-design-reference` is now PR-#72-aware. Will land alongside or after PR #72 merges to main.
