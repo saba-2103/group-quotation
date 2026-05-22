@@ -119,3 +119,43 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
 3. OWASP DC — `npm audit fix` pass, or document accepted CVEs.
 4. Pre-commit remainder — actually run `pre-commit run --all-files` locally with `pre-commit` installed; one file slipped through the sed pass.
 5. Open a PR from `feat/cicd-skill-trial` to `main` to verify `deploy-preview` actually deploys to EKS.
+
+### 2026-05-22 — Address PR #71 review comments (Copilot, 8 inline)
+
+**Goal:** Address each of 8 inline Copilot review comments on PR #71 with a focused commit per theme, then reply inline on each thread linking to the addressing SHA (per the new `feedback_pr_review_replies.md` memory). Resolve threads after replies post.
+
+**PR:** [#71](https://github.com/Anaira-AI/keystone-ui/pull/71). All 8 threads now resolved.
+
+**Commits (each addresses one thematic group of comments):**
+
+| SHA | Subject | Comments addressed |
+|---|---|---|
+| `e9db8394` | `fix(helm): scope fullname by .Release.Name and guard empty ConfigMap data` | 1, 2 |
+| `cca08e9e` | `fix(forms): tighten a11y wiring on FieldRenderer (no dangling aria refs)` | 3, 4, 5 |
+| `2effc927` | `fix(use-mobile): read viewport synchronously to avoid initial-paint flicker` | 6 |
+| `02dc0303` | `fix: gate submit-warning to dev (names only) + drop trial branch trigger` | 7, 8 |
+
+**Critical correctness fixes (would have caused production bugs):**
+
+1. **`keystone-ui.fullname` ignored `.Release.Name`** — every per-PR preview release (`keystone-ui-pr-71`, `…-72`, etc.) deployed into the same namespace would have produced identical Deployment / Service / ConfigMap names, so the second PR would fail with `release already exists` errors. Restored the canonical Helm pattern (`{Release.Name}` if it contains chart name, else `{Release.Name}-{Chart.Name}`).
+
+2. **`configmap.yaml data:` rendered as `null` when env was empty** — Kubernetes API rejects null data on ConfigMap. Added explicit `data: {}` fallback so the ConfigMap always validates.
+
+**A11y fixes (would have failed any accessibility audit):**
+
+3. **`aria-describedby` pointed at dangling `formMessageId`** — `FieldErrors` didn't carry that id, so screen readers got "element not found" warnings. Added `id={formMessageId}` to FieldErrors wrapper + made `useFieldA11yProps` only include the description/message ids when the target elements actually render.
+4. **Radio group had no `aria-labelledby`** — `<FormLabel htmlFor={formItemId}>` doesn't label a `<div role="radiogroup">` (htmlFor only labels real form controls). Added `formLabelId` to `useFormField()`, set `id={formLabelId}` on `FormLabel`, and wired `aria-labelledby={formLabelId}` on the radiogroup. Now the FormLabel is the group's accessible name.
+5. **Checkbox had two labels** (outer FormLabel + inner inline label) — assistive tech would announce the name twice. Removed the inner label since `{...a11y}` already wires `FormLabel htmlFor` to the checkbox.
+
+**Hydration / UX fixes:**
+
+6. **`useIsMobile` flashed desktop view on mobile devices.** State was initialised to `undefined`, so first paint was always desktop, then an effect re-rendered as mobile. Switched to a lazy initialiser that reads `window.innerWidth` synchronously when `window` exists.
+7. **`console.log` of full submit payload could leak PII** in production. Wrapped in `NODE_ENV !== 'production'`, switched to `console.warn`, and now logs only `Object.keys()` (field names, never values). Test updated.
+
+**Workflow cleanup:**
+
+8. **`feat/cicd-skill-trial` was in the workflow's push trigger.** Removed — the PR fires via `pull_request: [main]`, so we don't need the orphan branch trigger living forever after merge.
+
+**Verification:** 220/220 unit tests still pass after each commit. New PR pipeline running ([run 26284578581](https://github.com/Anaira-AI/keystone-ui/actions/runs/26284578581)) to confirm no regression.
+
+**Memory:** Recorded `feedback_pr_review_replies.md` — always reply inline on PR review comment threads with the addressing commit SHA + one-line rationale, then resolve the thread. Never push a fixup commit silently and assume the reviewer will reconnect the dots.
