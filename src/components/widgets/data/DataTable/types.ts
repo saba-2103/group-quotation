@@ -34,6 +34,18 @@ export interface ColumnConfig {
   format?: string;
   // Used by the `state-badge` cell type to pick the right map in state-map.ts.
   entity?: string;
+  // ── Cross-array join (consumed by useDataTable) ───────────────────────
+  // When all three are set, the data-table enriches each row by looking up
+  // a sibling array on the same response payload (no extra fetch). The
+  // sibling-array location is `joinSource` (dotted path); the column on this
+  // row whose value to match against the sibling is `joinKey`; the field to
+  // pull from the matched sibling is `joinField`. No match → cell undefined
+  // → standard "—" empty rendering.
+  joinSource?: string;
+  joinKey?: string;
+  joinField?: string;
+  // Optional per-column currency override for `type: "currency"`. Default USD.
+  currency?: string;
 }
 export interface RowActionProps {
   route?: string;

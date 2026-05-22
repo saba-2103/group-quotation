@@ -5,6 +5,7 @@ import { WidgetConfig } from '@/types/widget';
 import { getWidgetComponent } from './WidgetRegistry';
 import { cn } from '@/lib/utils';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
+import { useRole } from '@/hooks/useRole';
 
 interface WidgetRendererProps {
     config: WidgetConfig;
@@ -12,11 +13,24 @@ interface WidgetRendererProps {
 
 export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ config }) => {
     const Component = getWidgetComponent(config.type);
+    const { role } = useRole();
 
-    // Basic Data Fetching if configured
-    const { data, isLoading, error } = useSmartQuery(config.dataSource);
+    // Role-visibility gate evaluated BEFORE useSmartQuery so hidden widgets
+    // don't pay fetch / polling cost. An empty `visibleRoles` array means
+    // "no role can see it" (caller probably meant to omit the prop entirely
+    // and we surface the misconfiguration as silence rather than an error).
+    const isRoleHidden = Array.isArray(config.visibleRoles)
+        && !config.visibleRoles.includes(role);
+
+    // Basic Data Fetching if configured. Pass `undefined` to skip the query
+    // entirely when the widget is hidden — useSmartQuery short-circuits with
+    // `enabled: false` and never fires.
+    const { data, isLoading, error } = useSmartQuery(
+        isRoleHidden ? undefined : config.dataSource,
+    );
 
     if (config.layout?.hidden) return null;
+    if (isRoleHidden) return null;
 
     // Enhancing props with data
     const enhancedProps = {

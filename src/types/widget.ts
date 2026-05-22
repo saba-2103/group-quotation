@@ -1,5 +1,23 @@
 export type WidgetType = string;
 
+/**
+ * Overlay size token. Used by `open-modal` / `open-sheet` actions to override
+ * the default container width, and by `useOverlayStore` when persisting the
+ * size for an open overlay. Maps to a Tailwind `max-w-*` class inside
+ * `OverlayProvider`. Default behaviour (no `size`) is `lg`.
+ */
+export type OverlaySize =
+    | "sm"
+    | "md"
+    | "lg"
+    | "xl"
+    | "2xl"
+    | "3xl"
+    | "4xl"
+    | "5xl"
+    | "6xl"
+    | "7xl";
+
 export interface WidgetConfig {
     id: string;
     type: WidgetType;
@@ -11,6 +29,23 @@ export interface WidgetConfig {
     };
     dataSource?: DataSourceConfig;
     children?: WidgetConfig[];
+    /**
+     * Optional role-visibility filter. When set, `WidgetRenderer` skips this
+     * node unless the current role (from `useRole()`) is included. When
+     * omitted, the node renders for every role. Role strings are opaque to
+     * the framework — they're compared against `RoleContextValue.role` by
+     * equality. The gate runs BEFORE `useSmartQuery`, so hidden widgets do
+     * not pay fetch / polling cost.
+     */
+    visibleRoles?: string[];
+    /**
+     * jsonLogic condition evaluated against fetched data on a container that
+     * owns a `dataSource` (today: `TabsContainer`). Allows hiding individual
+     * tabs/children based on entity shape — e.g. hide a GCL Member Quotes
+     * tab on a GTL quote. NOT honoured by `WidgetRenderer` directly; see
+     * the consuming container's docs for scope.
+     */
+    visibleWhen?: Record<string, unknown>;
 }
 
 export interface DataSourceConfig {
@@ -19,6 +54,21 @@ export interface DataSourceConfig {
         method: "GET" | "POST" | "PUT" | "DELETE";
         params?: Record<string, any>;
     };
+    /**
+     * Dotted path on the response payload to drill into before treating the
+     * value as the consumer-shaped result. Mirrors the per-field `accessorKey`
+     * pattern used by KeyValueGrid. Used by `data-table` (and any widget that
+     * accepts `dataPath`) to extract a rows array from a nested envelope.
+     */
+    dataPath?: string;
+    /**
+     * When true and the value resolved at `dataPath` (or at the top of the
+     * response) is a string, the consumer JSON.parses it before consuming.
+     * Pairs with `dataPath` to drill into stringified-JSON entity fields
+     * (e.g. estimatedPremium.byPlanJson). Parse failure surfaces as a render-
+     * error on widgets that opt in.
+     */
+    parseJson?: boolean;
     /**
      * Fixed-interval polling. If set, the query refetches every N ms.
      * For backoff polling (e.g. backend's suggested 2s → 5s schedule),
@@ -82,6 +132,13 @@ export type ActionConfig = BaseActionConfig & (
     | {
         type: "open-modal" | "open-sheet";
         target: string;
+        /**
+         * Optional width override for the overlay shell. Maps to a Tailwind
+         * `max-w-*` class on the DialogContent / SheetContent. Default is
+         * `lg` (~512px). Use larger sizes for forms rendering wide content
+         * (e.g. editable tables).
+         */
+        size?: OverlaySize;
     }
     | {
         type: "api-mutation";

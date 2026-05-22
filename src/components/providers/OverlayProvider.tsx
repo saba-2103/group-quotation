@@ -1,8 +1,38 @@
 import { useOverlayStore } from "@/hooks/useOverlayStore";
+import type { OverlaySize } from "@/types/widget";
 import { OverlaidForm } from "../widgets/forms/OverlaidForm";
 import { ConfirmationDialog } from "../widgets/forms/ConfirmationDialog";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dialog";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "../ui/sheet";
+
+// Map OverlaySize → Tailwind max-width class. Two maps because Sheet uses the
+// `sm:` responsive prefix to apply its width only above the mobile breakpoint
+// (sheets fill the viewport on mobile by design), while Dialog applies the
+// width across all breakpoints.
+const MODAL_SIZE_CLASS: Record<OverlaySize, string> = {
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+    "3xl": "max-w-3xl",
+    "4xl": "max-w-4xl",
+    "5xl": "max-w-5xl",
+    "6xl": "max-w-6xl",
+    "7xl": "max-w-7xl",
+};
+const SHEET_SIZE_CLASS: Record<OverlaySize, string> = {
+    sm: "sm:max-w-sm",
+    md: "sm:max-w-md",
+    lg: "sm:max-w-lg",
+    xl: "sm:max-w-xl",
+    "2xl": "sm:max-w-2xl",
+    "3xl": "sm:max-w-3xl",
+    "4xl": "sm:max-w-4xl",
+    "5xl": "sm:max-w-5xl",
+    "6xl": "sm:max-w-6xl",
+    "7xl": "sm:max-w-7xl",
+};
 
 export const OverlayProvider = () => {
     const { openOverlays, close } = useOverlayStore();
@@ -17,11 +47,13 @@ export const OverlayProvider = () => {
                 const handleOpenChange = (open: boolean) => {
                     if (!open) close(id);
                 };
+                const size = config.options?.size;
 
                 if (config.type === "modal") {
+                    const sizeClass = (size && MODAL_SIZE_CLASS[size]) ?? MODAL_SIZE_CLASS.lg;
                     return (
                         <Dialog key={id} open={isOpen} onOpenChange={handleOpenChange}>
-                            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                            <DialogContent className={`${sizeClass} max-h-[90vh] overflow-y-auto`}>
                                 <DialogTitle className="sr-only">Form Modal</DialogTitle>
                                 <DialogDescription className="sr-only">Please fill out the form below.</DialogDescription>
                                 <OverlaidForm formId={id} />
@@ -31,9 +63,10 @@ export const OverlayProvider = () => {
                 }
 
                 if (config.type === "sheet") {
+                    const sizeClass = (size && SHEET_SIZE_CLASS[size]) ?? SHEET_SIZE_CLASS.lg;
                     return (
                         <Sheet key={id} open={isOpen} onOpenChange={handleOpenChange}>
-                            <SheetContent className="sm:max-w-lg overflow-y-auto">
+                            <SheetContent className={`${sizeClass} overflow-y-auto`}>
                                 <SheetTitle className="sr-only">Form Sheet</SheetTitle>
                                 <SheetDescription className="sr-only">Please fill out the form below.</SheetDescription>
                                 <OverlaidForm formId={id} />
