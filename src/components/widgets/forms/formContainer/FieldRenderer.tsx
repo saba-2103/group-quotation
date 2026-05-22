@@ -26,20 +26,28 @@ interface FieldRendererProps {
  * we can pass them to the actual focusable control. Without this the
  * shadcn <FormLabel htmlFor={formItemId}> would point at a non-existent id
  * (Radix Slot can't merge props through this component boundary).
+ *
+ * `aria-describedby` only references ids that will actually exist in the
+ * rendered DOM: FormDescription renders only when `field.helperText` is set,
+ * and FieldErrors renders only on error. Including dangling ids breaks
+ * screen readers ("Pointing at unknown element").
  */
-function useFieldA11yProps() {
+function useFieldA11yProps(opts: { hasHelperText: boolean }) {
     const { formItemId, formDescriptionId, formMessageId, error } = useFormField();
+    const describedBy = [
+        opts.hasHelperText ? formDescriptionId : undefined,
+        error ? formMessageId : undefined,
+    ].filter(Boolean).join(' ');
     return {
         id: formItemId,
-        'aria-describedby': error
-            ? `${formDescriptionId} ${formMessageId}`
-            : formDescriptionId,
+        // Only emit aria-describedby when there's actually something to point at.
+        ...(describedBy ? { 'aria-describedby': describedBy } : {}),
         'aria-invalid': Boolean(error),
     };
 }
 
 const SelectField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => {
-    const a11y = useFieldA11yProps();
+    const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
     // Two ways the field gets its options:
     //   1. `field.options` — static, schema-declared. Wins if present.
     //   2. `field.dataSource` + `field.optionLabel` / `field.optionValue` —
@@ -89,14 +97,17 @@ const SelectField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'i
 };
 
 const RadioField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => {
-    const a11y = useFieldA11yProps();
+    const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
+    const { formLabelId } = useFormField();
     return (
-        // Use a radiogroup with aria-labelledby so the parent <FormLabel> is the
-        // accessible name for the whole group (matches what getByLabelText
-        // queries on radio sets expect — single name pointing at the group).
+        // <div role="radiogroup"> uses aria-labelledby to bind the parent
+        // <FormLabel id={formLabelId}> as the group's accessible name. The
+        // FormLabel's own htmlFor={formItemId} alone wouldn't work because
+        // `htmlFor` only labels real form controls, not generic divs.
         <div
             role="radiogroup"
             id={a11y.id}
+            aria-labelledby={formLabelId}
             aria-describedby={a11y['aria-describedby']}
             aria-invalid={a11y['aria-invalid']}
             className="flex flex-col space-y-2 mt-2"
@@ -123,8 +134,11 @@ const RadioField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'is
 };
 
 const CheckboxField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => {
-    const a11y = useFieldA11yProps();
+    const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
     return (
+        // The parent <FormLabel htmlFor={formItemId}> already labels this
+        // checkbox via {...a11y}. Don't render a second inline label here —
+        // assistive tech would announce the name twice.
         <div className="flex items-center space-x-2 mt-2">
             <input
                 {...a11y}
@@ -134,9 +148,6 @@ const CheckboxField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 
                 disabled={isDisabled}
                 className="w-4 h-4 text-primary rounded disabled:cursor-not-allowed"
             />
-            {/* Bind the per-row label to the actual checkbox via htmlFor so
-                getByLabelText(field.label) resolves to the input element. */}
-            <label className="font-normal text-sm cursor-pointer leading-none" htmlFor={a11y.id}>{field.label}</label>
         </div>
     );
 };
@@ -146,7 +157,7 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
     radio:    ({ field, fieldProps, isDisabled }) => <RadioField field={field} fieldProps={fieldProps} isDisabled={isDisabled} />,
     checkbox: ({ field, fieldProps, isDisabled }) => <CheckboxField field={field} fieldProps={fieldProps} isDisabled={isDisabled} />,
     textarea: ({ field, fieldProps, isDisabled }) => {
-        const a11y = useFieldA11yProps();
+        const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
         return (
             <Textarea
                 {...a11y}
@@ -158,7 +169,7 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
         );
     },
     date: ({ field, fieldProps, isDisabled }) => {
-        const a11y = useFieldA11yProps();
+        const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
         return (
             <CalendarDatePicker
                 {...a11y}
@@ -170,7 +181,7 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
         );
     },
     'api-dropdown': ({ field, fieldProps, isDisabled, isRequired }) => {
-        const a11y = useFieldA11yProps();
+        const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
         return (
             <Dropdown
                 {...a11y}
@@ -182,7 +193,7 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
         );
     },
     'api-dropdown-transactional': ({ field, fieldProps, isDisabled, isRequired }) => {
-        const a11y = useFieldA11yProps();
+        const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
         return (
             <Dropdown
                 {...a11y}
@@ -196,7 +207,7 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
 };
 
 const InputField: React.FC<FieldRendererProps> = ({ field, fieldProps, isDisabled }) => {
-    const a11y = useFieldA11yProps();
+    const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
     const nativeType = field.type && NATIVE_INPUT_TYPES.includes(field.type as (typeof NATIVE_INPUT_TYPES)[number])
         ? field.type
         : 'text';
