@@ -32,6 +32,7 @@ import { TablePagination } from "./TablePagination";
 import { RowActions } from "./RowActions";
 import { useDataTable } from "@/hooks/useDataTable";
 import { useTableExport } from "@/hooks/useTableExport";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { getFrozenColumnClasses, getActionsColumnClasses, getCheckboxColumnClasses } from "./utils";
 import { substituteEndpointParams } from "@/lib/endpointUtils";
 import { DataTableProps, ColumnConfig, TableRow as DataRow } from "./types";
@@ -44,6 +45,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   const handleAction = useActionHandler();
   const downloadRef = useRef<HTMLAnchorElement>(null);
+  // Render only one of {mobile card view, desktop table} based on viewport
+  // width. Previously both were emitted with Tailwind `hidden md:*` classes,
+  // which doubled the rendered DOM and broke jsdom-based tests (no CSS media
+  // query support → both copies were visible to testing-library).
+  const isMobile = useIsMobile();
 
   const {
     table,
@@ -210,8 +216,9 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
             </DropdownMenu>
           </div>
 
-          {/* Mobile card view — visible only below md breakpoint */}
-          <div className="md:hidden">
+          {/* Mobile card view — rendered only when viewport < md (768px). */}
+          {isMobile && (
+          <div>
             {isLoading ? (
               <div className="divide-y">
                 {Array.from({ length: 4 }).map((_, idx) => (
@@ -278,9 +285,11 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
               </div>
             )}
           </div>
+          )}
 
-          {/* Desktop table view — visible at md and above */}
-          <div className="hidden md:block">
+          {/* Desktop table view — rendered only when viewport >= md. */}
+          {!isMobile && (
+          <div>
           <Table className={cn("relative", isScrollable && "w-max min-w-full")}>
             <TableHeader>
               {/* Column header row */}
@@ -458,6 +467,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
             </TableBody>
           </Table>
           </div>
+          )}
         </div>
 
         {isPaginationEnabled && (

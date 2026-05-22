@@ -49,8 +49,20 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
             <Form {...form}>
                 <form onSubmit={onSubmit} className="space-y-6">
                     <div
-                        className="grid grid-cols-1 gap-6"
-                        style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+                        // Use Tailwind md:grid-cols-{N} classes for common
+                        // column counts so the layout is responsive (1 col on
+                        // mobile, N on md+). Inline gridTemplateColumns is the
+                        // fallback for unusual values (>4) so we don't ship
+                        // unbounded dynamic class strings the Tailwind JIT
+                        // cannot detect at build time.
+                        className={
+                            gridColumns === 1 ? 'grid grid-cols-1 gap-6'
+                            : gridColumns === 2 ? 'grid grid-cols-1 md:grid-cols-2 gap-6'
+                            : gridColumns === 3 ? 'grid grid-cols-1 md:grid-cols-3 gap-6'
+                            : gridColumns === 4 ? 'grid grid-cols-1 md:grid-cols-4 gap-6'
+                            : 'grid grid-cols-1 gap-6'
+                        }
+                        style={gridColumns > 4 ? { gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` } : undefined}
                     >
                         {(fields as FormFieldConfig[]).map((field) => {
                             if (!isFieldVisible(field)) return null;
@@ -64,7 +76,19 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                     control={form.control}
                                     name={field.name as keyof FormValues}
                                     render={({ field: fieldProps }) => (
-                                        <FormItem style={field.span ? { gridColumn: `span ${field.span}` } : undefined}>
+                                        <FormItem
+                                            // Use Tailwind col-span class for common spans (Tailwind
+                                            // JIT scans source for the literal strings below) and
+                                            // fall back to inline gridColumn for arbitrary values.
+                                            className={
+                                                field.span === 1 ? 'col-span-1'
+                                                : field.span === 2 ? 'col-span-2'
+                                                : field.span === 3 ? 'col-span-3'
+                                                : field.span === 4 ? 'col-span-4'
+                                                : undefined
+                                            }
+                                            style={field.span && field.span > 4 ? { gridColumn: `span ${field.span}` } : undefined}
+                                        >
                                             <FormLabel className={LABEL_CLASS}>
                                                 {field.label}
                                                 {required && <span className={REQUIRED_ASTERISK_CLASS}>*</span>}
@@ -107,7 +131,11 @@ export const FormContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                                             key={act.id}
                                             type="submit"
                                             variant={act.variant ?? 'default'}
-                                            disabled={!isValid || isSubmitting}
+                                            // Disable only while submitting — react-hook-form's
+                                            // mode defaults mean isValid is false until first
+                                            // interaction, so gating on it hides validation
+                                            // errors behind a permanently-disabled button.
+                                            disabled={isSubmitting}
                                         >
                                             {act.label}
                                         </Button>

@@ -20,6 +20,7 @@ permissions:
   contents: read
   id-token: write
   security-events: write
+  pull-requests: write   # deploy-preview posts a preview URL comment
 
 jobs:
   # ──────────────────────────────────────────────
@@ -67,3 +68,94 @@ jobs:
       helm_release_name: "keystone-ui"
       health_check_path: "/"
     secrets: inherit
+
+  # ──────────────────────────────────────────────
+  # Deploy preview — per-PR ephemeral environment.
+  # Each open PR gets its own helm release + ingress host:
+  #   https://keystone-ui-pr-<N>.anairacloud.com
+  # Cleanup is handled by .github/workflows/preview-cleanup.yml on PR close.
+  #
+  # This is a sibling to platform deploy-dev (Option A: kept local rather than
+  # turned into a reusable workflow). Promote to platform 04-deploy-preview.yml
+  # once a second service asks for the same pattern.
+  # ──────────────────────────────────────────────
+  deploy-preview:
+    needs: ci
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      RELEASE_NAME: keystone-ui-pr-${{ github.event.pull_request.number }}
+      PREVIEW_HOST: keystone-ui-pr-${{ github.event.pull_request.number }}.anairacloud.com
+      IMAGE_TAG: ${{ needs.ci.outputs.image_tag }}
+      IMAGE_REPOSITORY: ${{ needs.ci.outputs.image_repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+
+      - name: Configure AWS credentials (EKS deploy)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN_DEV }}
+          aws-region: ap-south-1
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --name ${{ vars.EKS_CLUSTER_NAME_DEV }} --region ap-south-1
+
+      - name: Deploy preview via Helm
+        run: |
+          helm upgrade --install "$RELEASE_NAME" ./helm/keystone-ui \
+            --namespace ${{ vars.DEV_NAMESPACE }} \
+            --create-namespace \
+            --values ./helm/keystone-ui/values-dev.yaml \
+            --set image.repository="$IMAGE_REPOSITORY" \
+            --set image.tag="$IMAGE_TAG" \
+            --set "ingress.host=$PREVIEW_HOST" \
+            --set "ingress.annotations.external-dns\.alpha\.kubernetes\.io/hostname=$PREVIEW_HOST" \
+            --wait --timeout 5m
+
+      - name: Smoke test preview
+        id: smoke
+        continue-on-error: true   # don't fail the PR if DNS hasn't propagated
+        run: |
+          # Retry up to ~60s — ALB target-group warmup + ExternalDNS lag.
+          STATUS=000
+          for i in 1 2 3 4 5 6; do
+            STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 10 "https://$PREVIEW_HOST/" || echo "000")
+            if [ "$STATUS" = "200" ]; then break; fi
+            echo "Attempt $i: HTTP $STATUS — retrying in 10s..."
+            sleep 10
+          done
+          echo "smoke_status=$STATUS" >> "$GITHUB_OUTPUT"
+          if [ "$STATUS" != "200" ]; then
+            echo "Preview returned HTTP $STATUS after retries"
+            exit 1
+          fi
+          echo "Preview live at https://$PREVIEW_HOST/"
+
+      - name: Comment preview URL on PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          SMOKE_STATUS: ${{ steps.smoke.outputs.smoke_status }}
+        run: |
+          # printf-based body so the markdown fence renders cleanly (CommonMark
+          # forbids leading-indent code fences > 3 spaces; YAML run-script
+          # indent would otherwise break ``` rendering).
+          if [ "$SMOKE_OUTCOME" = "success" ]; then
+            printf '%s\n\n```\n%s\n%s\n```\n\n%s\n' \
+              "🚀 **Preview deployed:** https://${PREVIEW_HOST}/" \
+              "Image:   ${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
+              "Release: ${RELEASE_NAME} (namespace: ${{ vars.DEV_NAMESPACE }})" \
+              "This environment is torn down when the PR closes." > /tmp/pr-body.md
+          else
+            printf '%s\n%s\n\n```\n%s\n%s\n```\n\n%s\n' \
+              "⚠️ **Preview helm-deployed but smoke test failed** (HTTP ${SMOKE_STATUS})." \
+              "URL: https://${PREVIEW_HOST}/" \
+              "Image:   ${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
+              "Release: ${RELEASE_NAME} (namespace: ${{ vars.DEV_NAMESPACE }})" \
+              "Most likely cause on first PR: ExternalDNS hasn't propagated the new \`${PREVIEW_HOST}\` record yet. Wait 2-3 minutes and retry, or ping infra." > /tmp/pr-body.md
+          fi
+          gh pr comment "$PR_NUMBER" --body-file /tmp/pr-body.md

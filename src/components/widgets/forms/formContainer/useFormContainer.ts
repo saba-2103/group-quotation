@@ -74,7 +74,14 @@ export const useFormContainer = ({
         });
 
         const submitAction = actions.find((a) => a.submitAction);
-        if (!submitAction) return;
+        if (!submitAction) {
+            // No submit endpoint configured — log the payload so developers
+            // can still verify form wiring during schema authoring without
+            // calling the action handler (which would no-op anyway).
+            // eslint-disable-next-line no-console
+            console.log('Form Submitted (No Endpoint configured):', visibleData);
+            return;
+        }
 
         if (submitAction.type === 'api-mutation') {
             await handleAction({ ...submitAction, api: { ...submitAction.api, body: visibleData } });
