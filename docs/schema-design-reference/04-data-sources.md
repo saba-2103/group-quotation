@@ -219,7 +219,7 @@ Reading top to bottom:
 - At 60 seconds, give up.
 - **Or** stop earlier — as soon as the JSONLogic predicate `stopWhen` evaluates true against the latest response.
 
-This pattern is exported as `STANDARD_POLL_SCHEDULE` from [`src/lib/polling.ts`](../../src/lib/polling.ts) so most schemas just reference the constant via TypeScript helpers (or inline the same values).
+This exact cadence is defined as `STANDARD_POLL_SCHEDULE` in [`src/lib/polling.ts`](../../src/lib/polling.ts). JSON schemas can't import the constant directly, so the convention is to **inline these four numbers verbatim** in the schema. If the cadence ever changes, update both the constant and the schemas that copied it.
 
 💡 Use `pollSchedule + stopWhen` for: pricing engine runs, async member enrolment, policy activation — anything where the backend says "give me a few seconds."
 

@@ -22,11 +22,14 @@ This catalog is grouped by category. Skim the index, jump to the widget you need
 **Data display** — read-only data rendering
 - [`data-table`](#data-table) — sortable / filterable / paginated table
 - [`key-value-grid`](#key-value-grid) — read-only entity-summary grid
+- *On `feat/new-buisiness`:* [`card-grid`, `plan-card`, `editable-table`, `dmn-decision-table`, `activation-counter`](#widgets-on-featnew-buisiness-next-merge-target)
+- *On claims branches:* [`info-card`, `accordion-group`, `communications-card-group`](#widgets-on-the-claims-feature-stack)
 
 **Forms** — user input
 - [`form-container`](#form-container) — the dynamic form
 - [`overlaid-form`](#overlaid-form) (overlay-only) — form rendered in a modal/sheet
 - [`confirmation-dialog`](#confirmation-dialog) (overlay-only) — confirm-then-mutate dialog
+- *On `feat/new-buisiness`:* [`plan-form`, `census-file-format-form`](#widgets-on-featnew-buisiness-next-merge-target)
 
 **Item display** — small reusable display elements
 - [`metric-card`](#metric-card) — KPI with optional trend
@@ -45,6 +48,8 @@ This catalog is grouped by category. Skim the index, jump to the widget you need
 - [`state-badge`](#state-badge) — entity lifecycle badge
 - [`reason-banner`](#reason-banner) — pending/voided/cancelled reason banner
 - [`role-switcher`](#role-switcher) — demo role selector
+- *On `feat/new-buisiness`:* [`polling-banner`, `confirm-maf-button`](#widgets-on-featnew-buisiness-next-merge-target)
+- *On claims branches:* [`maker-checker-panel`](#widgets-on-the-claims-feature-stack)
 
 ---
 
@@ -430,9 +435,36 @@ Field types in `props` are simplified for readability. The authoritative types l
 
 ---
 
-### Feature-branch widgets — not on main
+### Widgets on `feat/new-buisiness` (next merge target)
 
-Some feature branches add domain-specific widgets (e.g. `card-grid`, `plan-card`, `activation-counter`, `editable-table`, `dmn-decision-table`, `info-card`, `accordion-group`, `communications-card-group`, `maker-checker-panel`). These are not registered on `main` and won't render if you reference them. If you need one, read the component source on its originating branch and propose it through `/propose` for inclusion in the framework — see the [propose flow](../../proposals/).
+These widgets are registered on `feat/new-buisiness` but not on `main`. They will land in `main` when the branch merges; until then, reference them from the paths below.
+
+| `type` | Source (on `feat/new-buisiness`) | Use when |
+|--------|----------------------------------|----------|
+| `card-grid` | [`src/components/widgets/data/CardGrid.tsx`](../../src/components/widgets/data/CardGrid.tsx) | Grid of plan/product cards on a quote-flow plan-selection screen |
+| `plan-card` | [`src/components/widgets/data/PlanCard.tsx`](../../src/components/widgets/data/PlanCard.tsx) | Single plan/product card (used by `card-grid`); parses DSL-stringified `productsJson` / formulas on render |
+| `editable-table` | [`src/components/widgets/data/EditableTable.tsx`](../../src/components/widgets/data/EditableTable.tsx) | Join-shaped numeric-edit grid — render N rows from a key array, edit values inline |
+| `dmn-decision-table` | [`src/components/widgets/data/DmnDecisionTable.tsx`](../../src/components/widgets/data/DmnDecisionTable.tsx) | Read-only DMN decision-table renderer, drills into a stringified JSON blob at `mappingPath` |
+| `activation-counter` | [`src/components/widgets/data/ActivationCounter.tsx`](../../src/components/widgets/data/ActivationCounter.tsx) | Compact header tile combining `pendingMembers / activationThreshold` + policy state for the Master Policy detail page |
+| `plan-form` | [`src/components/widgets/forms/PlanForm.tsx`](../../src/components/widgets/forms/PlanForm.tsx) | Structured editor for a Quote `Plan` (DSL canonical shape) driven by the Product Catalog instead of raw JSON |
+| `census-file-format-form` | [`src/components/widgets/forms/CensusFileFormatForm.tsx`](../../src/components/widgets/forms/CensusFileFormatForm.tsx) | Column-picker editor for a Quote's `CensusFileFormat` — replaces a raw-JSON textarea |
+| `confirm-maf-button` | [`src/components/widgets/actions/ConfirmMafButton.tsx`](../../src/components/widgets/actions/ConfirmMafButton.tsx) | Standalone confirm-MAF button that stamps `confirmedAt` with a click-time ISO timestamp — lives outside ActionBar |
+| `polling-banner` | [`src/components/widgets/state/PollingBanner.tsx`](../../src/components/widgets/state/PollingBanner.tsx) | Banner that polls a `dataSource` (`pollSchedule` + `stopWhen`) and shows pendingMessage / completedMessage as the entity transitions |
+
+These are domain-shaped, not universal primitives. They're documented here because they're real and you'll see them in schemas under `feat/new-buisiness`. If you want one in another module, read the source first — most have DSL-specific coupling that you'll need to disentangle.
+
+### Widgets on the claims feature stack
+
+The claims module's PR stack (`new-widgets-for-claims` → `claims-details-page` → `claims-details-decision-tab` → `motor-claims-list-page`) adds another four widgets, none of which are on `main` or `feat/new-buisiness` at time of writing:
+
+| `type` | Source (on `new-widgets-for-claims`) | Use when |
+|--------|--------------------------------------|----------|
+| `info-card` | [`src/components/widgets/data/InfoCard.tsx`](../../src/components/widgets/data/InfoCard.tsx) | Card-style key-value display with `tiles` / `cells` / `metric` layout variants. Overlaps significantly with `key-value-grid`; the intended consolidation hasn't happened. |
+| `accordion-group` | [`src/components/widgets/layout/AccordionGroup.tsx`](../../src/components/widgets/layout/AccordionGroup.tsx) | Accordion container whose children are arbitrary `WidgetConfig`s (delegates to `WidgetRenderer`). Genuinely reusable. |
+| `communications-card-group` | [`src/components/widgets/comms/CommunicationsCardGroup.tsx`](../../src/components/widgets/comms/CommunicationsCardGroup.tsx) | Communications list card-group (configurable `typeKey` / `channelKey` / `subjectKey` / `bodyKey`). |
+| `maker-checker-panel` | [`src/components/widgets/payment/MakerCheckerPanel.tsx`](../../src/components/widgets/payment/MakerCheckerPanel.tsx) | Payment maker/checker workflow panel. **Feature-specific** — bundles a multi-step business workflow into one widget; flagged in PR review as candidate for decomposition into form + action-bar + readiness display. |
+
+When you read schemas referencing these, expect them to come from the claims branches. If you need them in a different module before they land on `main`, cherry-pick or rebase — don't copy/paste.
 
 ---
 

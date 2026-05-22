@@ -8,6 +8,8 @@ This document covers the Next.js side of the framework: how a route maps to a pa
 
 The framework uses the Next.js App Router. Each URL maps to a `page.tsx` file:
 
+**On `main`:**
+
 | URL | File | Schema imported |
 |-----|------|----------------|
 | `/quotations` | `src/app/quotations/page.tsx` | `schemas/quotations.json` |
@@ -16,7 +18,22 @@ The framework uses the Next.js App Router. Each URL maps to a `page.tsx` file:
 | `/accounting` | `src/app/accounting/page.tsx` | `schemas/accounting.json` |
 | `/payout` | `src/app/payout/page.tsx` | `schemas/payout.json` |
 
-Quotations is the most fully-wired module on `main` (list + `[id]` detail + tabs + forms) — use it as the canonical reference when in doubt. Other modules may not have a detail page yet; check `src/app/<module>/` before assuming a `[id]` route exists.
+**On `feat/new-buisiness`** the Group PAS modules add an additional set of routes (these replace the legacy `/quotations/[id]` flow):
+
+| URL | File | Schema imported |
+|-----|------|----------------|
+| `/quotation` | `src/app/quotation/page.tsx` | `schemas/quote.json` |
+| `/quotation/[id]` | `src/app/quotation/[id]/page.tsx` | `schemas/quote-detail.json` |
+| `/quotation/member-quotes` | `src/app/quotation/member-quotes/page.tsx` | `schemas/member-quote.json` |
+| `/quotation/member-quotes/[id]` | `src/app/quotation/member-quotes/[id]/page.tsx` | `schemas/member-quote-detail.json` |
+| `/issuance/proposals` | `src/app/issuance/proposals/page.tsx` | `schemas/proposal.json` |
+| `/issuance/proposals/[id]` | `src/app/issuance/proposals/[id]/page.tsx` | `schemas/proposal-detail.json` |
+| `/issuance/proposals/[id]/census` (+ `/new`, `/[submissionId]`) | per-segment `page.tsx` | various tab / view schemas |
+| `/issuance/proposals/[id]/members/[memberId]` (+ `/new`) | per-segment `page.tsx` | member schemas |
+| `/issuance/policy-members/[policyMemberId]` | `src/app/issuance/policy-members/[policyMemberId]/page.tsx` | `schemas/policy-member-detail.json` |
+| `/policy-admin/clients`, `/clients/[id]`, `/policies`, `/policies/[id]`, `/members/[id]` | `src/app/policy-admin/...` | `schemas/client.json`, `client-detail.json`, `policy.json`, `policy-detail.json`, `member-detail.json` |
+
+When in doubt about the canonical wiring, the quotation/issuance/policy-admin pages on `feat/new-buisiness` are the most complete reference (each is ~30–80 lines and exercises `resolveSchemaRefs` + `{{id}}` substitution).
 
 The pages are thin — typically 30–60 lines each. They import a schema, resolve `$ref`s, substitute route params, and render via `WidgetRenderer`.
 

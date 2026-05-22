@@ -193,20 +193,26 @@ The convention that's emerged across modules:
 
 ```
 schemas/
-├── <module>.json                     # List page (e.g. quotations.json)
-├── <module>-detail.json              # Detail page (quotations-detail.json)
+├── <module>.json                     # List page (e.g. quotations.json, quote.json, policy.json)
+├── <module>-detail.json              # Detail page (quote-detail.json, policy-detail.json, member-detail.json, ...)
 ├── <module>-<view>.json              # Other top-level views
 ├── tabs/
-│   └── <module>/
+│   └── <module>/                     # Per-module tab schemas (quote/, policy/, proposal/ on feat/new-buisiness)
 │       ├── overview.json
-│       ├── audit.json
+│       ├── plans.json
+│       ├── census.json
 │       └── ...
-└── forms/
-    ├── register-claim-form.json
-    ├── edit-policy-form.json
-    ├── ...
-    └── index.ts                      # Auto-generated, do not edit
+├── forms/
+│   ├── create-quote-form.json
+│   ├── plan-edit-form.json
+│   ├── upload-census-form.json
+│   ├── ...
+│   └── index.ts                      # Auto-generated, do not edit
+├── tables/                           # (feat/new-buisiness) shared column configs e.g. census-submission-rows.json
+└── views/                            # (feat/new-buisiness) shared view fragments e.g. census-submission-detail.json
 ```
+
+⚠️ `schemas/tables/` and `schemas/views/` exist on `feat/new-buisiness` only — they hold reusable column configs and view fragments referenced by tab schemas. On `main` only `schemas/`, `schemas/tabs/`, and `schemas/forms/` are present.
 
 For a new module, you typically end up with:
 - One list-page schema (`<module>.json`)

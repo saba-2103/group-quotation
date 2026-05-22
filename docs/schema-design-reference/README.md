@@ -14,6 +14,22 @@ This reference covers everything a developer needs to:
 
 ---
 
+## Branch context — important
+
+This reference describes the framework as it exists on **two branches** that you'll want to be aware of:
+
+- **`main`** — minimal scaffold with the core widget vocabulary (21 widgets).
+- **`feat/new-buisiness`** — the active feature branch where Group PAS V1 lives. It adds **9 more registered widgets**, an `src/lib/api/` typed-client layer, an `src/lib/api-mock/group-pas/` mock backend, additional schemas under `schemas/{quote,proposal,policy,member-quote,client,policy-member}-detail.json` plus per-module `schemas/tabs/<module>/`, and `schemas/tables/` + `schemas/views/` conventions. These are the next merge target — treat them as canonical-soon.
+
+Where the docs reference a widget or file with a path under `src/...` or `schemas/...`:
+- **Unqualified paths exist on both branches.**
+- **`feat/new-buisiness` only** is called out explicitly when relevant — usually the prefix `(on feat/new-buisiness)`.
+- **Other feature branches** (claims work on `new-widgets-for-claims`, `claims-details-page`, etc.) are noted by branch when they introduce something the docs reference.
+
+When in doubt, check out `feat/new-buisiness` and search there — that's the working surface.
+
+---
+
 ## Who this is for
 
 - **New developers** joining the team — start with [01-architecture.md](01-architecture.md) and walk through it in order.
