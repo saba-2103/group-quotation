@@ -18,7 +18,9 @@ Run a verb-driven, multi-stage pipeline that converts one or more specs in `docs
 - Handoff entry point: `context/HANDOFF.md`
 - Core memory: `context/CORE_MEMORY.md`
 - Specs: `docs/specs/*.md`
-- Implementation guide: `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md`
+- Implementation quickstart: `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md`
+- **Comprehensive framework reference** (canonical — see [#73](https://github.com/Anaira-AI/keystone-ui/pull/73)): `docs/schema-design-reference/` — 14 files covering architecture, widget catalog, schemas, data sources, actions, forms, state/conditions, pages/routing, API routes, design system, cookbook, troubleshooting, glossary. Read this **and** the quickstart before drafting; the reference is the contract for non-trivial work.
+- Framework primitives newly available on main via [#72](https://github.com/Anaira-AI/keystone-ui/pull/72): typed API client (`src/lib/api/client.ts`), `DetailPageSkeleton`, `visibleRoles` gate, overlay `size`, `schemas/tables/` + `schemas/views/` `$ref` prefixes, array-valued GET params, `dataPath`/`parseJson` on data-table data sources, cross-array `joinSource`/`joinKey`/`joinField`. Prefer these for new schemas.
 - Existing schemas: `schemas/*.json`
 - Primitives: `src/components/ui/*.tsx` (button, card, dialog, form, input, table, tabs, sidebar, …)
 - Composed widgets: `src/components/widgets/{container,controls,data,forms,items,layout}/`
@@ -114,12 +116,13 @@ Before drafting, read `context/HANDOFF.md` if it exists, then `context/CORE_MEMO
 - Run the relevant test suite(s). Do not treat schema-render tests alone as sufficient for pages that include transactional actions, approvals, uploads, or state transitions.
 - Fail the stage if the build only proves rendering while leaving the scoped workflow untested.
 
-### 7. SHIP — preview, verify, deploy (shareable demo)
-- Invoke the `/preview-and-deploy` skill. Pass `--routes=` listing every new route this run added so they get smoke-checked.
-- That skill runs lint + tests, builds with `npm run preview`, asks the user to confirm, then runs `npm run deploy` and returns a shareable Cloudflare URL.
-- **Do NOT substitute `npm run dev` or raw curl checks for this stage.** A dev-server smoke-check is not a build. Do not write `agent_logs/shipper.log` until `/preview-and-deploy` has actually been invoked and returned an outcome.
-- Only write `agent_logs/shipper.log` after `/preview-and-deploy` completes. Record its pass/fail gates, the deployed URL (or failure reason), and any caveats.
-- This stage is **skippable** if the user passed `--no-deploy` to `specs-to-draft`. If skipped, do not create a shipper.log — absence of the file signals the stage was intentionally omitted.
+### 7. SHIP — push branch, let CI deploy the preview
+- Run lint + tests locally first (`npm run lint`, `npm test`, `tsc --noEmit`) — fix anything broken; never silently weaken tests.
+- Push the branch (`git push -u origin <branch>`) and open a PR via `gh pr create` (title + body summarizing the drafted scope, including every new route under a **Routes added** section so reviewers know what to spot-check).
+- Per [#71](https://github.com/Anaira-AI/keystone-ui/pull/71), CI runs the devops-platform pipeline (`01-pre-commit-checks` + `02-ci-pipeline`) and the `deploy-preview` job ships a per-PR EKS release at `https://keystone-ui-pr-<N>.anairacloud.com`. DNS can take 2–3 minutes.
+- Watch the GitHub Actions run, capture the preview URL when ready, and report PR URL + CI run URL + preview URL to the user.
+- **Do NOT** fall back to `npm run dev` for a smoke-check — a dev-server probe is not a CI build. **Do NOT** try to invoke `/preview-and-deploy` — that skill was removed when #71 landed; CI owns previews now.
+- Write `agent_logs/shipper.log` after the push + PR are real, recording: branch, PR url, CI run url, preview url (or "DNS pending"), caveats. If `--no-deploy` was passed, skip the push, do not open a PR, and do not write shipper.log.
 
 ## Operational constraints
 - **No hallucinated shared components.** If `src/components/ui/foo.tsx` doesn't exist, you can't import `Foo`. But you may build a real new widget when the workflow clearly requires it and the implementation is brought up to repo quality.
