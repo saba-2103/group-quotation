@@ -303,13 +303,19 @@ Field types in `props` are simplified for readability. The authoritative types l
 {
   id: string;
   header: string;
-  accessorKey: string;             // Plain key. Dotted-path / array-index support depends on table version — verify with the schema you're adapting.
+  accessorKey: string;             // Dotted accessor paths supported (e.g. "amount.amount", "claimants.0.name") via accessorFn translation in useDataTable.
   type?: "badge" | "status" | "currency" | "number" | "date" | "link" | "state-badge";
   cellType?: ...;                  // Alias for type in some configs
   valueMapping?: BadgeValueMapping[];  // Required for type: "badge" | "status"
   linkRoute?: string;              // For type: "link" — supports :id substitution from row data
   entity?: "quote" | "proposal" | "policy" | "member";  // For type: "state-badge"
   currency?: string;               // Override for type: "currency" (default "USD")
+  // ── Cross-array join (consumed by useDataTable) ──
+  // Enrich each row by looking up a sibling array on the same response.
+  // No extra fetch. No match → cell undefined → standard "—".
+  joinSource?: string;             // Dotted path to the sibling array on the response root
+  joinKey?: string;                // Column on this row whose value matches `joinKey` on each sibling
+  joinField?: string;              // Field to pull from the matched sibling
   sortable?: boolean;
   filterable?: boolean;
   filterType?: "text" | "select" | "date";
@@ -363,12 +369,14 @@ Field types in `props` are simplified for readability. The authoritative types l
 ```
 
 **Gotchas:**
-- ⚠️ Nested accessors (`vehicle.registration_no`, `claimants.0.name`) need DataTable's nested-accessor support — present in some branches, absent in others. Verify against [`src/components/widgets/data/DataTable/index.tsx`](../../src/components/widgets/data/DataTable/index.tsx) on your branch. If you render nothing, check the response shape in DevTools.
+- ⚠️ Nested accessors (`vehicle.registration_no`, `claimants.0.name`) are translated to `accessorFn` by `useDataTable`. The walker is prototype-pollution-safe — `__proto__` / `constructor` / `prototype` segments are rejected (hardened in PR #72).
 - `linkRoute` and `rowActions[].target` both support `:paramName` substitution from row data (via [`substituteEndpointParams`](../../src/lib/endpointUtils.ts)). Use `:id` for the row PK, or `:claim_id` etc. for non-`id` PKs.
 - Filters only appear if columns have `filterable: true` AND a `filters` prop is set on the table.
 - Mobile (`<md`) auto-swaps to a card list view.
 - 💡 Pagination: `useDataTable` wires TanStack Table's `getPaginationRowModel()`, so the page-size selector and page navigation work over whatever rows came back. Whether that's a single page (backend already sliced) or the whole list (backend returned everything) depends on your endpoint — pick one model per table and document it on the endpoint.
 - 💡 **Exports come free.** Every data-table renders CSV / XLSX / PDF export buttons in its header. Implemented by [`useTableExport`](../../src/hooks/useTableExport.ts) — no schema flag to opt in.
+- 💡 **Drill into stringified JSON via `dataSource.dataPath` + `parseJson`.** For backend DTOs that ship escaped JSON (e.g. `estimatedPremium.byPlanJson` on a Quote), declare `dataPath: "estimatedPremium.byPlanJson"` + `parseJson: true` and the rows array is extracted automatically. Parse failures populate `useDataTable.dataError` (hook-level surface; the default `data-table` consumer currently renders empty rather than a distinct error). See [04-data-sources.md → dataPath + parseJson](04-data-sources.md#datapath--parsejson--drilling-into-deeper--stringified-payloads).
+- 💡 **Cross-array join.** When the response carries a related sibling array (e.g. `rows: [...]` + `members: [...]` where each row's `memberId` matches a member's `id`), declare `joinSource`/`joinKey`/`joinField` on the consuming column and `useDataTable` enriches each row using an O(siblings) Map index — no extra fetch.
 
 ---
 

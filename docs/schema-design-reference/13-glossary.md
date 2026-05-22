@@ -42,7 +42,7 @@ Terms used throughout this reference, in alphabetical order.
 
 **`enhancedProps`** — Internal name for the merged props the `WidgetRenderer` passes to each component (original `props` + fetched `data` + `isLoading` + `error`).
 
-**Field types** — The string values accepted by `FormFieldConfig.type`: `text`, `number`, `email`, `url`, `password`, `textarea`, `date`, `select`, `radio`, `checkbox`, `file`. See [06-forms.md → Field types](06-forms.md#field-types).
+**Field types** — String values accepted by `FormFieldConfig.type`. Native inputs: `text` (default fallback), `number`, `email`, `password`, `tel`, `url`, `textarea`, `date`. Mapped components: `select`, `radio`, `checkbox`, `api-dropdown`, `api-dropdown-transactional`. ⚠️ `file` is **not** in `FIELD_TYPE_MAP` — passing `type: "file"` falls through to a text input. See [06-forms.md → Field types](06-forms.md#field-types).
 
 **`fields`** — On `form-container`, the array of field configs. On `key-value-grid` and `info-card`, also the array of field configs (different shape).
 
@@ -94,6 +94,14 @@ Terms used throughout this reference, in alphabetical order.
 
 **Overlay** — A modal, sheet, or dialog. Managed via `useOverlayStore`. Mounted globally by `<OverlayProvider />`.
 
+**`OverlaySize`** — TypeScript union exported from `src/types/widget.ts`: `"sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl"`. Set on `open-modal` / `open-sheet` actions via `action.size`, threaded through `useOverlayStore.OverlayOptions`, mapped to a Tailwind `max-w-*` class by `OverlayProvider`. Default is `lg` (~512px). See [05-actions.md → open-modal / open-sheet](05-actions.md#open-modal--open-sheet).
+
+**`dataPath`** — `DataSourceConfig.dataPath?: string`. Dotted path drilled into the fetched response before the consumer (today, `data-table` via `useDataTable`) treats the value as the result. PR #72.
+
+**`parseJson`** — `DataSourceConfig.parseJson?: boolean`. When true and the value at `dataPath` is a string, JSON-parsed before consumption. Parse failure surfaces as `useDataTable.dataError` (loud, not silent). PR #72.
+
+**Typed API client** — `src/lib/api/{client,error-mapper,index}.ts` on `main` (PR #72). Generic typed fetch wrapper with configurable bearer-token getter + Spring/QuotationException error envelope mapper. `api.get` / `api.post` / `api.put` / `api.patch` / `api.delete`. See [09-api-routes.md → Typed API client](09-api-routes.md#typed-api-client-srclibapi).
+
 **Page-level template substitution** — Server-side string replacement of `{{id}}` in the resolved schema, performed by the page's `updateEndpoints` walker. See [08-pages-and-routing.md → Template substitution](08-pages-and-routing.md#template-substitution).
 
 **`pollSchedule`** — `DataSourceConfig.pollSchedule`. Tiered backoff polling: fast initially, then slower, with a hard max duration. See [04-data-sources.md → Polling](04-data-sources.md#polling).
@@ -108,7 +116,7 @@ Terms used throughout this reference, in alphabetical order.
 
 **`refreshKey`** — `BaseActionConfig.refreshKey`. Prefix string. After a successful mutation, every TanStack Query whose key starts with this prefix is invalidated.
 
-**`$ref`** — Schema composition shortcut. `{ "$ref": "schemas/tabs/<...>.json" }` loads and splices that file's content at the ref node. See [03-schemas.md → $ref](03-schemas.md#ref--composing-schemas).
+**`$ref`** — Schema composition shortcut. The resolver recognises four prefixes: `schemas/tabs/<...>.json` (per-module tabs), `schemas/forms/<...>` (looked up in the bundled `forms_registry`), `schemas/tables/<...>.json` (shared column configs, PR #72), and `schemas/views/<...>.json` (shared view fragments, PR #72). The file's content replaces the `$ref` node. See [03-schemas.md → $ref](03-schemas.md#ref--composing-schemas).
 
 **Role** — A user permission identifier (`claims_adjuster`, `claims_supervisor`, `maker`, `checker`, …). Used to gate widget visibility and action availability.
 
@@ -178,7 +186,7 @@ Terms used throughout this reference, in alphabetical order.
 
 **`useWidgetState`** — Zustand store for cross-widget shared state. See [07-state-and-conditions.md → useWidgetState](07-state-and-conditions.md#usewidgetstate).
 
-**Validation rule** — An entry in `field.validations`: `{ rule, value?, message }`. Supported rules: `required`, `min`, `max`, `pattern`, `email`, `url`.
+**Validation rule** — An entry in `field.validations`: `{ rule, value?, message }`. Rules wired into `VALIDATION_APPLIERS` (and therefore actually enforced): `required`, `min`, `max`. ⚠️ `pattern`, `email`, `url` are silently no-ops as validation rules today (the `email` / `url` *field types* trigger HTML5 browser validation, which the user can bypass). See [06-forms.md → Validations](06-forms.md#validations).
 
 **`valueKey`** — `DataSourceConfig.valueKey`. Dotted path to extract from the response (e.g., `"items"` from `{ items: [...] }`).
 
@@ -186,7 +194,9 @@ Terms used throughout this reference, in alphabetical order.
 
 **Variant** — A CVA-defined visual style for a primitive (button variants: `default`, `outline`, `destructive`, …). Schemas reference these by name via `action.variant` or column type.
 
-**`visibleWhen`** — JSONLogic predicate for conditional visibility. Available on form fields (visibleWhen against form values) and widget `layout` (visibleWhen against fetched data + role).
+**`visibleWhen`** — JSONLogic predicate for conditional visibility. Honoured today on `field.visibleWhen` (against form values) and `rowAction.visible` (against row data). `WidgetConfig.visibleWhen` is a typed field but has no consumer on `main` post-PR-#72; a `TabsContainer` evaluator ships on `feat/new-buisiness`. For role-gated widget visibility, use `visibleRoles` instead.
+
+**`visibleRoles`** — `WidgetConfig.visibleRoles?: string[]`. Renderer-honoured role gate (PR #72): hides a widget entirely unless the current role is in the list. Evaluated *before* `useSmartQuery` so hidden widgets pay no fetch / polling cost. Empty array hides for every role (treated as misconfiguration; surfaced as silence). See [07-state-and-conditions.md → Role-gating widgets](07-state-and-conditions.md#role-gating-widgets--visibleroles).
 
 **Widget** — A registered component identified by a `type` string in the registry. The unit of composition in schemas.
 

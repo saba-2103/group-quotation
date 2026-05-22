@@ -176,6 +176,37 @@ export async function DELETE(req: NextRequest, ctx: RouteContext) { return handl
 
 ---
 
+## Typed API client (`src/lib/api/`)
+
+Schemas reach the backend through `useSmartQuery` / `useActionHandler` (declarative). For imperative calls from page-level code or domain hooks, `main` ships a typed client at [`src/lib/api/client.ts`](../../src/lib/api/client.ts) ([PR #72](https://github.com/Anaira-AI/keystone-ui/pull/72)).
+
+```ts
+import { api, configureApiClient } from '@/lib/api';
+
+// Wire once at app boot (e.g. inside Providers):
+configureApiClient({
+  baseUrl: '/',
+  bearerToken: () => readSessionToken(),  // optional; CR/LF-validated before being sent
+});
+
+// Use:
+const quote = await api.get<Quote>('/api/v1/quotes/Q-001');
+const created = await api.post<Quote>('/api/v1/quotes', { lob: 'GTL', ... });
+await api.delete<void>('/api/v1/quotes/Q-001');
+```
+
+**Verbs:** `api.get`, `api.post`, `api.put`, `api.patch`, `api.delete`.
+
+**Error envelope:** non-2xx responses throw an `ApiError` populated from [`parseSpringError`](../../src/lib/api/error-mapper.ts) — handles both Spring `DefaultErrorAttributes` (`{ timestamp, status, error, message, path }`) and module-specific `@RestControllerAdvice` (`{ error, message }`) shapes. It prefers `message` and falls back to `error`. ⚠️ [`useActionHandler`](../../src/hooks/useActionHandler.ts) parses error responses with its own inline block today — prefers `message`, then `errorCode`, then `error`. The two parsers diverge: the typed client doesn't look at `errorCode`. Consolidation onto `parseSpringError` is a known follow-up; until then, two parallel paths exist.
+
+**Bearer token:** validated against the JWT charset (`/^[A-Za-z0-9._\-+/=]+$/`) before being sent — defends against CR/LF header injection if a `bearerToken()` getter ever returns user-controlled input.
+
+**Empty body:** when `body === undefined`, no `Content-Type` header is set and no body is sent. Use this for `DELETE` or body-less `POST` rather than passing `null`/`{}`.
+
+Domain-typed API modules (`src/lib/api/quotation.ts`, `issuance.ts`, etc.) live on `feat/new-buisiness` and wrap this client per backend bounded-context.
+
+---
+
 ## Response shape conventions
 
 ### List endpoints
@@ -314,9 +345,7 @@ The framework forwards selected headers from the browser to the backend via the 
 | `X-Correlation-Id` | For request tracing |
 | `If-Match` / `X-Expected-Version` | Optimistic locking |
 
-Today (V1), there's no real auth — these headers are populated client-side from the active role via `CLAIMS_ROLE_HEADER_MAP` or similar mapping. When real auth lands, the mapping is replaced with token-based identity.
-
-⚠️ Header injection logic lives in two places: `useSmartQuery` and `useActionHandler`. If you add a new auth scheme, you have to update both. Long-term these should consolidate into a single header-injection point.
+⚠️ **On `main` post-PR-#72, only the typed [`api` client](../../src/lib/api/client.ts) sets an `Authorization: Bearer` header** (via the configured `bearerToken()` getter). `useSmartQuery` and `useActionHandler` still issue raw `fetch()` with only `Content-Type: application/json` — no auth headers, no role/tenant forwarding. Feature branches (notably the auto-claims work) inject `X-User-Id` / `X-Roles` / `X-Tenant-Id` directly inside these hooks via a `CLAIMS_ROLE_HEADER_MAP` — that code is **not on `main`**. When real auth lands, the schema-driven hooks need to grow bearer-token plumbing (or be migrated onto the typed client) so the two paths consolidate.
 
 ---
 

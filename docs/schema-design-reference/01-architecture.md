@@ -67,19 +67,20 @@ The trade-off is that the runtime is opinionated — you fit your screen to the 
 | `src/lib/endpointUtils.ts` | `substituteEndpointParams()` — replaces `:param` tokens with row data |
 | `src/lib/conditions.ts` | `evaluateCondition()` — JSONLogic wrapper for visibility / `stopWhen` |
 | `src/lib/polling.ts` | `STANDARD_POLL_SCHEDULE` constant + helpers for `pollSchedule` configs |
+| `src/lib/api/client.ts`, `error-mapper.ts`, `index.ts` | Generic typed API client + Spring/QuotationException error envelope mapping. See [09-api-routes.md → Typed API client](09-api-routes.md). |
+| `src/components/layout/DetailPageSkeleton.tsx` | Shared Suspense fallback for detail routes — mirrors page-header + first-widget shape so load-to-content is smooth. |
 | `src/app/globals.css` | Design tokens (colours, radii, spacing) — see [10-design-system.md](10-design-system.md) |
 
-**Additional infrastructure on `feat/new-buisiness` (next merge target):**
+**Additional infrastructure on `feat/new-buisiness` (Group PAS domain code):**
 
 | Path | What lives here |
 |------|-----------------|
-| `src/lib/api/client.ts`, `error-mapper.ts`, `index.ts` | Typed API client + shared error envelope mapping. Centralises Spring vs QuotationException error parsing. |
 | `src/lib/api/quotation.ts`, `issuance.ts`, `policy-admin.ts`, `productCatalog.ts` | Domain-typed API modules per backend bounded-context |
 | `src/lib/api-mock/group-pas/` | The Group PAS mock backend — `dtos.ts` (TS types matching backend DSL), `store.ts` (in-memory state), `http.ts` (route helpers), `fixtures/` (seed data). Routes under `src/app/api/<context>/[[...path]]/route.ts` delegate to this. |
 | `src/lib/maker-checker.ts` | Helpers for the maker/checker UI overlay (V1 demo, role-adaptive UI only) |
 | `src/lib/group-pas/censusColumns.ts` | Census column metadata used by `census-file-format-form` |
 | `src/app/api/quotation/[[...path]]/route.ts`, `issuance/...`, `policy-admin/...`, `product-catalog/...`, `_mock/uploads/...` | Catch-all mock routes per backend context |
-| `src/app/api/dev/reset/route.ts` | Dev-only endpoint to reset the in-memory store
+| `src/app/api/dev/reset/route.ts` | Dev-only endpoint to reset the in-memory store |
 
 ---
 

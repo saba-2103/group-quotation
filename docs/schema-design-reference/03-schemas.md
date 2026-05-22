@@ -67,7 +67,7 @@ For container widgets (`stack-layout`, `grid-layout`, `section-group`, `tabs-con
 
 Rendering hints. The most common is `colSpan` (which the renderer turns into a `col-span-N md:col-span-N` class on the wrapper). `hidden: true` skips rendering entirely.
 
-⚠️ There is no `layout.visibleWhen` on `main` — see [07-state-and-conditions.md → JSONLogic](07-state-and-conditions.md#jsonlogic). Conditional rendering today happens through `field.visibleWhen` (forms), `rowAction.visible` (table rows), or by gating at the schema level.
+⚠️ Conditional rendering on `main` happens through several distinct mechanisms — `visibleRoles` on `WidgetConfig` (role-gated, renderer-honoured), `field.visibleWhen` (form-field visibility), and `rowAction.visible` (per-row table actions). `WidgetConfig.visibleWhen` is a typed field with no consumer on `main` yet — a `TabsContainer` evaluator ships on `feat/new-buisiness`. See [07-state-and-conditions.md → JSONLogic](07-state-and-conditions.md#jsonlogic) for the full mapping.
 
 ---
 
@@ -121,7 +121,7 @@ Read top to bottom: a vertical stack of three widgets — a header (no fetch), a
 
 ## `$ref` — composing schemas
 
-When a schema would otherwise be 1000+ lines, split it. The runtime resolves three kinds of `$ref`:
+When a schema would otherwise be 1000+ lines, split it. The runtime resolves four kinds of `$ref`:
 
 ### Tab refs — `schemas/tabs/...`
 
@@ -173,7 +173,23 @@ npm run predev
 node scripts/generate_form_index.mjs
 ```
 
-⚠️ **There's no third $ref kind.** Page-level schemas (`schemas/quotations.json`) can't be `$ref`'d — they're imported directly by `page.tsx`.
+### Table refs — `schemas/tables/...`
+
+```json
+{ "$ref": "schemas/tables/census-submission-rows.json" }
+```
+
+Same dynamic-import flow as tab refs — pulls a reusable column-config from `schemas/tables/<name>.json`. The file's top-level object replaces the `$ref` node. Use for column sets that are reused across multiple data-tables (e.g. census submission rows displayed on both the proposal census tab and the submission detail view).
+
+### View refs — `schemas/views/...`
+
+```json
+{ "$ref": "schemas/views/census-submission-detail.json" }
+```
+
+Same flow as tab refs — pulls a reusable view fragment (a composition of widgets) from `schemas/views/<name>.json`. Use for view shapes that appear in multiple places (e.g. a "census submission" panel reused inside both the list-detail page and the proposal census tab).
+
+⚠️ **Page-level schemas can't be `$ref`'d.** Top-level page schemas under `schemas/*.json` (e.g. `schemas/quotations.json`) are imported directly by `page.tsx`. The four `$ref` kinds above are the only resolver-recognised prefixes.
 
 ### Sibling properties
 
@@ -208,11 +224,11 @@ schemas/
 │   ├── upload-census-form.json
 │   ├── ...
 │   └── index.ts                      # Auto-generated, do not edit
-├── tables/                           # (feat/new-buisiness) shared column configs e.g. census-submission-rows.json
-└── views/                            # (feat/new-buisiness) shared view fragments e.g. census-submission-detail.json
+├── tables/                           # Shared column configs (e.g. census-submission-rows.json)
+└── views/                            # Shared view fragments (e.g. census-submission-detail.json)
 ```
 
-⚠️ `schemas/tables/` and `schemas/views/` exist on `feat/new-buisiness` only — they hold reusable column configs and view fragments referenced by tab schemas. On `main` only `schemas/`, `schemas/tabs/`, and `schemas/forms/` are present.
+`schemas/tables/` and `schemas/views/` are resolver-recognised `$ref` prefixes (see [`src/lib/schemaResolver.ts`](../../src/lib/schemaResolver.ts) — added by PR #72). They hold reusable column configs and view fragments referenced by tab schemas. The directories exist on `main` with placeholder stubs; populated `*.json` configs ship in `feat/new-buisiness` (`census-submission-rows.json`, etc.) and other branches as needed.
 
 For a new module, you typically end up with:
 - One list-page schema (`<module>.json`)
@@ -285,7 +301,7 @@ A short list of the patterns that show up in PRs every week:
 
 It's worth being explicit about the limits:
 
-- ❌ **Conditional widgets that depend on a fetch result.** Widget-level `visibleWhen` is not on `main`. For per-row visibility use `rowAction.visible`; for per-field visibility use `field.visibleWhen`. Section-level conditional rendering is a known gap.
+- ❌ **Conditional widgets that depend on an arbitrary fetch result.** Widget-level `visibleWhen` has no consumer on `main` yet (a `TabsContainer` evaluator ships on `feat/new-buisiness`). For role-gated whole-widget visibility use `visibleRoles`; for per-row table-action visibility use `rowAction.visible`; for per-field form visibility use `field.visibleWhen`. There's no general "show this widget only if Quote A's status is X" mechanism on `main` — compose differently or propose an extension.
 - ❌ **Computed values.** No JSONPath transforms inside `props` (other than the dotted accessors in field configs). If you need to combine three response fields into one display, render two widgets and let CSS handle layout.
 - ❌ **Loops.** Schemas don't have a "for each item, render this widget" construct. Use `data-table` instead.
 - ❌ **Imperative orchestration.** A schema is declarative. If you need "run mutation A, then if it succeeds run B, then navigate" — that's what `api-mutation.onSuccess` is for; see [05-actions.md](05-actions.md).

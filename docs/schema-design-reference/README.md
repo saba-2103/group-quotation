@@ -18,15 +18,15 @@ This reference covers everything a developer needs to:
 
 This reference describes the framework as it exists on **two branches** that you'll want to be aware of:
 
-- **`main`** — minimal scaffold with the core widget vocabulary (21 widgets).
-- **`feat/new-buisiness`** — the active feature branch where Group PAS V1 lives. It adds **9 more registered widgets**, an `src/lib/api/` typed-client layer, an `src/lib/api-mock/group-pas/` mock backend, additional schemas under `schemas/{quote,proposal,policy,member-quote,client,policy-member}-detail.json` plus per-module `schemas/tabs/<module>/`, and `schemas/tables/` + `schemas/views/` conventions. These are the next merge target — treat them as canonical-soon.
+- **`main`** — the canonical framework. 21 registered widgets, the generic typed API client (`src/lib/api/client.ts` + `error-mapper.ts`), `DetailPageSkeleton`, role-visibility gating in `WidgetRenderer` (`visibleRoles`), overlay `size` plumbing, `schemas/tables/` + `schemas/views/` `$ref` prefixes, array-valued GET params in `useSmartQuery`, and `dataPath`/`parseJson`/cross-array join support in `useDataTable`. Framework primitives land here once they're polished — see [PR #72](https://github.com/Anaira-AI/keystone-ui/pull/72) for the most recent core-arch port from `feat/new-buisiness`.
+- **`feat/new-buisiness`** — main + **9 domain widgets** for Group PAS V1 (`card-grid`, `plan-card`, `editable-table`, `dmn-decision-table`, `activation-counter`, `plan-form`, `census-file-format-form`, `confirm-maf-button`, `polling-banner`), the domain-typed API modules (`src/lib/api/{quotation,issuance,policy-admin,productCatalog}.ts`), `src/lib/api-mock/group-pas/` mock backend, additional schemas (`schemas/{quote,proposal,policy,member-quote,client,policy-member}-detail.json` plus per-module tabs), and Group PAS app routes. Domain code stays on this branch by design.
 
 Where the docs reference a widget or file with a path under `src/...` or `schemas/...`:
-- **Unqualified paths exist on both branches.**
-- **`feat/new-buisiness` only** is called out explicitly when relevant — usually the prefix `(on feat/new-buisiness)`.
+- **Unqualified paths exist on `main`** (and therefore on `feat/new-buisiness` too).
+- **`feat/new-buisiness` only** is called out explicitly when relevant — usually the prefix `(on feat/new-buisiness)`. This applies to the 9 domain widgets, domain-typed API modules, mock backend, and Group PAS schemas / pages.
 - **Other feature branches** (claims work on `new-widgets-for-claims`, `claims-details-page`, etc.) are noted by branch when they introduce something the docs reference.
 
-When in doubt, check out `feat/new-buisiness` and search there — that's the working surface.
+When in doubt, check `main` first — it's the framework spine. Reach for `feat/new-buisiness` only when you need Group PAS domain code.
 
 ---
 

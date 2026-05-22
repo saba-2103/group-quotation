@@ -185,13 +185,20 @@ node scripts/generate_form_index.mjs
 
 ### Symptom: role-gated section visible to all roles
 
-**Diagnosis:** the condition uses the wrong role key.
+**Diagnosis:** the section is using `layout.visibleWhen` or some other JSONLogic predicate that the renderer doesn't honour for role-gating.
 
-**Fix:** roles are published to `"global:current-role"` (with the colon). Typing `"current-role"` or `"role"` silently fails.
+**Fix:** use `visibleRoles` directly on the `WidgetConfig` — this is the renderer-honoured role gate on `main` (PR #72). Empty array hides for everyone; omit the prop to render for every role.
 
 ```json
-"layout": { "visibleWhen": { "==": [{ "var": "global:current-role" }, "checker"] } }
+{
+  "id": "siu-section",
+  "type": "section-group",
+  "visibleRoles": ["siu_officer"],
+  "children": [ ... ]
+}
 ```
+
+For per-button gating inside an `action-bar`, use `action-bar.roleActions` (`Record<role, action-id[]>`) — see [02-widget-catalog.md → action-bar](02-widget-catalog.md#action-bar).
 
 ---
 

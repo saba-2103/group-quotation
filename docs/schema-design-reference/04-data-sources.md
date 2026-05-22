@@ -11,7 +11,7 @@ interface DataSourceConfig {
   api?: {
     endpoint: string;
     method: "GET" | "POST" | "PUT" | "DELETE";
-    params?: Record<string, any>;
+    params?: Record<string, any>;                      // Values may be primitives, objects, or arrays
   };
   refreshInterval?: number;                            // ms; fixed-interval polling
   pollSchedule?: {                                     // tiered backoff polling
@@ -21,7 +21,9 @@ interface DataSourceConfig {
     maxDurationMs?: number;
   };
   stopWhen?: Record<string, unknown>;                  // JSONLogic predicate; stops polling early
-  valueKey?: string;                                   // Extract a nested response property
+  valueKey?: string;                                   // Extract a top-level response property
+  dataPath?: string;                                   // Dotted path to drill into the response (consumed by data-table)
+  parseJson?: boolean;                                 // JSON.parse the value at dataPath if it's a string
   stateDependencies?: string[];                        // useWidgetState keys that trigger refetch
 }
 ```
@@ -66,7 +68,47 @@ Backends often wrap responses: `{ data: [...] }`, `{ items: [...], total: 123 }`
 
 `data-table` (and most other widgets) will consume `response.items` instead of `response`. Without `valueKey`, the widget tries to use the whole response — which for `data-table` only works when the response is a bare array.
 
-⚠️ `valueKey` is **a single property name**, looked up via bracket access (`jsonData[valueKey]`). **Dotted paths (`"data.items"`) are NOT traversed** — they're treated as literal keys and will silently miss. If your response is nested deeper than one level, either change the backend shape or pre-process client-side.
+⚠️ `valueKey` is **a single property name**, looked up via bracket access (`jsonData[valueKey]`). **Dotted paths (`"data.items"`) are NOT traversed** by `useSmartQuery`. If you need to drill into a deeper path for a data-table, use `dataPath` + `parseJson` instead (next section).
+
+---
+
+## `dataPath` + `parseJson` — drilling into deeper / stringified payloads
+
+`data-table` consumes two extra fields on `DataSourceConfig` (via `useDataTable`):
+
+- **`dataPath`** — a dotted path traversed inside the fetched response to locate the rows array. Mirrors the per-field `accessorKey` walker that `key-value-grid` already uses.
+- **`parseJson`** — when true and the value at `dataPath` is a string, the value is `JSON.parse`d before being treated as rows. Backend DTOs that ship escaped JSON (e.g. `estimatedPremium.byPlanJson` on a Quote) become tabular without a custom renderer.
+
+```json
+{
+  "id": "premium-breakdown",
+  "type": "data-table",
+  "dataSource": {
+    "api":      { "endpoint": "/api/v1/quotes/{{id}}", "method": "GET" },
+    "dataPath": "estimatedPremium.byPlanJson",
+    "parseJson": true
+  },
+  "props": { "columns": [...] }
+}
+```
+
+⚠️ Parse failure is surfaced by `useDataTable` as a `dataError` field on the hook's return — separate from `queryError`. Today the `data-table` consumer doesn't render `dataError` distinctly (the table just shows empty); the hook exposes it so a future consumer (or your custom widget) can surface a loud "response-shape regression" message. Verify with [`src/hooks/useDataTable.ts`](../../src/hooks/useDataTable.ts) and the consuming component on your branch.
+
+⚠️ `dataPath` is consumed by `data-table` only. Other widgets (e.g. `key-value-grid`) have their own field-level `parseJson` mechanism — see [02-widget-catalog.md](02-widget-catalog.md).
+
+---
+
+## Array-valued GET params
+
+When a `stateDependencies` filter (or `api.params` value) is an array, `useSmartQuery` repeats the key per value rather than serialising the array as a string:
+
+```json
+{ "stateDependencies": ["page:claims:filters"] }
+```
+
+…and the filter state writes `{ state: ["DRAFT", "SUBMITTED"] }` → the request becomes `?state=DRAFT&state=SUBMITTED` (the convention most Spring `@RequestParam List<String>` endpoints expect).
+
+Empty entries (`undefined` / `null` / `""`) are skipped silently.
 
 ---
 
@@ -299,31 +341,7 @@ A bare object. Used by `key-value-grid`, single-entity headers, and as the sourc
 
 ### Error responses
 
-Spring default (V1 standard):
-
-```json
-{
-  "timestamp": "2026-05-22T10:30:00Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Validation failed",
-  "path": "/api/v1/claims"
-}
-```
-
-`useActionHandler` reads `message` first, falls back to `error`, then HTTP statusText. Toast text comes from whichever wins.
-
-For field-level errors, the legacy `backendErrors` shape:
-
-```json
-{
-  "backendErrors": [
-    { "variable_code": "claim_no", "error_code": "REQUIRED", "error_desc": "Claim number is required" }
-  ]
-}
-```
-
-Forms map `variable_code` to field names. See [06-forms.md → Backend errors](06-forms.md#backend-errors).
+For envelope shapes (Spring default + the legacy field-level `backendErrors` envelope), see the canonical reference in [09-api-routes.md → Error responses](09-api-routes.md#error-responses). The short summary: `useActionHandler` reads `message`, then `errorCode`, then `error`, then falls back to HTTP statusText. Forms additionally map a `backendErrors[]` array to field-level errors via `variable_code` (see [06-forms.md → Backend errors](06-forms.md#backend-errors)).
 
 ---
 

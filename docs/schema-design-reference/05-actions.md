@@ -11,7 +11,7 @@ If a button, link, row, or form submission does anything in the framework, it do
 ```ts
 type ActionConfig = BaseActionConfig & (
   | { type: "navigate";              target: string; }
-  | { type: "open-modal" | "open-sheet"; target: string; }
+  | { type: "open-modal" | "open-sheet"; target: string; size?: OverlaySize; }
   | { type: "api-mutation";          api: { endpoint, method, body? };
                                      successMessage?: string;
                                      confirm?: { title, message };
@@ -29,7 +29,7 @@ interface BaseActionConfig {
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   display?: "button" | "icon" | "menu-item";
   refreshKey?: string;              // Cache invalidation
-  disabledTooltip?: string;         // If set, action always renders disabled
+  disabledTooltip?: string;         // Honoured by `action-bar`: renders disabled with this tooltip. Other widgets may ignore the field.
   props?: Record<string, any>;
 }
 ```
@@ -168,11 +168,34 @@ Open an overlay. `target` is the overlay's id — usually a form id from the for
 
 **What happens on click:**
 
-1. The handler calls `useOverlayStore.open("edit-claim-form", "modal", rowData)`.
-2. `OverlayProvider` (mounted globally in `layout.tsx`) renders `<OverlaidForm formId="edit-claim-form" />` inside a `Dialog`.
+1. The handler calls `useOverlayStore.open("edit-claim-form", "modal", rowData, action.size ? { size: action.size } : undefined)`.
+2. `OverlayProvider` (mounted globally in `layout.tsx`) renders `<OverlaidForm formId="edit-claim-form" />` inside a `Dialog` whose `max-w-*` class is picked from the size token.
 3. `OverlaidForm` looks up the form schema in `forms_registry` and renders a `form-container` with `rowData` as default field values.
 
 **`open-modal` vs `open-sheet`:** identical except the container — modal is a centred dialog, sheet slides in from the side. Use sheet for longer forms.
+
+**Overriding the width:** set `size` to one of the tokens in the `OverlaySize` union (exported from [`src/types/widget.ts`](../../src/types/widget.ts)). Maps to a Tailwind `max-w-*` class on the modal dialog, or `sm:max-w-*` on the sheet (sheets fill the viewport below the `sm` breakpoint by design). Default is `lg`.
+
+| `size` | Tailwind | Approx width |
+|--------|----------|-------------:|
+| `sm`   | `max-w-sm`  | 384px |
+| `md`   | `max-w-md`  | 448px |
+| `lg`   | `max-w-lg`  | 512px (default) |
+| `xl`   | `max-w-xl`  | 576px |
+| `2xl`  | `max-w-2xl` | 672px |
+| `3xl`  | `max-w-3xl` | 768px |
+| `4xl`  | `max-w-4xl` | 896px |
+| `5xl`  | `max-w-5xl` | 1024px |
+| `6xl`  | `max-w-6xl` | 1152px |
+| `7xl`  | `max-w-7xl` | 1280px |
+
+```json
+{
+  "type": "open-modal",
+  "target": "edit-plan-form",
+  "size": "3xl"
+}
+```
 
 See [06-forms.md → Overlaid forms](06-forms.md#overlaid-forms) for the full lifecycle.
 
@@ -283,9 +306,11 @@ To render an action visibly disabled with a hover tooltip explaining why:
 }
 ```
 
-When `disabledTooltip` is set, the action **always renders disabled** with the tooltip on hover. This pattern exists for honest UX — when backend support is missing, the user sees the button exists but understands why it doesn't work, rather than guessing.
+When `disabledTooltip` is set on an action consumed by a widget that honours it — primarily `action-bar` — the action renders disabled with the tooltip on hover. This pattern exists for honest UX: when backend support is missing, the user sees the button exists but understands why it doesn't work, rather than guessing.
 
-Inside `action-bar`, `disabledTooltip` has additional semantics: it interacts with state/role gating. See [02-widget-catalog.md → action-bar](02-widget-catalog.md#action-bar) for the precise rules.
+⚠️ Other widgets (row actions on `data-table`, header actions, form actions) **don't honour `disabledTooltip` today**. The field is on `BaseActionConfig` so every action type can carry it, but only `action-bar`'s gating logic acts on it. If you set it on a row action expecting a disabled button, you'll get a normal-looking row action.
+
+See [02-widget-catalog.md → action-bar](02-widget-catalog.md#action-bar) for the precise gating rules inside the bar.
 
 ---
 
@@ -339,7 +364,7 @@ The "Triage" button is an `api-mutation`:
 
 1. User clicks **Triage**.
 2. `ActionBar` calls `handleAction(triageAction, { id: "C-001", state: "TRIAGED", ... })`.
-3. `confirm` set → handler opens `ConfirmationDialog` via `useOverlayStore.open("confirm-triage", "dialog", { action, rowData })`.
+3. `confirm` set → handler opens `ConfirmationDialog` via `useOverlayStore.open(\`confirm-${action.id}\`, "dialog", action)` — the entire `ActionConfig` is stashed as the overlay payload; the dialog re-dispatches it on confirm with `confirm: undefined`.
 4. User clicks Confirm in the dialog.
 5. Dialog re-dispatches the action with `confirm: undefined`.
 6. Handler reaches `api-mutation` branch:

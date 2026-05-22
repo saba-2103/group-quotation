@@ -120,16 +120,39 @@ The canonical use is `action-bar.roleActions`:
 
 When the active role is `maker`, the Approve button is **hidden** (per the action-bar gating rules). When it's `checker`, the button renders.
 
-### Role-gating widgets
+### Role-gating widgets — `visibleRoles`
 
-⚠️ **Widget-level role gating is a known gap on `main`.** There's no working `layout.visibleWhen` predicate that hides a whole `section-group` based on role. Today, the two options are:
+`WidgetConfig.visibleRoles` (added on `main` by [PR #72](https://github.com/Anaira-AI/keystone-ui/pull/72)) hides a widget entirely unless the current role (from `useRole()`) is in the list. Evaluated by `WidgetRenderer` **before** `useSmartQuery` fires, so hidden widgets pay zero fetch / polling cost.
 
-1. **Gate the actions inside the section** via `action-bar.roleActions` — render the section unconditionally, but show no actions for roles that shouldn't act.
-2. **Branch in `page.tsx`** — read the role server-side (or via a server action) and render a different schema per role.
+```json
+{
+  "id": "siu-section",
+  "type": "section-group",
+  "visibleRoles": ["siu_officer"],
+  "children": [ ... ]
+}
+```
 
-For a future-friendly schema-only solution, this is one of the proposed framework changes — see [the proposal flow](../../proposals/).
+When the current role is `siu_officer` the section renders normally; for any other role it (and its dataSource, if any) is skipped.
+
+**Common patterns:**
+
+```json
+// Section visible only to claims supervisors:
+{ "type": "section-group", "visibleRoles": ["claims_supervisor"], "children": [...] }
+
+// Tab visible to two roles:
+{ "type": "tab-panel", "visibleRoles": ["claims_adjuster", "claims_supervisor"], "children": [...] }
+
+// Single button visible only to checkers (alternative to action-bar.roleActions):
+{ "type": "action-bar", "visibleRoles": ["checker"], "props": { ... } }
+```
+
+⚠️ **`visibleRoles: []` (empty array)** is treated as "no role can see it" — caller most likely meant to omit the prop entirely. Omitting the prop renders the widget for every role.
 
 ⚠️ Don't put security-sensitive logic in the frontend role-gate. The backend still has to enforce permissions — the frontend hides UI, the backend rejects requests. **Both layers, always.**
+
+**Existing alternative:** for fine-grained per-button gating inside one widget, use `action-bar.roleActions` (map of role → action ids). `visibleRoles` is for the whole-widget case; `roleActions` is for the action-by-action case. Use both together when needed.
 
 ---
 
@@ -143,7 +166,7 @@ The framework uses [json-logic-js](https://jsonlogic.com) for declarative predic
 
 The wrapper is [`evaluateCondition(condition, contextData)`](../../src/lib/conditions.ts) — returns `true` if `condition` is null/undefined (default-visible), otherwise the JSONLogic result.
 
-⚠️ **`layout.visibleWhen` is NOT implemented on `main`.** Some feature branches add a `visibleWhen` check inside `WidgetRenderer`, but the version on `main` only honours `layout.hidden`. If you write a widget config with `layout.visibleWhen`, the widget always renders. For widget-level conditional rendering today, gate at the schema level (omit the widget) or via `layout.hidden` toggled by a sibling action. The proposed `layout.visibleWhen` is tracked under `proposals/`.
+⚠️ **`WidgetConfig.visibleWhen` is a typed prop but not yet consumed on `main`.** The type exists on `WidgetConfig` (see [`src/types/widget.ts`](../../src/types/widget.ts)) but no widget on `main` evaluates it as of PR #72. A `TabsContainer` consumer that filters child tabs by `visibleWhen` against its own fetched `dataSource` ships on `feat/new-buisiness` ([`src/components/widgets/container/TabsContainer.tsx`](../../src/components/widgets/container/TabsContainer.tsx) on that branch) and will be the first consumer when it lands on `main`. For whole-widget gating today, use `visibleRoles` (above) or `layout.hidden`.
 
 ### Basic syntax
 
@@ -220,11 +243,14 @@ The available variables depend on where the condition is evaluated:
 { "stopWhen": { "in": [{ "var": "state" }, ["ACTIVE", "FAILED", "CANCELLED"]] } }
 ```
 
-### Role-gating without `layout.visibleWhen`
+### Role-gating cheat-sheet
 
-Since widget-level `visibleWhen` is not implemented on `main`, role-gating happens through `action-bar.roleActions` for action buttons (see [02-widget-catalog.md → action-bar](02-widget-catalog.md#action-bar)). For role-specific sections (e.g. "SIU only"), the canonical approach today is either:
-- Render the section unconditionally and gate the actions inside it via `roleActions`, or
-- Branch in the page-level `page.tsx` based on a server-side role read.
+| Goal | Use |
+|------|-----|
+| Hide a whole widget for a role | `visibleRoles: ["role-a", "role-b"]` on the widget |
+| Hide individual buttons inside an `action-bar` | `action-bar.roleActions: { role: [action-id] }` |
+| Mix both (hide the whole bar AND filter actions inside) | `visibleRoles` on the bar + `roleActions` inside its props |
+| Role-aware page-level branching (different schemas per role) | Read role server-side in `page.tsx` and pick the schema |
 
 ### Debugging conditions
 
@@ -283,7 +309,7 @@ The action-bar combines state-gating (state → allowed actions) with role-gatin
 
 1. **Forgetting role lives under `"global:current-role"`, with the colon.** Type it exactly. A typo silently makes the condition fail (variable not found = undefined = falsy).
 
-2. **Expecting `layout.visibleWhen` to work.** It's documented in some feature branches and proposals but is **not** implemented in `WidgetRenderer` on `main`. Use `field.visibleWhen` (forms), `rowAction.visible` (table rows), or `action-bar.roleActions`/`stateActions` (action buttons). Section-level conditional rendering is a known gap.
+2. **Confusing `WidgetConfig.visibleWhen` (data-conditioned, not honoured on `main` yet) with `WidgetConfig.visibleRoles` (role-conditioned, renderer-honoured).** `visibleRoles` hides any widget for any non-listed role at the renderer level — it works today. `visibleWhen` is a typed field but no consumer on `main` evaluates it post-PR-#72; a `TabsContainer` consumer lives on `feat/new-buisiness`. For role-gated section visibility today, use `visibleRoles`.
 
 3. **Conditions referencing variables not in scope.** `field.visibleWhen` only sees form values; `rowAction.visible` only sees row data. There's no way to reach a sibling widget's data from inside a JSONLogic predicate.
 
