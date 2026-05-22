@@ -65,3 +65,57 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
 **Verdict:** The skill is materially more effective than reading SKILL.md and hand-building. Three of the four meaningful failure classes from the first run closed automatically (helm lint, Sonar, Checkov). The remaining failures are repo bugs (broken tests) or org settings (GHAS) that no scaffolding skill can fix.
 
 **Architectural gap unchanged:** `03-deploy-dev` still assumes EKS+IRSA, keystone-ui dev cluster is still K3s. Existing per-PR preview deploy still has no platform equivalent. Both flagged in the earlier session entry.
+
+### 2026-05-22 — Resolve remaining CI failures on feat/cicd-skill-trial (worktree)
+
+**Goal:** Fix unit-test failures at the root, clear pre-commit findings, port per-PR preview deploy (Option A), prove the pipeline goes green end-to-end now that GHAS is enabled and AWS_CI_ROLE_ARN/SONAR_TOKEN org secrets exist.
+
+**Worktree:** All changes done in `~/dev_anaira/sandbox/keystone-ui-cicd-trial` (git worktree on `feat/cicd-skill-trial`) so the other active session on `docs/schema-design-reference` was not disturbed.
+
+**Run:** [run 26282145180](https://github.com/Anaira-AI/keystone-ui/actions/runs/26282145180) — **overall conclusion `success`**. First green pipeline; image is pushed to ECR with cosign signature.
+
+**Test failure investigation — every "test bug" was a real component bug.** 92 failing tests → 220/220 passing, no skips. Root causes fixed:
+
+1. **FormControl Slot couldn't reach the input.** `FormControl` (Radix Slot) tried to merge `id={formItemId}` into `<FieldRenderer>`, but FieldRenderer is a plain function component that didn't forward the prop, so `<FormLabel htmlFor={formItemId}>` always pointed at a non-existent id. Fixed FieldRenderer (and each variant — Input, Textarea, Select, Radio, Checkbox, Date, api-dropdown) to read `formItemId`/`formDescriptionId`/`formMessageId`/`error` from `useFormField()` and apply them to the focusable element.
+2. **Submit button stayed disabled while form was invalid.** `disabled={!isValid || isSubmitting}` meant users on an empty required form couldn't even click submit, so they never saw validation errors. Now `disabled={isSubmitting}`.
+3. **Cancel/non-submit action buttons triggered form submission.** `<Button>` defaults to `type="submit"` inside a `<form>`. Added `type="button"` on all `ActionButton` render paths.
+4. **DataTable rendered both mobile and desktop views.** Tailwind `hidden md:block` only hides via CSS media queries — jsdom doesn't apply them, so testing-library saw both copies. Also doubled production DOM weight. Switched to `useIsMobile()` conditional rendering; added `window.matchMedia` polyfill to `setupTests.ts`.
+5. **TablePagination always rendered nav buttons** even with 1 page. Hidden when `pageCount <= 1`.
+6. **ViewField didn't auto-detect yes/no selects.** Selects with exactly `{yes, no}` options now render as `<Badge>`. Same for checkboxes (boolean semantics).
+7. **FormContainer used inline `gridTemplateColumns` style** instead of Tailwind `md:grid-cols-N`, breaking responsive layout. Now uses literal `md:grid-cols-{1..4}` classes (Tailwind JIT-detectable) with inline-style fallback for N>4. Same pattern for `col-span-N`.
+8. **Form submit was silent when no submitAction was configured.** Now logs payload via `console.log('Form Submitted (No Endpoint configured):', payload)` so schema authors can see what would be sent.
+
+**Test rewrites (architecture moved, not skips):**
+- `FilterBar.unit.test.tsx` — component was refactored from URL params (`router.push`) to widget-state actions via `useActionHandler` + `useWidgetState`. Rewrote the 7 affected tests to mock the new abstractions and assert on `update-widget-state` dispatches.
+- `CreateQuotationForm.test.tsx` — `CalendarDatePicker` is popover-based, so `user.type()` can't drive it. Added `makeConfigWithDateDefaults()` helper that injects `defaultValue` on date fields for submission-flow tests. Picker UX is covered in dedicated CalendarDatePicker tests.
+- DataTable date test updated to assert tenant-formatted `15/06/2024` instead of raw ISO `2024-06-15`.
+
+**Pre-commit findings:** Cleared via sed-driven trailing-whitespace + EOF-newline pass across ~100 source/config files. No semantic changes. CI's pre-commit still reports 1 finding from a file my sed pass missed; non-blocking (`continue-on-error: true`).
+
+**Per-PR preview deploy ported (Option A):** Added `deploy-preview` job to the new caller `ci-cd.yml` as a sibling to platform `deploy-dev`. Uses the EKS auth path (`AWS_DEPLOY_ROLE_ARN_DEV` + `aws eks update-kubeconfig`) since the cluster is migrating off K3s. Migrated `preview-cleanup.yml` to the same EKS pattern. Decision recorded: promote to platform `04-deploy-preview.yml` only when a second service asks for the pattern.
+
+**Final state — pipeline jobs:**
+
+| Job | Conclusion | Notes |
+|---|---|---|
+| pre-commit | ❌ (informational) | 1 trailing-whitespace finding my sed missed |
+| Build | ✅ | |
+| Unit Tests | ✅ | **220/220 passing** |
+| SAST (CodeQL) | ✅ | GHAS now enabled |
+| Gitleaks | ✅ | |
+| Helm Lint | ✅ | |
+| SonarQube | ❌ (informational) | Quality gate failed — needs review of issues on dashboard |
+| Checkov | ❌ (informational) | 1 Dockerfile finding remains, 89/89 k8s checks pass |
+| OWASP DC | ❌ (informational) | High-CVSS deps in node_modules |
+| Image Build | ✅ | First time it actually built |
+| Container Scan (Trivy) | ❌ (informational) | HIGH/CRITICAL CVEs in base image |
+| **Publish (ECR + cosign)** | ✅ | **First cosign-signed image pushed** |
+| deploy-preview | ⏭ skipped | Push event, not PR |
+| deploy-dev | ⏭ skipped | Not on dev/develop branch |
+
+**Open items (next session):**
+1. Trivy HIGH/CRITICAL CVEs — likely from `node:24-alpine` base image. Either bump to a fresher tag or accept the risk per policy.
+2. SonarQube quality gate — open dashboard, triage findings.
+3. OWASP DC — `npm audit fix` pass, or document accepted CVEs.
+4. Pre-commit remainder — actually run `pre-commit run --all-files` locally with `pre-commit` installed; one file slipped through the sed pass.
+5. Open a PR from `feat/cicd-skill-trial` to `main` to verify `deploy-preview` actually deploys to EKS.
