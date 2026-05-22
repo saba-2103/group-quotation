@@ -1,0 +1,30 @@
+# Shared ConfigMap — env vars common to all roles (or the single deployment)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "keystone-ui.fullname" . }}
+  labels:
+    {{- include "keystone-ui.labels" . | nindent 4 }}
+data:
+  {{- range $key, $val := .Values.env }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}
+{{- if .Values.roles }}
+# ── Per-Role ConfigMaps (role-specific env var overrides) ────────────
+{{- range $roleName, $role := .Values.roles }}
+{{- if and $role.enabled $role.env }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "keystone-ui.fullname" $ }}-{{ $roleName }}
+  labels:
+    {{- include "keystone-ui.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $roleName }}
+data:
+  {{- range $key, $val := $role.env }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

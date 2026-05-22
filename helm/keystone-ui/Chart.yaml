@@ -1,6 +1,6 @@
 apiVersion: v2
 name: keystone-ui
-description: A Helm chart for Keystone UI Next.js application
+description: Keystone UI Next.js application
 type: application
 version: 0.1.0
-appVersion: "1.0.0"
+appVersion: "latest"

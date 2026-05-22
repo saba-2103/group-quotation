@@ -1,3 +1,88 @@
+{{- if .Values.roles }}
+# ── Multi-Role: one Deployment per enabled role ──────────────────────
+{{- range $roleName, $role := .Values.roles }}
+{{- if $role.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keystone-ui.fullname" $ }}-{{ $roleName }}
+  labels:
+    {{- include "keystone-ui.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $roleName }}
+spec:
+  replicas: {{ $role.replicaCount | default $.Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "keystone-ui.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $roleName }}
+  template:
+    metadata:
+      labels:
+        {{- include "keystone-ui.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $roleName }}
+    spec:
+      serviceAccountName: {{ include "keystone-ui.serviceAccountName" $ }}
+      automountServiceAccountToken: {{ $.Values.serviceAccount.automountServiceAccountToken }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ $roleName }}
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          {{- if $role.port }}
+          ports:
+            - name: http
+              containerPort: {{ $role.port }}
+              protocol: TCP
+          {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "keystone-ui.fullname" $ }}
+            {{- if $role.env }}
+            - configMapRef:
+                name: {{ include "keystone-ui.fullname" $ }}-{{ $roleName }}
+            {{- end }}
+          {{- if $role.port }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ $role.port }}
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ $role.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- end }}
+          resources:
+            {{- toYaml (default $.Values.resources $role.resources) | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}
+{{- end }}
+{{- else }}
+# ── Single-Role: standard single Deployment ─────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,9 +90,7 @@ metadata:
   labels:
     {{- include "keystone-ui.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "keystone-ui.selectorLabels" . | nindent 6 }}
@@ -16,44 +99,41 @@ spec:
       labels:
         {{- include "keystone-ui.selectorLabels" . | nindent 8 }}
     spec:
-      {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+      serviceAccountName: {{ include "keystone-ui.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ required "image.repository is required" .Values.image.repository }}:{{ required "image.tag is required" .Values.image.tag }}"
+        - name: keystone-ui
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.targetPort }}
+              containerPort: 3000
               protocol: TCP
-          env:
-            - name: NODE_ENV
-              value: {{ .Values.env.NODE_ENV | quote }}
-            - name: PORT
-              value: {{ .Values.env.PORT | quote }}
-            - name: HOSTNAME
-              value: {{ .Values.env.HOSTNAME | quote }}
-            - name: GROUP_PAS_BACKEND_URL
-              value: {{ .Values.env.GROUP_PAS_BACKEND_URL | quote }}
-          {{- if .Values.healthCheck.enabled }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "keystone-ui.fullname" . }}
           livenessProbe:
-            {{- toYaml .Values.healthCheck.livenessProbe | nindent 12 }}
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
-            {{- toYaml .Values.healthCheck.readinessProbe | nindent 12 }}
-          {{- end }}
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}
