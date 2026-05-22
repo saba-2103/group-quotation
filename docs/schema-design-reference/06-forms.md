@@ -60,21 +60,27 @@ When the user submits, the form values become `api.body` automatically — you d
 
 ## Field types
 
+The runtime resolves the `type` string through two maps in [`FieldRenderer.tsx`](../../src/components/widgets/forms/formContainer/FieldRenderer.tsx):
+
 | `type` | Renders | Value type | Notes |
 |--------|---------|------------|-------|
-| `text` | text input | string | Default |
-| `number` | number input | number | Min/max validation supported |
-| `email` | email input | string | HTML5 email validation |
-| `url` | url input | string | |
+| `text` (default) | text input | string | Fallback when `type` is missing or unknown |
+| `number` | number input | number | `min`/`max` validations apply to numeric value |
+| `email` | email input | string | HTML5 `type=email` browser validation only |
 | `password` | password input | string | Masked input |
+| `tel` | tel input | string | HTML5 `type=tel` |
+| `url` | url input | string | HTML5 `type=url` browser validation only |
 | `textarea` | textarea | string | Multi-line |
 | `date` | date picker | ISO date string | Single-date only |
 | `select` | dropdown | string (value) | Requires `options` or `dataSource` |
 | `radio` | radio group | string (value) | Requires `options` |
 | `checkbox` | checkbox | boolean | |
-| `file` | file upload | File | See [11-cookbook.md → File uploads](11-cookbook.md) |
+| `api-dropdown` | searchable dropdown | string | Options fetched from API; uses the shared Dropdown control |
+| `api-dropdown-transactional` | searchable dropdown | string | Variant of `api-dropdown` for transactional lookups |
 
-⚠️ For date *ranges*, use two `date` fields (`startDate` and `endDate`) and validate the relationship via JSONLogic on `visibleWhen` of dependent fields. There's no built-in range type.
+⚠️ **No `file` field type today.** It's a common ask but not implemented — passing `type: "file"` falls through to a plain text input. File uploads need to be implemented as a custom field type or via a separate widget; see the proposal flow.
+
+⚠️ For date *ranges*, use two `date` fields (`startDate` and `endDate`) — there's no built-in range type.
 
 ---
 
@@ -113,24 +119,23 @@ The `validations` array attaches rules to a field. Each rule has a `rule` name, 
 ```json
 "validations": [
   { "rule": "required", "message": "Email is required" },
-  { "rule": "email",    "message": "Must be a valid email" }
+  { "rule": "min", "value": 5, "message": "Too short" }
 ]
 ```
 
-Supported rules:
+Supported rules (the only entries in [`VALIDATION_APPLIERS`](../../src/components/widgets/forms/formContainer/utils.ts)):
 
 | `rule` | `value` | What it checks |
 |--------|---------|----------------|
-| `required` | — | Field is non-empty |
-| `min` | number | Minimum value (numbers) or length (strings/arrays) |
+| `required` | — | String field is non-empty |
+| `min` | number | Minimum value (numbers) or length (strings) |
 | `max` | number | Maximum value or length |
-| `pattern` | regex string | Matches regex |
-| `email` | — | Valid email |
-| `url` | — | Valid URL |
 
-Compose rules — `required` + `min: 8` + `pattern` on a password field is fine. Order doesn't matter for evaluation; messages are returned in the same order.
+⚠️ **`pattern`, `email`, `url` are NOT enforced as validation rules** on `main`. The `email` / `url` *field types* trigger HTML5 browser validation (which the user can bypass), but a `validations: [{ rule: "email" }]` entry silently no-ops. If you need regex / format checks today, file a proposal to extend `VALIDATION_APPLIERS` — don't put them in the schema expecting them to fire.
 
-⚠️ Rules are converted to a Zod schema at runtime via `buildFormSchema` in [`useFormContainer`](../../src/components/widgets/forms/formContainer/useFormContainer.ts). If you need a custom rule (e.g., "PAN format"), use `pattern` with a regex — don't add new rule names without extending the builder.
+⚠️ **`required` on a `number` field also no-ops** — the implementation guards on `isStringType`. For numeric `required`, set `min: 1` (or a domain-appropriate floor) instead.
+
+Rules are converted to a Zod schema at runtime via `buildFormSchema` in [`src/components/widgets/forms/formContainer/utils.ts`](../../src/components/widgets/forms/formContainer/utils.ts).
 
 ---
 
@@ -385,7 +390,6 @@ A full create-claim flow:
         "label": "Claimed Amount",
         "type": "number",
         "validations": [
-          { "rule": "required", "message": "Required" },
           { "rule": "min", "value": 1, "message": "Amount must be greater than 0" }
         ]
       },

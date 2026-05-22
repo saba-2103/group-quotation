@@ -22,11 +22,6 @@ This catalog is grouped by category. Skim the index, jump to the widget you need
 **Data display** — read-only data rendering
 - [`data-table`](#data-table) — sortable / filterable / paginated table
 - [`key-value-grid`](#key-value-grid) — read-only entity-summary grid
-- [`card-grid`](#card-grid) — array of cards
-- [`plan-card`](#plan-card) — specialised plan/product card
-- [`activation-counter`](#activation-counter) — counter widget for activation flows
-- [`editable-table`](#editable-table) — inline-editable table
-- [`dmn-decision-table`](#dmn-decision-table) — decision table viewer
 
 **Forms** — user input
 - [`form-container`](#form-container) — the dynamic form
@@ -303,14 +298,16 @@ Field types in `props` are simplified for readability. The authoritative types l
 {
   id: string;
   header: string;
-  accessorKey: string;             // Supports dotted paths and array indices: "vehicle.registration_no", "claimants.0.name"
-  type?: "badge" | "currency" | "date" | "link" | "list" | "state-badge";
+  accessorKey: string;             // Plain key. Dotted-path / array-index support depends on table version — verify with the schema you're adapting.
+  type?: "badge" | "status" | "currency" | "number" | "date" | "link" | "state-badge";
   cellType?: ...;                  // Alias for type in some configs
-  valueMapping?: BadgeValueMapping[];  // Required for type: "badge"
-  linkRoute?: string;              // For type: "link" — supports :id substitution
+  valueMapping?: BadgeValueMapping[];  // Required for type: "badge" | "status"
+  linkRoute?: string;              // For type: "link" — supports :id substitution from row data
   entity?: "quote" | "proposal" | "policy" | "member";  // For type: "state-badge"
+  currency?: string;               // Override for type: "currency" (default "USD")
   sortable?: boolean;
   filterable?: boolean;
+  filterType?: "text" | "select" | "date";
   frozen?: "left" | "right";
   align?: "left" | "center" | "right";
   helpText?: string;
@@ -319,7 +316,19 @@ Field types in `props` are simplified for readability. The authoritative types l
 
 **BadgeValueMapping:**
 ```ts
-{ value: string; label: string; color?: "success" | "warning" | "error" | "info" | "grey"; variant?: string }
+{ value: string; label: string; color?: "success" | "warning" | "error" | "info" | "secondary" | "default"; variant?: string }
+```
+
+⚠️ `color` only matches the keys in `BADGE_COLOR_TO_VARIANT` ([src/components/widgets/data/DataTable/constants.ts](../../src/components/widgets/data/DataTable/constants.ts)). Unmapped values (`"grey"`, `"teal"`, etc.) fall back to `outline`. Either use one of the listed colours or extend the constant.
+
+**Per-row action visibility:** Row actions can carry a `visible` JSONLogic predicate evaluated against the row's data. Useful for "delete is only visible on non-archived rows", etc.
+
+```json
+"rowActions": [
+  { "id": "delete", "label": "Delete", "type": "api-mutation",
+    "visible": { "!=": [{ "var": "status" }, "ARCHIVED"] },
+    "api": { ... } }
+]
 ```
 
 **Example:**
@@ -338,7 +347,8 @@ Field types in `props` are simplified for readability. The authoritative types l
       { "id": "customer", "header": "Customer", "accessorKey": "claimants.0.name" },
       { "id": "state", "header": "State", "accessorKey": "state", "type": "badge", "valueMapping": [
         { "value": "TRIAGED", "label": "Triaged", "color": "info" },
-        { "value": "SETTLED", "label": "Settled", "color": "success" }
+        { "value": "SETTLED", "label": "Settled", "color": "success" },
+        { "value": "CLOSED",  "label": "Closed",  "color": "secondary" }
       ]},
       { "id": "amount", "header": "Amount", "accessorKey": "claimed_amount", "type": "currency" }
     ],
@@ -348,11 +358,12 @@ Field types in `props` are simplified for readability. The authoritative types l
 ```
 
 **Gotchas:**
-- ⚠️ Nested accessors (`vehicle.registration_no`, `claimants.0.name`) require the nested-accessor support in DataTable. If you're rendering nothing, check the accessor against the actual response shape via DevTools.
-- `linkRoute` and `rowActions[].target` both support `:paramName` substitution from row data (via `substituteEndpointParams`). Use `:id` for the row PK, or `:claim_id` etc. for non-`id` PKs.
+- ⚠️ Nested accessors (`vehicle.registration_no`, `claimants.0.name`) need DataTable's nested-accessor support — present in some branches, absent in others. Verify against [`src/components/widgets/data/DataTable/index.tsx`](../../src/components/widgets/data/DataTable/index.tsx) on your branch. If you render nothing, check the response shape in DevTools.
+- `linkRoute` and `rowActions[].target` both support `:paramName` substitution from row data (via [`substituteEndpointParams`](../../src/lib/endpointUtils.ts)). Use `:id` for the row PK, or `:claim_id` etc. for non-`id` PKs.
 - Filters only appear if columns have `filterable: true` AND a `filters` prop is set on the table.
-- Mobile (`<md`) auto-swaps to a card list view; columns marked `hideOnMobile` get omitted there.
-- 💡 For backend-paginated tables, point `dataSource` at a paginated endpoint and read `valueKey`. The framework currently does client-side pagination over the returned set; for true server-side, the `useDataTable` hook needs extension.
+- Mobile (`<md`) auto-swaps to a card list view.
+- 💡 Pagination: `useDataTable` wires TanStack Table's `getPaginationRowModel()`, so the page-size selector and page navigation work over whatever rows came back. Whether that's a single page (backend already sliced) or the whole list (backend returned everything) depends on your endpoint — pick one model per table and document it on the endpoint.
+- 💡 **Exports come free.** Every data-table renders CSV / XLSX / PDF export buttons in its header. Implemented by [`useTableExport`](../../src/hooks/useTableExport.ts) — no schema flag to opt in.
 
 ---
 
@@ -419,17 +430,9 @@ Field types in `props` are simplified for readability. The authoritative types l
 
 ---
 
-### `card-grid`, `plan-card`, `activation-counter`, `editable-table`, `dmn-decision-table`
+### Feature-branch widgets — not on main
 
-These are present in the codebase but are **specialised widgets** used in narrow contexts:
-
-- **`card-grid`** — a grid of plan/product cards used in quote-flow plan selection
-- **`plan-card`** — the individual card used by `card-grid`
-- **`activation-counter`** — used on the policy-activation flow to show pending member counts
-- **`editable-table`** — inline-editable table for member onboarding
-- **`dmn-decision-table`** — read-only DMN viewer
-
-If you need one of these, read the component source directly — they have feature-specific props that won't generalise. Don't reach for them outside their original module without proposing the extension.
+Some feature branches add domain-specific widgets (e.g. `card-grid`, `plan-card`, `activation-counter`, `editable-table`, `dmn-decision-table`, `info-card`, `accordion-group`, `communications-card-group`, `maker-checker-panel`). These are not registered on `main` and won't render if you reference them. If you need one, read the component source on its originating branch and propose it through `/propose` for inclusion in the framework — see the [propose flow](../../proposals/).
 
 ---
 
@@ -706,7 +709,7 @@ Inside forms, use a field with `type: "select"` instead.
 
 **Gotchas:**
 - ⚠️ The `stateField` default of `"state"` doesn't work for Quote (which exposes `status`). Override per entity.
-- ⚠️ Behaviour for state-gated actions has historically varied (some versions disable-with-tooltip, some hide). Check the version in your branch.
+- ⚠️ Behaviour for state-gated actions has changed across versions — some branches hide, others disable-with-tooltip. Read [`src/components/widgets/actions/ActionBar.tsx`](../../src/components/widgets/actions/ActionBar.tsx) on your branch to confirm what's shipping.
 - `disabledTooltip` exists for explicit "backend doesn't support this yet" messages. Don't reuse it for state gating.
 
 ---

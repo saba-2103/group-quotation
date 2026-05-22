@@ -9,7 +9,7 @@ Step-by-step recipes for the common tasks you'll do in this framework. Each reci
 1. [New module from scratch](#recipe-1--new-module-from-scratch)
 2. [Add a list page with filters](#recipe-2--list-page-with-filters)
 3. [Add a detail page with tabs](#recipe-3--detail-page-with-tabs)
-4. [Add a create form](#recipe-4--create-form)
+4. [Standalone form (not in a modal)](#recipe-4--standalone-form-not-in-a-modal)
 5. [Add an edit form (overlay)](#recipe-5--edit-form-overlay)
 6. [Add a workflow action with confirmation](#recipe-6--workflow-action-with-confirmation)
 7. [Add role-gated actions](#recipe-7--role-gated-actions)
@@ -69,7 +69,7 @@ Build a "Vendors" module: list page + detail page + create form.
           ]},
           { "id": "status",    "header": "Status", "accessorKey": "status", "type": "badge", "valueMapping": [
             { "value": "ACTIVE",   "label": "Active",   "color": "success" },
-            { "value": "INACTIVE", "label": "Inactive", "color": "grey" }
+            { "value": "INACTIVE", "label": "Inactive", "color": "secondary" }
           ]},
           { "id": "created",   "header": "Created", "accessorKey": "created_at", "type": "date" }
         ],
@@ -260,7 +260,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 ### Step 5 — Add the menu entry
 
-Edit `src/mocks/<app>/config/app-config-mock.ts` (or equivalent) and append to `navigation.menuItems`:
+Edit `src/mocks/original/<app>/config/app-config-mock.ts` (e.g. `group-insurance` or `auto-claims`) and append to `navigation.menuItems`:
 
 ```ts
 { id: 'vendors', title: 'Vendors', url: '/vendors', icon: 'Building2' }
@@ -355,15 +355,59 @@ Each tab file is a `tab-panel`:
 
 ---
 
-## Recipe 4 — Create form
+## Recipe 4 — Standalone form (not in a modal)
 
-See [Recipe 1, step 3](#recipe-1--new-module-from-scratch) — same pattern.
+Most forms are overlaid (Recipe 5). Sometimes you want a form *on the page itself* — a search form, a configuration screen, a settings page.
 
-Key reminders:
-- `submitAction: true` on the submit action
-- `successMessage` so the user sees confirmation
-- `refreshKey` matching the list endpoint
-- `onSuccess: [{ "type": "trigger-event", "target": "<form-id>" }]` to close the modal
+```json
+{
+  "id": "vendor-search-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6", "gap": 6 },
+  "children": [
+    {
+      "id": "header",
+      "type": "page-header",
+      "props": { "title": "Vendor Search" }
+    },
+    {
+      "id": "search-form",
+      "type": "form-container",
+      "props": {
+        "columns": 3,
+        "fields": [
+          { "id": "name", "name": "name", "label": "Vendor Name", "type": "text" },
+          { "id": "category", "name": "category", "label": "Category", "type": "select", "options": [
+            { "value": "GARAGE", "label": "Garage" },
+            { "value": "SURVEYOR", "label": "Surveyor" }
+          ]},
+          { "id": "active_only", "name": "active_only", "label": "Active only", "type": "checkbox" }
+        ],
+        "actions": [
+          { "id": "search", "label": "Search", "type": "update-widget-state", "submitAction": true,
+            "props": { "key": "page:vendors:search-criteria", "operation": "set" } }
+        ]
+      }
+    },
+    {
+      "id": "results",
+      "type": "data-table",
+      "dataSource": {
+        "api": { "endpoint": "/api/v1/vendors/search", "method": "POST" },
+        "stateDependencies": ["page:vendors:search-criteria"]
+      },
+      "props": { "columns": [ ... ] }
+    }
+  ]
+}
+```
+
+Differences from an overlaid form:
+- No `open-modal` trigger — the form is part of the page.
+- The submit action writes to `useWidgetState` (or fires a mutation that updates the URL), and a sibling widget consumes the result via `stateDependencies`.
+- No `onSuccess: trigger-event` — there's no overlay to close.
+
+⚠️ For overlaid create forms (the more common case), use Recipe 5.
 
 ---
 
@@ -662,13 +706,54 @@ If composition doesn't work, file a proposal first.
 
 ## Recipe 13 — Wire shared filter state
 
-See [Recipe 2](#recipe-2--list-page-with-filters). The pattern:
+The publish/subscribe pattern between a `filter-bar` and a `data-table`:
 
-1. `filter-bar` declares `stateKey: "page:<module>:filters"`.
-2. `data-table` declares `stateDependencies: ["page:<module>:filters"]`.
-3. The filter state automatically becomes part of GET params (or POST body) when the table refetches.
+```json
+{
+  "id": "filters",
+  "type": "filter-bar",
+  "props": {
+    "stateKey": "page:vendors:filters",
+    "filters": [
+      { "id": "category", "label": "Category", "type": "select", "field": "category", "options": [...] },
+      { "id": "status",   "label": "Status",   "type": "select", "field": "status",   "options": [...] }
+    ]
+  }
+},
+{
+  "id": "vendors-table",
+  "type": "data-table",
+  "dataSource": {
+    "api": { "endpoint": "/api/v1/vendors", "method": "GET" },
+    "stateDependencies": ["page:vendors:filters"]
+  },
+  "props": { "columns": [...] }
+}
+```
 
-To clear filters on navigation away, use `useWidgetState.resetKey()` in the page's unmount logic — or just let it persist (which is what most modules do).
+**What happens:**
+
+1. User picks a filter. `filter-bar` calls `setValue("page:vendors:filters", { category: "GARAGE" })`.
+2. `useSmartQuery` sees `page:vendors:filters` in `stateDependencies`. The state snapshot becomes part of the React Query key.
+3. The query refetches. State values are flattened into GET params: `/api/v1/vendors?category=GARAGE`.
+4. Backend returns filtered list; table re-renders.
+
+**Naming conventions for `stateKey`:**
+
+- `page:<module>:filters` for list-page filter state
+- `entity:<id>:draft` for in-progress entity edits
+- `wizard:<id>:step` for multi-step flows
+
+**Clearing state:** filter state persists until reload by default. If you want a Clear button:
+
+```json
+{
+  "id": "clear",
+  "label": "Clear filters",
+  "type": "update-widget-state",
+  "props": { "key": "page:vendors:filters", "operation": "set", "value": {} }
+}
+```
 
 ---
 
@@ -740,7 +825,7 @@ Use `tabs-container` with `hasWorkflow: true`:
 
 The Complete button on the last tab fires a `trigger-event` action — wire your overlay or page to listen for it (typically through a follow-up mutation that finalises the workflow).
 
-For non-trivial workflows, prefer **one form with conditional fields** over **multi-step tabs**. The framework gives you `visibleWhen` for this exact case; tabs add navigation overhead.
+For non-trivial workflows, prefer **one form with conditional fields** over **multi-step tabs**. The framework gives you `field.visibleWhen` for this exact case; tabs add navigation overhead.
 
 ---
 

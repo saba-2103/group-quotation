@@ -10,10 +10,13 @@ The framework uses the Next.js App Router. Each URL maps to a `page.tsx` file:
 
 | URL | File | Schema imported |
 |-----|------|----------------|
-| `/claims` | `src/app/claims/page.tsx` | `schemas/claims-list.json` |
-| `/claims/[id]` | `src/app/claims/[id]/page.tsx` | `schemas/claims-detail.json` |
 | `/quotations` | `src/app/quotations/page.tsx` | `schemas/quotations.json` |
 | `/quotations/[id]` | `src/app/quotations/[id]/page.tsx` | `schemas/quotations-detail.json` |
+| `/claims` | `src/app/claims/page.tsx` | `schemas/claims-list.json` |
+| `/accounting` | `src/app/accounting/page.tsx` | `schemas/accounting.json` |
+| `/payout` | `src/app/payout/page.tsx` | `schemas/payout.json` |
+
+Quotations is the most fully-wired module on `main` (list + `[id]` detail + tabs + forms) — use it as the canonical reference when in doubt. Other modules may not have a detail page yet; check `src/app/<module>/` before assuming a `[id]` route exists.
 
 The pages are thin — typically 30–60 lines each. They import a schema, resolve `$ref`s, substitute route params, and render via `WidgetRenderer`.
 
@@ -233,7 +236,7 @@ The function lives at [`src/lib/endpointUtils.ts`](../../src/lib/endpointUtils.t
 
 ## The page walker — current and future
 
-The walker is the most fragile piece of the routing layer. It currently lives **in each page.tsx** and recurses through:
+The walker is the most fragile piece of the routing layer. It currently lives **in each page.tsx** and a typical implementation recurses through:
 
 1. `node.dataSource?.api?.endpoint`
 2. `node.props?.actions?.[].api?.endpoint`
@@ -242,9 +245,9 @@ The walker is the most fragile piece of the routing layer. It currently lives **
 It does **not** recurse through:
 - `node.props.headerActions[].api.endpoint` (header actions on data-tables)
 - `node.props.rowActions[].api.endpoint` (row actions)
-- `node.props.items[].children` (e.g., `accordion-group` items)
-- Arbitrary widget-prop endpoints (e.g., the `pendingTicketEndpoint` direct prop on a custom widget)
+- Arbitrary widget-prop endpoints (e.g., a custom widget's direct `*Endpoint` props)
 - `node.dataSource.api.params` values
+- Children stored under non-standard paths (`props.items[].children` is sometimes used by feature-branch widgets like `accordion-group`)
 
 If you're adding a new widget that holds endpoints in non-standard locations, extend the page walker accordingly **and** document it inline.
 
@@ -331,7 +334,7 @@ The endpoint returns:
 }
 ```
 
-The mock lives in `src/mocks/<app>/config/app-config-mock.ts` (or similar — search the codebase for `app-config-mock`). To add a new module to the sidebar, edit that file.
+The mock lives at `src/mocks/original/<app>/config/app-config-mock.ts` (e.g. `src/mocks/original/group-insurance/config/app-config-mock.ts`). To add a new module to the sidebar, edit that file.
 
 `<AppContextProvider>` fetches this on mount; `<DualPanelNav />` renders from it.
 

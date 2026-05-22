@@ -122,20 +122,12 @@ When the active role is `maker`, the Approve button is **hidden** (per the actio
 
 ### Role-gating widgets
 
-For coarser gating (hide a whole tab or section for some roles), use `layout.visibleWhen`:
+⚠️ **Widget-level role gating is a known gap on `main`.** There's no working `layout.visibleWhen` predicate that hides a whole `section-group` based on role. Today, the two options are:
 
-```json
-{
-  "id": "siu-section",
-  "type": "section-group",
-  "layout": {
-    "visibleWhen": { "==": [{ "var": "global:current-role" }, "siu_officer"] }
-  },
-  "children": [ ... ]
-}
-```
+1. **Gate the actions inside the section** via `action-bar.roleActions` — render the section unconditionally, but show no actions for roles that shouldn't act.
+2. **Branch in `page.tsx`** — read the role server-side (or via a server action) and render a different schema per role.
 
-Only `siu_officer` sees this section.
+For a future-friendly schema-only solution, this is one of the proposed framework changes — see [the proposal flow](../../proposals/).
 
 ⚠️ Don't put security-sensitive logic in the frontend role-gate. The backend still has to enforce permissions — the frontend hides UI, the backend rejects requests. **Both layers, always.**
 
@@ -143,13 +135,15 @@ Only `siu_officer` sees this section.
 
 ## JSONLogic
 
-The framework uses [json-logic-js](https://jsonlogic.com) for declarative predicates. Three places consume it:
+The framework uses [json-logic-js](https://jsonlogic.com) for declarative predicates. Three places consume it on `main`:
 
-1. `field.visibleWhen` — conditional form field visibility (against form values)
-2. `layout.visibleWhen` — conditional widget visibility (against fetched data + role)
-3. `dataSource.stopWhen` — early stop for polling (against fetched data)
+1. `field.visibleWhen` — conditional form field visibility (against form values). Filtered fields are excluded from the submit payload.
+2. `rowAction.visible` — per-row visibility on `data-table` row actions (against row data).
+3. `dataSource.stopWhen` — early stop for polling (against fetched data).
 
 The wrapper is [`evaluateCondition(condition, contextData)`](../../src/lib/conditions.ts) — returns `true` if `condition` is null/undefined (default-visible), otherwise the JSONLogic result.
+
+⚠️ **`layout.visibleWhen` is NOT implemented on `main`.** Some feature branches add a `visibleWhen` check inside `WidgetRenderer`, but the version on `main` only honours `layout.hidden`. If you write a widget config with `layout.visibleWhen`, the widget always renders. For widget-level conditional rendering today, gate at the schema level (omit the widget) or via `layout.hidden` toggled by a sibling action. The proposed `layout.visibleWhen` is tracked under `proposals/`.
 
 ### Basic syntax
 
@@ -167,7 +161,7 @@ Read aloud: "the value of `policy_type` equals `MOTOR`".
 |----------|---------|---------|
 | `==` | `{ "==": [{"var":"x"}, 5] }` | Equal (loose) |
 | `===` | `{ "===": [{"var":"x"}, 5] }` | Equal (strict) |
-| `!=` / `!==` | … | Not equal |
+| `!=` | `{ "!=": [{"var":"x"}, 5] }` | Not equal (loose) |
 | `<` / `>` / `<=` / `>=` | `{ ">": [{"var":"age"}, 18] }` | Comparison |
 | `and` | `{ "and": [<cond1>, <cond2>] }` | All true |
 | `or` | `{ "or": [<cond1>, <cond2>] }` | Any true |
@@ -186,10 +180,8 @@ The available variables depend on where the condition is evaluated:
 | Used in | Context contains |
 |---------|------------------|
 | `field.visibleWhen` | Current form values: `{ "policy_type": "MOTOR", "amount": 5000, ... }` |
-| `layout.visibleWhen` | The widget's fetched `data` (if it has a `dataSource`) merged with `"global:current-role"` |
+| `rowAction.visible` | The row data for the row this action belongs to |
 | `dataSource.stopWhen` | The latest fetched data |
-
-⚠️ For `layout.visibleWhen` on a widget *without* a `dataSource`, the context is empty (just role). You can't reference a sibling widget's data — conditions are per-widget-scope.
 
 ### Worked examples
 
@@ -198,25 +190,23 @@ The available variables depend on where the condition is evaluated:
 { "visibleWhen": { "==": [{ "var": "loss_type" }, "MOTOR"] } }
 ```
 
-**Show "Approve Liability" button only when state is in a specific range:**
-```json
-{ "visibleWhen": { "in": [{ "var": "state" }, ["ASSESSMENT_COMPLETE", "FA_PENDING"]] } }
-```
-
-**Show SIU section only for SIU officers:**
-```json
-{ "visibleWhen": { "==": [{ "var": "global:current-role" }, "siu_officer"] } }
-```
-
-**Show approval section only when amount exceeds threshold AND user is supervisor:**
+**Hide a "Delete" row action when the row is already archived:**
 ```json
 {
-  "visibleWhen": {
-    "and": [
-      { ">": [{ "var": "claimed_amount" }, 100000] },
-      { "==": [{ "var": "global:current-role" }, "claims_supervisor"] }
-    ]
-  }
+  "id": "delete",
+  "label": "Delete",
+  "type": "api-mutation",
+  "visible": { "!=": [{ "var": "status" }, "ARCHIVED"] }
+}
+```
+
+**Show approval row action only when amount exceeds threshold:**
+```json
+{
+  "id": "approve",
+  "label": "Approve",
+  "visible": { ">": [{ "var": "amount" }, 100000] },
+  "type": "api-mutation"
 }
 ```
 
@@ -229,6 +219,12 @@ The available variables depend on where the condition is evaluated:
 ```json
 { "stopWhen": { "in": [{ "var": "state" }, ["ACTIVE", "FAILED", "CANCELLED"]] } }
 ```
+
+### Role-gating without `layout.visibleWhen`
+
+Since widget-level `visibleWhen` is not implemented on `main`, role-gating happens through `action-bar.roleActions` for action buttons (see [02-widget-catalog.md → action-bar](02-widget-catalog.md#action-bar)). For role-specific sections (e.g. "SIU only"), the canonical approach today is either:
+- Render the section unconditionally and gate the actions inside it via `roleActions`, or
+- Branch in the page-level `page.tsx` based on a server-side role read.
 
 ### Debugging conditions
 
@@ -258,25 +254,13 @@ Use it when:
 
 ## State + conditions together — the canonical pattern
 
-**Setup:** A claim detail page where:
-- The action-bar fetches the claim and gates by `state`.
-- A section appears only when state is `FNOL_SUBMITTED` (workflow guidance).
-- A "Send to SIU" button is only available for `siu_officer` role *and* when the claim is in `TRIAGED` state.
+**Setup:** A quote detail page where a "Send to SIU" button is only available for `siu_officer` role *and* when the quote is in `TRIAGED` state.
 
 ```json
 {
-  "id": "fnol-guidance",
-  "type": "section-group",
-  "dataSource": { "api": { "endpoint": "/api/v1/claims/:id", "method": "GET" } },
-  "layout": {
-    "visibleWhen": { "==": [{ "var": "state" }, "FNOL_SUBMITTED"] }
-  },
-  "children": [ ... ]
-},
-{
-  "id": "claim-actions",
+  "id": "quote-actions",
   "type": "action-bar",
-  "dataSource": { "api": { "endpoint": "/api/v1/claims/:id", "method": "GET" } },
+  "dataSource": { "api": { "endpoint": "/api/quotes/:id", "method": "GET" } },
   "props": {
     "stateField": "state",
     "stateActions": {
@@ -291,7 +275,7 @@ Use it when:
 }
 ```
 
-Both widgets independently fetch the claim — TanStack Query dedupes the requests, so it's one network round-trip. The action-bar combines state-gating (state → allowed actions) with role-gating (role → allowed actions); only actions in both sets render.
+The action-bar combines state-gating (state → allowed actions) with role-gating (role → allowed actions); only actions in both sets render. There's no separate "visible only in state X" section widget on `main` today — if you need section-level state gating, the conventional answer is to embed it as a tab (so the tab itself is always present but its content is empty / shows a hint when the state doesn't apply).
 
 ---
 
@@ -299,9 +283,9 @@ Both widgets independently fetch the claim — TanStack Query dedupes the reques
 
 1. **Forgetting role lives under `"global:current-role"`, with the colon.** Type it exactly. A typo silently makes the condition fail (variable not found = undefined = falsy).
 
-2. **Putting `visibleWhen` on `props` instead of `layout`.** It belongs under `layout.visibleWhen`. The condition-evaluation pipeline only reads from `layout`.
+2. **Expecting `layout.visibleWhen` to work.** It's documented in some feature branches and proposals but is **not** implemented in `WidgetRenderer` on `main`. Use `field.visibleWhen` (forms), `rowAction.visible` (table rows), or `action-bar.roleActions`/`stateActions` (action buttons). Section-level conditional rendering is a known gap.
 
-3. **Conditions referencing variables not in scope.** A `layout.visibleWhen` on a widget without a `dataSource` only has role in scope. Add the dataSource (or move the condition to a wrapper widget that has it).
+3. **Conditions referencing variables not in scope.** `field.visibleWhen` only sees form values; `rowAction.visible` only sees row data. There's no way to reach a sibling widget's data from inside a JSONLogic predicate.
 
 4. **State stored in widget-local React state instead of `useWidgetState`.** If two widgets need to coordinate, the state must be shared. Don't try to wire callbacks between schemas — there's no API for that.
 

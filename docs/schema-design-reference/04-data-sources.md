@@ -66,7 +66,7 @@ Backends often wrap responses: `{ data: [...] }`, `{ items: [...], total: 123 }`
 
 `data-table` (and most other widgets) will consume `response.items` instead of `response`. Without `valueKey`, the widget tries to use the whole response — which for `data-table` only works when the response is a bare array.
 
-⚠️ `valueKey` supports dotted paths (`"data.items"`) but not array indices (`"items.0"`). For array indexing, dig into the response client-side or change the backend shape.
+⚠️ `valueKey` is **a single property name**, looked up via bracket access (`jsonData[valueKey]`). **Dotted paths (`"data.items"`) are NOT traversed** — they're treated as literal keys and will silently miss. If your response is nested deeper than one level, either change the backend shape or pre-process client-side.
 
 ---
 
@@ -85,29 +85,31 @@ For URLs containing per-row identifiers (e.g., row action endpoints, link routes
 
 When the action fires, `rowData.id` (or `rowData.<paramName>`) replaces the token. Missing values leave the token intact.
 
-`:id` is by convention the row PK. To use a different PK field, set `rowIdKey` on the data-table:
+💡 **Rule of thumb:** the substitution token must match the field name in the row data. `:id` requires `rowData.id`; `:claim_id` requires `rowData.claim_id`.
+
+`rowIdKey` on a `data-table` (default `"id"`) is a separate setting — it tells the table which field to use as the React key per row. It does NOT rename the substitution token. So with `rowIdKey: "claim_id"` and a response where each row has `claim_id` but no `id`, your row action target must read `:claim_id`:
 
 ```json
-{ "type": "data-table", "props": { "rowIdKey": "claim_id" } }
+{
+  "type": "data-table",
+  "props": {
+    "rowIdKey": "claim_id",
+    "rowActions": [
+      { "id": "view", "type": "navigate", "target": "/claims/:claim_id" }
+    ]
+  }
+}
 ```
-
-Now `rowData.claim_id` is what's available as `:id` substitution… actually no. `rowIdKey` tells the table which field to use *as* the id; the substitution still uses the field name verbatim. Use `:claim_id` if you don't rename:
-
-```json
-{ "type": "navigate", "target": "/claims/:claim_id" }
-```
-
-💡 **Rule of thumb:** the substitution token must match the field name in the row data.
 
 ### Page-level parameters: `{{id}}`
 
-For URLs containing route parameters (Next.js dynamic routes like `/claims/[id]`), the schema author uses `{{id}}`:
+For URLs containing route parameters (Next.js dynamic routes like `[id]`), the schema author uses `{{id}}`:
 
 ```json
-{ "dataSource": { "api": { "endpoint": "/api/v1/claims/{{id}}", "method": "GET" } } }
+{ "dataSource": { "api": { "endpoint": "/api/v1/quotes/{{id}}", "method": "GET" } } }
 ```
 
-⚠️ The framework does **not** automatically substitute `{{id}}`. The page (`src/app/claims/[id]/page.tsx`) is responsible for walking the resolved schema and replacing `{{id}}` with the route param. See [08-pages-and-routing.md → Template substitution](08-pages-and-routing.md#template-substitution).
+⚠️ The framework does **not** automatically substitute `{{id}}`. The page (`src/app/<module>/[id]/page.tsx`) is responsible for walking the resolved schema and replacing `{{id}}` with the route param. See [08-pages-and-routing.md → Template substitution](08-pages-and-routing.md#template-substitution) — `src/app/quotations/[id]/page.tsx` is the reference implementation on `main`.
 
 The walker pattern that's emerged:
 
@@ -342,7 +344,7 @@ The schema doesn't know whether it's hitting a mock or a real backend — just p
 TanStack Query under the hood:
 
 - Default `staleTime: 60000` (60s) — see `src/components/providers.tsx`.
-- Cache key: `[endpoint, method, params, dependentState]` (and `role`, depending on the version in your branch).
+- Cache key on `main`: `[endpoint, method, params, dependentState]`. Role is **not** included in the key directly; if your widget needs to refetch on role change, declare `stateDependencies: ["global:current-role"]` (the role is published to widget state — see [07-state-and-conditions.md](07-state-and-conditions.md)).
 - Manual invalidation: `action.refreshKey`. The handler invalidates all queries whose `queryKey[0]` starts with the refreshKey string.
 
 To invalidate only `/api/v1/claims/<id>`:

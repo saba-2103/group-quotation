@@ -237,7 +237,9 @@ Mutate the shared `useWidgetState` store directly. Use sparingly — most state 
 - `patch` — shallow-merge `value` into the existing object at `key`.
 - `toggle` — flip a boolean.
 
-A sibling widget with `layout.visibleWhen: { "var": "claim-details-expanded" }` would react.
+The state value is then readable by any widget that subscribes via `stateDependencies` or by JSONLogic conditions that have it in scope (`field.visibleWhen`, `rowAction.visible`, `dataSource.stopWhen`).
+
+⚠️ Widget-level `layout.visibleWhen` would be the natural way to react to a toggle like this, but it isn't implemented on `main` — see [07-state-and-conditions.md → JSONLogic](07-state-and-conditions.md#jsonlogic). Until it lands, the most reliable use of `update-widget-state` is to drive a sibling fetch via `stateDependencies` rather than purely UI-visibility toggles.
 
 ⚠️ Don't use this for entity state. If the user clicks "Approve", the resulting state must come from the backend (the API response), not a client-side flip — otherwise the badge says ACTIVE before the database knows about it.
 
@@ -289,7 +291,7 @@ Inside `action-bar`, `disabledTooltip` has additional semantics: it interacts wi
 
 ## Variants and icons
 
-The `variant` field maps to button styles (from `src/components/ui/variants/`):
+The `variant` field maps to button styles (defined inside `src/components/ui/button.tsx`):
 
 | Variant | When to use |
 |---------|-------------|
@@ -308,14 +310,14 @@ Icons are [Lucide](https://lucide.dev) names — `"Eye"`, `"Edit"`, `"Trash"`, `
 
 User is on `/claims/C-001`. They see:
 
-```
-┌──────────────────────────────────────────────────┐
-│ Claim C-001  [Triaged]    [Triage] [Withdraw]    │
-├──────────────────────────────────────────────────┤
-│ Claim No: MOT-12345                              │
-│ State:    TRIAGED                                │
-│ ...                                              │
-└──────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Screen["Claim detail screen"]
+        direction TB
+        Header["<b>Claim C-001</b> · badge: Triaged · buttons: Triage, Withdraw"]
+        Body["Claim No: MOT-12345<br/>State: TRIAGED<br/>…"]
+        Header --- Body
+    end
 ```
 
 The "Triage" button is an `api-mutation`:

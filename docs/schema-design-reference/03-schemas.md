@@ -18,7 +18,7 @@ interface WidgetConfig {
   layout?: {
     colSpan?: number;                  // 1-4, for grid-layout children
     hidden?: boolean;                  // Skip rendering
-    visibleWhen?: Record<string, unknown>;  // JSONLogic predicate (see 07)
+    // (Other layout constraints may be added; see src/types/widget.ts)
   };
   dataSource?: DataSourceConfig;       // Fetch config (see 04)
   children?: WidgetConfig[];           // Nested widgets
@@ -61,11 +61,13 @@ Optional. When present, the renderer runs `useSmartQuery(dataSource)` before mou
 
 For container widgets (`stack-layout`, `grid-layout`, `section-group`, `tabs-container`, …) — the nested widget configs. Each child is rendered by the container, usually via `<WidgetRenderer config={child} />`.
 
-⚠️ Some widgets store children under non-standard paths. `tabs-container` uses `children`. `accordion-group` uses `props.items[].children`. The `{{id}}` walker in pages must know about both — see [08-pages-and-routing.md](08-pages-and-routing.md).
+⚠️ All registered widgets on `main` store nested widgets under `children`. Feature-branch widgets sometimes nest under non-standard paths (e.g. an `accordion-group` widget puts children under `props.items[].children`). When you write a new widget, follow the `children` convention — otherwise the page-level `{{id}}` walker can't reach those nested endpoints. See [08-pages-and-routing.md](08-pages-and-routing.md).
 
 ### `layout`
 
-Rendering hints. The most common is `colSpan` (which the renderer turns into a `col-span-N md:col-span-N` class on the wrapper). `hidden: true` skips rendering entirely. `visibleWhen` evaluates a JSONLogic predicate against fetched data + role — see [07-state-and-conditions.md](07-state-and-conditions.md).
+Rendering hints. The most common is `colSpan` (which the renderer turns into a `col-span-N md:col-span-N` class on the wrapper). `hidden: true` skips rendering entirely.
+
+⚠️ There is no `layout.visibleWhen` on `main` — see [07-state-and-conditions.md → JSONLogic](07-state-and-conditions.md#jsonlogic). Conditional rendering today happens through `field.visibleWhen` (forms), `rowAction.visible` (table rows), or by gating at the schema level.
 
 ---
 
@@ -191,21 +193,19 @@ The convention that's emerged across modules:
 
 ```
 schemas/
-├── <module>.json                     # List page (e.g. claims-list.json)
-├── <module>-detail.json              # Detail page (claims-detail.json)
-├── <module>-<view>.json              # Other top-level views (claims-list-archive.json)
+├── <module>.json                     # List page (e.g. quotations.json)
+├── <module>-detail.json              # Detail page (quotations-detail.json)
+├── <module>-<view>.json              # Other top-level views
 ├── tabs/
 │   └── <module>/
 │       ├── overview.json
 │       ├── audit.json
 │       └── ...
-├── forms/
-│   ├── register-claim-form.json
-│   ├── edit-policy-form.json
-│   ├── ...
-│   └── index.ts                      # Auto-generated, do not edit
-├── tables/                           # (Rare) shared table column configs
-└── views/                            # (Rare) shared view fragments
+└── forms/
+    ├── register-claim-form.json
+    ├── edit-policy-form.json
+    ├── ...
+    └── index.ts                      # Auto-generated, do not edit
 ```
 
 For a new module, you typically end up with:
@@ -279,9 +279,9 @@ A short list of the patterns that show up in PRs every week:
 
 It's worth being explicit about the limits:
 
-- ❌ **Conditional widgets that depend on a fetch result.** Use `visibleWhen` JSONLogic — but the data must already be in scope for that widget. You can't say "show this widget only if Quote A's status is X" unless Quote A is the widget's dataSource.
+- ❌ **Conditional widgets that depend on a fetch result.** Widget-level `visibleWhen` is not on `main`. For per-row visibility use `rowAction.visible`; for per-field visibility use `field.visibleWhen`. Section-level conditional rendering is a known gap.
 - ❌ **Computed values.** No JSONPath transforms inside `props` (other than the dotted accessors in field configs). If you need to combine three response fields into one display, render two widgets and let CSS handle layout.
-- ❌ **Loops.** Schemas don't have a "for each item, render this widget" construct. Use `data-table` or `card-grid` instead.
+- ❌ **Loops.** Schemas don't have a "for each item, render this widget" construct. Use `data-table` instead.
 - ❌ **Imperative orchestration.** A schema is declarative. If you need "run mutation A, then if it succeeds run B, then navigate" — that's what `api-mutation.onSuccess` is for; see [05-actions.md](05-actions.md).
 
 When you hit one of these, you have two options: redesign the schema, or propose a new widget. Don't write a custom React component inside a tab — that breaks the schema-driven model and the next dev won't know to look there.

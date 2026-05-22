@@ -60,7 +60,7 @@ Terms used throughout this reference, in alphabetical order.
 
 **`id`** — Required field on every `WidgetConfig`. Unique within the page. Also the form-registry key for form schemas.
 
-**InfoCard** (PR-only) — A card-style data-display widget added in claims branches. Overlaps significantly with `key-value-grid`; not in the main registry at time of writing.
+**`info-card`** — Feature-branch widget that overlaps with `key-value-grid`. Not in the main registry on `main`. See [02-widget-catalog.md → Feature-branch widgets](02-widget-catalog.md#feature-branch-widgets--not-on-main).
 
 **JSONLogic** — Declarative predicate language used for `visibleWhen` and `stopWhen`. Implemented via [json-logic-js](https://jsonlogic.com). See [07-state-and-conditions.md → JSONLogic](07-state-and-conditions.md#jsonlogic).
 
@@ -74,7 +74,21 @@ Terms used throughout this reference, in alphabetical order.
 
 **Mode (view / edit)** — `form-container.props.mode`. `"view"` renders the form read-only; `"edit"` (default) renders inputs.
 
-**Mutation** — A backend write action — POST, PUT, PATCH, DELETE. Dispatched via `api-mutation` action type.
+**Mutation** — A backend write action — POST, PUT, PATCH, DELETE. Dispatched in this framework via an action with `type: "api-mutation"`. See [05-actions.md → api-mutation](05-actions.md#api-mutation).
+
+**`api-mutation`** — `ActionConfig` variant that fetches an endpoint (POST/PUT/PATCH/DELETE/GET-for-refresh), shows a toast on success, invalidates caches via `refreshKey`, and dispatches `onSuccess` chains. The standard write-action shape.
+
+**`navigate`** — `ActionConfig` variant that calls `router.push(target)`. Supports `:param` substitution from row data.
+
+**`open-modal` / `open-sheet`** — `ActionConfig` variants that open an overlay via `useOverlayStore`. `target` is typically a form id from the forms registry.
+
+**`api-download`** — `ActionConfig` variant that fetches the endpoint as a blob and triggers a browser download.
+
+**`trigger-event`** — `ActionConfig` variant that emits a host event. On `main` this primarily means "close an overlay" — `target` is the overlay id.
+
+**`update-widget-state`** — `ActionConfig` variant that mutates `useWidgetState` directly. Operations: `set`, `patch`, `toggle`.
+
+**`submitAction`** — A boolean flag on a form action. The action marked `submitAction: true` is the one that fires on Enter/Submit. The form's field values become the `api.body` automatically when the action is `api-mutation`. See [06-forms.md → Form actions](06-forms.md#form-actions).
 
 **OverlaidForm** — Component (`src/components/widgets/forms/OverlaidForm.tsx`) that renders a form inside a modal/sheet. Triggered by `open-modal` / `open-sheet` actions.
 

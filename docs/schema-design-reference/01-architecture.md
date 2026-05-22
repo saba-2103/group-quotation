@@ -6,51 +6,27 @@ This document explains *how the framework works at runtime* — not how to write
 
 ## The big picture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ Next.js page (src/app/<route>/page.tsx)                         │
-│   - imports a schema JSON file                                  │
-│   - resolves $refs (server-side, via resolveSchemaRefs)         │
-│   - substitutes route params (e.g. {{id}}) into endpoints       │
-│   - passes the resolved config to <WidgetRenderer />            │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│ <WidgetRenderer config={...} />                                 │
-│   1. Look up config.type in WidgetRegistry                      │
-│   2. If config.dataSource exists, useSmartQuery() fetches it    │
-│   3. If config.layout.hidden, return null                       │
-│   4. Merge fetched data into props and render the component     │
-│   5. Component recurses into its own children (or props.items)  │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-        ┌──────────────┼──────────────┬──────────────────┐
-        ▼              ▼              ▼                  ▼
-   ┌─────────┐   ┌──────────┐  ┌────────────┐    ┌────────────┐
-   │ Layout  │   │ Data     │  │ Form       │    │ Action     │
-   │ widgets │   │ widgets  │  │ widgets    │    │ widgets    │
-   └─────────┘   └──────────┘  └────────────┘    └────────────┘
-        │              │              │                  │
-        │              │              │                  ▼
-        │              │              │       ┌────────────────────┐
-        │              │              │       │ useActionHandler() │
-        │              │              │       │  - navigate        │
-        │              │              │       │  - api-mutation    │
-        │              │              │       │  - open-modal      │
-        │              │              │       │  - …               │
-        │              │              │       └─────────┬──────────┘
-        │              │              │                 │
-        └──────────────┴──────────────┴─────────────────┘
-                       │
-                       ▼
-        ┌──────────────────────────────────────┐
-        │ Cross-cutting hooks                  │
-        │  - useWidgetState (shared zustand)   │
-        │  - useRole         (role context)    │
-        │  - useOverlayStore (modal/sheet)     │
-        │  - useSmartQuery   (data + polling)  │
-        └──────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Page["<b>Next.js page</b> (src/app/&lt;route&gt;/page.tsx)<br/>• imports a schema JSON file<br/>• resolves $refs (server-side, via resolveSchemaRefs)<br/>• substitutes route params (e.g. &#123;&#123;id&#125;&#125;) into endpoints<br/>• passes the resolved config to &lt;WidgetRenderer /&gt;"]
+    Renderer["<b>&lt;WidgetRenderer config=&#123;...&#125; /&gt;</b><br/>1. Look up config.type in WidgetRegistry<br/>2. If config.dataSource exists, useSmartQuery() fetches it<br/>3. If config.layout.hidden, return null<br/>4. Merge fetched data into props and render the component<br/>5. Component recurses into its own children (or props.items)"]
+    Layout["Layout<br/>widgets"]
+    Data["Data<br/>widgets"]
+    Form["Form<br/>widgets"]
+    Action["Action<br/>widgets"]
+    Handler["<b>useActionHandler()</b><br/>• navigate<br/>• api-mutation<br/>• open-modal<br/>• …"]
+    Hooks["<b>Cross-cutting hooks</b><br/>• useWidgetState (shared zustand)<br/>• useRole (role context)<br/>• useOverlayStore (modal/sheet)<br/>• useSmartQuery (data + polling)"]
+
+    Page --> Renderer
+    Renderer --> Layout
+    Renderer --> Data
+    Renderer --> Form
+    Renderer --> Action
+    Action --> Handler
+    Layout --> Hooks
+    Data --> Hooks
+    Form --> Hooks
+    Handler --> Hooks
 ```
 
 That's the whole runtime in one diagram. Everything below this line is detail.
@@ -84,7 +60,8 @@ The trade-off is that the runtime is opinionated — you fit your screen to the 
 | `src/components/registry/WidgetRegistry.tsx` | The `type` → component map |
 | `src/components/widgets/<category>/*` | Widget components themselves |
 | `src/components/ui/*` | Primitive UI components (Button, Card, Badge, Tooltip, …) — used *inside* widgets |
-| `src/hooks/*` | The cross-cutting hooks: `useSmartQuery`, `useActionHandler`, `useWidgetState`, `useRole`, `useOverlayStore`, `useFormContainer`, `useDataTable`, `useTableExport` |
+| `src/hooks/*` | The cross-cutting hooks: `useSmartQuery`, `useActionHandler`, `useWidgetState`, `useRole`, `useOverlayStore`, `useDataTable`, `useTableExport`, `use-mobile` |
+| `src/components/widgets/forms/formContainer/useFormContainer.ts` | The forms-only hook — co-located with the `form-container` widget rather than living in `src/hooks/` |
 | `src/types/widget.ts` | `WidgetConfig`, `DataSourceConfig`, `ActionConfig` type definitions — the source of truth for schema shape |
 | `src/lib/schemaResolver.ts` | `resolveSchemaRefs()` — walks `$ref` shortcuts |
 | `src/lib/endpointUtils.ts` | `substituteEndpointParams()` — replaces `:param` tokens with row data |

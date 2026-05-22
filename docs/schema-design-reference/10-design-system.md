@@ -12,7 +12,7 @@ The framework is opinionated about *layout primitives* (widgets) and *not opinio
 |------|---------|
 | [`src/app/globals.css`](../../src/app/globals.css) | Design tokens (CSS custom properties), Tailwind `@theme` directives |
 | `src/components/ui/*` | Primitive components (Button, Card, Badge, Tooltip, …) built on shadcn/ui |
-| `src/components/ui/variants/*` | `class-variance-authority` variant definitions (button variants, badge colors) |
+| `src/components/ui/*.tsx` | Primitive components with co-located `class-variance-authority` (CVA) variant definitions (e.g. `badge.tsx` exports both the `Badge` component and `badgeVariants`). A separate `src/components/ui/variants/` directory exists for the rare cases where variant logic is large enough to extract (currently `tabs-variants.ts` only). |
 | `tailwind.config.*` | Tailwind config — usually empty / minimal because tokens come from `@theme` in CSS |
 | `src/components/widgets/*` | The widgets — consume primitives + tokens, don't define new ones |
 
@@ -68,10 +68,10 @@ For a structured token change (e.g., a full design-system refresh from a Figma r
 
 ## Variant patterns
 
-The primitive components use [`class-variance-authority`](https://cva.style/) (CVA) to compose Tailwind classes. Each primitive has a `variants/` file:
+The primitive components use [`class-variance-authority`](https://cva.style/) (CVA) to compose Tailwind classes. Variants are usually co-located with the component in `src/components/ui/<name>.tsx` (e.g. `Badge` and `badgeVariants` both live in `src/components/ui/badge.tsx`):
 
 ```ts
-// src/components/ui/variants/button.ts (simplified)
+// Pattern — co-located variants inside src/components/ui/button.tsx (illustrative)
 export const buttonVariants = cva(
   "inline-flex items-center justify-center rounded-md text-sm font-medium ...",
   {
@@ -99,7 +99,7 @@ To add a new variant (e.g., a `"teal"` button), extend the variant object here �
 
 ## Badge colours
 
-Badges (in tables, key-value-grids, info-cards) take a `color` field in `valueMapping`. Colours map to CVA variants:
+Badges (in tables, key-value-grids) take a `color` field in `valueMapping`. Colours map to CVA variants:
 
 ```json
 "valueMapping": [
@@ -107,7 +107,7 @@ Badges (in tables, key-value-grids, info-cards) take a `color` field in `valueMa
   { "value": "PENDING",   "label": "Pending",   "color": "warning" },
   { "value": "FAILED",    "label": "Failed",    "color": "error" },
   { "value": "INFO_ONLY", "label": "Info",      "color": "info" },
-  { "value": "ARCHIVED",  "label": "Archived",  "color": "grey" }
+  { "value": "ARCHIVED",  "label": "Archived",  "color": "secondary" }
 ]
 ```
 
@@ -119,11 +119,15 @@ export const BADGE_COLOR_TO_VARIANT: Record<string, string> = {
   warning: "warning",
   error: "destructive",
   info: "info",
-  grey: "secondary"
+  default: "outline",
+  secondary: "secondary",
+  destructive: "destructive",
 };
 ```
 
-To add a new badge colour: extend the constant + add the corresponding badge variant in `src/components/ui/variants/badge.ts`.
+Use one of these keys for `color`. Any other value (e.g. `"grey"`, `"teal"`) falls through to the default `outline` variant.
+
+To add a new badge colour: extend the `BADGE_COLOR_TO_VARIANT` constant + add the corresponding variant in `badgeVariants` inside `src/components/ui/badge.tsx`.
 
 ---
 
@@ -195,7 +199,7 @@ If none of these fit, file a proposal — see [the proposal flow](../../proposal
 To match a specific visual reference (a Figma file, another site), the canonical approach:
 
 1. **Extract tokens.** Colours → CSS custom properties in `globals.css`. Radii → `--radius`. Typography → `@theme` scale.
-2. **Adjust variants.** Button hover states, badge colours — these go in `src/components/ui/variants/`.
+2. **Adjust variants.** Button hover states, badge colours — these are inside the primitive's `src/components/ui/<name>.tsx` (e.g. `badgeVariants` inside `badge.tsx`).
 3. **Don't touch widgets.** Widget structure (layout, behaviour) stays the same; only the atoms change.
 
 The [`design-system` skill](../../.claude/skills/design-system/SKILL.md) automates parts of this — point it at a reference and it'll propose token diffs.

@@ -430,7 +430,7 @@ Returns the app's navigation and metadata. Fetched once by `<AppContextProvider>
 }
 ```
 
-Mock lives in `src/mocks/<app>/config/app-config-mock.ts`.
+Mock lives in `src/mocks/original/<app>/config/app-config-mock.ts` (e.g. `src/mocks/original/group-insurance/config/app-config-mock.ts`).
 
 ### `/api/forms/[id]`
 
