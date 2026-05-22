@@ -75,11 +75,17 @@ export const useFormContainer = ({
 
         const submitAction = actions.find((a) => a.submitAction);
         if (!submitAction) {
-            // No submit endpoint configured — log the payload so developers
-            // can still verify form wiring during schema authoring without
-            // calling the action handler (which would no-op anyway).
-            // eslint-disable-next-line no-console
-            console.log('Form Submitted (No Endpoint configured):', visibleData);
+            // No submit endpoint configured. Surface a dev-only warning with
+            // just the field names so schema authors can see what would have
+            // been sent — but never log values (could be PII/secrets) and
+            // never log in production builds (noise + accidental leak vector).
+            if (process.env.NODE_ENV !== 'production') {
+                // eslint-disable-next-line no-console
+                console.warn(
+                    '[FormContainer] Submit attempted but no submitAction is configured. Field names:',
+                    Object.keys(visibleData),
+                );
+            }
             return;
         }
 

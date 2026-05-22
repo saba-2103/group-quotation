@@ -3,7 +3,7 @@ name: "Keystone UI — CI/CD Pipeline"
 
 on:
   push:
-    branches: [dev, develop, main, feat/cicd-skill-trial]
+    branches: [dev, develop, main]
     paths:
       - "**"
       - "!**/*.md"
