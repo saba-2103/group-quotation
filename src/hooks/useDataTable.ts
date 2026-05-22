@@ -11,25 +11,10 @@ import { WidgetConfig } from "@/types/widget";
 import { SCROLLABLE_COLUMN_THRESHOLD } from "../components/widgets/data/DataTable/constants";
 import { ColumnConfig, TableRow } from "../components/widgets/data/DataTable/types";
 import { useSmartQuery } from "./useSmartQuery";
+import { getNested } from "@/lib/objectPath";
 
 interface UseDataTableOptions {
   props: WidgetConfig["props"];
-}
-
-// Walk a dotted accessor path (e.g. "estimatedPremium.byPlanJson") with
-// prototype-pollution defense — reject `__proto__` / `constructor` /
-// `prototype` segments, and use `hasOwnProperty` so inherited members can't
-// be reached.
-const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
-function getNested(source: unknown, path?: string): unknown {
-  if (source == null || !path) return source;
-  return path.split(".").reduce<unknown>((acc, key) => {
-    if (FORBIDDEN_KEYS.has(key)) return undefined;
-    if (acc == null || typeof acc !== "object") return undefined;
-    return Object.prototype.hasOwnProperty.call(acc, key)
-      ? (acc as Record<string, unknown>)[key]
-      : undefined;
-  }, source);
 }
 
 export const useDataTable = ({ props }: UseDataTableOptions) => {
@@ -133,7 +118,27 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     }
 
     return { rows, error };
-  }, [props?.data, fetchedData, dataSource, columns]);
+    // Derive stable scalar deps so the memo doesn't re-run on every render
+    // when callers pass `dataSource`/`columns` as fresh inline objects (which
+    // most schemas do — they come straight out of `props`). The join
+    // descriptor is JSON-stringified because the set is small (≤ a handful
+    // of columns).
+  }, [
+    props?.data,
+    fetchedData,
+    dataSource?.dataPath,
+    dataSource?.parseJson,
+    JSON.stringify(
+      (columns as ColumnConfig[] | undefined)
+        ?.filter((c) => c.joinSource && c.joinKey && c.joinField)
+        .map((c) => ({
+          a: c.accessorKey,
+          s: c.joinSource,
+          k: c.joinKey,
+          f: c.joinField,
+        })),
+    ),
+  ]);
 
   // ── Column definitions ─────────────────────────────────────────────────
   // accessorKey containing dots (e.g. "amount.amount") doesn't auto-nest in

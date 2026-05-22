@@ -28,6 +28,15 @@ function buildUrl(path: string, query?: QueryParams): string {
   const sp = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     if (value === undefined || value === null) continue;
+    // Arrays repeat the key per value (`?state=A&state=B`) to match the
+    // serialization convention used by useSmartQuery for `@RequestParam
+    // List<T>` endpoints. Avoids the `String(["A","B"]) === "A,B"` ambiguity.
+    if (Array.isArray(value)) {
+      for (const v of value) {
+        if (v !== undefined && v !== null) sp.append(key, String(v));
+      }
+      continue;
+    }
     sp.append(key, String(value));
   }
   const qs = sp.toString();

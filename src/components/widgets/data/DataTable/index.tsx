@@ -63,7 +63,8 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     selectedCount,
     pagination,
     isQueryLoading,
-    queryError
+    queryError,
+    dataError,
   } = useDataTable({ props: config.props });
 
   const { exportData } = useTableExport({
@@ -83,7 +84,10 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
   const { emptyState, isLoading: propLoading, error: propError, actionsLabel, headerActions } = config.props || {};
 
   const isLoading = propLoading || isQueryLoading;
-  const error = propError || queryError;
+  // Surface dataPath/parseJson resolver errors the same way fetch errors are
+  // surfaced — otherwise a backend response-shape regression would silently
+  // render an empty table.
+  const error = propError || queryError || dataError;
 
   // Returns a CellRenderer onLinkClick handler bound to a specific row, so
   // multi-param routes (e.g. `/orgs/:orgId/quotes/:id`) resolve all tokens —
