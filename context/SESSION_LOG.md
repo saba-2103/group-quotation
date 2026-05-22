@@ -35,6 +35,23 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
   - Fresh `context/HANDOFF.md`, `context/SESSION_LOG.md` (this file), `context/CORE_MEMORY.md`, `context/ARCH_TRANSITION.md` — process preserved, contents reset for group-pas V1.
 - Next: kickoff Phase 0 (teardown of legacy quotations module).
 
+### 2026-05-22 — Schema-driven framework reference docs
+
+- **Branch:** `docs/schema-design-reference` (branched from `origin/main` at `37772c00`).
+- **Trigger:** developers requested a comprehensive reference beyond `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md` — something covering every widget, every hook, every action type, plus recipes and troubleshooting.
+- **Work done:** wrote 14-file multi-page reference under `docs/schema-design-reference/`:
+  - `README.md` (entry + ToC), `01-architecture.md`, `02-widget-catalog.md` (all 21 registered widgets), `03-schemas.md`, `04-data-sources.md`, `05-actions.md`, `06-forms.md`, `07-state-and-conditions.md`, `08-pages-and-routing.md`, `09-api-routes.md`, `10-design-system.md`, `11-cookbook.md` (15 recipes), `12-troubleshooting.md`, `13-glossary.md`.
+  - ~5300 lines / ~190KB total. Grounded in real code — verified against `src/types/widget.ts`, `WidgetRenderer.tsx`, `WidgetRegistry.tsx`, `useSmartQuery`, `useActionHandler`, `schemaResolver.ts`, `endpointUtils.ts`, `conditions.ts` at branch HEAD.
+- **Commit:** `7f54435c docs(schema-ref): add comprehensive schema-driven framework reference` — pushed to `origin/docs/schema-design-reference`.
+- **Tests:** N/A (docs only). Verified file structure with `ls`, line counts with `wc -l`.
+- **Files changed:** 14 new files under `docs/schema-design-reference/`. Nothing in `src/`.
+- **Open PR:** https://github.com/Anaira-AI/keystone-ui/pull/new/docs/schema-design-reference
+- **Earlier in session:** reviewed PRs #67, #68, #69, #70 (claims module / schema-arch implementation by another dev) — posted formal `gh pr review` comments per PR with cross-cutting concerns plus targeted inline comments on specific lines. Reviews are `COMMENT` (non-blocking), not `REQUEST_CHANGES`.
+- **Next steps:**
+  - Open the PR for the docs branch and merge.
+  - Consider linking the new reference from `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md` as the canonical follow-up.
+  - Long-term: the page-level `{{id}}` walker pattern documented in `08-pages-and-routing.md` is fragile (called out explicitly in the docs). A proposal to move substitution into `useSmartQuery`/`useActionHandler` would close this gap — flagged in the PR #69 review as well.
+
 ### 2026-05-22 — DevOps platform CI/CD trial (skill-driven run on feat/cicd-skill-trial)
 
 **Goal:** Re-run the devops-platform onboarding using the bundled `/cicd-onboarding` skill (vs. the earlier hand-built attempt on `feat/cicd-devops-platform`) to test whether the skill closes the gaps the hand-built run hit.
