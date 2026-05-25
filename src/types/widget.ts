@@ -36,6 +36,18 @@ export interface WidgetConfig {
      * the framework — they're compared against `RoleContextValue.role` by
      * equality. The gate runs BEFORE `useSmartQuery`, so hidden widgets do
      * not pay fetch / polling cost.
+     *
+     * **NOT a security boundary — cosmetic gating only.** A user with browser
+     * devtools can flip role context and reveal the widget; the underlying
+     * API is not blocked here. RBAC must be enforced server-side. Do not use
+     * this prop to hide data that the current user is not authorized to see.
+     *
+     * **Empty array (`[]`) means "no role can see this"** — i.e. the widget
+     * is hidden from everyone. This is intentional but inverts the common
+     * "empty = no constraint" convention; if you're composing the list from
+     * an external source (`[...someList]`), check for empty before assigning
+     * or the widget will silently disappear. `WidgetRenderer` logs a dev-mode
+     * warning when it encounters an empty array.
      */
     visibleRoles?: string[];
     /**

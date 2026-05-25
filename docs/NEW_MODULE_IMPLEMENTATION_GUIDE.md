@@ -129,6 +129,17 @@ Typically, a tab contains a `data-table` to list items, and `headerActions` (lik
 - `target: "register-claim-form"` tells the Action system to open a modal and look for a form schema with that exact ID.
 - `rowActions.visible`: You can conditionally hide row actions based on the row's data.
 
+### Schema directories and the `_placeholder.json` files (do not delete)
+
+`src/lib/schemaResolver.ts` resolves `$ref` values via a Webpack dynamic-import template — `await import(\`../../schemas/<dir>/${filename}\`)`. Webpack's static analysis requires **at least one matching `.json` file to exist in each directory at build time**, otherwise the template resolves to `{}` and any `$ref` into that directory silently returns nothing in production (dev usually keeps working from cache).
+
+For that reason, the `schemas/tables/` and `schemas/views/` directories each ship with:
+
+- a `.gitkeep` (so git tracks the otherwise-empty folder), and
+- a `_placeholder.json` (so Webpack's chunk manifest has a target).
+
+**Do not delete `_placeholder.json` when "cleaning up empty folders."** Once a real schema lands in either directory, the placeholder can be removed in the same commit. Any new `schemas/<dir>/` directory you reference from `$ref` needs the same treatment.
+
 ---
 
 ## Step 4: Create Form Schemas (CRITICAL)

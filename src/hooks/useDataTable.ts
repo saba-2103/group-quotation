@@ -105,13 +105,20 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
         const enriched: TableRow = { ...row };
         const rowRec = row as Record<string, unknown>;
         for (const { col, index } of joinIndexes) {
+          // Defensive: skip columns with an empty accessorKey. getNested("")
+          // returns the whole row but setNested("") is a no-op, so the
+          // read/write contract would be asymmetric. The schema should never
+          // produce this, but guard rather than corrupt silently.
+          if (!col.accessorKey) continue;
           const key = rowRec[col.joinKey as string];
           if (key == null) continue;
           const match = index.get(key);
           if (match) {
             // Use setNested so dotted accessorKeys (read via accessorFn +
             // getNested in columnDefs) round-trip correctly. Flat keys still
-            // land as a single property.
+            // land as a single property. setNested refuses to overwrite a
+            // scalar intermediate (e.g. row.amount = 42 vs path "amount.x")
+            // and logs in dev — the join is skipped, original data preserved.
             setNested(
               enriched as Record<string, unknown>,
               col.accessorKey,
