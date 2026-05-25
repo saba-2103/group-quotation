@@ -11,38 +11,37 @@ on:
 
 permissions:
   contents: read
+  id-token: write          # OIDC auth for EKS deploy role
   pull-requests: write
-
-env:
-  HELM_VERSION: v3.17.3
 
 jobs:
   uninstall:
     runs-on: ubuntu-latest
+    environment: dev
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       RELEASE_NAME: keystone-ui-pr-${{ github.event.pull_request.number }}
     steps:
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: ${{ env.HELM_VERSION }}
+      - uses: azure/setup-helm@v4
 
-      - name: Setup kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.K3S_KUBECONFIG }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+      - name: Configure AWS credentials (EKS deploy)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN_DEV }}
+          aws-region: ap-south-1
+
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --name ${{ vars.EKS_CLUSTER_NAME_DEV }} --region ap-south-1
 
       - name: Uninstall preview release
         id: uninstall
         run: |
-          if helm status "$RELEASE_NAME" -n dev-env >/dev/null 2>&1; then
-            helm uninstall "$RELEASE_NAME" --namespace dev-env
-            echo "removed=true" >> $GITHUB_OUTPUT
+          if helm status "$RELEASE_NAME" -n ${{ vars.DEV_NAMESPACE }} >/dev/null 2>&1; then
+            helm uninstall "$RELEASE_NAME" --namespace ${{ vars.DEV_NAMESPACE }}
+            echo "removed=true" >> "$GITHUB_OUTPUT"
           else
             echo "Release $RELEASE_NAME not found (nothing to clean up)."
-            echo "removed=false" >> $GITHUB_OUTPUT
+            echo "removed=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Comment teardown on PR
@@ -51,7 +50,3 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh pr comment "$PR_NUMBER" --body "🧹 Preview environment \`$RELEASE_NAME\` torn down."
-
-      - name: Cleanup kubeconfig
-        if: always()
-        run: rm -f ~/.kube/config

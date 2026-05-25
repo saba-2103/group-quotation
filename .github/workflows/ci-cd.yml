@@ -1,203 +1,126 @@
-name: CI/CD - Build, Push, Deploy
+# .github/workflows/ci-cd.yml
+name: "Keystone UI — CI/CD Pipeline"
 
 on:
   push:
-    branches:
-      - main
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - "context/**"
-      - "proposals/**"
-      - ".gitignore"
-      - "LICENSE"
+    branches: [dev, develop, main]
+    paths:
+      - "**"
+      - "!**/*.md"
+      - "!docs/**"
+      - "!context/**"
+      - "!proposals/**"
+      - "!agent_logs/**"
   pull_request:
-    branches:
-      - main
-    types: [opened, synchronize, reopened]
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-      - "context/**"
-      - "proposals/**"
-      - ".gitignore"
-      - "LICENSE"
-  workflow_dispatch: {}
+    branches: [dev, develop, main]
+  workflow_dispatch:
 
 permissions:
-  id-token: write
+  actions: read
   contents: read
-  pull-requests: write # for posting preview-URL comments on PRs
-
-env:
-  HELM_VERSION: v3.17.3
-  KUBECTL_VERSION: v1.30.4
-  ROLLOUT_TIMEOUT: 180s
+  id-token: write
+  security-events: write
+  pull-requests: write   # deploy-preview posts a preview URL comment
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.image-tag.outputs.IMAGE_TAG }}
-      full_image: ${{ steps.image-tag.outputs.FULL_IMAGE }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # ──────────────────────────────────────────────
+  # Pre-commit checks
+  # ──────────────────────────────────────────────
+  pre-commit:
+    uses: Anaira-AI/devops-platform/.github/workflows/01-pre-commit-checks.yml@main
+    secrets: inherit
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.STAGING_AWS_IAM_ROLE_ARN }}
-          aws-region: ${{ vars.ECR_AWS_REGION }}
-          role-session-name: gh-${{ github.repository_id }}-${{ github.run_id }}
+  # ──────────────────────────────────────────────
+  # CI Pipeline — build, scan, image push
+  # ──────────────────────────────────────────────
+  ci:
+    needs: pre-commit
+    uses: Anaira-AI/devops-platform/.github/workflows/02-ci-pipeline.yml@main
+    with:
+      language: javascript
+      node_version: "24"
+      build_command: "npm ci && npm run build"
+      test_command: "npm ci && npm test -- --coverage"
+      coverage_command: ""
+      codeql_language: javascript
+      artifact_path: ".next/standalone/**"
+      dockerfile_context: "."
+      dockerfile_path: "Dockerfile"
+      ecr_registry: "149916142454.dkr.ecr.ap-south-1.amazonaws.com"
+      ecr_repository: "anaira/keystone-ui"
+      helm_chart_path: "./helm/keystone-ui"
+      helm_values_files: "values-dev.yaml"
+      sonar_coverage_report: "coverage/lcov.info"
+    secrets: inherit
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+  # ──────────────────────────────────────────────
+  # Deploy to Dev — only on push to dev/develop
+  # ──────────────────────────────────────────────
+  deploy-dev:
+    needs: ci
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/develop')
+    uses: Anaira-AI/devops-platform/.github/workflows/03-deploy-dev.yml@main
+    with:
+      image_tag: ${{ needs.ci.outputs.image_tag }}
+      image_repository: ${{ needs.ci.outputs.image_repository }}
+      helm_chart_path: "./helm/keystone-ui"
+      helm_values_file: "./helm/keystone-ui/values-dev.yaml"
+      helm_release_name: "keystone-ui"
+      health_check_path: "/"
+    secrets: inherit
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Generate image tag
-        id: image-tag
-        env:
-          # On pull_request events GITHUB_REF is refs/pull/<n>/merge and
-          # GITHUB_SHA is the merge commit. Fall back to the head ref/sha so
-          # the tag reflects the actual branch + commit being built.
-          RAW_BRANCH: ${{ github.head_ref || github.ref_name }}
-          RAW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          BRANCH_NAME=$(echo "$RAW_BRANCH" | sed 's/[^a-zA-Z0-9]/-/g')
-          SHORT_SHA=$(echo "$RAW_SHA" | cut -c1-8)
-          IMAGE_TAG="${BRANCH_NAME}_${SHORT_SHA}"
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "FULL_IMAGE=${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}:${IMAGE_TAG}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.image-tag.outputs.FULL_IMAGE }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Image digest
-        run: |
-          echo "Image pushed to: ${{ steps.image-tag.outputs.FULL_IMAGE }}"
-          echo "::notice title=Published Image::${{ steps.image-tag.outputs.FULL_IMAGE }}"
-
-  # Deploys main → canonical URL https://keystone-ui-dev.anairacloud.com
-  # Gate derives the canonical branch from the repository's default_branch so
-  # renaming main → trunk would not require a workflow edit.
-  deploy-canonical:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
-    env:
-      RELEASE_NAME: keystone-ui
-      CANONICAL_HOST: keystone-ui-dev.anairacloud.com
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: ${{ env.HELM_VERSION }}
-
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: ${{ env.KUBECTL_VERSION }}
-
-      - name: Setup kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.K3S_KUBECONFIG }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
-
-      - name: Deploy via Helm (canonical)
-        run: |
-          helm upgrade --install "$RELEASE_NAME" ./helm/keystone-ui \
-            --namespace dev-env \
-            -f ./helm/keystone-ui/values-dev.yaml \
-            --set image.repository="${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}" \
-            --set image.tag=${{ needs.build.outputs.image_tag }} \
-            --set "ingress.annotations.alb\.ingress\.kubernetes\.io/certificate-arn=${{ vars.ACM_CERT_ARN }}"
-
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/"$RELEASE_NAME" \
-            --namespace dev-env --timeout=${{ env.ROLLOUT_TIMEOUT }}
-
-      - name: Smoke test
-        run: |
-          STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -L "https://$CANONICAL_HOST/")
-          if [ "$STATUS" != "200" ]; then
-            echo "Smoke test failed: HTTP $STATUS"
-            echo "Response headers for debugging:"
-            curl -sSI "https://$CANONICAL_HOST/" || true
-            exit 1
-          fi
-          echo "Smoke test passed: HTTP $STATUS"
-
-      - name: Cleanup kubeconfig
-        if: always()
-        run: rm -f ~/.kube/config
-
-  # Deploys each open PR to its own host
-  # https://keystone-ui-pr-<N>.anairacloud.com
-  # Cleanup happens in .github/workflows/preview-cleanup.yml when the PR closes.
+  # ──────────────────────────────────────────────
+  # Deploy preview — per-PR ephemeral environment.
+  # Each open PR gets its own helm release + ingress host:
+  #   https://keystone-ui-pr-<N>.anairacloud.com
+  # Cleanup is handled by .github/workflows/preview-cleanup.yml on PR close.
+  #
+  # This is a sibling to platform deploy-dev (Option A: kept local rather than
+  # turned into a reusable workflow). Promote to platform 04-deploy-preview.yml
+  # once a second service asks for the same pattern.
+  # ──────────────────────────────────────────────
   deploy-preview:
-    needs: build
-    runs-on: ubuntu-latest
+    needs: ci
     if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: dev
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
       RELEASE_NAME: keystone-ui-pr-${{ github.event.pull_request.number }}
       PREVIEW_HOST: keystone-ui-pr-${{ github.event.pull_request.number }}.anairacloud.com
+      IMAGE_TAG: ${{ needs.ci.outputs.image_tag }}
+      IMAGE_REPOSITORY: ${{ needs.ci.outputs.image_repository }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: ${{ env.HELM_VERSION }}
+      - uses: azure/setup-helm@v4
 
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Configure AWS credentials (EKS deploy)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          version: ${{ env.KUBECTL_VERSION }}
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN_DEV }}
+          aws-region: ap-south-1
 
-      - name: Setup kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.K3S_KUBECONFIG }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+      - name: Configure kubectl
+        run: aws eks update-kubeconfig --name ${{ vars.EKS_CLUSTER_NAME_DEV }} --region ap-south-1
 
       - name: Deploy preview via Helm
         run: |
-          # ALB TLS is wildcard-cert based (*.anairacloud.com via ACM), so
-          # overriding only the host route is sufficient; no TLS-host --set
-          # needed because the chart's ingress.tls section is empty.
           helm upgrade --install "$RELEASE_NAME" ./helm/keystone-ui \
-            --namespace dev-env \
-            -f ./helm/keystone-ui/values-dev.yaml \
-            --set image.repository="${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}" \
-            --set image.tag=${{ needs.build.outputs.image_tag }} \
-            --set "ingress.annotations.alb\.ingress\.kubernetes\.io/certificate-arn=${{ vars.ACM_CERT_ARN }}" \
-            --set ingress.hosts[0].host="$PREVIEW_HOST"
+            --namespace ${{ vars.DEV_NAMESPACE }} \
+            --create-namespace \
+            --values ./helm/keystone-ui/values-dev.yaml \
+            --set image.repository="$IMAGE_REPOSITORY" \
+            --set image.tag="$IMAGE_TAG" \
+            --set "ingress.host=$PREVIEW_HOST" \
+            --set "ingress.annotations.external-dns\.alpha\.kubernetes\.io/hostname=$PREVIEW_HOST" \
+            --wait --timeout 5m
 
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/"$RELEASE_NAME" \
-            --namespace dev-env --timeout=${{ env.ROLLOUT_TIMEOUT }}
-
-      - name: Smoke test
+      - name: Smoke test preview
         id: smoke
-        continue-on-error: true # don't fail the PR if DNS isn't wildcarded yet
+        continue-on-error: true   # don't fail the PR if DNS hasn't propagated
         run: |
-          # Retry up to ~60s to absorb ALB target-group warmup / DNS propagation.
+          # Retry up to ~60s — ALB target-group warmup + ExternalDNS lag.
           STATUS=000
           for i in 1 2 3 4 5 6; do
             STATUS=$(curl -sS -o /dev/null -w "%{http_code}" -L --max-time 10 "https://$PREVIEW_HOST/" || echo "000")
@@ -205,10 +128,9 @@ jobs:
             echo "Attempt $i: HTTP $STATUS — retrying in 10s..."
             sleep 10
           done
-          echo "smoke_status=$STATUS" >> $GITHUB_OUTPUT
+          echo "smoke_status=$STATUS" >> "$GITHUB_OUTPUT"
           if [ "$STATUS" != "200" ]; then
-            echo "Preview returned HTTP $STATUS after retries (may indicate wildcard DNS not yet configured)"
-            curl -sSI "https://$PREVIEW_HOST/" || true
+            echo "Preview returned HTTP $STATUS after retries"
             exit 1
           fi
           echo "Preview live at https://$PREVIEW_HOST/"
@@ -216,29 +138,24 @@ jobs:
       - name: Comment preview URL on PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FULL_IMAGE: ${{ needs.build.outputs.full_image }}
           SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
           SMOKE_STATUS: ${{ steps.smoke.outputs.smoke_status }}
         run: |
-          # Build the body with printf so the rendered markdown has no leading
-          # indentation (CommonMark allows ≤3 leading spaces before a fence —
-          # YAML's run-script indent would otherwise break ``` rendering).
+          # printf-based body so the markdown fence renders cleanly (CommonMark
+          # forbids leading-indent code fences > 3 spaces; YAML run-script
+          # indent would otherwise break ``` rendering).
           if [ "$SMOKE_OUTCOME" = "success" ]; then
             printf '%s\n\n```\n%s\n%s\n```\n\n%s\n' \
               "🚀 **Preview deployed:** https://${PREVIEW_HOST}/" \
-              "Image:   ${FULL_IMAGE}" \
-              "Release: ${RELEASE_NAME} (namespace: dev-env)" \
+              "Image:   ${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
+              "Release: ${RELEASE_NAME} (namespace: ${{ vars.DEV_NAMESPACE }})" \
               "This environment is torn down when the PR closes." > /tmp/pr-body.md
           else
             printf '%s\n%s\n\n```\n%s\n%s\n```\n\n%s\n' \
               "⚠️ **Preview helm-deployed but smoke test failed** (HTTP ${SMOKE_STATUS})." \
               "URL: https://${PREVIEW_HOST}/" \
-              "Image:   ${FULL_IMAGE}" \
-              "Release: ${RELEASE_NAME} (namespace: dev-env)" \
-              "Most likely cause on first PR: wildcard DNS \`*.anairacloud.com\` not yet pointed at the shared ALB. Ping infra to add the Route53 record." > /tmp/pr-body.md
+              "Image:   ${IMAGE_REPOSITORY}:${IMAGE_TAG}" \
+              "Release: ${RELEASE_NAME} (namespace: ${{ vars.DEV_NAMESPACE }})" \
+              "Most likely cause on first PR: ExternalDNS hasn't propagated the new \`${PREVIEW_HOST}\` record yet. Wait 2-3 minutes and retry, or ping infra." > /tmp/pr-body.md
           fi
           gh pr comment "$PR_NUMBER" --body-file /tmp/pr-body.md
-
-      - name: Cleanup kubeconfig
-        if: always()
-        run: rm -f ~/.kube/config

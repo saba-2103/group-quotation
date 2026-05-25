@@ -179,13 +179,16 @@ describe("DataTable — unit", () => {
       expect(screen.getByText("unknown-status")).toBeInTheDocument();
     });
 
-    it("date: renders date string as plain text", () => {
+    it("date: renders date string formatted per tenant config", () => {
       renderTable({
         columns: [col({ id: "dob", header: "Date", type: "date" })],
         data: [{ id: "1", dob: "2024-06-15" }],
       });
 
-      expect(screen.getByText("2024-06-15")).toBeInTheDocument();
+      // CellRenderer delegates date rendering to <DateDisplay>, which formats
+      // via the active tenant dateFormat (default DD/MM/YYYY). The raw ISO
+      // string is no longer rendered as-is.
+      expect(screen.getByText("15/06/2024")).toBeInTheDocument();
     });
 
     it("currency: formats number as USD currency string", () => {

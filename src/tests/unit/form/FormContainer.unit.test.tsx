@@ -576,9 +576,11 @@ describe("FormContainer — unit", () => {
       expect(screen.queryByRole("button")).not.toBeInTheDocument();
     });
 
-    it("form with no submitAction logs to console, does not call handleAction", async () => {
+    it("form with no submitAction warns in dev, does not call handleAction", async () => {
+      // Dev-only console.warn now logs only field names (never values) to
+      // avoid leaking PII/secrets in production. Test asserts that contract.
       const consoleSpy = jest
-        .spyOn(console, "log")
+        .spyOn(console, "warn")
         .mockImplementation(() => {});
       const user = userEvent.setup();
       renderForm(
@@ -597,8 +599,8 @@ describe("FormContainer — unit", () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
-          "Form Submitted (No Endpoint configured):",
-          expect.any(Object),
+          expect.stringContaining("no submitAction is configured"),
+          expect.arrayContaining(["n"]),
         );
       });
       expect(mockHandleAction).not.toHaveBeenCalled();

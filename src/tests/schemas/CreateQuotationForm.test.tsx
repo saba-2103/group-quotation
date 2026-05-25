@@ -44,6 +44,25 @@ const makeConfig = (propsOverride: Record<string, any> = {}): WidgetConfig => ({
   },
 });
 
+/**
+ * Build a config where the date-typed fields have a defaultValue, so
+ * submission flow tests don't have to drive the popover-based date picker
+ * (testing-library can't `user.type()` into a button). The date picker's
+ * own UX is covered by dedicated CalendarDatePicker tests.
+ */
+const makeConfigWithDateDefaults = (
+  dateDefaults: Record<string, string> = { effectiveDate: "2024-06-01" },
+  propsOverride: Record<string, any> = {},
+): WidgetConfig => {
+  const baseFields = (createQuotationSchema.props as any).fields ?? [];
+  const fields = baseFields.map((f: any) =>
+    f.type === "date" && dateDefaults[f.name]
+      ? { ...f, defaultValue: dateDefaults[f.name] }
+      : f,
+  );
+  return makeConfig({ ...propsOverride, fields });
+};
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("FormContainer — create-quotation-form", () => {
@@ -231,12 +250,11 @@ describe("FormContainer — create-quotation-form", () => {
   describe("Form Submission", () => {
     it("calls action handler with api-mutation and POST to /api/quotations on valid submit", async () => {
       const user = userEvent.setup();
-      render(<FormContainer config={makeConfig()} />, {
+      render(<FormContainer config={makeConfigWithDateDefaults()} />, {
         wrapper: createWrapper(),
       });
 
       await user.type(screen.getByLabelText(/Client Name/i), "Acme Corp");
-      await user.type(screen.getByLabelText(/Effective Date/i), "2024-06-01");
       await user.click(
         screen.getByRole("button", { name: /Create Quotation/i }),
       );
@@ -257,14 +275,13 @@ describe("FormContainer — create-quotation-form", () => {
 
     it("includes all user-entered field values in the submission body", async () => {
       const user = userEvent.setup();
-      render(<FormContainer config={makeConfig()} />, {
+      render(<FormContainer config={makeConfigWithDateDefaults()} />, {
         wrapper: createWrapper(),
       });
 
       await user.type(screen.getByLabelText(/Client Name/i), "Test Client");
       await user.type(screen.getByLabelText(/Policy Number/i), "POL-123");
       await user.type(screen.getByLabelText(/Tranno/i), "TRN-456");
-      await user.type(screen.getByLabelText(/Effective Date/i), "2024-06-01");
       await user.click(
         screen.getByRole("button", { name: /Create Quotation/i }),
       );
@@ -369,12 +386,11 @@ describe("FormContainer — create-quotation-form", () => {
 
     it("excludes Master Policy Number from submission body when hidden", async () => {
       const user = userEvent.setup();
-      render(<FormContainer config={makeConfig()} />, {
+      render(<FormContainer config={makeConfigWithDateDefaults()} />, {
         wrapper: createWrapper(),
       });
 
       await user.type(screen.getByLabelText(/Client Name/i), "Acme Corp");
-      await user.type(screen.getByLabelText(/Effective Date/i), "2024-06-01");
       await user.click(
         screen.getByRole("button", { name: /Create Quotation/i }),
       );
@@ -394,7 +410,7 @@ describe("FormContainer — create-quotation-form", () => {
 
     it("includes Master Policy Number in submission body when visible and filled", async () => {
       const user = userEvent.setup();
-      render(<FormContainer config={makeConfig()} />, {
+      render(<FormContainer config={makeConfigWithDateDefaults()} />, {
         wrapper: createWrapper(),
       });
 
@@ -413,7 +429,6 @@ describe("FormContainer — create-quotation-form", () => {
         "MASTER-001",
       );
       await user.type(screen.getByLabelText(/Client Name/i), "Acme Corp");
-      await user.type(screen.getByLabelText(/Effective Date/i), "2024-06-01");
       await user.click(
         screen.getByRole("button", { name: /Create Quotation/i }),
       );
@@ -476,7 +491,18 @@ describe("FormContainer — create-quotation-form", () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+      // Field-level controls (e.g. the date picker's popover trigger) may
+      // still render buttons even when no actions are configured. Narrow the
+      // assertion to the named action buttons from the schema.
+      const schemaActions = (createQuotationSchema as any).props?.actions ?? [];
+      schemaActions.forEach((act: { label?: string }) => {
+        if (act.label) {
+          expect(
+            screen.queryByRole("button", { name: new RegExp(act.label, "i") }),
+          ).not.toBeInTheDocument();
+        }
+      });
+      expect(screen.queryByRole("button", { name: /reset/i })).not.toBeInTheDocument();
     });
   });
 });
