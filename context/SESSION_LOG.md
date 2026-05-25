@@ -292,3 +292,24 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
   - Error-envelope content consolidated: 04 now links to 09's canonical reference instead of duplicating.
 - **Commit:** `25e7cdb6 docs(schema-ref): refresh for PR #72 reality + multi-agent review fixes` (213 +, 73 −, 10 files).
 - **Branch state:** `docs/schema-design-reference` is now PR-#72-aware. Will land alongside or after PR #72 merges to main.
+
+### 2026-05-25 — NEW_MODULE_IMPLEMENTATION_GUIDE correctness + completeness pass
+
+- **Branch:** `docs/schema-design-reference` (continuing).
+- **Trigger:** user asked to verify `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md` for completeness, readability, and hallucinations, looping review→fix until clean.
+- **Pipeline:** `/write-document` — context bundle → targeted Edits → 3 parallel reviewers (hallucination / completeness / readability) → triage + apply → final 2-agent sweep → one more fix.
+- **Findings + fixes:**
+  - Step 4 "synchronous mount, no network hop" was wrong. `OverlaidForm` fetches `/api/forms/<id>` via React Query; `forms_registry` exists so the API route is edge-runtime-safe, not to skip the round-trip. Rewrote.
+  - Missing-form fallback wording: API route silently returns `dummy-member-form` (HTTP 200), not "Failed to load schema". Updated Step 4 and Gotcha #3.
+  - Gotcha #10 was misleading — `refreshKey` is a `startsWith()` prefix match against `dataSource.api.endpoint`, not an exact URL match.
+  - Column type `"text"` is not implemented in `CellRenderer.tsx`; falls through to `default`. Dropped from the example and the reference table.
+  - The doc previously pointed at `create-event-form.json` as a "multi-action onSuccess" example — no such form exists in the repo. Replaced with descriptive prose.
+  - Added Step 2 column extras: `valueMapping`, `currency`+`align`, `pagination.enabled`. Added `lob` column so the worked-example field dictionary stays consistent across steps.
+  - Step 3 gained a cross-link sub-table (dynamic options / conditional fields / view mode / overlaid forms / backend errors) — all anchors verified against `06-forms.md`.
+  - Step 7 now spells out the `JSON.parse(JSON.stringify(...))` + walk-the-tree pattern from `quotations/[id]/page.tsx` for `{{id}}` interpolation.
+  - Step 9: prefer `npm run typecheck` over `npx tsc --noEmit`; flagged that `validate-schemas.ts` only covers the `schemas/` root.
+  - Added explicit blockquote in Step 1 that `tab-panel` is a structural convention (not registry-backed).
+- **Verified against:** `WidgetRegistry.tsx`, `WidgetRenderer.tsx`, `schemaResolver.ts`, `useActionHandler.ts`, `useSmartQuery.ts`, `useDataTable.ts`, `TabsContainer.tsx`, `formContainer/utils.ts`, `CellRenderer.tsx`, `DataTable/index.tsx`, `OverlaidForm.tsx`, `/api/forms/[id]/route.ts`, `app-config-mock.ts`, `scripts/generate_form_index.mjs`, `scripts/validate-schemas.ts`, `package.json`, real schemas under `schemas/` and `schemas/forms/`.
+- **Commit:** `fb7bde8c docs(new-module): correctness + completeness pass against feat/new-buisiness` (+340 / −126, 1 file). Pushed to `origin/docs/schema-design-reference`.
+- **Tests:** N/A (docs only).
+- **Next:** branch is ready to roll into PR #72's wake; `NEW_MODULE_IMPLEMENTATION_GUIDE.md` is now aligned with the `schema-design-reference/` companion docs.
