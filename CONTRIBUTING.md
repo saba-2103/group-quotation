@@ -28,7 +28,7 @@ A page looks like this:
 
 There is **no `VendorsPage.tsx`** with state, effects, and JSX. The runtime ([`WidgetRenderer`](src/components/registry/WidgetRenderer.tsx)) walks the schema, fetches data, dispatches actions, and renders registered widgets. Your job, most of the time, is to compose the existing widget vocabulary in JSON and wire it to a Next.js route.
 
-When the existing widgets genuinely don't cover a need, you extend the framework — you do **not** fork it into bespoke React for one feature. See [Recipe 11 — Register a new widget](docs/schema-design-reference/11-cookbook.md#recipe-11--register-a-new-widget).
+When the existing widgets don't cover a need, you add a widget — you do **not** bypass the schema runtime by writing a bespoke React page. There are two flavours of "new widget" and the bar is different for each (see §11). What you must not do is fork the runtime for one screen. See [Recipe 11 — Register a new widget](docs/schema-design-reference/11-cookbook.md#recipe-11--register-a-new-widget).
 
 ---
 
@@ -204,21 +204,53 @@ If you touch UI that's previewable, **run the dev server and look at it.** Type 
 
 ---
 
-## 11. When to extend the framework
+## 11. When to add a widget — framework vs domain
 
-Add a widget when:
+There are **two tiers** of widget, and they have different bars. Getting this wrong is the most common architectural mistake in code review.
 
-- The shape is genuinely new (a chart type, an editor, a layout idiom not covered).
-- You'd be writing the same React composition more than twice across modules.
-- A reviewer in the proposal triage agrees the framework is the right home.
+### Framework widgets (live on `main`)
 
-Don't add a widget when:
+Generic, reusable primitives — `data-table`, `form-container`, `key-value-grid`, `tabs-container`, `page-header`, `stack-layout`, `grid-layout`. Used across every module.
+
+**Add a framework widget when:**
+
+- The shape is genuinely new and generic (a new chart type, a new layout idiom, a new editor).
+- You'd be writing the same React composition more than twice across **different modules**.
+- It can be fully parametrised — no hardcoded field names, no domain-specific keys, no "if module === 'claims'" branches.
+
+**Don't add a framework widget when:**
 
 - An existing one + different `props` would do.
-- You're trying to escape a constraint (role gating, validation, polling) that the framework already handles a different way.
+- It only makes sense for one module (that's a domain widget — see below).
+- You're trying to escape a constraint (role gating, validation, polling) the framework already handles a different way.
 - You haven't checked [02-widget-catalog.md](docs/schema-design-reference/02-widget-catalog.md) cover-to-cover.
 
-The whole point of the schema-driven model is that the widget surface stays bounded. Every new widget is a long-term commitment.
+Framework widgets need a `/propose` ticket and triage. The widget surface stays small on purpose.
+
+### Domain widgets (live on `feat/new-buisiness`)
+
+Group PAS V1 has **9 domain widgets** that encode insurance-product semantics — `plan-card`, `plan-form`, `card-grid`, `dmn-decision-table`, `editable-table`, `activation-counter`, `census-file-format-form`, `confirm-maf-button`, `polling-banner`. These know about things like the Quote `Plan` DSL, `productsJson` shape, MAF confirmation flows, census column metadata.
+
+**This is an intentional pattern, not a workaround.** When a screen needs domain knowledge that doesn't generalise (parsing a backend DSL, structured editing of a domain entity, a workflow-specific control), build a domain widget rather than stuffing the logic into a generic widget's `props` or a one-off React page.
+
+**Add a domain widget when:**
+
+- A screen needs to understand a domain entity's shape (Plan, Quote, Policy, Census) in a way no generic widget can.
+- The same domain behaviour will appear on more than one screen *in the same module*. (One-screen-only is borderline — talk it through in the proposal.)
+- A generic widget would need so many domain-specific props it stops being generic.
+
+**Conventions:**
+
+- Domain widgets live under [`src/components/widgets/`](src/components/widgets/) alongside framework widgets, but are registered the same way in [`WidgetRegistry.tsx`](src/components/registry/WidgetRegistry.tsx).
+- They still take `config: WidgetConfig`, still use `useSmartQuery` / `useActionHandler`, still respect `visibleRoles`. The framework contract is the same.
+- The line between "framework" and "domain" is **which branch they live on**. A domain widget that turns out to be reusable across products gets promoted to `main` later, not pre-emptively.
+- See [02-widget-catalog.md → "Widgets on feat/new-buisiness"](docs/schema-design-reference/02-widget-catalog.md) for the existing precedents and their shapes.
+
+### What you must not do — under either tier
+
+- Fork the schema runtime for one screen. If `<WidgetRenderer />` doesn't render your page, write a widget, don't write a bespoke React page.
+- Hardcode domain knowledge inside a framework widget on `main`. That couples the framework to one product.
+- Register a "widget" that is really a one-off feature component with no parametrisation and no domain reuse. That's just feature code wearing a registry badge — build the screen as a composition of existing widgets, or file a proposal for the right primitive.
 
 ---
 
