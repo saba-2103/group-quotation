@@ -6,6 +6,7 @@ import { getWidgetComponent } from './WidgetRegistry';
 import { cn } from '@/lib/utils';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
 import { useRole } from '@/hooks/useRole';
+import { ParentDataSourceContext } from '@/contexts/ParentDataSourceContext';
 
 interface WidgetRendererProps {
     config: WidgetConfig;
@@ -44,7 +45,7 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ config }) => {
     // Basic Data Fetching if configured. Pass `undefined` to skip the query
     // entirely when the widget is hidden — useSmartQuery short-circuits with
     // `enabled: false` and never fires.
-    const { data, isLoading, error } = useSmartQuery(
+    const { data, isLoading, error, queryKey } = useSmartQuery(
         isRoleHidden ? undefined : config.dataSource,
     );
 
@@ -74,9 +75,21 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ config }) => {
 
     const colSpanClass = config.layout?.colSpan ? colSpanClasses[config.layout.colSpan] : "";
 
+    // Page-envelope plumbing: only own-fetch widgets seed the
+    // ParentDataSourceContext for their descendants. `fromParent` widgets are
+    // transparent — they don't wrap, so the context naturally falls through
+    // to whatever the real ancestor provided.
+    const ownsFetch = !!config.dataSource?.api && !config.dataSource?.fromParent;
+    const rendered = <Component {...enhancedProps} />;
+    const wrapped = ownsFetch ? (
+        <ParentDataSourceContext.Provider value={queryKey}>
+            {rendered}
+        </ParentDataSourceContext.Provider>
+    ) : rendered;
+
     return (
         <div className={cn("widget-wrapper min-w-0 w-full", colSpanClass)}>
-            <Component {...enhancedProps} />
+            {wrapped}
         </div>
     );
 };

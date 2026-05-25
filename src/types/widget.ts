@@ -123,6 +123,40 @@ export interface DataSourceConfig {
     stopWhen?: Record<string, unknown>;
     valueKey?: string; // Key to extract from response or context
     stateDependencies?: string[]; // Keys in useWidgetState that trigger re-fetch
+    /**
+     * Dotted path applied to the fetched response via TanStack Query's
+     * `select`. Subscribers only re-render when *this slice* changes by
+     * reference, not when an unrelated part of the envelope changes.
+     *
+     * Pairs with `fromParent` for the page-envelope pattern: one widget owns
+     * the fetch, sibling widgets each declare `select: "<slice>"` to pull
+     * just their part. Works alone too — two widgets fetching the same
+     * endpoint (TanStack dedupes by queryKey) can each request a different
+     * slice and re-render independently.
+     *
+     * Walks the response via the shared `getNested` helper, so the same
+     * prototype-pollution-safe semantics apply. If the path doesn't resolve,
+     * the subscriber receives `undefined`. Applied AFTER `valueKey` (which
+     * runs inside the queryFn and shapes the cached value).
+     */
+    select?: string;
+    /**
+     * When true, this widget does NOT fetch on its own — it subscribes to
+     * the cache entry of the nearest ancestor widget that owns a `dataSource`
+     * (the "page envelope" pattern). `select` is the recommended companion:
+     * the ancestor caches the fat read DTO; each `fromParent` child picks a
+     * slice via `select`.
+     *
+     * When `fromParent` is set, the following fields are ignored (and a dev
+     * warning is logged if they're present): `api`, `valueKey`,
+     * `refreshInterval`, `pollSchedule`, `stopWhen`, `stateDependencies`.
+     * These belong on the ancestor that owns the fetch.
+     *
+     * If there is no ancestor with a dataSource in scope, the widget receives
+     * `data: undefined` and a dev warning is logged — `fromParent` is then a
+     * misconfiguration, not an error state.
+     */
+    fromParent?: boolean;
 }
 
 export interface BaseActionConfig {
