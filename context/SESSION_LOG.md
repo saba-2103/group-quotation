@@ -87,3 +87,25 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
 - **Deliberately NOT brought from #65** (would regress main; Copilot also flagged these): silent `useRole` fallback, `useActionHandler` re-throw, removal of `pollResetSignal`, role-keyed `AppContextProvider` query (server doesn't read role + no encodeURIComponent), personal-history `GIT_SAFETY.md`/`SESSION_LOG.md` noise.
 - **Verification:** `tsc --noEmit` clean; `npm run build` ✓; `npm test` 5 failed / 92 failed — identical to main's pre-change baseline. Zero new regressions.
 - **Next:** close PR #65 with link to #72 as the consolidated path.
+
+### 2026-05-25 — PR #72 review round (Copilot inline + multi-agent deep review)
+
+- **Trigger:** user asked for review of Copilot feedback on PR #72, then for an `/ultrareview`-equivalent in-depth review.
+- **Round 1 — Copilot inline comments (commit `d6fddd3b`):** three valid inline review comments addressed:
+  - `src/lib/api/error-mapper.ts:3` — dropped personal `/Users/...` filesystem path from header comment.
+  - `src/hooks/useDataTable.ts:175` — select-filter option derivation switched from `row[col.accessorKey]` to `getNested(row, col.accessorKey)` so dotted accessorKeys produce the same options the cells render.
+  - `src/hooks/useDataTable.ts:112` — join enrichment switched from flat `enriched[accessorKey] = …` to a new `setNested` helper in `src/lib/objectPath.ts`, so dotted accessorKeys round-trip with the `accessorFn + getNested` read path. Replied inline on each thread with the commit SHA per the PR-review-replies feedback in memory.
+- **Round 2 — in-depth multi-agent review (commit `42294325`):** spawned three parallel reviewers (correctness, security, architecture) against `origin/main...HEAD`. No blockers found. Landed the five high-leverage items the reviewers converged on:
+  1. **`setNested` scalar-collision defence** — refuses to overwrite a non-null non-object intermediate (e.g. row `{ amount: 42 }` with join target `amount.label`). Dev-mode `console.warn` + skip preserves the original field. Return type changed `void → boolean` so callers can detect skipped writes.
+  2. **`useDataTable` empty-accessorKey guard** in the join loop — defensive, since `getNested("")` returns the row but `setNested("")` is a no-op (asymmetric).
+  3. **`visibleRoles` doc + dev warning** — JSDoc now explicitly states "NOT a security boundary, RBAC must be enforced server-side" and documents that `[]` means "no role can see it" (inverts the codebase's usual "empty = no constraint" convention). `WidgetRenderer` logs a dev warning when it sees an empty array — catches the "composed `[...someList]` came up empty" footgun.
+  4. **`_placeholder.json` documentation** — added a paragraph to `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md` explaining the Webpack dynamic `$ref`-import template needs at least one matching `.json` at build time in each `schemas/<dir>/` referenced from a `$ref` — and "do not delete the placeholder when cleaning up empty folders" (would silently break prod).
+  5. **`src/tests/unit/lib/objectPath.unit.test.tsx`** — 17 unit tests for `getNested` + `setNested` covering flat/dotted round-trip, scalar-intermediate refusal, prototype-pollution rejection, empty-path handling, inherited-property safety. All passing. First tests for these primitives.
+- **Verification:** `tsc --noEmit` clean; 17/17 new tests pass; full suite shows pre-existing branch failures (92 fail) unchanged by my edits — confirmed by stash-and-compare.
+- **Follow-ups deliberately not committed** (worth filing as proposals if/when they bite):
+  - Three parallel fetch paths (`useSmartQuery`, `useActionHandler.mutateAsync`, `lib/api/client`) need to converge on a single transport with shared auth-header handling before Keycloak lands.
+  - Virtual-column model for cross-array joins (read straight from the index, no row mutation).
+  - `KeyValueGrid` still has its own `getNested` — flip to `@/lib/objectPath`.
+  - `useActionHandler.mutateAsync` reimplements `parseSpringError` inline.
+  - `PollingBanner` stale-data flash on re-trigger (TanStack cache returns previous response for one render).
+- **Commits:** `d6fddd3b` (Copilot fixes), `42294325` (multi-agent review fixes). Both pushed to `chore/cherry-pick-core-arch`. PR #72 still open.
