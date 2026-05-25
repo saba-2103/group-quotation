@@ -28,7 +28,7 @@ A page looks like this:
 
 There is **no `VendorsPage.tsx`** with state, effects, and JSX. The runtime ([`WidgetRenderer`](src/components/registry/WidgetRenderer.tsx)) walks the schema, fetches data, dispatches actions, and renders registered widgets. Your job, most of the time, is to compose the existing widget vocabulary in JSON and wire it to a Next.js route.
 
-When the existing widgets don't cover a need, you add a widget — you do **not** bypass the schema runtime by writing a bespoke React page. There are two flavours of "new widget" and the bar is different for each (see §11). What you must not do is fork the runtime for one screen. See [Recipe 11 — Register a new widget](docs/schema-design-reference/11-cookbook.md#recipe-11--register-a-new-widget).
+When the existing widgets don't cover a need, you add a widget — you do **not** bypass the schema runtime by writing a bespoke React page. The judgment call is *when* to add a new widget vs extend an existing one, and how to keep the schema DSL clean as the vocabulary grows; see §11. What you must not do is fork the runtime for one screen. See [Recipe 11 — Register a new widget](docs/schema-design-reference/11-cookbook.md#recipe-11--register-a-new-widget).
 
 ---
 
@@ -58,20 +58,20 @@ Reference docs you'll come back to once you start building:
 
 ## 3. Branch model — know which branch you're on
 
-There are two branches you must keep straight. Confusing them wastes hours.
+There are two active integration branches. The split is **operational, not architectural** — `feat/new-buisiness` is where Group PAS V1 work is converging, and it will eventually merge to `main`. Both branches share one widget vocabulary; nothing is permanently a "feat-branch-only" concept.
 
-- **`main`** — the canonical framework. 21 registered widgets, the generic typed API client ([`src/lib/api/client.ts`](src/lib/api/client.ts) + `error-mapper.ts`), `DetailPageSkeleton`, role gating in `WidgetRenderer` (`visibleRoles`), the schema `$ref` plumbing. **Framework primitives land here once they're polished.** All framework PRs target `main`.
-- **`feat/new-buisiness`** — `main` plus **9 domain widgets** for Group PAS V1 (`card-grid`, `plan-card`, `editable-table`, `dmn-decision-table`, `activation-counter`, `plan-form`, `census-file-format-form`, `confirm-maf-button`, `polling-banner`), the domain-typed API modules (`src/lib/api/{quotation,issuance,policy-admin,productCatalog}.ts`), the [`src/lib/api-mock/group-pas/`](src/lib/api-mock/group-pas/) mock backend, and Group PAS app routes. **Domain code stays on this branch by design.** Group PAS feature work lands here.
+- **`main`** — current shipped state. 21 registered widgets, the generic typed API client ([`src/lib/api/client.ts`](src/lib/api/client.ts) + `error-mapper.ts`), `DetailPageSkeleton`, role gating in `WidgetRenderer` (`visibleRoles`), schema `$ref` plumbing. Cross-cutting framework changes target `main` directly so they're available to every feature branch.
+- **`feat/new-buisiness`** — `main` plus the in-flight Group PAS V1 work: 9 additional widgets (`card-grid`, `plan-card`, `editable-table`, `dmn-decision-table`, `activation-counter`, `plan-form`, `census-file-format-form`, `confirm-maf-button`, `polling-banner`), domain-typed API modules ([`src/lib/api/{quotation,issuance,policy-admin,productCatalog}.ts`](src/lib/api/)), the [`src/lib/api-mock/group-pas/`](src/lib/api-mock/group-pas/) mock backend, and Group PAS app routes. This is the working integration branch for Group PAS; all of it merges to `main` when the workstream ships.
 
-Rule of thumb:
+Rule of thumb for where to branch off:
 
 | You're doing… | Branch off | Merge into |
 |---------------|------------|------------|
-| New widget, new hook, new action type, framework bug fix | `main` | `main` |
-| Group PAS module / screen / form | `feat/new-buisiness` | `feat/new-buisiness` |
-| Cherry-picking a framework change back from feat-branch to main | `chore/cherry-pick-…` off `main` | `main` (then trigger merge of `main` → `feat/new-buisiness`) |
+| Cross-cutting widget / hook / action type / framework bug fix | `main` | `main` |
+| Group PAS module / screen / form / Group PAS-flavoured widget | `feat/new-buisiness` | `feat/new-buisiness` |
+| Cherry-picking a cross-cutting change back from feat-branch to main | `chore/cherry-pick-…` off `main` | `main` (then trigger merge of `main` → `feat/new-buisiness`) |
 
-When in doubt, ask before branching. Reverse-engineering a misplaced PR is painful.
+The cherry-pick row exists because cross-cutting improvements sometimes get noticed mid-feature work — see commits like `chore(core-arch): port framework-level changes from feat/new-buisiness` for the pattern. When in doubt, ask before branching. Reverse-engineering a misplaced PR is painful.
 
 ---
 
@@ -204,53 +204,40 @@ If you touch UI that's previewable, **run the dev server and look at it.** Type 
 
 ---
 
-## 11. When to add a widget — framework vs domain
+## 11. Adding a widget — keep the DSL simple, promote cross-cutting patterns
 
-There are **two tiers** of widget, and they have different bars. Getting this wrong is the most common architectural mistake in code review.
+There is **one widget vocabulary**. Every widget lives in [`WidgetRegistry.tsx`](src/components/registry/WidgetRegistry.tsx), takes `config: WidgetConfig`, uses the same hooks, respects `visibleRoles`. Complex widgets like `plan-card` and `plan-form` are first-class — they're not a separate tier, they're just complex widgets that solve a real pattern. All widgets converge on `main` over time (§3).
 
-### Framework widgets (live on `main`)
+The architectural rule is about **how the schema DSL grows**, not about a framework-vs-domain hierarchy.
 
-Generic, reusable primitives — `data-table`, `form-container`, `key-value-grid`, `tabs-container`, `page-header`, `stack-layout`, `grid-layout`. Used across every module.
+### Two goals in tension
 
-**Add a framework widget when:**
+1. **Keep the schema DSL simple.** A schema author should be able to read a widget's config and understand what it'll render without chasing through prop combinations. Bloating an existing widget with feature-specific knobs (mode flags, "if `variant === 'plan'`" branches, optional keys that only one schema uses) is what we're avoiding.
+2. **Grow the vocabulary deliberately.** When a behaviour shows up across modules, the right move is to lift it into a new widget — extending the DSL with a new `type` — not to bolt knobs onto an existing one.
 
-- The shape is genuinely new and generic (a new chart type, a new layout idiom, a new editor).
-- You'd be writing the same React composition more than twice across **different modules**.
-- It can be fully parametrised — no hardcoded field names, no domain-specific keys, no "if module === 'claims'" branches.
+### Add a widget when…
 
-**Don't add a framework widget when:**
+- A screen needs behaviour an existing widget can't do cleanly with sensible props.
+- Adding the behaviour to an existing widget would materially bloat that widget's prop surface or fork its internal logic on a feature flag. **That bloat is the DSL getting worse for everyone.**
+- The behaviour involves complex domain interactions (parsing a backend DSL, structured editing of a domain entity, a workflow-specific control). `plan-card` parsing stringified `productsJson` and `plan-form` editing the Quote `Plan` DSL are good precedents — these aren't second-class because they're domain-aware; they're first-class because they solve a real recurring shape.
 
-- An existing one + different `props` would do.
-- It only makes sense for one module (that's a domain widget — see below).
-- You're trying to escape a constraint (role gating, validation, polling) the framework already handles a different way.
-- You haven't checked [02-widget-catalog.md](docs/schema-design-reference/02-widget-catalog.md) cover-to-cover.
+### Don't add a widget when…
 
-Framework widgets need a `/propose` ticket and triage. The widget surface stays small on purpose.
+- An existing one + different `props` would do **and** wouldn't degrade its prop surface.
+- You're trying to escape a framework constraint (role gating, validation, polling) that's already handled a different way — see [12-troubleshooting.md](docs/schema-design-reference/12-troubleshooting.md) first.
+- You haven't read [02-widget-catalog.md](docs/schema-design-reference/02-widget-catalog.md) cover-to-cover.
 
-### Domain widgets (live on `feat/new-buisiness`)
+### How the vocabulary grows — promotion
 
-Group PAS V1 has **9 domain widgets** that encode insurance-product semantics — `plan-card`, `plan-form`, `card-grid`, `dmn-decision-table`, `editable-table`, `activation-counter`, `census-file-format-form`, `confirm-maf-button`, `polling-banner`. These know about things like the Quote `Plan` DSL, `productsJson` shape, MAF confirmation flows, census column metadata.
+When a widget written for one module turns out to apply somewhere else, that's the signal to promote it: make it a core primitive that everyone reaches for, on `main`, generalised the right amount. **Promotion is extending the DSL through a new `type`, not through new conditional knobs on an existing one.**
 
-**This is an intentional pattern, not a workaround.** When a screen needs domain knowledge that doesn't generalise (parsing a backend DSL, structured editing of a domain entity, a workflow-specific control), build a domain widget rather than stuffing the logic into a generic widget's `props` or a one-off React page.
+Don't generalise pre-emptively. Wait for the second use case before extracting — speculative generalisation produces widgets nobody fits cleanly. File a proposal (`/propose`) when you spot a real second user and want to lift the pattern.
 
-**Add a domain widget when:**
+### What's actually forbidden
 
-- A screen needs to understand a domain entity's shape (Plan, Quote, Policy, Census) in a way no generic widget can.
-- The same domain behaviour will appear on more than one screen *in the same module*. (One-screen-only is borderline — talk it through in the proposal.)
-- A generic widget would need so many domain-specific props it stops being generic.
-
-**Conventions:**
-
-- Domain widgets live under [`src/components/widgets/`](src/components/widgets/) alongside framework widgets, but are registered the same way in [`WidgetRegistry.tsx`](src/components/registry/WidgetRegistry.tsx).
-- They still take `config: WidgetConfig`, still use `useSmartQuery` / `useActionHandler`, still respect `visibleRoles`. The framework contract is the same.
-- The line between "framework" and "domain" is **which branch they live on**. A domain widget that turns out to be reusable across products gets promoted to `main` later, not pre-emptively.
-- See [02-widget-catalog.md → "Widgets on feat/new-buisiness"](docs/schema-design-reference/02-widget-catalog.md) for the existing precedents and their shapes.
-
-### What you must not do — under either tier
-
-- Fork the schema runtime for one screen. If `<WidgetRenderer />` doesn't render your page, write a widget, don't write a bespoke React page.
-- Hardcode domain knowledge inside a framework widget on `main`. That couples the framework to one product.
-- Register a "widget" that is really a one-off feature component with no parametrisation and no domain reuse. That's just feature code wearing a registry badge — build the screen as a composition of existing widgets, or file a proposal for the right primitive.
+- **Forking the schema runtime for one screen.** If `<WidgetRenderer />` doesn't render your page, write a widget — don't write a bespoke React page that ignores the runtime.
+- **Bloating an existing widget's props with feature-specific knobs.** That pollutes the DSL for everyone. Write a new widget instead.
+- **Registering a "widget" that's really a one-off feature component** with no parametrisation and no plausible second user. Build it as a composition of existing widgets, or scope it as a deliberate domain widget with a clear shape.
 
 ---
 
