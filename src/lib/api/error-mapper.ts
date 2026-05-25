@@ -1,6 +1,5 @@
 // Backend error envelopes — two shapes seen in the wild as of 2026-05-07
-// (verified against the deployed Spring service in
-// `/Users/seriousblack/dev_anaira/group-pas/`):
+// (verified against the deployed Spring service):
 //
 // 1. Module-specific @RestControllerAdvice (e.g. QuotationExceptionHandler,
 //    PolicyAdminGlobalExceptionHandler) returns:

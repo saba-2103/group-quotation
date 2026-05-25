@@ -11,7 +11,7 @@ import { WidgetConfig } from "@/types/widget";
 import { SCROLLABLE_COLUMN_THRESHOLD } from "../components/widgets/data/DataTable/constants";
 import { ColumnConfig, TableRow } from "../components/widgets/data/DataTable/types";
 import { useSmartQuery } from "./useSmartQuery";
-import { getNested } from "@/lib/objectPath";
+import { getNested, setNested } from "@/lib/objectPath";
 
 interface UseDataTableOptions {
   props: WidgetConfig["props"];
@@ -109,8 +109,14 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
           if (key == null) continue;
           const match = index.get(key);
           if (match) {
-            (enriched as Record<string, unknown>)[col.accessorKey] =
-              match[col.joinField as string];
+            // Use setNested so dotted accessorKeys (read via accessorFn +
+            // getNested in columnDefs) round-trip correctly. Flat keys still
+            // land as a single property.
+            setNested(
+              enriched as Record<string, unknown>,
+              col.accessorKey,
+              match[col.joinField as string],
+            );
           }
         }
         return enriched;
@@ -172,9 +178,15 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     if (!columns) return opts;
     (columns as ColumnConfig[]).forEach((col) => {
       if (col.filterable && col.filterType === "select") {
-        opts[col.accessorKey] = Array.from(new Set(rawData.map((row) => String(row[col.accessorKey] ?? "")))).filter(
-          Boolean
-        );
+        // Mirror the columnDef read path: dotted keys must go through
+        // getNested or the option set will be empty for nested fields.
+        opts[col.accessorKey] = Array.from(
+          new Set(
+            rawData.map((row) =>
+              String(getNested(row, col.accessorKey) ?? ""),
+            ),
+          ),
+        ).filter(Boolean);
       }
     });
     return opts;
