@@ -8,7 +8,7 @@ category: architecture
 impact: medium
 effort: s
 related: []
-pr: null
+pr: "https://github.com/Anaira-AI/keystone-ui/pull/77"
 ---
 
 ## Problem
@@ -71,4 +71,4 @@ Files touched:
   - `src/types/widget.ts` — rewrote the `WidgetConfig.visibleWhen` JSDoc to describe the new renderer-level semantics, eval-context filtering, error fallback, and container-precedence rule.
   - `src/tests/unit/widget-renderer/visibleWhen.unit.test.tsx` — new file. 7 tests covering: absence path, truthy predicate against full snapshot, falsy predicate, `stateDependencies` slicing (key-in-deps vs key-out-of-deps), broken-predicate fallback (defaults to visible + dev warning), `visibleRoles` precedence (predicate is never evaluated when role-hidden).
 - Deviations from the proposal: none. The test for fetch short-circuit is implicit: when the widget is hidden by the gate, the stub component never mounts, and the `useSmartQuery` call inside `WidgetRenderer` receives `undefined` per the extended short-circuit condition. Adding a separate fetch-spy assertion would have required deeper mocking with no extra signal.
-- PR: pending — will be filled in once the PR is opened.
+- PR: https://github.com/Anaira-AI/keystone-ui/pull/77 (targets `chore/cherry-pick-core-arch`; will be retargeted to `main` after PR #72 merges).

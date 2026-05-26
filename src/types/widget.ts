@@ -51,11 +51,31 @@ export interface WidgetConfig {
      */
     visibleRoles?: string[];
     /**
-     * jsonLogic condition evaluated against fetched data on a container that
-     * owns a `dataSource` (today: `TabsContainer`). Allows hiding individual
-     * tabs/children based on entity shape — e.g. hide a GCL Member Quotes
-     * tab on a GTL quote. NOT honoured by `WidgetRenderer` directly; see
-     * the consuming container's docs for scope.
+     * Generic visibility predicate (jsonLogic format). `WidgetRenderer`
+     * evaluates this against the shared `useWidgetState` snapshot BEFORE
+     * `useSmartQuery`, so hidden widgets skip their own data fetch and
+     * polling cost. Evaluation runs only if `visibleRoles` did not already
+     * hide the widget.
+     *
+     * **Evaluation context:** if `dataSource.stateDependencies` is set, only
+     * those keys are passed in as the eval context (declarative dependency,
+     * cheaper). If absent, the full `useWidgetState.values` snapshot is
+     * passed; unbound `var` references resolve to `null` per jsonLogic.
+     *
+     * **Error handling:** a predicate that throws (malformed jsonLogic, etc.)
+     * defaults to *visible* and logs a dev-mode warning. Visible-but-wrong is
+     * debuggable; hidden-and-wrong is silent.
+     *
+     * **Container precedence:** container widgets MAY also evaluate
+     * `visibleWhen` on their children against a different context (e.g.
+     * `TabsContainer` filters child tabs against its own fetched entity from
+     * `dataSource.data`). That's complementary — the renderer-level gate
+     * runs on every widget; container-level gates run on direct children
+     * only and use their own scope.
+     *
+     * To trigger visibility from a sibling widget, publish a state key via
+     * `useWidgetState.setValue` (or a `state-publisher` dataSource) and
+     * reference it in the predicate. See STATE_MANAGEMENT_GUIDE.md §8.2.
      */
     visibleWhen?: Record<string, unknown>;
 }
