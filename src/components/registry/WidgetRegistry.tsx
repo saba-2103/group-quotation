@@ -19,6 +19,8 @@ import { RoleSwitcher } from "../widgets/role/RoleSwitcher";
 import { ActionBar } from "../widgets/actions/ActionBar";
 import { StateBadge } from "../widgets/state/StateBadge";
 import { ReasonBanner } from "../widgets/state/ReasonBanner";
+import { PollingBanner } from "../widgets/state/PollingBanner";
+import { CardGrid } from "../widgets/data/CardGrid";
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
   "stack-layout": StackLayout,
@@ -41,7 +43,9 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
   "role-switcher": RoleSwitcher,
   "action-bar": ActionBar,
   "state-badge": StateBadge,
-  "reason-banner": ReasonBanner
+  "reason-banner": ReasonBanner,
+  "polling-banner": PollingBanner,
+  "card-grid": CardGrid,
 };
 
 export const getWidgetComponent = (type: string) => {

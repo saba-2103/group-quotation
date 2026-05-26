@@ -1,0 +1,2 @@
+Shared data-table column configs, $ref'd as `schemas/tables/<name>.json`.
+Resolver is wired in src/lib/schemaResolver.ts.

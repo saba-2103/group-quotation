@@ -31,6 +31,12 @@ export interface KeyValueField {
   // For type="count" / "list" cells (singular/plural).
   unit?: string;
   unitPlural?: string;
+  // Consulted when `accessorKey` resolves to a blank value (null / undefined /
+  // empty string). Lets a schema declare a friendly field with a deterministic
+  // fallback (e.g. `clientName` → `clientId`) so detail pages don't render `—`
+  // when the backend skipped the enriched field. (Type added now; consumer
+  // hookup lives with the widget that opts in.)
+  fallbackKey?: string;
 }
 
 export interface KeyValueGridWidgetProps {

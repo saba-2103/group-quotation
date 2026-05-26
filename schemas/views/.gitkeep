@@ -1,0 +1,2 @@
+# Shared view fragments, $ref'd as `schemas/views/<name>.json`.
+# Resolver is wired in src/lib/schemaResolver.ts. Add files as needed.

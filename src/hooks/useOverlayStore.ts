@@ -1,20 +1,32 @@
 import { create } from 'zustand';
+import type { OverlaySize } from '@/types/widget';
 
 type OverlayType = "sheet" | "modal" | "dialog";
 
+export interface OverlayOptions {
+    /** Optional width override; consumed by `OverlayProvider`. */
+    size?: OverlaySize;
+}
+
+interface OverlayEntry {
+    type: OverlayType;
+    data?: any;
+    options?: OverlayOptions;
+}
+
 interface OverlayState {
-    openOverlays: Record<string, { type: OverlayType, data?: any }>;
-    open: (id: string, type: OverlayType, data?: any) => void;
+    openOverlays: Record<string, OverlayEntry>;
+    open: (id: string, type: OverlayType, data?: any, options?: OverlayOptions) => void;
     close: (id: string) => void;
     closeAll: () => void;
 }
 
 export const useOverlayStore = create<OverlayState>((set) => ({
     openOverlays: {},
-    open: (id, type, data) => set((state) => ({
+    open: (id, type, data, options) => set((state) => ({
         openOverlays: {
             ...state.openOverlays,
-            [id]: { type, data }
+            [id]: { type, data, options }
         }
     })),
     close: (id) => set((state) => {

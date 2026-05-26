@@ -4,8 +4,13 @@ import { VisibilityCondition } from '@/lib/conditions';
 
 export type ScreenAction = string;
 
-// Union of all possible values a form field can hold at runtime
-export type FormFieldValue = string | number | boolean;
+// Union of all possible values a form field can hold at runtime.
+// `File` and `null` are included for forward-compat with a future `file`
+// field type — the renderer would store the selected File object on the
+// form value directly so a two-step submit (initiate JSON → PUT blob) can
+// read it. Note: no `file` handler ships in FIELD_TYPE_MAP yet; this is a
+// type-only widening.
+export type FormFieldValue = string | number | boolean | File | null;
 
 export interface SelectOption {
     value: string;
@@ -47,6 +52,9 @@ export interface FormFieldConfig {
     entityId?: string;
     language?: string;
     endpoint?: string;
+    // file-field config — only meaningful when type === 'file'
+    // (no renderer ships yet; type is exposed for forward-compat).
+    accept?: string;
 }
 
 // Extends ActionConfig with submitAction flag used only by FormContainer
