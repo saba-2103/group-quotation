@@ -31,22 +31,41 @@ const getDisplayValue = (field: FormFieldConfig, value: FormFieldValue | undefin
     }
 };
 
+/**
+ * Heuristic: a yes/no select is any select whose options are exactly the pair
+ * {yes, no} (case-insensitive on the value). Boolean-shaped enums get the
+ * badge treatment automatically so callers don't have to remember to set
+ * `displayStyle: 'badge'` on every yes/no field. Checkboxes also render as
+ * badges since their semantics are inherently boolean.
+ */
+const isYesNoSelect = (field: FormFieldConfig): boolean => {
+    if (field.type !== 'select' || !field.options || field.options.length !== 2) return false;
+    const values = field.options.map((o) => String(o.value).toLowerCase()).sort();
+    return values[0] === 'no' && values[1] === 'yes';
+};
+
 const ViewField: React.FC<ViewFieldProps> = ({ field, value, dateFormat }) => {
     const displayValue = getDisplayValue(field, value, dateFormat);
 
-    switch (field.displayStyle) {
-        case 'badge':
-            return <Badge variant="secondary">{displayValue}</Badge>;
-        case 'date':
-            return value ? (
-                <div className="flex items-center gap-2">
-                    <CalendarIcon size={16} className="text-muted-foreground" />
-                    <span className="font-medium">{displayValue}</span>
-                </div>
-            ) : <p className="font-medium">{EMPTY_DISPLAY}</p>;
-        default:
-            return <p className="font-medium">{displayValue}</p>;
+    const renderAsBadge =
+        field.displayStyle === 'badge' ||
+        field.type === 'checkbox' ||
+        isYesNoSelect(field);
+
+    if (renderAsBadge) {
+        return <Badge variant="secondary">{displayValue}</Badge>;
     }
+
+    if (field.displayStyle === 'date') {
+        return value ? (
+            <div className="flex items-center gap-2">
+                <CalendarIcon size={16} className="text-muted-foreground" />
+                <span className="font-medium">{displayValue}</span>
+            </div>
+        ) : <p className="font-medium">{EMPTY_DISPLAY}</p>;
+    }
+
+    return <p className="font-medium">{displayValue}</p>;
 };
 
 export default ViewField;

@@ -1,3 +1,29 @@
+{{- if .Values.roles }}
+# ── Multi-Role: Service only for roles with ports ────────────────────
+{{- range $roleName, $role := .Values.roles }}
+{{- if and $role.enabled $role.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "keystone-ui.fullname" $ }}-{{ $roleName }}
+  labels:
+    {{- include "keystone-ui.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $roleName }}
+spec:
+  type: {{ $.Values.service.type }}
+  ports:
+    - port: {{ $.Values.service.port }}
+      targetPort: {{ $role.port }}
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "keystone-ui.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $roleName }}
+{{- end }}
+{{- end }}
+{{- else }}
+# ── Single-Role ─────────────────────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:
@@ -13,3 +39,4 @@ spec:
       name: http
   selector:
     {{- include "keystone-ui.selectorLabels" . | nindent 4 }}
+{{- end }}

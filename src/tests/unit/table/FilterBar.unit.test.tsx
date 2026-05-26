@@ -7,13 +7,36 @@ import { WidgetConfig } from "@/types/widget";
 import quotationsPageSchema from "../../../../schemas/quotations.json";
 
 // ─── Mock dependencies ────────────────────────────────────────────────────────
+// The current FilterBar dispatches `update-widget-state` actions through
+// useActionHandler instead of pushing URL query params via next/router. These
+// tests assert against that contract.
 
-const mockPush = jest.fn();
-const mockSearchParams = { current: new URLSearchParams() };
+const mockHandleAction = jest.fn();
+jest.mock("@/hooks/useActionHandler", () => ({
+  useActionHandler: () => mockHandleAction,
+}));
 
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
-  useSearchParams: () => mockSearchParams.current,
+// Mutable backing store for useWidgetState — lets tests preload active filter
+// values to simulate "URL params were already present" scenarios.
+const mockState: { values: Record<string, Record<string, unknown>> } = { values: {} };
+
+jest.mock("@/hooks/useWidgetState", () => ({
+  useWidgetState: () => ({
+    getValue: (key: string, defaultValue?: unknown) =>
+      mockState.values[key] ?? defaultValue ?? {},
+    setValue: (key: string, value: Record<string, unknown>) => {
+      mockState.values[key] = value;
+    },
+    patchValue: (key: string, value: Record<string, unknown>) => {
+      mockState.values[key] = { ...(mockState.values[key] ?? {}), ...value };
+    },
+    resetKey: (key: string) => {
+      delete mockState.values[key];
+    },
+    resetAll: () => {
+      mockState.values = {};
+    },
+  }),
 }));
 
 // ─── Schema extraction ────────────────────────────────────────────────────────
@@ -24,6 +47,8 @@ const filtersSchema = (quotationsPageSchema as any).children.find(
 const allFilters: any[] = filtersSchema.props.filters;
 const selectFilters = allFilters.filter((f: any) => f.type === "select" && f.options);
 const dateFilters = allFilters.filter((f: any) => f.type === "date");
+const stateKey: string = filtersSchema.props.stateKey ?? filtersSchema.id;
+const searchKey: string = filtersSchema.props.searchKey ?? "q";
 
 const filterConfig: WidgetConfig = {
   id: filtersSchema.id,
@@ -42,17 +67,29 @@ const createWrapper = () => {
   );
 };
 
-const renderFilters = (searchParams = new URLSearchParams()) => {
-  mockSearchParams.current = searchParams;
+const renderFilters = (initialActiveValues: Record<string, unknown> = {}) => {
+  mockState.values = { [stateKey]: initialActiveValues };
   return render(<FilterBar config={filterConfig} />, { wrapper: createWrapper() });
 };
+
+const expectPatchAction = (filterId: string, value: string) =>
+  expect(mockHandleAction).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: "update-widget-state",
+      props: expect.objectContaining({
+        key: stateKey,
+        operation: "patch",
+        value: expect.objectContaining({ [filterId]: value }),
+      }),
+    }),
+  );
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe("FilterBar — unit", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSearchParams.current = new URLSearchParams();
+    mockState.values = {};
   });
 
   // ── 1. Rendering ──────────────────────────────────────────────────────────
@@ -133,10 +170,10 @@ describe("FilterBar — unit", () => {
     });
   });
 
-  // ── 4. Filter Selection → router.push ────────────────────────────────────
+  // ── 4. Filter Selection → dispatches widget-state patch ──────────────────
 
   describe("Filter Selection", () => {
-    it("calls router.push with correct query param key=value when an option is selected", async () => {
+    it("dispatches a patch action with key=value when an option is selected", async () => {
       const user = userEvent.setup();
       const firstFilter = selectFilters[0];
       const firstOption = firstFilter.options[0];
@@ -153,14 +190,10 @@ describe("FilterBar — unit", () => {
       await waitFor(() => expect(screen.getByText(firstOption.label)).toBeInTheDocument());
       await user.click(screen.getByText(firstOption.label));
 
-      await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith(
-          expect.stringContaining(`${firstFilter.id}=${firstOption.value}`),
-        );
-      });
+      await waitFor(() => expectPatchAction(firstFilter.id, firstOption.value));
     });
 
-    it("calls router.push for each select filter's first option", async () => {
+    it("dispatches a patch for each select filter's first option", async () => {
       const user = userEvent.setup();
 
       for (const filter of selectFilters) {
@@ -178,10 +211,7 @@ describe("FilterBar — unit", () => {
         await waitFor(() => expect(screen.getByText(firstOption.label)).toBeInTheDocument());
         await user.click(screen.getByText(firstOption.label));
 
-        const encoded = new URLSearchParams({ [filter.id]: firstOption.value }).toString();
-        await waitFor(() => {
-          expect(mockPush).toHaveBeenCalledWith(expect.stringContaining(encoded));
-        });
+        await waitFor(() => expectPatchAction(filter.id, firstOption.value));
 
         unmount();
       }
@@ -195,7 +225,7 @@ describe("FilterBar — unit", () => {
       const filter = selectFilters[0];
       const option = filter.options[0];
 
-      renderFilters(new URLSearchParams(`${filter.id}=${option.value}`));
+      renderFilters({ [filter.id]: option.value });
 
       expect(
         screen.getByText(`${filter.label}: ${option.label}`),
@@ -203,12 +233,12 @@ describe("FilterBar — unit", () => {
     });
 
     it("shows chips for all active filter params", () => {
-      const params = new URLSearchParams();
+      const active: Record<string, unknown> = {};
       selectFilters.slice(0, 2).forEach((f: any) => {
-        params.set(f.id, f.options[0].value);
+        active[f.id] = f.options[0].value;
       });
 
-      renderFilters(params);
+      renderFilters(active);
 
       selectFilters.slice(0, 2).forEach((f: any) => {
         expect(
@@ -219,24 +249,33 @@ describe("FilterBar — unit", () => {
 
     it("shows Clear all button when any filter param is active", () => {
       const filter = selectFilters[0];
-      renderFilters(new URLSearchParams(`${filter.id}=${filter.options[0].value}`));
+      renderFilters({ [filter.id]: filter.options[0].value });
       expect(screen.getByRole("button", { name: /clear all/i })).toBeInTheDocument();
     });
 
-    it("clicking Clear all calls router.push with empty string", async () => {
+    it("clicking Clear all dispatches a `set` action with empty value", async () => {
       const user = userEvent.setup();
       const filter = selectFilters[0];
-      renderFilters(new URLSearchParams(`${filter.id}=${filter.options[0].value}`));
+      renderFilters({ [filter.id]: filter.options[0].value });
 
       await user.click(screen.getByRole("button", { name: /clear all/i }));
 
-      expect(mockPush).toHaveBeenCalledWith("?");
+      expect(mockHandleAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "update-widget-state",
+          props: expect.objectContaining({
+            key: stateKey,
+            operation: "set",
+            value: {},
+          }),
+        }),
+      );
     });
 
-    it("clicking chip X button calls router.push without that filter param", async () => {
+    it("clicking chip X dispatches a patch that clears that filter's value", async () => {
       const user = userEvent.setup();
       const filter = selectFilters[0];
-      renderFilters(new URLSearchParams(`${filter.id}=${filter.options[0].value}`));
+      renderFilters({ [filter.id]: filter.options[0].value });
 
       // The chip label is e.g. "Branch: Mumbai" — the X button is inside the same Badge element
       const chipLabel = screen.getByText(`${filter.label}: ${filter.options[0].label}`);
@@ -244,18 +283,14 @@ describe("FilterBar — unit", () => {
       const removeBtn = chipBadge!.querySelector("button");
       await user.click(removeBtn!);
 
-      await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith(
-          expect.not.stringContaining(filter.id),
-        );
-      });
+      await waitFor(() => expectPatchAction(filter.id, ""));
     });
   });
 
   // ── 6. Search Input ───────────────────────────────────────────────────────
 
   describe("Search Input", () => {
-    it("calls router.push with q param when user types in search", () => {
+    it("dispatches a patch with the search key when user types in search", () => {
       renderFilters();
 
       // fireEvent.change sends the full value in one event, avoiding per-keystroke calls
@@ -263,11 +298,26 @@ describe("FilterBar — unit", () => {
         target: { value: "acme" },
       });
 
-      expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("q=acme"));
+      // Search may be debounced — wait briefly then check the most recent call.
+      return waitFor(
+        () => {
+          expect(mockHandleAction).toHaveBeenCalledWith(
+            expect.objectContaining({
+              type: "update-widget-state",
+              props: expect.objectContaining({
+                key: stateKey,
+                operation: "patch",
+                value: expect.objectContaining({ [searchKey]: "acme" }),
+              }),
+            }),
+          );
+        },
+        { timeout: 2000 },
+      );
     });
 
-    it("reflects existing q param value in search input", () => {
-      renderFilters(new URLSearchParams("q=test"));
+    it("reflects existing search-key value in the search input", () => {
+      renderFilters({ [searchKey]: "test" });
       expect(screen.getByPlaceholderText("Search...")).toHaveValue("test");
     });
   });

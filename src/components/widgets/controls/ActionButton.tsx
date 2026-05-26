@@ -16,6 +16,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, dis
 
         return (
             <Button
+                type="button"
                 variant="ghost"
                 size="sm"
                 onClick={onClick}
@@ -53,7 +54,11 @@ export const ActionButton: React.FC<ActionButtonProps> = ({ action, onClick, dis
     }
 
     return (
-        <Button variant={action.variant || "default"} onClick={onClick} disabled={disabled}>
+        // type="button" prevents non-submit actions (e.g. Cancel, Save Draft)
+        // from accidentally triggering the surrounding <form>'s onSubmit and
+        // running validation. Submit-actions are rendered separately by their
+        // host (e.g. FormContainer) with type="submit".
+        <Button type="button" variant={action.variant || "default"} onClick={onClick} disabled={disabled}>
             {action.icon && <LucideIcon name={action.icon} size={16} className="mr-2" />}
             {action.label}
         </Button>

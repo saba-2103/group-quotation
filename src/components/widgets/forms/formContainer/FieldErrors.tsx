@@ -1,5 +1,6 @@
 import React from 'react';
 import { FieldError } from 'react-hook-form';
+import { useFormField } from '@/components/ui/form';
 import { ERROR_TEXT_CLASS } from './constants';
 
 interface FieldErrorsProps {
@@ -7,6 +8,12 @@ interface FieldErrorsProps {
 }
 
 const FieldErrors: React.FC<FieldErrorsProps> = ({ errors }) => {
+    // Pull `formMessageId` from the surrounding <FormItem> so the wrapping
+    // <div> can carry that id. FieldRenderer's aria-describedby on the input
+    // points at this id when an error is present — without it, the aria
+    // reference dangles.
+    const { formMessageId } = useFormField();
+
     if (!errors) return null;
 
     const messages: string[] = errors.types
@@ -18,7 +25,7 @@ const FieldErrors: React.FC<FieldErrorsProps> = ({ errors }) => {
     if (messages.length === 0) return null;
 
     return (
-        <div className="flex flex-col gap-0.5 mt-1">
+        <div id={formMessageId} className="flex flex-col gap-0.5 mt-1">
             {messages.map((msg, i) => (
                 <p key={i} className={ERROR_TEXT_CLASS}>{msg}</p>
             ))}

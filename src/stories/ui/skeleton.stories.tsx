@@ -17,7 +17,7 @@ export const AllVariants: Story = {
                  <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-widest">Base Element</h3>
                  <Skeleton className="h-4 w-[250px]" />
             </div>
-            
+
             <div>
                  <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-widest">Paragraph Block</h3>
                  <div className="flex flex-col gap-2">
