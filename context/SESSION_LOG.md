@@ -35,6 +35,23 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
   - Fresh `context/HANDOFF.md`, `context/SESSION_LOG.md` (this file), `context/CORE_MEMORY.md`, `context/ARCH_TRANSITION.md` — process preserved, contents reset for group-pas V1.
 - Next: kickoff Phase 0 (teardown of legacy quotations module).
 
+### 2026-05-22 — Schema-driven framework reference docs
+
+- **Branch:** `docs/schema-design-reference` (branched from `origin/main` at `37772c00`).
+- **Trigger:** developers requested a comprehensive reference beyond `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md` — something covering every widget, every hook, every action type, plus recipes and troubleshooting.
+- **Work done:** wrote 14-file multi-page reference under `docs/schema-design-reference/`:
+  - `README.md` (entry + ToC), `01-architecture.md`, `02-widget-catalog.md` (all 21 registered widgets), `03-schemas.md`, `04-data-sources.md`, `05-actions.md`, `06-forms.md`, `07-state-and-conditions.md`, `08-pages-and-routing.md`, `09-api-routes.md`, `10-design-system.md`, `11-cookbook.md` (15 recipes), `12-troubleshooting.md`, `13-glossary.md`.
+  - ~5300 lines / ~190KB total. Grounded in real code — verified against `src/types/widget.ts`, `WidgetRenderer.tsx`, `WidgetRegistry.tsx`, `useSmartQuery`, `useActionHandler`, `schemaResolver.ts`, `endpointUtils.ts`, `conditions.ts` at branch HEAD.
+- **Commit:** `7f54435c docs(schema-ref): add comprehensive schema-driven framework reference` — pushed to `origin/docs/schema-design-reference`.
+- **Tests:** N/A (docs only). Verified file structure with `ls`, line counts with `wc -l`.
+- **Files changed:** 14 new files under `docs/schema-design-reference/`. Nothing in `src/`.
+- **Open PR:** https://github.com/Anaira-AI/keystone-ui/pull/new/docs/schema-design-reference
+- **Earlier in session:** reviewed PRs #67, #68, #69, #70 (claims module / schema-arch implementation by another dev) — posted formal `gh pr review` comments per PR with cross-cutting concerns plus targeted inline comments on specific lines. Reviews are `COMMENT` (non-blocking), not `REQUEST_CHANGES`.
+- **Next steps:**
+  - Open the PR for the docs branch and merge.
+  - Consider linking the new reference from `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md` as the canonical follow-up.
+  - Long-term: the page-level `{{id}}` walker pattern documented in `08-pages-and-routing.md` is fragile (called out explicitly in the docs). A proposal to move substitution into `useSmartQuery`/`useActionHandler` would close this gap — flagged in the PR #69 review as well.
+
 ### 2026-05-22 — DevOps platform CI/CD trial (skill-driven run on feat/cicd-skill-trial)
 
 **Goal:** Re-run the devops-platform onboarding using the bundled `/cicd-onboarding` skill (vs. the earlier hand-built attempt on `feat/cicd-devops-platform`) to test whether the skill closes the gaps the hand-built run hit.
@@ -256,3 +273,43 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
   - Promote the page-envelope pattern to default story in [docs/schema-design-reference/04-data-sources.md](../docs/schema-design-reference/04-data-sources.md) — it's currently undocumented post-commit. Lives on the `docs/schema-design-reference` branch, not here.
   - Aggregate-shaped `refreshAggregates` alongside the URL-shaped `refreshKey` so a mutation can invalidate "the Policy aggregate" without listing every projection URL.
   - Pushing `{{id}}` substitution into `useSmartQuery` (already mentioned in the data-sources doc as proposed) — removes the per-page walker and aligns with how `fromParent` works (framework-resolved, not page-resolved).
+### 2026-05-22 — PR #72 docs refresh + multi-agent review
+
+- **Branch:** `docs/schema-design-reference`.
+- Updated docs to reflect PR #72 (cherry-pick-core-arch) reality: framework primitives now on `main` (typed API client, DetailPageSkeleton, `visibleRoles` gate, overlay `size`, `schemas/tables/`+`schemas/views/` `$ref`, `dataPath`/`parseJson`, array-valued params, cross-array join). Domain code (9 widgets, mock backend, Group PAS schemas/pages) still on `feat/new-buisiness`.
+- **Multi-agent review** (correctness / hallucination / readability) ran in parallel against the updated docs.
+- **Findings + fixes:**
+  - `TabsContainer.visibleWhen` is NOT on main post-PR-#72 — the consumer ships only on `feat/new-buisiness`. Corrected docs in 03, 07, 13.
+  - `JSON.stringify(undefined)` rationale in 09 was wrong (it returns JS undefined, not the string "undefined"). Dropped the rationale; kept the behaviour claim.
+  - `disabledTooltip` is only honoured by `action-bar`, not framework-wide. Softened 05.
+  - `parseSpringError` vs `useActionHandler` envelope parsers DIVERGE (the former reads message→error; the latter adds errorCode). Flagged as known consolidation TODO.
+  - `useSmartQuery`/`useActionHandler` on `main` post-PR-#72 do NOT inject auth headers; only the typed `api` client does. Corrected 09's claim that auth lives in two places.
+  - Nested accessors existed pre-PR-#72; PR #72 hardened the walker. Walked back the attribution in 02.
+  - `useDataTable.dataError` is hook-level; the default consumer doesn't render it distinctly. Removed the misleading "renders same way as fetch failure" claim from 02/04.
+  - Glossary refreshed: stale field-type and validation-rule entries fixed (`file` removed; `pattern`/`email`/`url` flagged as no-op). Added `visibleRoles`, `OverlaySize`, `dataPath`, `parseJson`, typed API client entries. `visibleWhen` entry rewritten. `$ref` entry updated to mention all four prefixes.
+  - 12-troubleshooting role-gating fix replaced — now recommends `visibleRoles` instead of the unimplemented `layout.visibleWhen`.
+  - Overlay size section in 05 gained a `size`→`max-w-*`→approx-width table.
+  - Error-envelope content consolidated: 04 now links to 09's canonical reference instead of duplicating.
+- **Commit:** `25e7cdb6 docs(schema-ref): refresh for PR #72 reality + multi-agent review fixes` (213 +, 73 −, 10 files).
+- **Branch state:** `docs/schema-design-reference` is now PR-#72-aware. Will land alongside or after PR #72 merges to main.
+
+### 2026-05-25 — NEW_MODULE_IMPLEMENTATION_GUIDE correctness + completeness pass
+
+- **Branch:** `docs/schema-design-reference` (continuing).
+- **Trigger:** user asked to verify `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md` for completeness, readability, and hallucinations, looping review→fix until clean.
+- **Pipeline:** `/write-document` — context bundle → targeted Edits → 3 parallel reviewers (hallucination / completeness / readability) → triage + apply → final 2-agent sweep → one more fix.
+- **Findings + fixes:**
+  - Step 4 "synchronous mount, no network hop" was wrong. `OverlaidForm` fetches `/api/forms/<id>` via React Query; `forms_registry` exists so the API route is edge-runtime-safe, not to skip the round-trip. Rewrote.
+  - Missing-form fallback wording: API route silently returns `dummy-member-form` (HTTP 200), not "Failed to load schema". Updated Step 4 and Gotcha #3.
+  - Gotcha #10 was misleading — `refreshKey` is a `startsWith()` prefix match against `dataSource.api.endpoint`, not an exact URL match.
+  - Column type `"text"` is not implemented in `CellRenderer.tsx`; falls through to `default`. Dropped from the example and the reference table.
+  - The doc previously pointed at `create-event-form.json` as a "multi-action onSuccess" example — no such form exists in the repo. Replaced with descriptive prose.
+  - Added Step 2 column extras: `valueMapping`, `currency`+`align`, `pagination.enabled`. Added `lob` column so the worked-example field dictionary stays consistent across steps.
+  - Step 3 gained a cross-link sub-table (dynamic options / conditional fields / view mode / overlaid forms / backend errors) — all anchors verified against `06-forms.md`.
+  - Step 7 now spells out the `JSON.parse(JSON.stringify(...))` + walk-the-tree pattern from `quotations/[id]/page.tsx` for `{{id}}` interpolation.
+  - Step 9: prefer `npm run typecheck` over `npx tsc --noEmit`; flagged that `validate-schemas.ts` only covers the `schemas/` root.
+  - Added explicit blockquote in Step 1 that `tab-panel` is a structural convention (not registry-backed).
+- **Verified against:** `WidgetRegistry.tsx`, `WidgetRenderer.tsx`, `schemaResolver.ts`, `useActionHandler.ts`, `useSmartQuery.ts`, `useDataTable.ts`, `TabsContainer.tsx`, `formContainer/utils.ts`, `CellRenderer.tsx`, `DataTable/index.tsx`, `OverlaidForm.tsx`, `/api/forms/[id]/route.ts`, `app-config-mock.ts`, `scripts/generate_form_index.mjs`, `scripts/validate-schemas.ts`, `package.json`, real schemas under `schemas/` and `schemas/forms/`.
+- **Commit:** `fb7bde8c docs(new-module): correctness + completeness pass against feat/new-buisiness` (+340 / −126, 1 file). Pushed to `origin/docs/schema-design-reference`.
+- **Tests:** N/A (docs only).
+- **Next:** branch is ready to roll into PR #72's wake; `NEW_MODULE_IMPLEMENTATION_GUIDE.md` is now aligned with the `schema-design-reference/` companion docs.
