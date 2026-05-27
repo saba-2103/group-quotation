@@ -46,7 +46,12 @@ env: {}
 
 serviceAccount:
   create: true
-  name: keystone-ui
+  # Leave empty so the SA name falls back to the release-scoped
+  # `keystone-ui.fullname` — `keystone-ui` for the canonical release,
+  # `keystone-ui-pr-<N>` for per-PR previews. Do NOT hardcode a fixed name:
+  # preview releases share the `dev` namespace, and a fixed SA name makes them
+  # collide on Helm resource ownership (only the first release can own it).
+  name: ""
   # Set to the IRSA role ARN from Terraform (leave empty if no IRSA needed)
   irsaRoleArn: ""
   # Set true only if the app itself calls the K8s API (e.g., leader election)
