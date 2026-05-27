@@ -15,11 +15,11 @@ const stubString = JSON.stringify(stub);
 for (const file of files) {
    const key = file.replace('.json', '');
    const content = JSON.parse(fs.readFileSync(path.join(formsDir, file), 'utf8'));
-   
+
    // If it's a generated form from our AST mapper, it will have a specific structure.
    // Instead of importing them dynamically which breaks our serverless build structure for the forms registry currently,
    // we serialize the built form directly into the registry for now to maintain drop-in compatibility.
-   
+
    if (content.fields && content.fields[0] && content.fields[0].name !== 'acknowledgement') {
        out += `    '${key}': ${JSON.stringify({ type: 'form-container', props: content })},\n`;
    } else {

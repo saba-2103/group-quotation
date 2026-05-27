@@ -346,4 +346,3 @@ export interface MemberSummaryDto {
   sumInsured: number;
   annualPremium: Money;
 }
-
