@@ -22,9 +22,11 @@ This skill **subsumes the input-source distinction** between a free-form ask and
 - Core memory: `context/CORE_MEMORY.md`
 - Proposals: `proposals/PROP-*.md`
 - Existing skills (for handoff or reference): `.claude/skills/*/SKILL.md`
-- Implementation guide: `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md`
+- Implementation quickstart: `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md`
+- **Comprehensive framework reference** (canonical — see [#73](https://github.com/Anaira-AI/keystone-ui/pull/73)): `docs/schema-design-reference/` — 14 files covering architecture, widget catalog, schemas, data sources, actions, forms, state/conditions, pages/routing, API routes, design system, cookbook, troubleshooting, glossary. The quickstart above is for the happy-path build; this reference is the contract — read both before scaffolding anything non-trivial.
 - Primitives: `src/components/ui/*.tsx`
 - Composed widgets: `src/components/widgets/{container,controls,data,forms,items,layout}/`
+- Framework primitives newly available on main via [#72](https://github.com/Anaira-AI/keystone-ui/pull/72): typed API client (`src/lib/api/client.ts` + `error-mapper.ts`), `DetailPageSkeleton`, `visibleRoles` gate, overlay `size`, `schemas/tables/` + `schemas/views/` `$ref` prefixes, array-valued GET params, `dataPath`/`parseJson` on data-table data sources, cross-array `joinSource`/`joinKey`/`joinField`. Prefer these over re-inventing equivalents.
 - Mocks / config: `src/mocks/`
 - Logs (create per-run): `agent_logs/build-feature/<run-id>/`
 - Design docs (create per-run): `context/build-feature/<run-id>/design.md`
@@ -86,13 +88,13 @@ Run-id format: `<YYYY-MM-DD>-<short-slug>` derived from the ask (e.g. `2026-05-0
 - If something fails: fix in place, re-run, re-log. If you can't fix it, stop and ask — do not paper over.
 - Output: `agent_logs/build-feature/<run-id>/verify.log` — each gate's pass/fail, what was fixed, residual risks.
 
-### 6. SHIP — local preview (no public deploy)
-- Run `npm run preview` (the OpenNext Cloudflare build + local server on `http://localhost:8787`).
-- Wait for the build to succeed; report the URL to the user.
-- Tell the user: *"Preview running locally. Run `/preview-and-deploy` if you want to deploy publicly."*
-- **Do not auto-deploy.** Public deploy is the user's call.
-- If `--no-preview` was passed, skip this stage entirely — do not write a ship.log.
-- Output: `agent_logs/build-feature/<run-id>/ship.log` — build pass/fail, preview URL, caveats. Only written if the stage actually ran.
+### 6. SHIP — push branch, let CI deploy the preview
+- Push the branch (`git push -u origin <branch>`). Per [#71](https://github.com/Anaira-AI/keystone-ui/pull/71), the devops-platform CI/CD workflow runs `01-pre-commit-checks` + `02-ci-pipeline` on push, and the `deploy-preview` job ships a per-PR EKS release at `https://keystone-ui-pr-<N>.anairacloud.com`.
+- If no PR exists yet, open one with `gh pr create` so the preview job has a PR number to anchor the release name. Capture the PR URL.
+- Watch the GitHub Actions run for `deploy-preview`; report the preview URL (and CI run URL) to the user. DNS can take 2–3 minutes to resolve.
+- **No more local `npm run preview` + Cloudflare `npm run deploy`.** The old `/preview-and-deploy` skill was removed when #71 landed — CI owns previews now.
+- If `--no-preview` was passed, skip this stage entirely — do not write a ship.log. (`--no-preview` now also implies "no push": leave the branch local for the user to push when they're ready.)
+- Output: `agent_logs/build-feature/<run-id>/ship.log` — push status, PR url, CI run url, preview url, caveats. Only written if the stage actually ran.
 
 ## Operational constraints
 
@@ -118,7 +120,7 @@ Run-id format: `<YYYY-MM-DD>-<short-slug>` derived from the ask (e.g. `2026-05-0
    - If free-form: echo back the ask in your own words so the user can correct early.
 2. Generate `run-id` and create `agent_logs/build-feature/<run-id>/` and `context/build-feature/<run-id>/`.
 3. Begin DISCOVER. Proceed through the pipeline, logging after each stage.
-4. End with a short report: what was built, on which branch, preview URL (or "not previewed"), and what's left for the user to do (review the PR, run `/preview-and-deploy`, etc.).
+4. End with a short report: what was built, on which branch, PR + CI-deployed preview URL (or "not pushed"), and what's left for the user to do (review the PR, merge, etc.).
 
 ## Integration with build-backend
 

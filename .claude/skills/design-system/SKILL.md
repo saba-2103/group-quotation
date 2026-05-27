@@ -21,6 +21,7 @@ Translate a design reference into concrete edits in keystone-ui's tokens and com
 ## Where the design system lives (verify before editing)
 - Handoff entry point: `context/HANDOFF.md`
 - Core memory: `context/CORE_MEMORY.md`
+- **Design-system reference**: `docs/schema-design-reference/10-design-system.md` (per [#73](https://github.com/Anaira-AI/keystone-ui/pull/73)) — documents the token + CVA model in context. Read this before touching tokens so the change aligns with how the rest of the framework consumes them.
 - Tokens / theme variables: `src/app/globals.css` (CSS custom properties used by Tailwind).
 - Tailwind config: `tailwind.config.*` if present at root.
 - Component variants (CVA): `src/components/ui/variants/*.ts` (e.g. `tabs-variants.ts`).
