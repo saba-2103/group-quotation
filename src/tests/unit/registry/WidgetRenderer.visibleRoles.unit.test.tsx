@@ -62,11 +62,14 @@ describe('WidgetRenderer visibleRoles gate', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('treats visibleRoles: [] like an empty allowlist that doesn\'t filter (current behavior: no entries means no gate)', () => {
-    // The implementation early-returns only when visibleRoles is truthy AND
-    // length > 0. Passing [] is equivalent to omitting the field — visible.
+  it('treats visibleRoles: [] as an explicit empty allowlist — hidden from every role', () => {
+    // The renderer treats [] as "no role is allowed" (no role can match an
+    // empty list), so the node is hidden from everyone. This intentionally
+    // inverts the "empty = no constraint" convention — see the WidgetConfig
+    // .visibleRoles docs in src/types/widget.ts.
     currentRole = 'ops';
-    renderNode([]);
-    expect(screen.getByTestId('node-x')).toBeInTheDocument();
+    const { container } = renderNode([]);
+    expect(screen.queryByTestId('node-x')).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 });

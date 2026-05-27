@@ -1,6 +1,5 @@
 // Backend error envelopes — two shapes seen in the wild as of 2026-05-07
-// (verified against the deployed Spring service in
-// `/Users/seriousblack/dev_anaira/group-pas/`):
+// (verified against the deployed Spring service):
 //
 // 1. Module-specific @RestControllerAdvice (e.g. QuotationExceptionHandler,
 //    PolicyAdminGlobalExceptionHandler) returns:
@@ -49,14 +48,21 @@ export async function parseSpringError(res: Response): Promise<ApiError> {
   try {
     const text = await res.text();
     if (text) {
-      envelope = JSON.parse(text) as SpringErrorEnvelope;
-      // Prefer `message` (both shapes carry it), fall back to `error` for
-      // the module-specific shape that may have only `error: "BAD_REQUEST"`
-      // with no `message`.
-      if (envelope.message) {
-        message = envelope.message;
-      } else if (envelope.error) {
-        message = envelope.error;
+      const parsed = JSON.parse(text) as unknown;
+      // Guard: only treat the body as an envelope if it's a non-null object.
+      // Misconfigured proxies / CDN error pages occasionally return a JSON
+      // literal (`null`, a string, a number) — reading `.message` off those
+      // would throw and silently swallow the more useful statusText fallback.
+      if (parsed !== null && typeof parsed === "object") {
+        envelope = parsed as SpringErrorEnvelope;
+        // Prefer `message` (both shapes carry it), fall back to `error` for
+        // the module-specific shape that may have only `error: "BAD_REQUEST"`
+        // with no `message`.
+        if (envelope.message) {
+          message = envelope.message;
+        } else if (envelope.error) {
+          message = envelope.error;
+        }
       }
     }
   } catch {

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
 import type { NavigationItem } from "@shared/types";
@@ -12,35 +11,41 @@ interface IconRailProps {
     activeItemId: string | null;
     title?: string;
     logoIconName?: string;
+    /** When true, ignore the desktop-only `hidden md:flex` and the
+     * Ctrl+B collapse state — the rail is rendered inside a mobile Sheet
+     * and should always be visible and fully expanded. */
+    forceVisible?: boolean;
+    onItemClick?: () => void;
 }
 
-export function IconRail({ items, activeItemId, title }: IconRailProps) {
+export function IconRail({
+    items,
+    activeItemId,
+    title,
+    logoIconName,
+    forceVisible = false,
+    onItemClick,
+}: IconRailProps) {
     const { state } = useSidebar();
-    const collapsed = state === "collapsed";
+    const collapsed = !forceVisible && state === "collapsed";
+    const LogoIcon = resolveIcon(logoIconName);
 
     return (
         <aside
             data-rail-state={collapsed ? "collapsed" : "expanded"}
             className={cn(
-                "hidden md:flex shrink-0 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-[width] duration-200 ease-linear",
+                "shrink-0 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-[width] duration-200 ease-linear",
+                forceVisible ? "flex" : "hidden md:flex",
                 collapsed ? "w-12" : "w-20",
             )}
         >
             <div className="flex items-center justify-center h-14 border-b border-sidebar-border">
                 <Link
                     href="/"
-                    title={title ?? "Anaira"}
-                    aria-label={title ?? "Anaira"}
-                    className="flex aspect-square size-9 items-center justify-center"
+                    title={title}
+                    className="flex aspect-square size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground"
                 >
-                    <Image
-                        src="/anaira-logomark.svg"
-                        alt=""
-                        width={32}
-                        height={32}
-                        priority
-                        className="size-8"
-                    />
+                    <LogoIcon className="size-4" />
                 </Link>
             </div>
 
@@ -57,6 +62,7 @@ export function IconRail({ items, activeItemId, title }: IconRailProps) {
                                     href={href}
                                     title={item.label}
                                     aria-current={isActiveItem ? "page" : undefined}
+                                    onClick={onItemClick}
                                     className={cn(
                                         "group flex flex-col items-center justify-center rounded-md py-2 px-1 text-xs gap-1 transition-colors",
                                         "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

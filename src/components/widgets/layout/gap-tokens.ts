@@ -23,5 +23,15 @@ const GAP_MAP: Record<number, string> = {
 
 export function gapClass(gap: number | undefined): string | undefined {
   if (gap === undefined || gap === null) return undefined;
-  return GAP_MAP[gap] ?? GAP_MAP[4];
+  const cls = GAP_MAP[gap];
+  if (cls === undefined && process.env.NODE_ENV !== 'production') {
+    // Silent fallback to `gap-4` would hide schema typos (e.g. gap: 7 rendering
+    // as gap-4). Return undefined so the miss is at least visible at runtime,
+    // and warn in dev so the author knows to extend GAP_MAP.
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[gap-tokens] Unmapped gap value: ${gap}. Add it to GAP_MAP in src/components/widgets/layout/gap-tokens.ts.`,
+    );
+  }
+  return cls;
 }

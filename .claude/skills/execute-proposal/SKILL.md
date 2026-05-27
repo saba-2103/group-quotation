@@ -20,6 +20,11 @@ The shipping end of the proposal pipeline. Picks up `status: approved` proposals
 - The proposal exists, `status: approved`, and isn't already `in-progress` (someone else may be on it).
 - No open PR already references this proposal id.
 
+## Framework references to consult during PLAN
+- Quickstart: `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md`.
+- **Comprehensive framework reference** (canonical, per [#73](https://github.com/Anaira-AI/keystone-ui/pull/73)): `docs/schema-design-reference/` — read the relevant sections (widget catalog, schemas, actions, forms, troubleshooting) before writing schema/widget code for a non-trivial proposal.
+- Framework primitives newly on main via [#72](https://github.com/Anaira-AI/keystone-ui/pull/72): typed API client, `DetailPageSkeleton`, `visibleRoles`, overlay `size`, `schemas/tables/` + `schemas/views/` `$refs`, array GET params, `dataPath`/`parseJson`, cross-array joins. Use them rather than re-rolling equivalents.
+
 ## Pipeline
 
 ### 1. CLAIM
@@ -43,9 +48,10 @@ The shipping end of the proposal pipeline. Picks up `status: approved` proposals
   - Major: revert, set proposal back to `under-review` with a note, surface to the user.
 
 ### 4. VERIFY
-- For UI-touching proposals: hand off to `/preview-and-deploy --no-deploy` so the lint/test/preview gates stay in one place.
-- For non-UI proposals: run `npm run lint` + the relevant test suite directly. Fix what you broke.
+- Run `npm run lint`, `tsc --noEmit`, and the relevant test suite directly. Fix what you broke.
+- For UI-touching proposals, also boot `npm run dev` and spot-check the affected routes — or rely on the per-PR EKS preview that ships post-push (see SHIP below) to verify the visual outcome.
 - Don't claim success on the strength of a passing typecheck alone for UI work.
+- Per [#71](https://github.com/Anaira-AI/keystone-ui/pull/71), CI also runs the full lint+test gate on push, so the local pass is a fast precheck — the CI run is authoritative.
 
 ### 5. COMMIT & PUSH
 - One commit per logical step (don't squash everything into "implement PROP-NNNN").

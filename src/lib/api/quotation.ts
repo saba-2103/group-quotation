@@ -67,7 +67,7 @@ export const updatePlan = (quoteId: string, planNo: string, request: Plan) =>
   api.put<void>(`${BASE}/quotes/${quoteId}/plans/${planNo}`, request);
 
 export const removePlan = (quoteId: string, planNo: string) =>
-  api.del<void>(`${BASE}/quotes/${quoteId}/plans/${planNo}`);
+  api.delete<void>(`${BASE}/quotes/${quoteId}/plans/${planNo}`);
 
 export const updateMemberToPlanMapping = (quoteId: string, mapping: string) =>
   api.put<void>(`${BASE}/quotes/${quoteId}/member-to-plan-mapping`, { mapping });

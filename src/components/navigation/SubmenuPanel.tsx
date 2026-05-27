@@ -9,13 +9,21 @@ import { isActive, resolveIcon } from "./navHelpers";
 interface SubmenuPanelProps {
     parent: NavigationItem;
     pathname: string;
+    /** When true, ignore the desktop-only `hidden md:flex` — rendered inside a mobile Sheet. */
+    forceVisible?: boolean;
+    onItemClick?: () => void;
 }
 
-export function SubmenuPanel({ parent, pathname }: SubmenuPanelProps) {
+export function SubmenuPanel({ parent, pathname, forceVisible = false, onItemClick }: SubmenuPanelProps) {
     const groups = groupSubItems(parent.subMenuItems ?? []);
 
     return (
-        <aside className="hidden md:flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
+        <aside
+            className={cn(
+                "w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
+                forceVisible ? "flex" : "hidden md:flex",
+            )}
+        >
             <div className="h-14 flex items-center px-4 border-b border-sidebar-border">
                 <h2 className="text-sm font-semibold truncate">{parent.label}</h2>
             </div>
@@ -37,6 +45,7 @@ export function SubmenuPanel({ parent, pathname }: SubmenuPanelProps) {
                                         <Link
                                             href={item.url ?? "#"}
                                             aria-current={active ? "page" : undefined}
+                                            onClick={onItemClick}
                                             className={cn(
                                                 "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                                                 "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

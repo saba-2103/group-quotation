@@ -1,7 +1,5 @@
-// Shared Suspense fallback for Group PAS detail routes (quote, proposal,
-// policy, member, policy-member). Mirrors the page-header + first widget
-// shape so the load-to-content transition doesn't feel jarring. Replaced the
-// per-route "Loading…" text on 2026-05-11.
+// Shared Suspense fallback for detail routes. Mirrors the page-header + first
+// widget shape so the load-to-content transition doesn't feel jarring.
 
 import { Skeleton } from '@/components/ui/skeleton';
 

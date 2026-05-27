@@ -11,25 +11,10 @@ import { WidgetConfig } from "@/types/widget";
 import { SCROLLABLE_COLUMN_THRESHOLD } from "../components/widgets/data/DataTable/constants";
 import { ColumnConfig, TableRow } from "../components/widgets/data/DataTable/types";
 import { useSmartQuery } from "./useSmartQuery";
+import { getNested, setNested } from "@/lib/objectPath";
 
 interface UseDataTableOptions {
   props: WidgetConfig["props"];
-}
-
-// Walks dotted accessor keys (e.g. "estimatedPremium.byPlanJson") so the
-// data-table dataSource can drill into stringified JSON entity fields the
-// same way KeyValueGrid already does. Mirrors KeyValueGrid's getNested.
-function getNested(source: unknown, path?: string): unknown {
-  if (source == null || !path) return source;
-  return path
-    .split(".")
-    .reduce<unknown>(
-      (acc, key) =>
-        acc != null && typeof acc === "object" && key in (acc as object)
-          ? (acc as Record<string, unknown>)[key]
-          : undefined,
-      source,
-    );
 }
 
 export const useDataTable = ({ props }: UseDataTableOptions) => {
@@ -50,15 +35,9 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     error: queryError,
   } = useSmartQuery(props?.data == null ? dataSource : undefined);
 
-  // Resolved row data + an optional parse error surfaced from the resolver.
-  // The resolver runs in two phases:
-  //   1. Pick the rows array. If `dataSource.dataPath` is set, drill that
-  //      path; optionally `JSON.parse` if `dataSource.parseJson === true`.
-  //      Otherwise fall back to the original auto-discovery (array on the
-  //      response root, or first array-valued property).
-  //   2. Enrich each row with cross-array joins declared on columns
-  //      (`joinSource` + `joinKey` + `joinField`). The sibling array must be
-  //      reachable from the same response payload — no extra fetches.
+  // Resolve row data, then enrich via cross-array joins. Surfaces a parse
+  // error from `dataSource.parseJson` so backend response-shape regressions
+  // don't hide behind an empty table.
   const { rows: rawData, error: dataError } = useMemo<{
     rows: TableRow[];
     error: Error | null;
@@ -68,14 +47,12 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     // ── Step 1: resolve the rows array ───────────────────────────────────
     let rows: TableRow[];
     let error: Error | null = null;
-    const dataPath = (dataSource as { dataPath?: string } | undefined)?.dataPath;
-    const parseJson = (dataSource as { parseJson?: boolean } | undefined)?.parseJson;
+    const dataPath = dataSource?.dataPath;
+    const parseJson = dataSource?.parseJson;
 
     if (dataPath) {
       let value: unknown = getNested(sourceData, dataPath);
       if (parseJson && typeof value === "string") {
-        // Per CLARIFY: parse failure is loud — surface as a render error so
-        // backend response-shape regressions don't hide behind an empty table.
         try {
           value = JSON.parse(value);
         } catch (e) {
@@ -100,7 +77,8 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
 
     // ── Step 2: cross-array join enrichment ──────────────────────────────
     // Only fires for columns declaring all three of joinSource/joinKey/joinField.
-    // No match → cell stays undefined → existing renderer shows "—".
+    // Builds one index Map per join column (O(siblings)) so each row is an
+    // O(1) lookup, not O(siblings). No match → cell undefined → standard "—".
     const joinColumns = ((columns as ColumnConfig[] | undefined) ?? []).filter(
       (c) => c.joinSource && c.joinKey && c.joinField,
     );
@@ -111,19 +89,41 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
       sourceData &&
       typeof sourceData === "object"
     ) {
+      const joinIndexes = joinColumns.map((col) => {
+        const siblings = getNested(sourceData, col.joinSource);
+        const index = new Map<unknown, Record<string, unknown>>();
+        if (Array.isArray(siblings)) {
+          for (const sib of siblings as Record<string, unknown>[]) {
+            const k = sib[col.joinKey as string];
+            if (k != null) index.set(k, sib);
+          }
+        }
+        return { col, index };
+      });
+
       rows = rows.map((row) => {
         const enriched: TableRow = { ...row };
         const rowRec = row as Record<string, unknown>;
-        for (const col of joinColumns) {
-          const siblings = getNested(sourceData, col.joinSource);
-          if (!Array.isArray(siblings)) continue;
-          const key = rowRec[col.joinKey!];
+        for (const { col, index } of joinIndexes) {
+          // Defensive: skip columns with an empty accessorKey. getNested("")
+          // returns the whole row but setNested("") is a no-op, so the
+          // read/write contract would be asymmetric. The schema should never
+          // produce this, but guard rather than corrupt silently.
+          if (!col.accessorKey) continue;
+          const key = rowRec[col.joinKey as string];
           if (key == null) continue;
-          const match = (siblings as Record<string, unknown>[]).find(
-            (s) => s[col.joinKey!] === key,
-          );
+          const match = index.get(key);
           if (match) {
-            (enriched as Record<string, unknown>)[col.accessorKey] = match[col.joinField!];
+            // Use setNested so dotted accessorKeys (read via accessorFn +
+            // getNested in columnDefs) round-trip correctly. Flat keys still
+            // land as a single property. setNested refuses to overwrite a
+            // scalar intermediate (e.g. row.amount = 42 vs path "amount.x")
+            // and logs in dev — the join is skipped, original data preserved.
+            setNested(
+              enriched as Record<string, unknown>,
+              col.accessorKey,
+              match[col.joinField as string],
+            );
           }
         }
         return enriched;
@@ -131,14 +131,33 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     }
 
     return { rows, error };
-  }, [props?.data, fetchedData, dataSource, columns]);
+    // Derive stable scalar deps so the memo doesn't re-run on every render
+    // when callers pass `dataSource`/`columns` as fresh inline objects (which
+    // most schemas do — they come straight out of `props`). The join
+    // descriptor is JSON-stringified because the set is small (≤ a handful
+    // of columns).
+  }, [
+    props?.data,
+    fetchedData,
+    dataSource?.dataPath,
+    dataSource?.parseJson,
+    JSON.stringify(
+      (columns as ColumnConfig[] | undefined)
+        ?.filter((c) => c.joinSource && c.joinKey && c.joinField)
+        .map((c) => ({
+          a: c.accessorKey,
+          s: c.joinSource,
+          k: c.joinKey,
+          f: c.joinField,
+        })),
+    ),
+  ]);
 
   // ── Column definitions ─────────────────────────────────────────────────
-  // accessorKey containing dots (e.g. "amount.amount" on a Money-shaped column)
-  // doesn't auto-nest in TanStack table — it would look up the flat key
-  // `row["amount.amount"]`. Convert to an accessorFn so nested access works
-  // uniformly. Flat keys keep the existing accessorKey path so TanStack's
-  // sort/filter logic is unchanged.
+  // accessorKey containing dots (e.g. "amount.amount") doesn't auto-nest in
+  // TanStack table. Convert to an accessorFn so nested access works
+  // uniformly. Flat keys keep accessorKey so TanStack's sort/filter is
+  // unchanged for the common case.
   const columnDefs = useMemo<ColumnDef<TableRow>[]>(() => {
     if (!columns) return [];
     return (columns as ColumnConfig[]).map((col) => {
@@ -166,9 +185,15 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     if (!columns) return opts;
     (columns as ColumnConfig[]).forEach((col) => {
       if (col.filterable && col.filterType === "select") {
-        opts[col.accessorKey] = Array.from(new Set(rawData.map((row) => String(row[col.accessorKey] ?? "")))).filter(
-          Boolean
-        );
+        // Mirror the columnDef read path: dotted keys must go through
+        // getNested or the option set will be empty for nested fields.
+        opts[col.accessorKey] = Array.from(
+          new Set(
+            rawData.map((row) =>
+              String(getNested(row, col.accessorKey) ?? ""),
+            ),
+          ),
+        ).filter(Boolean);
       }
     });
     return opts;
@@ -233,9 +258,9 @@ export const useDataTable = ({ props }: UseDataTableOptions) => {
     // async fetch state
     isQueryLoading,
     queryError,
-    // resolver-stage error (e.g. JSON.parse failure on dataSource.dataPath).
-    // DataTable surfaces this the same way as queryError so backend
+    // Resolver-stage error (e.g. JSON.parse failure on dataSource.dataPath).
+    // Consumers can surface this the same way as queryError so backend
     // response-shape regressions don't hide behind an empty table.
-    dataError
+    dataError,
   };
 };

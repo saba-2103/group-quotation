@@ -1,6 +1,22 @@
-import type { Role } from '@/types/group-pas/roles';
-
 export type WidgetType = string;
+
+/**
+ * Overlay size token. Used by `open-modal` / `open-sheet` actions to override
+ * the default container width, and by `useOverlayStore` when persisting the
+ * size for an open overlay. Maps to a Tailwind `max-w-*` class inside
+ * `OverlayProvider`. Default behaviour (no `size`) is `lg`.
+ */
+export type OverlaySize =
+    | "sm"
+    | "md"
+    | "lg"
+    | "xl"
+    | "2xl"
+    | "3xl"
+    | "4xl"
+    | "5xl"
+    | "6xl"
+    | "7xl";
 
 export interface WidgetConfig {
     id: string;
@@ -16,16 +32,30 @@ export interface WidgetConfig {
     /**
      * Optional role-visibility filter. When set, `WidgetRenderer` skips this
      * node unless the current role (from `useRole()`) is included. When
-     * omitted, the node renders for every role. Used by the Dashboard Inbox
-     * to scope each `data-table` section to one persona (PROP-0009).
+     * omitted, the node renders for every role. Role strings are opaque to
+     * the framework — they're compared against `RoleContextValue.role` by
+     * equality. The gate runs BEFORE `useSmartQuery`, so hidden widgets do
+     * not pay fetch / polling cost.
+     *
+     * **NOT a security boundary — cosmetic gating only.** A user with browser
+     * devtools can flip role context and reveal the widget; the underlying
+     * API is not blocked here. RBAC must be enforced server-side. Do not use
+     * this prop to hide data that the current user is not authorized to see.
+     *
+     * **Empty array (`[]`) means "no role can see this"** — i.e. the widget
+     * is hidden from everyone. This is intentional but inverts the common
+     * "empty = no constraint" convention; if you're composing the list from
+     * an external source (`[...someList]`), check for empty before assigning
+     * or the widget will silently disappear. `WidgetRenderer` logs a dev-mode
+     * warning when it encounters an empty array.
      */
-    visibleRoles?: Role[];
+    visibleRoles?: string[];
     /**
-     * Optional data-conditioned visibility (json-logic). Currently honored by
-     * `TabsContainer`: when the container declares a `dataSource`, it fetches
-     * the entity and skips any child whose `visibleWhen` evaluates false
-     * against the response. Used to hide LoB-specific tabs (e.g. GCL Member
-     * Quotes on a GTL quote-detail page).
+     * jsonLogic condition evaluated against fetched data on a container that
+     * owns a `dataSource` (today: `TabsContainer`). Allows hiding individual
+     * tabs/children based on entity shape — e.g. hide a GCL Member Quotes
+     * tab on a GTL quote. NOT honoured by `WidgetRenderer` directly; see
+     * the consuming container's docs for scope.
      */
     visibleWhen?: Record<string, unknown>;
 }
@@ -38,18 +68,17 @@ export interface DataSourceConfig {
     };
     /**
      * Dotted path on the response payload to drill into before treating the
-     * value as the rows array. Mirrors the per-field `accessorKey` pattern
-     * already used by KeyValueGrid. When unset, consumers fall back to their
-     * existing default discovery (e.g. data-table picks the first array-typed
-     * top-level value).
+     * value as the consumer-shaped result. Mirrors the per-field `accessorKey`
+     * pattern used by KeyValueGrid. Used by `data-table` (and any widget that
+     * accepts `dataPath`) to extract a rows array from a nested envelope.
      */
     dataPath?: string;
     /**
-     * When true and the value resolved at `dataPath` is a string, the
-     * consumer JSON.parses it before consuming. Pairs with `dataPath` to
-     * drill into stringified-JSON entity fields (e.g. estimatedPremium.byPlanJson).
-     * Mirrors KeyValueGrid's per-field `parseJson` flag. Parse failure surfaces
-     * as a render-error on widgets that opt into the loud failure mode.
+     * When true and the value resolved at `dataPath` (or at the top of the
+     * response) is a string, the consumer JSON.parses it before consuming.
+     * Pairs with `dataPath` to drill into stringified-JSON entity fields
+     * (e.g. estimatedPremium.byPlanJson). Parse failure surfaces as a render-
+     * error on widgets that opt in.
      */
     parseJson?: boolean;
     /**
@@ -94,6 +123,40 @@ export interface DataSourceConfig {
     stopWhen?: Record<string, unknown>;
     valueKey?: string; // Key to extract from response or context
     stateDependencies?: string[]; // Keys in useWidgetState that trigger re-fetch
+    /**
+     * Dotted path applied to the fetched response via TanStack Query's
+     * `select`. Subscribers only re-render when *this slice* changes by
+     * reference, not when an unrelated part of the envelope changes.
+     *
+     * Pairs with `fromParent` for the page-envelope pattern: one widget owns
+     * the fetch, sibling widgets each declare `select: "<slice>"` to pull
+     * just their part. Works alone too — two widgets fetching the same
+     * endpoint (TanStack dedupes by queryKey) can each request a different
+     * slice and re-render independently.
+     *
+     * Walks the response via the shared `getNested` helper, so the same
+     * prototype-pollution-safe semantics apply. If the path doesn't resolve,
+     * the subscriber receives `undefined`. Applied AFTER `valueKey` (which
+     * runs inside the queryFn and shapes the cached value).
+     */
+    select?: string;
+    /**
+     * When true, this widget does NOT fetch on its own — it subscribes to
+     * the cache entry of the nearest ancestor widget that owns a `dataSource`
+     * (the "page envelope" pattern). `select` is the recommended companion:
+     * the ancestor caches the fat read DTO; each `fromParent` child picks a
+     * slice via `select`.
+     *
+     * When `fromParent` is set, the following fields are ignored (and a dev
+     * warning is logged if they're present): `api`, `valueKey`,
+     * `refreshInterval`, `pollSchedule`, `stopWhen`, `stateDependencies`.
+     * These belong on the ancestor that owns the fetch.
+     *
+     * If there is no ancestor with a dataSource in scope, the widget receives
+     * `data: undefined` and a dev warning is logged — `fromParent` is then a
+     * misconfiguration, not an error state.
+     */
+    fromParent?: boolean;
 }
 
 export interface BaseActionConfig {
@@ -119,11 +182,13 @@ export type ActionConfig = BaseActionConfig & (
     | {
         type: "open-modal" | "open-sheet";
         target: string;
-        // Optional width override for the overlay shell. Maps to a tailwind
-        // max-width class on the DialogContent/SheetContent. Default is "lg"
-        // (~512px); use larger sizes for forms that render wide content (e.g.
-        // editable tables). Accepts the standard tailwind max-w-* tokens.
-        size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl";
+        /**
+         * Optional width override for the overlay shell. Maps to a Tailwind
+         * `max-w-*` class on the DialogContent / SheetContent. Default is
+         * `lg` (~512px). Use larger sizes for forms rendering wide content
+         * (e.g. editable tables).
+         */
+        size?: OverlaySize;
     }
     | {
         type: "api-mutation";

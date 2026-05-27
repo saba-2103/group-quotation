@@ -1,13 +1,21 @@
 import { create } from 'zustand';
+import type { OverlaySize } from '@/types/widget';
 
 type OverlayType = "sheet" | "modal" | "dialog";
 
-interface OverlayOptions {
-    size?: string;
+export interface OverlayOptions {
+    /** Optional width override; consumed by `OverlayProvider`. */
+    size?: OverlaySize;
+}
+
+interface OverlayEntry {
+    type: OverlayType;
+    data?: any;
+    options?: OverlayOptions;
 }
 
 interface OverlayState {
-    openOverlays: Record<string, { type: OverlayType, data?: any, options?: OverlayOptions }>;
+    openOverlays: Record<string, OverlayEntry>;
     open: (id: string, type: OverlayType, data?: any, options?: OverlayOptions) => void;
     close: (id: string) => void;
     closeAll: () => void;

@@ -26,6 +26,10 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
   pageSizeOptions,
 }) => {
   const sizeOptions = pageSizeOptions ?? PAGE_SIZE_OPTIONS;
+  // Hide nav controls when there's at most one page — they'd be permanently
+  // disabled and just add visual noise. Keep the page-size selector so users
+  // can still change density.
+  const showNav = table.getPageCount() > 1;
   return (
     <div className="flex items-center justify-between gap-3 px-2 py-1.5">
       <span className="text-xs text-muted-foreground tabular-nums">
@@ -58,7 +62,8 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
           <span className="text-xs text-muted-foreground">per page</span>
         </div>
 
-        {/* Navigation: << < [page] > >> */}
+        {/* Navigation: << < [page] > >> — only meaningful when >1 page */}
+        {showNav && (
         <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
@@ -104,6 +109,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
             <ChevronsRight size={14} />
           </Button>
         </div>
+        )}
       </div>
     </div>
   );

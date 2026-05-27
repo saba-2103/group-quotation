@@ -79,7 +79,7 @@ const SEVERITY_STYLES: Record<ToastSeverity, { wrap: string; icon: React.Compone
     icon: CheckCircle2,
   },
   error: {
-    wrap: 'border-destructive/60 bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive',
+    wrap: 'border-destructive/60 bg-destructive/10 text-destructive-foreground dark:bg-destructive/20',
     icon: AlertCircle,
   },
   info: {

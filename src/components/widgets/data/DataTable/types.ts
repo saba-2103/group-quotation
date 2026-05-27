@@ -46,6 +46,8 @@ export interface ColumnConfig {
   joinSource?: string;   // dotted path to the sibling array on the response root
   joinKey?: string;      // row's column whose value matches `joinKey` on each sibling
   joinField?: string;    // field to pull from the matched sibling row
+  // Optional per-column currency override for `type: "currency"`. Default USD.
+  currency?: string;
 }
 export interface RowActionProps {
   route?: string;

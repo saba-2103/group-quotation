@@ -25,6 +25,9 @@ Agents never talk to each other. The orchestrator is the only communication hub.
 - Handoff entry: `context/HANDOFF.md`
 - Core memory: `context/CORE_MEMORY.md`
 - Build-feature contract (the agents run a phased subset of this): `.claude/skills/build-feature/SKILL.md`
+- Implementation quickstart: `docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md`
+- **Comprehensive framework reference** (canonical, per [#73](https://github.com/Anaira-AI/keystone-ui/pull/73)): `docs/schema-design-reference/`. Per-agent prompts should name the specific sections (widget catalog, schemas, actions, forms, troubleshooting) the agent will likely need so it reads the right pages rather than the whole reference.
+- Framework primitives newly available on main via [#72](https://github.com/Anaira-AI/keystone-ui/pull/72): typed API client, `DetailPageSkeleton`, `visibleRoles`, overlay `size`, `schemas/tables/`+`schemas/views/` `$refs`, array GET params, `dataPath`/`parseJson`, cross-array joins. Agents should prefer these over re-invention.
 - Fleet logs (create per run): `agent_logs/build-fleet/<fleet-run-id>/`
 - Fleet design dir: `context/build-fleet/<fleet-run-id>/`
 - Per-agent logs: `agent_logs/build-fleet/<fleet-run-id>/<PROP-NNNN>/`
@@ -136,15 +139,18 @@ No agents in this phase. The orchestrator runs:
 
 ### 7. SHIP — single push, single status update
 
-1. `git push -u origin feature/<fleet-run-id>`.
-2. Update each merged proposal's frontmatter: `status: done`, `pr: <to be filled by user or follow-up gh pr create>`.
-3. Final report to user:
-   - Branch + push URL
+1. `git push -u origin <fleet branch>` (which may simply be the current branch — see RESOLVE step 4).
+2. Open a fleet PR via `gh pr create` if none exists yet; the per-PR EKS preview job from [#71](https://github.com/Anaira-AI/keystone-ui/pull/71) ships the demo at `https://keystone-ui-pr-<N>.anairacloud.com` once the build is green.
+3. Update each merged proposal's frontmatter: `status: done`, `pr: <fleet PR url>`.
+4. Final report to user:
+   - Branch + PR URL + CI run URL
    - One-line summary per proposal: ✅ or ⚠️
-   - Preview URL still running (with reminder to `/preview-and-deploy` for a public link)
+   - Per-PR preview URL (note DNS can take 2–3 minutes to resolve)
    - Any open carry-over items (e.g. an agent that was skipped)
 
-If `--no-preview` was passed, VERIFY skips step 3 (live preview) and SHIP still pushes.
+If `--no-preview` was passed, VERIFY skips step 3 (live preview) and SHIP still pushes — CI's preview job runs regardless once the PR is open.
+
+**Note:** the previous `/preview-and-deploy` skill (Cloudflare `npm run preview` + `npm run deploy`) was removed when [#71](https://github.com/Anaira-AI/keystone-ui/pull/71) landed. CI owns previews now; do not invoke it.
 
 ## Per-agent prompt template
 

@@ -2,9 +2,10 @@
 
 import React, { useMemo } from "react";
 import { useSmartQuery } from "@/hooks/useSmartQuery";
-import { getWidgetComponent } from "@/components/registry/WidgetRegistry";
+import { WidgetRegistry } from "@/components/registry/WidgetRegistry";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { getNested } from "@/lib/objectPath";
 import type { WidgetConfig, DataSourceConfig } from "@/types/widget";
 
 interface EmptyState {
@@ -32,19 +33,6 @@ interface CardGridConfigShape {
   id?: string;
   dataSource?: DataSourceConfig;
   props?: Omit<CardGridProps, "props">;
-}
-
-function getNested(source: unknown, path?: string): unknown {
-  if (source == null || !path) return source;
-  return path
-    .split(".")
-    .reduce<unknown>(
-      (acc, key) =>
-        acc != null && typeof acc === "object" && key in (acc as object)
-          ? (acc as Record<string, unknown>)[key]
-          : undefined,
-      source,
-    );
 }
 
 export const CardGrid: React.FC<CardGridProps & { config?: CardGridConfigShape }> = (incoming) => {
@@ -89,6 +77,19 @@ export const CardGrid: React.FC<CardGridProps & { config?: CardGridConfigShape }
     );
   }
 
+  // Look up the card component once; if the type isn't registered, surface a
+  // single explicit notice instead of rendering N "Unknown Widget" fallbacks
+  // (one per item — the registry's anonymous fallback would otherwise be
+  // spread across the grid). Copilot review fix.
+  const Card = WidgetRegistry[cardWidgetType];
+  if (!Card) {
+    return (
+      <div className="rounded-md border border-destructive/40 p-4 text-sm text-destructive">
+        card-grid: unknown card widget type <code>{cardWidgetType}</code>.
+      </div>
+    );
+  }
+
   if (items.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-muted-foreground/30 p-8 text-center">
@@ -101,8 +102,6 @@ export const CardGrid: React.FC<CardGridProps & { config?: CardGridConfigShape }
       </div>
     );
   }
-
-  const Card = getWidgetComponent(cardWidgetType);
 
   return (
     <div

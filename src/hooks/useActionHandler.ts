@@ -44,7 +44,7 @@ export const useActionHandler = () => {
               errorMessage = errorData.error;
             }
           }
-        } catch (e) {
+        } catch {
           // Body wasn't JSON — keep the statusText fallback.
         }
         throw new Error(errorMessage);
@@ -91,20 +91,29 @@ export const useActionHandler = () => {
           } catch (err) {
             // Surface the parsed `message` from the backend's error envelope
             // (or the raw Error message when parsing fell back to statusText).
+            // Toast is the user-facing surface; we deliberately do NOT rethrow
+            // so callers (ActionBar, form-container, ConfirmationDialog, etc.)
+            // can fire-and-forget without each adding their own try/catch +
+            // creating an unhandled-promise-rejection on every API failure.
+            // If a future caller genuinely needs to react to failure, return a
+            // boolean / status object from dispatch — don't reintroduce throw.
             const message =
               err instanceof Error && err.message
                 ? err.message
                 : "Action failed";
             toast.error(message);
-            throw err;
           }
         }
         break;
       case "open-modal":
-        if (action.target) open(action.target, "modal", rowData, action.size ? { size: action.size } : undefined);
+        if (action.target) {
+          open(action.target, "modal", rowData, action.size ? { size: action.size } : undefined);
+        }
         break;
       case "open-sheet":
-        if (action.target) open(action.target, "sheet", rowData, action.size ? { size: action.size } : undefined);
+        if (action.target) {
+          open(action.target, "sheet", rowData, action.size ? { size: action.size } : undefined);
+        }
         break;
       case "api-download":
         if (action.api) {

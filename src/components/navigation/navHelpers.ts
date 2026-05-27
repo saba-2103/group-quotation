@@ -13,8 +13,10 @@ export function resolveIcon(iconName?: string): IconComponent {
 
 export function isActive(pathname: string, url?: string): boolean {
     if (!url) return false;
-    if (url === "/" && pathname !== "/") return false;
-    return pathname.startsWith(url.split("?")[0]);
+    const base = url.split("?")[0];
+    if (base === "/") return pathname === "/";
+    // Segment-aware match — avoids /quotations matching /quotation, etc.
+    return pathname === base || pathname.startsWith(base + "/");
 }
 
 export function itemMatchesPathname(pathname: string, item: NavigationItem): boolean {

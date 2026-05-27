@@ -28,5 +28,5 @@ export function clearApproval(
   entity: ApprovableEntity,
   id: string,
 ): Promise<void> {
-  return api.del<void>(`${BASE_BY_ENTITY[entity]}/${id}/awaiting-approval`);
+  return api.delete<void>(`${BASE_BY_ENTITY[entity]}/${id}/awaiting-approval`);
 }

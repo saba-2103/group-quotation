@@ -11,12 +11,14 @@ export function groupSubItems(items: NavigationItem[]): NavigationGroup[] {
 
     for (const item of items) {
         const key = item.group ?? null;
-        if (!buckets.has(key)) {
-            buckets.set(key, []);
+        let bucket = buckets.get(key);
+        if (!bucket) {
+            bucket = [];
+            buckets.set(key, bucket);
             order.push(key);
         }
-        buckets.get(key)!.push(item);
+        bucket.push(item);
     }
 
-    return order.map((key) => ({ group: key, items: buckets.get(key)! }));
+    return order.map((key) => ({ group: key, items: buckets.get(key) ?? [] }));
 }

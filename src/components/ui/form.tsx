@@ -60,6 +60,7 @@ const useFormField = () => {
         id,
         name: fieldContext.name,
         formItemId: `${id}-form-item`,
+        formLabelId: `${id}-form-item-label`,
         formDescriptionId: `${id}-form-item-description`,
         formMessageId: `${id}-form-item-message`,
         ...fieldState,
@@ -89,9 +90,12 @@ const FormLabel = React.forwardRef<
     React.ElementRef<typeof LabelPrimitive.Root>,
     React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => {
-    const { error, formItemId } = useFormField();
+    const { error, formItemId, formLabelId } = useFormField();
 
-    return <Label ref={ref} className={cn(error && "text-destructive", className)} htmlFor={formItemId} {...props} />;
+    // `id={formLabelId}` lets non-input controls (e.g. a radiogroup div) bind
+    // this label as their accessible name via `aria-labelledby`. The
+    // `htmlFor={formItemId}` association still works for real inputs.
+    return <Label ref={ref} id={formLabelId} className={cn(error && "text-destructive", className)} htmlFor={formItemId} {...props} />;
 });
 FormLabel.displayName = "FormLabel";
 
