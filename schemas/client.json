@@ -1,0 +1,77 @@
+{
+  "id": "client-list-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "client-list-header",
+      "type": "page-header",
+      "props": {
+        "title": "Clients",
+        "description": "Group policyholders. Click a client to see profile and their policies."
+      }
+    },
+    {
+      "id": "client-list-filters",
+      "type": "filter-bar",
+      "props": {
+        "stateKey": "client-list-filters",
+        "searchKey": "name",
+        "filters": [
+          {
+            "id": "isVip",
+            "label": "VIP only",
+            "type": "select",
+            "options": [
+              { "value": "true", "label": "VIP" },
+              { "value": "false", "label": "Standard" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "clients-table",
+      "type": "data-table",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/policy-admin/clients/search",
+          "method": "GET",
+          "params": { "page": 0, "size": 50 }
+        },
+        "stateDependencies": ["client-list-filters"]
+      },
+      "props": {
+        "title": "Clients",
+        "columns": [
+          {
+            "id": "clientNumber",
+            "accessorKey": "clientNumber",
+            "fallbackKey": "id",
+            "label": "Client #",
+            "type": "link",
+            "linkRoute": "/policy-admin/clients/:id"
+          },
+          { "id": "name", "accessorKey": "name", "label": "Name", "type": "text" },
+          { "id": "industryCategory", "accessorKey": "industryCategory", "label": "Industry", "type": "text" },
+          { "id": "countryCode", "accessorKey": "countryCode", "label": "Country", "type": "text" },
+          { "id": "isVip", "accessorKey": "isVip", "label": "VIP", "type": "text" },
+          { "id": "state", "accessorKey": "state", "label": "Status", "type": "text" }
+        ],
+        "rowActions": [
+          {
+            "id": "view-client-btn",
+            "label": "View",
+            "icon": "Eye",
+            "type": "navigate",
+            "target": "/policy-admin/clients/:id"
+          }
+        ],
+        "emptyState": {
+          "title": "No clients yet",
+          "description": "Clients are created by the Policy Admin module."
+        }
+      }
+    }
+  ]
+}

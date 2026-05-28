@@ -1,0 +1,284 @@
+package com.anaira.quotation.domain;
+
+// - Quote aggregate -
+// States:
+//   DRAFT to SUBMITTED to SENT_TO_CLIENT to ACCEPTED to FINALIZED
+//                                      to REJECTED (terminal)
+//   {DRAFT, SUBMITTED, SENT_TO_CLIENT} to WITHDRAWN (terminal)
+//   {SUBMITTED, SENT_TO_CLIENT}        to EXPIRED   (terminal)
+// W1: QuoteFlow - Sales creates, configures, submits, client accepts to FinalizeQuote to triggers W2
+
+entity Quote {
+    id: string
+    clientId: string
+    policyType: PolicyType
+    premiumType?: PremiumType
+    effectiveDate?: date
+    expiryDate?: date
+    inceptionDate?: date
+    ageDefinitionRule?: AgeDefinitionRule
+    riskTermClassification?: RiskTermClassification
+    lineOfBusiness?: LineOfBusiness
+    status: QuoteStatus
+    plans: list<Plan>
+    memberToPlanMapping?: string // DMN decision table as JSON string
+    aggregateCensus?: AggregateCensus
+    censusFileFormat?: CensusFileFormat
+    premium?: QuotePremium
+
+    check isDraft() {
+        error("QUO_PRE_001", "Quote must be in DRAFT state")
+    }
+
+    check isSubmitted() {
+        error("QUO_PRE_002", "Quote must be in SUBMITTED state")
+    }
+
+    check isSentToClient() {
+        error("QUO_PRE_008", "Quote must be in SENT_TO_CLIENT state")
+    }
+
+    check isAccepted() {
+        error("QUO_PRE_009", "Quote must be in ACCEPTED state")
+    }
+
+    check canWithdraw() {
+        error("QUO_PRE_010", "Quote can only be withdrawn while in DRAFT, SUBMITTED, or SENT_TO_CLIENT")
+    }
+
+    check canExpire() {
+        error("QUO_PRE_011", "Quote can only expire while in SUBMITTED or SENT_TO_CLIENT")
+    }
+
+    check hasPlans() {
+        error("QUO_PRE_003", "Quote must have at least one plan configured")
+    }
+
+    check hasCensusAggregate() {
+        error("QUO_PRE_004", "Aggregate census must be set before submitting")
+    }
+
+    check hasCensusFileFormat() {
+        error("QUO_PRE_013", "Census file format must be set before submitting")
+    }
+
+    check hasPremiumEstimate() {
+        error("QUO_PRE_005", "Estimated premium must be calculated before submitting")
+    }
+
+    check isNotTerminal() {
+        error("QUO_INV_001", "Quote cannot be modified in a terminal state (ACCEPTED with finalize aside; REJECTED, WITHDRAWN, EXPIRED, FINALIZED)")
+    }
+
+    check hasMemberToPlanMapping() {
+        error("QUO_PRE_007", "Member to Plan mapping must be configured before submitting")
+    }
+
+    check hasPolicyDetail() {
+        error("QUO_PRE_012", "Policy detail (premiumType, effectiveDate, expiryDate, inceptionDate, ageDefinitionRule, riskTermClassification, lineOfBusiness) must be set before submitting")
+    }
+
+    invariant isNotTerminal;
+
+    // W1 step 1
+    function updatePolicyDetail(
+        premiumType: PremiumType,
+        effectiveDate: date,
+        expiryDate: date,
+        inceptionDate: date,
+        ageDefinitionRule: AgeDefinitionRule,
+        riskTermClassification: RiskTermClassification,
+        lineOfBusiness: LineOfBusiness
+    ): void {
+        precondition isDraft;
+        emits QuoteUpdated;
+    }
+
+    function addPlan(plan: Plan): void {
+        precondition isDraft;
+        precondition hasCensusFileFormat;
+        emits QuoteUpdated;
+    }
+
+    function updatePlan(plan: Plan): void {
+        precondition isDraft;
+        precondition hasCensusFileFormat;
+        emits QuoteUpdated;
+    }
+
+    function removePlan(planNo: string): void {
+        precondition isDraft;
+        emits QuoteUpdated;
+    }
+
+    // W1 step 2c (G2 placeholder)
+    function updateMemberToPlanMapping(mapping: string): void {
+        precondition isDraft;
+    precondition hasCensusFileFormat;
+        emits QuoteUpdated;
+    }
+
+    // W1 step 3
+    function updateAggregateCensus(census: AggregateCensus): void {
+        precondition isDraft;
+        emits QuoteUpdated;
+    }
+
+    // W1 step 3a - define the column contract for the census file (Frictionless Table Schema)
+    function updateCensusFileFormat(format: CensusFileFormat): void {
+        precondition isDraft;
+        emits QuoteUpdated;
+    }
+
+    // W1 step 4a - Sales requests price; workflow calculates premium and calls updatePremium
+    function requestPrice(): void {
+        precondition isDraft;
+        precondition hasPolicyDetail;
+        precondition hasPlans;
+        precondition hasCensusAggregate;
+        precondition hasMemberToPlanMapping;
+        emits QuotePriceRequested;
+    }
+
+    // W1 step 4 - manual entry by Sales; no Rule Engine call
+    function updatePremium(premium: QuotePremium): void {
+        precondition isDraft;
+        precondition hasPolicyDetail;
+        precondition hasPlans;
+        precondition hasCensusAggregate;
+        precondition hasMemberToPlanMapping;
+        emits QuotePremiumUpdated;
+    }
+
+    // W1 step 5 - internal approval/QC complete
+    function submit(): void {
+        precondition isDraft;
+        precondition hasPolicyDetail;
+        precondition hasPlans;
+        precondition hasCensusAggregate;
+        precondition hasCensusFileFormat;
+        precondition hasMemberToPlanMapping;
+        precondition hasPremiumEstimate;
+        emits QuoteSubmitted;
+    }
+
+    // Quote delivered to client
+    function sendToClient(): void {
+        precondition isSubmitted;
+        emits QuoteSentToClient;
+    }
+
+    // Client accepts the quote
+    function accept(): void {
+        precondition isSentToClient;
+        emits QuoteAccepted;
+    }
+
+    // Client rejects the quote (terminal)
+    function reject(): void {
+        precondition isSentToClient;
+        emits QuoteRejected;
+    }
+
+    // Sales pulls the quote back (terminal) - allowed before client decision
+    function withdraw(): void {
+        precondition canWithdraw;
+        emits QuoteWithdrawn;
+    }
+
+    // Time-based termination (terminal) - only after submit
+    function expire(): void {
+        precondition canExpire;
+        emits QuoteExpired;
+    }
+
+    // W1 step 6 - paperwork complete; triggers W2 (CreateProposal)
+    function finalize(): void {
+        precondition isAccepted;
+        emits QuoteFinalized;
+    }
+}
+
+// - MemberQuote aggregate (GCL only - W4) -
+// States: DRAFT to SUBMITTED to FINALIZED
+// Not active for GTL MVP; defined for GCL use when activated.
+
+entity MemberQuote {
+    id: string
+    policyId: string
+    planNo?: string // resolved from the parent Policy by UpdateMemberPlanCommand inside the workflow
+    sumAssured?: Money
+    status: MemberQuoteStatus
+    memberData: MemberData
+    premium?: MemberQuotePremium
+
+    check isDraft() {
+        error("QMB_PRE_001", "MemberQuote must be in DRAFT state")
+    }
+
+    check isSubmitted() {
+        error("QMB_PRE_003", "MemberQuote must be in SUBMITTED state")
+    }
+
+    check hasPremium() {
+        error("QMB_PRE_002", "Premium must be calculated before sending or finalizing")
+    }
+
+    check hasPlan() {
+        error("QMB_PRE_004", "Plan must be resolved on the MemberQuote before pricing or submitting")
+    }
+
+    check isNotTerminal() {
+        error("QMB_INV_001", "MemberQuote is in a terminal state and cannot be modified")
+    }
+
+    invariant isNotTerminal;
+
+    // Workflow step - sets the plan resolved from the parent Policy
+    function setPlan(planNo: string): void {
+        precondition isDraft;
+        emits MemberQuotePlanSet;
+    }
+
+    // Can be called multiple times with updated sumAssured - each call recalculates premium
+    // Result of Rule Engine calculate-premium call passed in as premium parameter
+    function updatePremium(memberData: MemberData, premium: MemberQuotePremium): void {
+        precondition isDraft;
+        precondition hasPlan;
+        emits MemberQuotePremiumUpdated;
+    }
+
+    function submit(): void {
+        precondition isDraft;
+        precondition hasPlan;
+        precondition hasPremium;
+        emits MemberQuoteSubmitted;
+    }
+
+    // Final call (finalized=true from partner) - locks premium, creates PolicyMember to triggers W3
+    function finalize(): void {
+        precondition isSubmitted;
+        precondition hasPlan;
+        precondition hasPremium;
+        emits MemberQuoteFinalized;
+    }
+}
+
+// - Factories -
+
+service QuoteFactory {
+    function create(clientId: string, policyType: PolicyType): Quote {
+        emits QuoteCreated;
+    }
+}
+
+service MemberQuoteFactory {
+    // planNo is unset at creation; the workflow's ResolveMemberPlan step resolves it via the parent Policy and calls setPlan
+    function create(
+        policyId: string,
+        memberData: MemberData,
+        sumAssured?: Money
+    ): MemberQuote {
+        emits MemberQuoteCreated;
+    }
+}

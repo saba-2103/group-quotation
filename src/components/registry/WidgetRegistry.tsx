@@ -7,6 +7,13 @@ import { MetricCard } from "../widgets/items/MetricCard";
 import { ChartWidget } from "../widgets/items/ChartWidget";
 import { QuickLinksWidget } from "../widgets/items/QuickLinksWidget";
 import { DataTable } from "../widgets/data/DataTable";
+import { CardGrid } from "../widgets/data/CardGrid";
+import { EditableTable } from "../widgets/data/EditableTable";
+import { PlanCard } from "../widgets/data/PlanCard";
+import { PlanForm } from "../widgets/forms/PlanForm";
+import { CensusFileFormatForm } from "../widgets/forms/CensusFileFormatForm";
+import { DmnDecisionTable } from "../widgets/data/DmnDecisionTable";
+import { ActivationCounter } from "../widgets/data/ActivationCounter";
 import { FilterBar } from "../widgets/controls/FilterBar";
 import { TabsContainer } from "../widgets/container/TabsContainer";
 import { FormContainer } from "../widgets/forms/formContainer";
@@ -17,10 +24,10 @@ import { SearchableDropdownWidget } from "../widgets/controls/searchDropDown/ind
 import { ContextHelpTooltipWidget } from "../widgets/items/ContextHelpTooltip";
 import { RoleSwitcher } from "../widgets/role/RoleSwitcher";
 import { ActionBar } from "../widgets/actions/ActionBar";
+import { ConfirmMafButton } from "../widgets/actions/ConfirmMafButton";
 import { StateBadge } from "../widgets/state/StateBadge";
 import { ReasonBanner } from "../widgets/state/ReasonBanner";
 import { PollingBanner } from "../widgets/state/PollingBanner";
-import { CardGrid } from "../widgets/data/CardGrid";
 
 export const WidgetRegistry: Record<string, React.FC<any>> = {
   "stack-layout": StackLayout,
@@ -31,6 +38,13 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
   "chart-widget": ChartWidget,
   "quick-links-widget": QuickLinksWidget,
   "data-table": DataTable,
+  "card-grid": CardGrid,
+  "editable-table": EditableTable,
+  "plan-card": PlanCard,
+  "plan-form": PlanForm,
+  "census-file-format-form": CensusFileFormatForm,
+  "dmn-decision-table": DmnDecisionTable,
+  "activation-counter": ActivationCounter,
   "filter-bar": FilterBar,
   "search-bar": FilterBar,
   "tabs-container": TabsContainer,
@@ -42,10 +56,10 @@ export const WidgetRegistry: Record<string, React.FC<any>> = {
   "context-help-tooltip": ContextHelpTooltipWidget,
   "role-switcher": RoleSwitcher,
   "action-bar": ActionBar,
+  "confirm-maf-button": ConfirmMafButton,
   "state-badge": StateBadge,
   "reason-banner": ReasonBanner,
-  "polling-banner": PollingBanner,
-  "card-grid": CardGrid,
+  "polling-banner": PollingBanner
 };
 
 export const getWidgetComponent = (type: string) => {

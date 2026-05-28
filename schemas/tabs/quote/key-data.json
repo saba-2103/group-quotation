@@ -1,0 +1,60 @@
+{
+  "id": "quote-key-data-tab",
+  "type": "tab-panel",
+  "props": { "value": "key-data", "label": "Key Data", "icon": "Settings" },
+  "children": [
+    {
+      "id": "quote-key-data-grid",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Quote details",
+        "description": "Policy-level metadata. Edit affordance is DRAFT + maker only; plans, census, and member-mapping have their own tabs.",
+        "columns": 3,
+        "fields": [
+          { "id": "quoteNumber", "label": "Quote #", "accessorKey": "quoteNumber", "fallbackKey": "id" },
+          { "id": "client", "label": "Client", "accessorKey": "clientName", "fallbackKey": "clientId" },
+          { "id": "policyType", "label": "Policy type", "accessorKey": "policyType" },
+          { "id": "premiumType", "label": "Premium type", "accessorKey": "premiumType" },
+          { "id": "lineOfBusiness", "label": "Line of business", "accessorKey": "lineOfBusiness" },
+          { "id": "riskTermClassification", "label": "Risk term classification", "accessorKey": "riskTermClassification" },
+          { "id": "ageDefinitionRule", "label": "Age definition rule", "accessorKey": "ageDefinitionRule" },
+          { "id": "effectiveDate", "label": "Effective date", "accessorKey": "effectiveDate", "type": "date" },
+          { "id": "expiryDate", "label": "Expiry date", "accessorKey": "expiryDate", "type": "date" },
+          { "id": "inceptionDate", "label": "Inception date", "accessorKey": "inceptionDate", "type": "date" }
+        ]
+      }
+    },
+    {
+      "id": "quote-key-data-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "stateField": "status",
+        "stateActions": { "DRAFT": ["edit-policy-detail"] },
+        "roleActions": {
+          "sales": ["edit-policy-detail"],
+          "partner_agent": [],
+          "mph": [],
+          "member": [],
+          "uw": [],
+          "ops": []
+        },
+        "actions": [
+          {
+            "id": "edit-policy-detail",
+            "label": "Edit policy details",
+            "icon": "Pencil",
+            "type": "open-modal",
+            "target": "edit-quote-policy-detail-form",
+            "variant": "outline"
+          }
+        ]
+      }
+    }
+  ]
+}

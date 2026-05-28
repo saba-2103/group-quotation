@@ -1,0 +1,25 @@
+# VERIFY — fleet 2026-05-13-fleet-all-approved
+
+Merged HEAD: `3b22da5` on `feature/2026-05-13-fleet-all-approved`
+
+## tsc --noEmit
+Clean. One merge-time fix landed: relative-import depth on `src/app/issuance/proposals/[id]/census/new/page.tsx` (commit `3b22da5`). Off-by-one (8 `../`s where mirror file `/members/new/page.tsx` uses 7). Caught by post-merge tsc smoke and corrected before VERIFY.
+
+## npm run lint
+**Pre-existing broken** — `next lint` was removed in Next.js 16. Repo is on Next 16.1.5. The npm script `"lint": "next lint"` now errors `Invalid project directory provided, no such directory: …/lint` because the CLI interprets `lint` as a path. Not introduced by the fleet; needs a separate `package.json` cleanup (probably swap to `next-lint`/`eslint .` directly). Logged as a follow-up.
+
+## npm test
+**29 pre-existing failures** in `src/tests/unit/form/FormContainer.unit.test.tsx` (label/input binding regression). Confirmed pre-existing by `git checkout dd66fd2 -- <fleet-touched form files>` and re-running — failure count unchanged. The fleet introduced **zero** new test failures.
+
+Total: 56 failed / 73 passed / 129 total. Other failing suite is also pre-existing — verified by inspection.
+
+## Proxy-mode goldenpath smoke
+Live dev URL auto-deploys on push (per HANDOFF — `https://keystone-ui-dev.anairacloud.com` via K3s CI pipeline). Deferred to post-SHIP verification on the live URL instead of starting a local preview. User can walk the three goldenpaths there:
+- PROP-0001: `/issuance/proposals/<id>/census` → upload CSV → ingest → submit → COMPLETED
+- PROP-0002: `/quotation/member-quotes` → confirm `policyId` filter chip → open DRAFT → set-premium modal works end-to-end
+- PROP-0003: `/policy-admin/policies/<active-id>` → switch to ops role → "Add member" surfaces → submit → PENDING→ACTIVE polling
+
+## Open follow-ups
+1. Fix `npm run lint` (Next 16 migration debt — not fleet-caused)
+2. Address pre-existing FormContainer label-binding test failures (not fleet-caused)
+3. Manual goldenpath walk against the deployed dev URL once CI completes

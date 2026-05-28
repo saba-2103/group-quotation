@@ -1,0 +1,253 @@
+package com.anaira.quotation.api;
+
+// - Request / Response DTOs -
+
+data CreateQuoteRequest {
+    clientId: string
+    policyType: string
+}
+
+data CreateQuoteResponse {
+    quoteId: string
+}
+
+data UpdatePolicyDetailRequest {
+    premiumType: string
+    effectiveDate: date
+    expiryDate: date
+    inceptionDate: date
+    ageDefinitionRule: string
+    riskTermClassification: string
+    lineOfBusiness: string
+}
+
+data PlanRequest {
+    planNo: string
+    planName?: string
+    products: list<PlanProductRequest>
+    rateCardFile: string
+    coverAmountFormula: AmountFormulaRequest
+    freeCoverLimitFormula?: AmountFormulaRequest
+}
+
+data PlanProductRequest {
+    productCode: string
+    productName?: string
+    productType: string
+    benefits: list<PlanBenefitRequest>
+    exclusions: list<PlanExclusionRequest>
+}
+
+data PlanBenefitRequest {
+    code: string
+    name?: string
+    mandatory: boolean
+}
+
+data PlanExclusionRequest {
+    code: string
+    name?: string
+}
+
+data UpdateMemberToPlanMappingRequest {
+    mapping: string
+}
+
+data UpdateAggregateCensusRequest {
+    headcount: int
+    planBreakdown: list<PlanHeadcountRequest>
+}
+
+data PlanHeadcountRequest {
+    planNo: string
+    headcount: int
+}
+
+data UpdateCensusFileFormatRequest {
+    fileType: string
+    sheetName?: string
+    schemaJson: string
+    dialectJson?: string
+}
+
+data UpdatePremiumRequest {
+    total: MoneyRequest
+    byPlan: list<PlanPremiumRequest>
+}
+
+data PlanPremiumRequest {
+    planNo: string
+    amount: double
+    currency: string
+}
+
+data MoneyRequest {
+    amount: double
+    currency: string
+}
+
+data CreateMemberQuoteRequest {
+    policyId: string
+    name: string
+    dob?: date
+    gender?: string
+    salary?: double
+    occupation?: string
+    sumAssured?: double
+}
+
+data CreateMemberQuoteResponse {
+    memberQuoteId: string
+}
+
+data UpdateMemberPremiumRequest {
+    name: string
+    dob?: date
+    gender?: string
+    salary?: double
+    occupation?: string
+    annualPremiumAmount: double
+    currency: string
+    breakup: list<PremiumBreakupItemRequest>
+}
+
+data PremiumBreakupItemRequest {
+    productCode: string
+    benefitCode?: string
+    premiumAmount: double
+    currency: string
+}
+
+// - Quote Enums -
+api QuotationCommonAPI base "/api/quotation" {
+    GET("/enums/:enumType") listEnumValues(@path enumType: string, @query search: string): list<string> {
+        query ListEnumTypeValuesQuery;
+    }
+
+    POST("/files/upload-url") getFileUploadUrl(@body request: FileUploadUrlRequest): FileUploadUrlResponse {
+        command GenerateFileUploadUrlCommand;
+    }
+
+    POST("/files/download-url") getFileDownloadUrl(@body request: FileDownloadUrlRequest): FileDownloadUrlResponse {
+        command GenerateFileDownloadUrlCommand;
+    }
+
+}
+
+// - Quote API -
+
+api QuoteAPI base "/api/quotation" {
+
+    POST("/quotes") createQuote(@body request: CreateQuoteRequest): CreateQuoteResponse {
+        command CreateQuoteCommand;
+    }
+
+    PUT("/quotes/:quoteId/policy-detail") updatePolicyDetail(@path quoteId: string, @body request: UpdatePolicyDetailRequest) {
+        command UpdatePolicyDetailCommand;
+    }
+
+    POST("/quotes/:quoteId/plans") addPlan(@path quoteId: string, @body request: PlanRequest) {
+        command AddPlanCommand;
+    }
+
+    PUT("/quotes/:quoteId/plans/:planNo") updatePlan(@path quoteId: string, @path planNo: string, @body request: PlanRequest) {
+        command UpdatePlanCommand;
+    }
+
+    DELETE("/quotes/:quoteId/plans/:planNo") removePlan(@path quoteId: string, @path planNo: string) {
+        command RemovePlanCommand;
+    }
+
+    PUT("/quotes/:quoteId/member-to-plan-mapping") updateMemberToPlanMapping(@path quoteId: string, @body request: UpdateMemberToPlanMappingRequest) {
+        command UpdateMemberToPlanMappingCommand;
+    }
+
+    PUT("/quotes/:quoteId/aggregate-census") updateAggregateCensus(@path quoteId: string, @body request: UpdateAggregateCensusRequest) {
+        command UpdateAggregateCensusCommand;
+    }
+
+    PUT("/quotes/:quoteId/census-file-format") updateCensusFileFormat(@path quoteId: string, @body request: UpdateCensusFileFormatRequest) {
+        command UpdateCensusFileFormatCommand;
+    }
+
+    POST("/quotes/:quoteId/request-price") requestQuotePrice(@path quoteId: string) {
+        command RequestQuotePriceCommand;
+    }
+
+    POST("/quotes/:quoteId/submit") submitQuote(@path quoteId: string) {
+        command SubmitQuoteCommand;
+    }
+
+    POST("/quotes/:quoteId/send-to-client") sendToClient(@path quoteId: string) {
+        command SendToClientCommand;
+    }
+
+    POST("/quotes/:quoteId/accept") acceptQuote(@path quoteId: string) {
+        command AcceptQuoteCommand;
+    }
+
+    POST("/quotes/:quoteId/reject") rejectQuote(@path quoteId: string) {
+        command RejectQuoteCommand;
+    }
+
+    POST("/quotes/:quoteId/withdraw") withdrawQuote(@path quoteId: string) {
+        command WithdrawQuoteCommand;
+    }
+
+    POST("/quotes/:quoteId/expire") expireQuote(@path quoteId: string) {
+        command ExpireQuoteCommand;
+    }
+
+    POST("/quotes/:quoteId/finalize") finalizeQuote(@path quoteId: string) {
+        command FinalizeQuoteCommand;
+    }
+
+    GET("/quotes/:quoteId") getQuoteById(@path quoteId: string): QuoteDto {
+        query GetQuoteByIdQuery;
+    }
+
+    GET("/quotes/by-client") findByClient(@query clientId: string): list<QuoteSummaryDto> {
+        query FindQuotesByClientQuery;
+    }
+
+    GET("/quotes/by-status") findByStatus(@query status: string): list<QuoteSummaryDto> {
+        query FindQuotesByStatusQuery;
+    }
+
+    GET("/quotes/search") searchQuotes(@query? clientId: string, @query? status: string, @query? policyType: string, @query page: int, @query size: int): list<QuoteSummaryDto> {
+        query SearchQuotesQuery;
+    }
+
+    GET("/quotes/list") listAllQuotes(@query page: int, @query size: int): list<QuoteSummaryDto> {
+        query ListAllQuotesQuery;
+    }
+}
+
+// - MemberQuote API (GCL - W4) -
+
+api MemberQuoteAPI base "/api/quotation" {
+
+    POST("/member-quotes") createMemberQuote(@body request: CreateMemberQuoteRequest): CreateMemberQuoteResponse {
+        command CreateMemberQuoteCommand;
+    }
+
+    PUT("/member-quotes/:memberQuoteId/premium") updateMemberPremium(@path memberQuoteId: string, @body request: UpdateMemberPremiumRequest) {
+        command UpdateMemberPremiumCommand;
+    }
+
+    POST("/member-quotes/:memberQuoteId/submit") submitMemberQuote(@path memberQuoteId: string) {
+        command SubmitMemberQuoteCommand;
+    }
+
+    POST("/member-quotes/:memberQuoteId/finalize") finalizeMemberQuote(@path memberQuoteId: string) {
+        command FinalizeMemberQuoteCommand;
+    }
+
+    GET("/member-quotes/:memberQuoteId") getMemberQuoteById(@path memberQuoteId: string): MemberQuoteDto {
+        query GetMemberQuoteByIdQuery;
+    }
+
+    GET("/member-quotes") findMemberQuotes(@query? policyId: string, @query? status: string): list<MemberQuoteDto> {
+        query FindMemberQuotesQuery;
+    }
+}

@@ -1,0 +1,47 @@
+# VERIFY — PROP-0006
+
+## Gates
+
+| Gate | Result |
+|---|---|
+| `npx tsc --noEmit` | PASS (exit 0) |
+| ESLint on touched files (useDataTable.ts, DataTable/index.tsx) | PASS — 0 errors |
+| ESLint baseline on widget.ts | 6 pre-existing `any` errors (in fields I did not touch) left untouched per the skill rule |
+
+## Browser smoke (live API proxy)
+
+Quote `170ea9b1-2eeb-4a88-934b-07afa4112ea4` had `estimatedPremium.byPlanJson` populated (post the PROP-0005 PUT cycle earlier today).
+
+Pricing tab now renders:
+- Total: `Annual premium (total) 158,976,000` / `Currency INR` (existing key-value-grid, unchanged).
+- Per-plan breakdown table:
+  - `P1 | Standard Cover | ₹24,192,000 | INR`
+  - `P2 | Enhanced Cover | ₹134,784,000 | INR`
+
+End-to-end pipeline verified:
+1. `dataSource.dataPath: "estimatedPremium.byPlanJson"` drilled into the response.
+2. `dataSource.parseJson: true` parsed the stringified JSON.
+3. Cross-array join enriched each row with `planName` from `plans[]` keyed by `planNo`.
+4. Dotted accessor `amount.amount` resolved via the new `accessorFn` + cellValue helper for nested Money objects.
+5. Currency formatter applied via the existing `type: "currency"` cell renderer.
+
+## Bugs caught and fixed during VERIFY
+
+1. **dataSource not in props.** `useDataTable` reads `dataSource` from `props`, but `WidgetRenderer` puts it on `config.dataSource`, not `config.props.dataSource`. The DataTable wrapper now merges `config.dataSource` into props at the call site:
+   ```typescript
+   useDataTable({
+     props: { ...config.props, dataSource: config.dataSource ?? config.props?.dataSource }
+   })
+   ```
+2. **Dotted `accessorKey` didn't auto-nest.** TanStack table doesn't split `accessorKey` on `.`. Added `accessorFn` for dotted keys in the columnDef builder. Also added a `cellValue` helper in the DataTable component so the explicit `rowData[col.accessorKey]` lookups walk nested paths the same way. Both paths now agree on dot-notation semantics.
+3. **Wire shape was `{amount: {amount, currency}}` (nested Money), not flat.** Schema updated to use dotted accessors `amount.amount` and `amount.currency` — matches the DSL `Money` shape on `QuotePlanPremium`.
+4. **Dev server stuck on stale census.json error.** Unrelated to this lane; `touch` forced HMR re-parse.
+
+## Coverage gaps
+
+- No Jest tests added (same call as PROP-0004/0005/0007/0008). Live browser smoke covers the happy path end-to-end.
+- Negative path (malformed JSON → ErrorState) not exercised in a live test; the resolver branch is straight-line and tsc-checked.
+
+## Verified — ready to commit
+
+PROP-0006 complete. The Pricing tab now actually renders the per-plan breakdown live; backend's `byPlanJson` is fully consumed.

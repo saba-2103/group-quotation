@@ -1,0 +1,60 @@
+# DISCOVER — PROP-0007 (Member-to-Plan DMN view + blob-replace)
+
+run-id: 2026-05-13-mapping-dmn-view
+input-source: proposals/PROP-0007-quote-detail-mapping-view.md (status: approved)
+
+## Surveyed paths
+
+- proposals/PROP-0007-quote-detail-mapping-view.md — design contract.
+- docs/spec/quotation/QuotationDomain.domain — `updateMemberToPlanMapping(mapping: string)` with `precondition isDraft + hasCensusFileFormat`. The mapping is opaque to the backend at this layer (`memberToPlanMapping?: string // DMN decision table as JSON string`).
+- schemas/tabs/quote/member-mapping.json — current key-value-grid drilling `parseJson + subPath "rules"` / `"hits"`. Live data is actually at `decisionTable.rules` / `decisionTable.hitPolicy` (see live API spot-check below), so the current view is broken (renders "—" for the lists).
+- src/components/widgets/forms/formContainer/FieldRenderer.tsx — already has `json-textarea` field type (added by PROP-0005).
+- src/components/widgets/forms/formContainer/utils.ts — already has `json` validation rule (added by PROP-0005).
+- src/components/widgets/forms/OverlaidForm.tsx — already has per-field `sourcePath` / `sourceParseJson` / `sourceSubPath` (added by PROP-0005).
+- src/components/widgets/data/EditableTable.tsx — reference pattern for "small bespoke widget that consumes the page-level dataSource and renders a structured table".
+- src/components/ui/table.tsx — Table primitive.
+
+## Live API spot-check (proxy against group-pas-dev)
+
+`GET /api/quotation/quotes/170ea9b1.../memberToPlanMappingJson` parsed shape:
+
+```json
+{
+  "decisionTable": {
+    "hitPolicy": "FIRST",
+    "inputs":  [{"id":"salary",   "label":"Annual Salary", "typeRef":"number"}],
+    "outputs": [{"id":"planNo",   "label":"Plan",          "typeRef":"string"}],
+    "rules": [
+      {"when": {"salary": ">= 2000000"}, "then": {"planNo": "P2"}},
+      {"when": {"salary": "< 2000000"},  "then": {"planNo": "P1"}}
+    ]
+  }
+}
+```
+
+The proposal assumed `hits` and `rules` at the top level; the real shape nests them under `decisionTable` and uses `when` / `then` per rule (not `if` / `then`). Column set is dynamic — N inputs + M outputs.
+
+## Known (locked)
+
+1. Two sections: read-only DMN table view + a "Replace mapping" modal that PUTs the whole DMN blob.
+2. API: `PUT /quotation/quotes/{id}/member-to-plan-mapping` body `{ mapping: "<stringified JSON>" }`. Precondition `isDraft + hasCensusFileFormat`.
+3. The `json-textarea` field type and `json` validation rule already exist (shipped by PROP-0005). Form authoring is mechanical.
+4. The `sourcePath` pre-fill plumbing (PROP-0005) lets the form field read its initial value from `memberToPlanMappingJson` on the entity — no parse needed since the user edits the wrapped string and submits it as-is.
+5. Branch + commit-split already locked.
+
+## Ambiguous (CLARIFY)
+
+1. **Bespoke `dmn-decision-table` widget vs static-column `data-table`?** Live DMN has dynamic input/output columns. A static `data-table` would hardcode `salary` + `planNo` and break if the DMN changes (e.g. add `tenure` input). Bespoke widget is clearly the right call, ~100 LOC, same pattern as PROP-0004/0005. Decision: bespoke. **No question needed — I'll proceed.**
+2. **Role-gating: proposal says "checker, only".** Plans / Census / Pricing actions are all `maker`-gated in V1. Checker is the gate-keeper, not the editor. Surfacing because the proposal text disagrees with the conventions used everywhere else.
+
+## Derivable (will use existing pattern)
+
+- Shadcn Table primitive.
+- `useSmartQuery` to fetch the page-level quote response.
+- `action-bar` widget with state+role gating, same shape as Census tab's "Edit file format" button.
+- `open-modal` action → `OverlaidForm` → form schema; `sourcePath` pre-fills the textarea.
+- Commit split src/context per CORE_MEMORY.
+
+## Next step
+
+CLARIFY round 1 — just the role-gating question.

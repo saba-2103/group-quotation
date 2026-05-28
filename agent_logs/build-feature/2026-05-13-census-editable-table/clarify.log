@@ -1,0 +1,31 @@
+# CLARIFY — PROP-0005
+
+## Round 1 (2026-05-13)
+
+### Q1: schemaJson / dialectJson field rendering in Edit-file-format form?
+**Answer:** Land `json-textarea` field type here as a small additive change to `FieldRenderer.tsx`. PROP-0007's lane shrinks (only the mapping-replace flow) since this proposal delivers the field type.
+
+### Q2: Editable widget shape?
+**Answer:** Bespoke EditableTable parameterized for join-shaped edits. Same "bespoke now, generalize later" pattern as PROP-0004's PlanForm.
+
+## Decisions for DESIGN
+
+1. **Two new things** added to the form system (small, additive, no recursive refactor):
+   - Field type `json-textarea` — renders a monospace `<Textarea>` for JSON blob editing.
+   - Validation rule `json` — wraps the string Zod schema with `.refine(JSON.parse)` to reject invalid JSON at submit. Declared independently in the schema via `validations: [{ rule: "json", message: "..." }]` so `json-textarea` and `json` validation can be combined or used separately.
+2. **EditableTable widget** is bespoke to the aggregate-census join shape. Props:
+   - `keyArrayPath` — where to read the key array (e.g. `plans`)
+   - `keyField` — join field (e.g. `planNo`)
+   - `labelField` — optional display label field (e.g. `planName`)
+   - `valueArrayPath` — where to read the per-key value array (e.g. `aggregateCensus.planBreakdown`)
+   - `valueField` — which numeric field per item (e.g. `headcount`)
+   - `valueLabel` — column header
+   - `inputType` — `"number"` for V1
+   - `min`, `max`, `step` — input validation
+   - `saveAction` — `{ endpoint, method, refreshKey, successMessage, bodyShape }`. `bodyShape: "aggregate-census"` builds the canonical AggregateCensus PUT body shape.
+   - `emptyState` — when no key rows.
+
+   The "join-shaped" name is honest: the widget's contract is "render N rows from a key array, edit one numeric per row sourced from a value array joined by `keyField`, save the join". Future generalization (other body shapes, multi-value-column edits) is out-of-scope.
+3. **Sequencing**: this run's `json-textarea` + `json`-validation work means PROP-0007 only ships the mapping-replace flow (no new form-field type). Updating PROP-0007 frontmatter / Implementation notes is part of the PROP-0007 lane, not this one.
+
+No remaining open items. Proceeding to DESIGN.

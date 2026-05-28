@@ -1,0 +1,41 @@
+# VERIFY — PROP-0007
+
+## Gates
+
+| Gate | Result |
+|---|---|
+| `npx tsc --noEmit` | PASS (exit 0) |
+| ESLint on DmnDecisionTable.tsx | PASS — 0 errors, 0 warnings |
+| ESLint baseline (WidgetRegistry.tsx full) | 1 pre-existing `any` at line 28, not introduced by this run; same baseline as PROP-0004/0005 left in place |
+| JSON schemas parse | `member-mapping.json` + `member-mapping-replace-form.json` parse cleanly; forms registry regenerated |
+
+## Browser smoke (live API proxy)
+
+Quote `170ea9b1-2eeb-4a88-934b-07afa4112ea4` (DRAFT). Switched role to `checker` via `localStorage` so the Replace action surfaces.
+
+1. Navigated to Member-to-Plan Mapping tab. Rendered:
+   - **Header**: Hit policy `FIRST`, Rules `2`, Inputs chip `salary · Annual Salary · number`, Outputs chip `planNo · Plan · string`.
+   - **Rules table**: 2 rows. Columns `#`, `salary (Annual Salary)`, `planNo (Plan)`.
+     - Row 1: `>= 2000000` → `P2`
+     - Row 2: `< 2000000` → `P1`
+   - **Replace mapping** button visible (DRAFT + checker gate satisfied).
+2. Clicked Replace mapping → modal opened.
+   - `mapping` json-textarea pre-filled with the full stringified `memberToPlanMappingJson` (sourcePath plumbing from PROP-0005 worked end-to-end against the live entity).
+   - Mono font applied via `json-textarea` field type styling.
+   - Submit (Replace mapping) button enabled (json validation passed on pre-fill).
+3. **Negative path**: tampered with the JSON to remove a closing brace.
+   - Submit disabled.
+   - Validation error "Mapping must be valid JSON" surfaced.
+4. Closed via Cancel — modal dismissed cleanly.
+
+## Schema deviation from proposal text
+
+The proposal stated the parsed mapping has top-level `hits` and `rules` keys. The actual live shape (verified against group-pas-dev) nests under `decisionTable.{hitPolicy, inputs, outputs, rules}` with per-rule `when`/`then` dicts. Design + widget follow the live shape; proposal text is now stale, will be corrected in the Implementation notes commit.
+
+## Coverage gaps (deferred)
+
+- No Jest tests added (same call as PROP-0004/0005). Browser smoke covers happy + one negative path.
+
+## Verified — ready to commit
+
+PROP-0007 complete. Two commits incoming.

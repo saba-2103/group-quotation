@@ -1,0 +1,49 @@
+# VERIFY — PROP-0004
+
+## Gates
+
+| Gate | Result |
+|---|---|
+| `npx tsc --noEmit` | PASS (exit 0) |
+| ESLint on new files (CardGrid, PlanCard, PlanForm, AmountFormulaField, WidgetRegistry change) | PASS — 0 errors, 0 warnings |
+| ESLint baseline (full WidgetRegistry.tsx) | 1 pre-existing `@typescript-eslint/no-explicit-any` at line 23 (`React.FC<any>`) — not introduced by this run; the registry has used `any` since its initial commit. Left in place per the skill rule "Do not touch pre-existing errors outside your scope." |
+| `npm run lint` (next lint) | Next.js 16 removed `next lint`; the script errors with "Invalid project directory". Ran `npx eslint` directly against touched files as the substitute. |
+
+## Browser smoke test (preview at http://localhost:3000)
+
+Server: `keystone-ui-dev` (running, port 3000). Mode: live API proxy via `GROUP_PAS_BACKEND_URL=https://group-pas-dev.anairacloud.com` per `.env.local`.
+
+1. Fetched quote list — 5 quotes returned, first one DRAFT.
+2. Found a DRAFT quote with seeded plans: `170ea9b1-2eeb-4a88-934b-07afa4112ea4` (planCount=2).
+3. Navigated to `/quotation/170ea9b1-2eeb-4a88-934b-07afa4112ea4`. Clicked Plans tab.
+4. Plans tab rendered:
+   - Add plan button (visible, enabled in DRAFT after the `disabledTooltip` schema fix).
+   - Plan P1 (Standard Cover) — Edit + Delete buttons; Products section shows `GTL-BASIC — GTL Basic` with `DEATH · Death Benefit` benefit chip; Cover formula `24 × salary (MULTIPLE_OF_MEMBER_ATTRIBUTE)`; Free cover limit `(not configured)`; Rate card `stub-rate-card-p1`.
+   - Plan P2 (Enhanced Cover) — Products `GTL-ENHANCED — GTL Enhanced` with `DEATH` + `ADB · Accidental Death Benefit` benefits; Cover formula `36 × salary`; Rate card `stub-rate-card-p2`.
+5. Clicked Plan P1 Edit:
+   - Dialog opened with title "Edit plan P1".
+   - 10 inputs found, pre-filled with the live plan data: planNo=P1 (disabled), planName="Standard Cover", rateCardFile="stub-rate-card-p1", product code "GTL-BASIC", product name "GTL Basic", benefit code "DEATH".
+   - Cover formula section visible. Save plan button rendered.
+6. Closed via Cancel — modal dismissed cleanly.
+
+Screenshot captured (mobile-narrow viewport) — both plan cards visible with Edit/Delete affordances; Add plan above; tab nav shows Plans active.
+
+## Schema fix during VERIFY
+
+Removed the `disabledTooltip` from the Add Plan action in `schemas/tabs/quote/plans.json`. The `disabledTooltip` ActionBar contract is "visible-but-disabled" — wrong tool for an enabled-but-precondition-gated affordance. The button now enables in DRAFT+maker; if `hasCensusFileFormat` is unmet, the backend rejects with a precondition error and the existing `useActionHandler` toast surfaces the server's message. Aligned with CORE_MEMORY honesty pattern (no mock-simulating gates the backend already enforces).
+
+## Coverage gaps (deferred)
+
+No new unit tests added in this run. The skill says workflow features warrant interaction tests; the live browser smoke test above covers the happy path, but a Jest interaction suite for `PlanForm` (validation, products/benefits repeater add/remove, AmountFormula type switching) and a `PlanCard` render snapshot were deferred for speed across the 5-workstream batch. Filing as a small follow-up task in the build log.
+
+## Verified-against-DSL
+
+DSL canon shapes match the live wire data:
+- `Plan { planNo, planName, products, rateCardFile, coverAmountFormula, freeCoverLimitFormula }` — confirmed via `GET /api/quotation/quotes/170ea9b1.../plans[0]`. OpenAPI wire flattens `products` / formulas as stringified JSON; PlanCard parses on read; PlanForm stringifies on submit.
+- `AmountFormulaType` enum (MULTIPLE_OF_MEMBER_ATTRIBUTE / LOOKUP_ON_MEMBER_ATTRIBUTE / FIXED / DMN_TABLE) — surfaced as the discriminated-union select in AmountFormulaField.
+
+No deviation from PROP-0004 spec or design. Edit modal pre-fill works because the bespoke PlanForm reads `useOverlayStore` directly using its overlay ID — no plumbing changes to OverlaidForm / useFormContainer needed (the original design's "pre-fill plumbing" item turned out to already exist for the scalar path, and PlanForm bypasses that path entirely).
+
+## Next step
+
+BUILD commits + SESSION_LOG / ARCH_TRANSITION updates.

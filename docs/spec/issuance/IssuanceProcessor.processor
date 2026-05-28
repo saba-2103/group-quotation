@@ -1,0 +1,17 @@
+package com.anaira.issuance.processor;
+
+// Listens on uw-workbench.events Kafka topic.
+// UwApprovedMember / UwRejectedMember → matches by policyMemberId → dispatches
+// to ApproveUwCaseCommand or RejectUwCaseCommand respectively.
+// (UW Workbench may alternatively call POST /uw/approve | /uw/reject directly.)
+processor UWWorkbenchProcessor {
+    on UwApprovedMember;
+    on UwRejectedMember;
+}
+
+// Listens on ops-workbench.events Kafka topic.
+// MemberRepairCompleted → matches by policyMemberId → invokes CompleteMemberRepair.
+// Payload: { policyMemberId, corrections: { field: value } }
+processor OpsWorkbenchProcessor {
+    on MemberRepairCompleted;
+}

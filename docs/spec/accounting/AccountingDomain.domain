@@ -1,0 +1,428 @@
+package com.anaira.accounting.domain;
+
+entity AccountingEvent {
+    id: AccountingEventId
+    component: Component
+    lob: LineOfBusiness
+    businessKey: string
+    businessProcessCode: BusinessProcessCode
+    eventDate: date
+    reversedEventId: AccountingEventId
+    reference: string
+    remarks: string
+    state: AccountingEventState
+    errorDetails: string
+    postedJournals: list<JournalNumber>
+    details: list<EventDetail>
+    postingErrors: list<PostingError>
+
+    check canPost() {
+        error("EVT_PRE_001", "Cannot post event")
+    }
+
+    check canMarkPosted() {
+        error("EVT_PRE_002", "Cannot mark event as posted")
+    }
+
+    check canMarkFailed() {
+        error("EVT_PRE_003", "Cannot mark event as failed")
+    }
+
+    check canReverse() {
+        error("EVT_PRE_004", "Cannot reverse event")
+    }
+
+    check canUpdate() {
+        error("EVT_PRE_005", "Cannot update event")
+    }
+
+    check glCurrenciesConsistent() {
+        error("EVT_INV_001", "All event detail GL amounts must use the same currency")
+    }
+
+    invariant glCurrenciesConsistent;
+
+    function markJournalsCreated(journalNumbers: list<JournalNumber>): void {
+        precondition canPost;
+    }
+
+    function markPosted(ctx: OperationContext, journalNumbers: list<JournalNumber>): void {
+        precondition canMarkPosted;
+        emits AccountingEventPosted;
+    }
+
+    function markFailed(ctx: OperationContext, errorDetails: string): void {
+        precondition canMarkFailed;
+    }
+
+    function update(
+        ctx: OperationContext,
+        component: Component,
+        lob: LineOfBusiness,
+        businessKey: string,
+        businessProcessCode: BusinessProcessCode,
+        eventDate: date,
+        reference: string,
+        remarks: string
+    ): void {
+        precondition canUpdate;
+    }
+
+    function overwriteDetails(ctx: OperationContext, detailInputs: list<EventDetailInput>): void {
+        precondition canUpdate;
+    }
+
+    function addDetails(ctx: OperationContext, detailInputs: list<EventDetailInput>): void {
+        precondition canUpdate;
+    }
+
+    function removeDetails(ctx: OperationContext, detailIds: list<EventDetailId>): void {
+        precondition canUpdate;
+    }
+
+    function updateDetails(ctx: OperationContext, updates: list<EventDetailInput>): void {
+        precondition canUpdate;
+    }
+
+    function markReversed(): void {
+        precondition canReverse;
+    }
+}
+
+entity AccountingJournal {
+    journalNumber: JournalNumber
+    journalDate: date
+    component: Component
+    lob: LineOfBusiness
+    businessKey: string
+    journalPeriod: AccountingPeriod
+    businessProcessCode: BusinessProcessCode
+    accountingEventId: AccountingEventId
+    accountGroup: AccountGroup
+    journalType: JournalType
+    state: JournalState
+    reverseeJournalNumber: JournalNumber
+    reverserJournalNumber: JournalNumber
+    postingDate: date
+    glExtractReference: string
+    periodId: string
+    details: list<JournalDetail>
+
+    check pendingOrBalanced() {
+        error("JRN_INV_001", "Journal must be either pending or balanced")
+    }
+
+    check isJournalDateWithinPeriod(journalDate: date, period: AccountingPeriod) {
+        error("JRN_PRE_001", "Journal date must be within period date range")
+    }
+
+    check canUpdate() {
+        error("JRN_PRE_002", "Cannot update journal")
+    }
+
+    check canPost() {
+        error("JRN_PRE_003", "Cannot post journal")
+    }
+
+    check hasDetails() {
+        error("JRN_PRE_004", "Journal must have at least one detail")
+    }
+
+    check isBalanced() {
+        error("JRN_PRE_005", "Journal must be balanced before posting")
+    }
+
+    check canReverse() {
+        error("JRN_PRE_006", "Cannot reverse journal")
+    }
+
+    check glCurrenciesConsistent() {
+        error("JRN_INV_002", "All journal detail GL amounts must use the same currency")
+    }
+
+    invariant pendingOrBalanced;
+    invariant glCurrenciesConsistent;
+
+    function update(ctx: OperationContext, journalDate: date, component: Component, lob: LineOfBusiness): void {
+        precondition canUpdate;
+    }
+
+    function setDetails(ctx: OperationContext, lineInputs: list<JournalLineInput>): void {
+        precondition canUpdate;
+    }
+
+    function addLines(ctx: OperationContext, lineInputs: list<JournalLineInput>): void {
+        precondition canUpdate;
+    }
+
+    function removeLines(ctx: OperationContext, lineIds: list<JournalLineId>): void {
+        precondition canUpdate;
+    }
+
+    function updateLines(ctx: OperationContext, updates: list<JournalLineUpdate>): void {
+        precondition canUpdate;
+    }
+
+    function overwriteLines(ctx: OperationContext, lineInputs: list<JournalLineInput>): void {
+        precondition canUpdate;
+    }
+
+    function post(ctx: OperationContext, processCode: BusinessProcessCode, postingRules: list<PostingRule>): void {
+        precondition canPost;
+        precondition hasDetails;
+        precondition isBalanced;
+        emits AccountingJournalPosted;
+    }
+
+    function markReversed(reverserJournalNumber: JournalNumber): void {
+        precondition canReverse;
+    }
+
+    function getDebitTotal(): Money;
+    function getCreditTotal(): Money;
+    function getTotalBalanceError(): Money;
+}
+
+entity AccountingPeriod {
+    id: PeriodId
+    displayId: string
+    dateRange: DateRange
+    state: PeriodState
+
+    check startDateBeforeEndDate() {
+        error("PER_INV_001", "Start date must be before end date")
+    }
+
+    check hasDisplayId(displayId: string) {
+        error("PER_PRE_001", "displayId must not be blank")
+    }
+
+    check canOpen() {
+        error("PER_PRE_002", "Cannot open period")
+    }
+
+    check canClose() {
+        error("PER_PRE_003", "Cannot close period")
+    }
+
+    check canReopen() {
+        error("PER_PRE_004", "Cannot reopen period")
+    }
+
+    check canDelete() {
+        error("PER_PRE_005", "Cannot delete period")
+    }
+
+    check canUpdate() {
+        error("PER_PRE_006", "Cannot move date range")
+    }
+
+    invariant startDateBeforeEndDate;
+
+    function open(ctx: OperationContext): void {
+        precondition canOpen;
+        emits AccountingPeriodOpened;
+    }
+
+    function close(ctx: OperationContext): void {
+        precondition canClose;
+        emits AccountingPeriodClosed;
+    }
+
+    function reopen(ctx: OperationContext): void {
+        precondition canReopen;
+        emits AccountingPeriodReopened;
+    }
+
+    function delete(ctx: OperationContext, reason: string): void {
+        precondition canDelete;
+        emits AccountingPeriodDeleted;
+    }
+
+    function moveDateRange(ctx: OperationContext, dateRange: DateRange): void {
+        precondition canUpdate;
+    }
+}
+
+entity PostingRule {
+    id: PostingRuleId
+    lob: LineOfBusiness
+    businessProcessCode: BusinessProcessCode
+    accountGroup: AccountGroup
+    accountSubgroup: AccountSubgroup
+    debitCreditIndicator: DebitCreditIndicator
+    glPseudoName: GlPseudoName
+
+    function update(ctx: OperationContext, dcIndicator: DebitCreditIndicator, glPseudoName: GlPseudoName): void {
+        emits PostingRuleUpdated;
+    }
+
+    function delete(ctx: OperationContext, reason: string): void {
+        emits PostingRuleDeleted;
+    }
+
+    function matches(
+        lob: LineOfBusiness,
+        processCode: BusinessProcessCode,
+        accountGroup: AccountGroup,
+        accountSubgroup: AccountSubgroup
+    ): boolean;
+
+    function validate(
+        lob: LineOfBusiness,
+        processCode: BusinessProcessCode,
+        accountGroup: AccountGroup,
+        accountSubgroup: AccountSubgroup,
+        detailIndicator: DebitCreditIndicator,
+        glPseudoName: GlPseudoName
+    ): boolean;
+}
+
+entity AccountSummary {
+    id: SummaryId
+    entityId: string
+    lob: LineOfBusiness
+    entities: EntitySet
+    accountSubgroup: AccountSubgroup
+    balance: Money
+
+    check hasEntityId(entityId: string) {
+        error("SUM_PRE_001", "entityId must not be blank")
+    }
+
+    check isCurrencyMatching(amount: Money) {
+        error("SUM_PRE_002", "Amount currency must match balance currency")
+    }
+
+    function apply(ctx: OperationContext, type: BalanceType, amount: Money): void {
+        precondition isCurrencyMatching(amount);
+        emits AccountSummaryBalanceUpdated;
+    }
+
+    function isNegative(): boolean;
+}
+
+service AccountingJournalService {
+    function validateJournalsCreatedAndAllPosted(eventId: AccountingEventId): void;
+    function validateJournalNumberUnique(journalNumber: JournalNumber): void;
+}
+
+service AccountingEventService {
+    function validateEventIdUnique(id: AccountingEventId): void;
+}
+
+service AccountingPeriodService {
+    function define(ctx: OperationContext, displayId: string, dateRange: DateRange): AccountingPeriod;
+    function open(period: AccountingPeriod, ctx: OperationContext): void;
+    function reopen(period: AccountingPeriod, ctx: OperationContext): void;
+    function moveDateRange(period: AccountingPeriod, ctx: OperationContext, dateRange: DateRange): void;
+    function validateCanDelete(period: AccountingPeriod): void;
+    function getActivePeriodForDate(asOfDate: date): AccountingPeriod;
+}
+
+service PostingService {
+    function postEventToJournals(
+        ctx: OperationContext,
+        accountingEvent: AccountingEvent,
+        config: AccountingConfig,
+        availableJournalNumbers: list<JournalNumber>
+    ): list<AccountingJournal>;
+}
+
+service PostingRuleValidator {
+    function validateNoDuplicate(
+        ruleId: PostingRuleId,
+        lob: LineOfBusiness,
+        businessProcessCode: BusinessProcessCode,
+        accountGroup: AccountGroup,
+        accountSubgroup: AccountSubgroup
+    ): void;
+}
+
+service AccountSummaryService {
+    function updateSummariesForJournal(journal: AccountingJournal, config: AccountingConfig): list<AccountSummary>;
+}
+
+service AccountingEventFactory {
+    function create(
+        ctx: OperationContext,
+        id: string,
+        component: Component,
+        lob: LineOfBusiness,
+        businessKey: string,
+        processCode: BusinessProcessCode,
+        eventDate: date,
+        reference: string,
+        remarks: string,
+        details: list<EventDetailInput>
+    ): AccountingEvent;
+
+    function createReversal(
+        ctx: OperationContext,
+        originalEvent: AccountingEvent,
+        reversalEventDate: date
+    ): AccountingEvent;
+}
+
+service AccountingJournalFactory {
+    function createSystemJournal(
+        config: AccountingConfig,
+        ctx: OperationContext,
+        journalDate: date,
+        accountingEvent: AccountingEvent,
+        period: AccountingPeriod,
+        journalNumber: JournalNumber,
+        accountGroup: AccountGroup,
+        journalLineInputs: list<JournalLineInput>
+    ): AccountingJournal;
+
+    function createDirect(
+        ctx: OperationContext,
+        journalNumber: JournalNumber,
+        component: Component,
+        lob: LineOfBusiness,
+        businessProcessCode: BusinessProcessCode,
+        businessKey: string,
+        accountGroup: AccountGroup,
+        journalDate: date,
+        period: AccountingPeriod,
+        detailInputs: list<JournalLineInput>
+    ): AccountingJournal;
+
+    function createReversal(
+        config: AccountingConfig,
+        ctx: OperationContext,
+        originalJournal: AccountingJournal,
+        period: AccountingPeriod,
+        reversalJournalNumber: JournalNumber,
+        reasonCode: string
+    ): AccountingJournal;
+}
+
+service AccountingPeriodFactory {
+    function define(ctx: OperationContext, displayId: string, dateRange: DateRange): AccountingPeriod;
+}
+
+service PostingRuleFactory {
+    function define(
+        ctx: OperationContext,
+        displayId: string,
+        lob: LineOfBusiness,
+        processCode: BusinessProcessCode,
+        accountGroup: AccountGroup,
+        accountSubgroup: AccountSubgroup,
+        dcIndicator: DebitCreditIndicator,
+        glPseudoName: GlPseudoName
+    ): PostingRule;
+}
+
+service AccountSummaryFactory {
+    function initialize(
+        config: AccountingConfig,
+        ctx: OperationContext,
+        entityId: string,
+        lob: LineOfBusiness,
+        entities: EntitySet,
+        accountSubgroup: AccountSubgroup
+    ): AccountSummary;
+}

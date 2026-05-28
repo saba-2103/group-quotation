@@ -1,0 +1,194 @@
+package com.anaira.policyadmin.query;
+
+data ClientDto {
+    id: string
+    clientNumber: string
+    name: string
+    alternateName: string
+    businessRegistrationNumber: string
+    incorporationDate: date
+    gstRegistrationNumber: string
+    taxReferenceNumber: string
+    clientCategory: string
+    industryCategory: string
+    countryCode: string
+    communicationPreference: string
+    clientUrl: string
+    contactPersonName: string
+    contactPersonPhone: string
+    isSubsidiary: boolean
+    isVip: boolean
+    isBlacklisted: boolean
+    effectiveDate: date
+    endDate: date
+    state: string
+}
+
+data ClientSummaryDto {
+    id: string
+    clientNumber: string
+    name: string
+    countryCode: string
+    industryCategory: string
+    isVip: boolean
+    state: string
+}
+
+data PolicyDto {
+    id: string
+    policyNumber: string
+    clientId: string
+    proposalId: string
+    policyType: string
+    effectiveDate: date
+    expiryDate: date
+    premiumType: string
+    lineOfBusiness: string
+    riskTermClassification: string
+    inceptionDate: date
+    ageDefinitionRule: string
+    activationThreshold: int
+    pendingReason: string
+    state: string
+    plans: list<PolicyPlanDto>
+    estimatedPremium: Money
+}
+
+data PolicySummaryDto {
+    id: string
+    policyNumber: string
+    clientId: string
+    policyType: string
+    state: string
+}
+
+data PolicyPlanDto {
+    id: string
+    planNo: string
+    planName: string
+    productsJson: string
+    rateCardFile: string
+    coverAmountFormulaJson: string
+    freeCoverLimitFormulaJson: string
+}
+
+data MemberDto {
+    id: string
+    memberNumber: string
+    policyId: string
+    policyMemberId: string
+    planNo: string
+    state: string
+    pendingReason: string
+    voidReason: string
+    cancellationReason: string
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    occupation: string
+    mobile: string
+    email: string
+    governmentIdType: string
+    governmentIdNumber: string
+    sumInsured: double
+    premium: MemberPremium
+    uwDecision?: MemberUwDecision
+    transactionRefs: list<string>
+    floatReservationId?: string
+    additionalAttributesJson?: string
+}
+
+data MemberSummaryDto {
+    id: string
+    memberNumber: string
+    policyId: string
+    policyMemberId: string
+    planNo: string
+    state: string
+    pendingReason: string
+    name: string
+    mobile: string
+    sumInsured: double
+    annualPremium: Money
+}
+
+// One row per (reason, count). KSL has no map type.
+data ReasonCount {
+    reason: string
+    count: int
+}
+
+data PolicyPendingBreakdownDto {
+    policyId: string
+    policyState: string
+    policyPendingReason: string
+    totalMembers: int
+    activeMembers: int
+    pendingMembers: int
+    pendingByReason: list<ReasonCount>
+    voidMembers: int
+    voidByReason: list<ReasonCount>
+}
+
+query-set ClientQueries {
+    reads ClientEntity;
+
+    query GetClientByIdQuery(clientId: string): ClientDto;
+    query GetClientByNumberQuery(clientNumber: string): ClientDto;
+    query GetClientByRegistrationQuery(businessRegistrationNumber: string): ClientDto;
+    query FindClientByNameQuery(clientName: string): list<ClientSummaryDto>;
+    query SearchClientsQuery(
+        clientName: string,
+        countryCode: string,
+        industryCategory: string,
+        clientCategory: string,
+        state: string,
+        isVip: boolean,
+        page: int,
+        size: int
+    ): list<ClientSummaryDto>;
+    query ListAllClientsQuery(page: int, size: int): list<ClientSummaryDto>;
+}
+
+query-set PolicyEnumQueries {
+    query ListPolicyEnumTypeValuesQuery(enumType: string, search: string): list<string>;
+}
+
+query-set PolicyQueries {
+    reads PolicyEntity;
+    reads PolicyPlanEntity;
+    reads MemberEntity;
+
+    query GetPolicyByIdQuery(policyId: string): PolicyDto;
+    query GetPolicyByNumberQuery(policyNumber: string): PolicyDto;
+    query FindPoliciesByClientQuery(clientId: string): list<PolicySummaryDto>;
+    query FindPoliciesByStateQuery(state: string): list<PolicySummaryDto>;
+    query FindPolicyByProposalIdQuery(proposalId: string): PolicyDto;
+    query SearchPoliciesQuery(clientId: string, state: string, policyType: string, page: int, size: int): list<PolicySummaryDto>;
+    query ListAllPoliciesQuery(page: int, size: int): list<PolicySummaryDto>;
+    query GetPolicyPendingBreakdownQuery(policyId: string): PolicyPendingBreakdownDto;
+}
+
+query-set MemberQueries {
+    reads MemberEntity;
+
+    query GetMemberByIdQuery(memberId: string): MemberDto;
+    query GetMemberByNumberQuery(memberNumber: string): MemberDto;
+    query FindMembersByPolicyQuery(policyId: string): list<MemberSummaryDto>;
+    query FindMemberByPolicyMemberIdQuery(policyMemberId: string): MemberDto;
+    query SearchMembersQuery(
+        policyId: string,
+        planNo: string,
+        memberName: string,
+        policyMemberId: string,
+        state: string,
+        governmentIdType: string,
+        governmentIdNumber: string,
+        mobile: string,
+        email: string,
+        page: int,
+        size: int
+    ): list<MemberSummaryDto>;
+    query ListAllMembersQuery(page: int, size: int): list<MemberSummaryDto>;
+}

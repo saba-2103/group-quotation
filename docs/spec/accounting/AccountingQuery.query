@@ -1,0 +1,166 @@
+package com.anaira.accounting.query;
+
+data AccountingEventDto {
+    id: string
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    eventDate: date
+    reversedEventId: string
+    reference: string
+    remarks: string
+    state: string
+    errorDetails: string
+    postedJournals: list<string>
+    details: list<EventDetailDto>
+}
+
+data AccountingEventSummaryDto {
+    id: string
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    eventDate: date
+    state: string
+    detailCount: int
+}
+
+data EventDetailDto {
+    id: string
+    accountGroup: string
+    accountSubgroup: string
+    primaryEntityType: string
+    primaryEntityId: string
+    secondaryEntityType: string
+    secondaryEntityId: string
+    effectiveDate: date
+    transactionDate: date
+    transactionAmount: Money
+    exchangeRate: float
+    glAmount: Money
+    shouldUpdateAccountSummary: boolean
+    billNumber: string
+    references: string
+    remarks: string
+}
+
+data AccountingJournalDto {
+    journalNumber: string
+    journalDate: date
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    accountingEventId: string
+    accountGroup: string
+    journalType: JournalType
+    state: JournalState
+    reverseeJournalNumber: string
+    reverserJournalNumber: string
+    postingDate: date
+    glExtractReference: string
+    periodId: string
+    details: list<JournalDetailDto>
+    debitTotal: Money
+    creditTotal: Money
+}
+
+data AccountingJournalSummaryDto {
+    journalNumber: string
+    journalDate: date
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    accountingEventId: string
+    accountGroup: string
+    journalType: JournalType
+    state: JournalState
+    reverseeJournalNumber: string
+    reverserJournalNumber: string
+    postingDate: date
+    periodId: string
+}
+
+data JournalDetailDto {
+    id: string
+    accountSubgroup: string
+    primaryEntityType: string
+    primaryEntityId: string
+    secondaryEntityType: string
+    secondaryEntityId: string
+    transactionDate: date
+    transactionAmount: Money
+    exchangeRate: float
+    glAmount: Money
+    debitCreditIndicator: DebitCreditIndicator
+    glPseudoName: string
+    remarks: string
+    shouldUpdateSummary: boolean
+}
+
+data AccountingPeriodDto {
+    id: PeriodId
+    displayId: string
+    startDate: date
+    endDate: date
+    state: PeriodState
+}
+
+data PostingRuleDto {
+    id: PostingRuleId
+    lob: LineOfBusiness
+    businessProcessCode: BusinessProcessCode
+    accountGroup: AccountGroup
+    accountSubgroup: AccountSubgroup
+    debitCreditIndicator: DebitCreditIndicator
+    glPseudoName: GlPseudoName
+}
+
+query-set AccountingEventQueries {
+    reads AccountingEventEntity;
+    reads EventDetailEntity;
+
+    query GetAccountingEventByIdQuery(id: AccountingEventId): AccountingEventDto;
+    query FindAccountingEventsByStateQuery(state: AccountingEventState): list<AccountingEventSummaryDto>;
+    query FindAccountingEventsByBusinessKeyQuery(businessKey: string): list<AccountingEventSummaryDto>;
+    query FindAccountingEventsByDateRangeQuery(startDate: date, endDate: date): list<AccountingEventSummaryDto>;
+    query ListAllAccountingEventsQuery(page: int, size: int): list<AccountingEventSummaryDto>;
+    query SearchAccountingEventsQuery(state: string, businessKey: string, startDate: date, endDate: date, page: int, size: int): list<AccountingEventSummaryDto>;
+}
+
+query-set AccountingJournalQueries {
+    reads AccountingJournalEntity;
+    reads JournalDetailEntity;
+
+    query GetJournalByNumberQuery(journalNumber: JournalNumber): AccountingJournalDto;
+    query FindJournalsByStateQuery(state: JournalState): list<AccountingJournalDto>;
+    query FindJournalsByDateRangeQuery(startDate: date, endDate: date): list<AccountingJournalDto>;
+    query FindJournalsByEventIdQuery(id: AccountingEventId): list<AccountingJournalDto>;
+    query SearchJournalsQuery(state: string, eventId: string, startDate: date, endDate: date, page: int, size: int): list<AccountingJournalDto>;
+}
+
+query-set AccountingPeriodQueries {
+    reads AccountingPeriodEntity;
+
+    query GetAccountingPeriodByIdQuery(periodId: PeriodId): AccountingPeriodDto;
+    query FindCurrentOpenPeriodQuery(asOfDate: date): AccountingPeriodDto;
+    query ListAllAccountingPeriodsQuery(page: int, size: int): list<AccountingPeriodDto>;
+    query SearchAccountingPeriodsQuery(state: string, page: int, size: int): list<AccountingPeriodDto>;
+}
+
+query-set PostingRuleQueries {
+    reads PostingRuleEntity;
+
+    query GetPostingRuleByIdQuery(ruleId: PostingRuleId): PostingRuleDto;
+    query FindPostingRuleByDimensionsQuery(
+        lob: LineOfBusiness,
+        businessProcessCode: BusinessProcessCode,
+        accountGroup: AccountGroup,
+        accountSubgroup: AccountSubgroup
+    ): PostingRuleDto;
+    query ListAllPostingRulesQuery(page: int, size: int): list<PostingRuleDto>;
+    query SearchPostingRulesQuery(lob: string, businessProcessCode: string, accountGroup: string, accountSubgroup: string, page: int, size: int): list<PostingRuleDto>;
+}

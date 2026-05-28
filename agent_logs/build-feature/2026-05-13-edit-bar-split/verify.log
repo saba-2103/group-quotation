@@ -1,0 +1,35 @@
+# VERIFY — PROP-0008
+
+## Gates
+
+| Gate | Result |
+|---|---|
+| `node -e "JSON.parse(...)"` on both edited schemas | PASS (catch a trailing-comma issue introduced by the deletion in quote-detail.json — fixed in place) |
+| `npx tsc --noEmit` | PASS (exit 0) |
+| ESLint | n/a — no source files touched |
+
+## Browser smoke
+
+Switched role back to `maker`, navigated to `/quotation/170ea9b1-2eeb-4a88-934b-07afa4112ea4`.
+
+1. Top action bar — buttons rendered: `Send for approval`, `Withdraw`. **No `Edit` button.** Maker + DRAFT state-transitions only.
+2. Key Data tab — new `Edit policy details` button visible inside the tab, enabled.
+3. Clicked Edit policy details → existing `edit-quote-policy-detail-form` modal opened with all 8 scalar fields pre-filled (premiumType: ANNUAL, lineOfBusiness: GROUP, ageDefinitionRule: ALB, etc.).
+4. Save changes button rendered.
+5. Cancel closed the modal cleanly.
+
+## Schema fix during edits
+
+Removing the last `edit` action object from the actions array in `quote-detail.json` left a trailing comma after the second-to-last item (`expire`). Caught by `JSON.parse`; corrected in place. tsc + JSON validators clean after the fix.
+
+## Verified
+
+PROP-0008 complete. The Quotation Detail tab expansion (PROP-0004..0008) is now end-to-end:
+- Plans tab: card grid + structured editor (PROP-0004)
+- Census tab: editable aggregate + file-format editor (PROP-0005)
+- Pricing tab: per-plan breakdown (PROP-0006)
+- Mapping tab: DMN view + blob-replace (PROP-0007)
+- Key Data tab: contextual Edit affordance (PROP-0008)
+- Top action bar: state transitions only
+
+Each tab owns its own writes; the action bar is no longer overloaded with a UI affordance that worked for only one tab.

@@ -1,0 +1,8 @@
+{
+  "id": "census-file-format-form",
+  "type": "census-file-format-form",
+  "props": {
+    "title": "Edit census file format",
+    "description": "Pick the columns the broker's census file will have. The selection becomes the Frictionless Table Schema stored on the Quote (`censusFileFormat.schemaJson`). Submits to PUT /quotation/quotes/{id}/census-file-format."
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "id": "edit-quote-policy-detail-form",
+  "type": "form-container",
+  "props": {
+    "title": "Edit Quote — Policy Details",
+    "description": "Quote-level metadata. Plans, census, and member-mapping have their own tabs on the detail page. Client and policy type are fixed at create time.",
+    "columns": 2,
+    "fields": [
+      {
+        "id": "premiumType",
+        "name": "premiumType",
+        "label": "Premium type",
+        "type": "select",
+        "order": 1,
+        "options": [
+          { "value": "ANNUAL", "label": "Annual" },
+          { "value": "SINGLE", "label": "Single" }
+        ],
+        "validations": [
+          { "rule": "required", "message": "Premium type is required" }
+        ]
+      },
+      {
+        "id": "lineOfBusiness",
+        "name": "lineOfBusiness",
+        "label": "Line of business",
+        "type": "select",
+        "order": 2,
+        "options": [
+          { "value": "GROUP", "label": "Group" },
+          { "value": "INDIVIDUAL", "label": "Individual" },
+          { "value": "MIXED", "label": "Mixed" }
+        ],
+        "validations": [
+          { "rule": "required", "message": "Line of business is required" }
+        ]
+      },
+      {
+        "id": "effectiveDate",
+        "name": "effectiveDate",
+        "label": "Effective date",
+        "type": "date",
+        "order": 3,
+        "validations": [
+          { "rule": "required", "message": "Effective date is required" }
+        ]
+      },
+      {
+        "id": "expiryDate",
+        "name": "expiryDate",
+        "label": "Expiry date",
+        "type": "date",
+        "order": 4,
+        "validations": [
+          { "rule": "required", "message": "Expiry date is required" }
+        ]
+      },
+      {
+        "id": "inceptionDate",
+        "name": "inceptionDate",
+        "label": "Inception date",
+        "type": "date",
+        "order": 5,
+        "validations": [
+          { "rule": "required", "message": "Inception date is required" }
+        ]
+      },
+      {
+        "id": "ageDefinitionRule",
+        "name": "ageDefinitionRule",
+        "label": "Age definition rule",
+        "type": "select",
+        "order": 6,
+        "options": [
+          { "value": "ALB", "label": "ALB — Age last birthday" },
+          { "value": "ANB", "label": "ANB — Age next birthday" },
+          { "value": "COMPLETED_YEARS", "label": "Completed years" }
+        ],
+        "validations": [
+          { "rule": "required", "message": "Age definition rule is required" }
+        ]
+      },
+      {
+        "id": "riskTermClassification",
+        "name": "riskTermClassification",
+        "label": "Risk-term classification",
+        "type": "select",
+        "order": 7,
+        "span": 2,
+        "options": [
+          { "value": "YEARLY_RENEWABLE", "label": "Yearly renewable" },
+          { "value": "LONG_TERM", "label": "Long term" },
+          { "value": "SINGLE_PREMIUM", "label": "Single premium" },
+          { "value": "LIMITED_PAY", "label": "Limited pay" },
+          { "value": "MASS_MARKET", "label": "Mass market" }
+        ],
+        "validations": [
+          { "rule": "required", "message": "Risk-term classification is required" }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-edit-quote",
+        "label": "Save changes",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/quotation/quotes/:id",
+        "api": {
+          "endpoint": "/api/quotation/quotes/:id/policy-detail",
+          "method": "PUT"
+        },
+        "successMessage": "Quote details saved",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "edit-quote-policy-detail-form" }
+        ]
+      },
+      {
+        "id": "cancel-edit-quote",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "edit-quote-policy-detail-form",
+        "submitAction": false
+      }
+    ]
+  }
+}

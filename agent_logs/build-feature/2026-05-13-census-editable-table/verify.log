@@ -1,0 +1,59 @@
+# VERIFY — PROP-0005
+
+## Gates
+
+| Gate | Result |
+|---|---|
+| `npx tsc --noEmit` | PASS (exit 0) |
+| ESLint on touched files (EditableTable, OverlaidForm, FieldRenderer, utils) | PASS — 0 errors. 2 pre-existing warnings on `api-dropdown` handlers' unused `isRequired` parameter, not introduced by this run. |
+| JSON schemas parse | `census.json` + `census-file-format-form.json` parse cleanly; forms registry regenerated. |
+
+## Browser smoke (live API proxy)
+
+Quote `170ea9b1-2eeb-4a88-934b-07afa4112ea4` (DRAFT, 2 plans seeded).
+
+1. Navigated to Census tab. Rendered:
+   - **Aggregate census** section: "Plan #", "Plan name", "Headcount" columns. Rows for P1 (Standard Cover) and P2 (Enhanced Cover) with numeric inputs defaulted to 0 (no planBreakdown on the response). Total: 0. Save changes button rendered, disabled (clean state).
+   - **Census file format** section (SectionGroup header): File type CSV, Sheet name —, Schema/Dialect both "Configured" presence badges. Edit file format button visible.
+2. Edited headcount values to 42 and 156 via React props onChange (preview_fill triggered the DOM `input` event but did NOT propagate to React's controlled state — quirk of the automation tool, NOT a widget bug; verified by inspecting `__reactProps.value` directly).
+3. Save changes enabled (dirty + valid). Total auto-summed to 198.
+4. Clicked Save changes → `PUT /api/quotation/quotes/{id}/aggregate-census` with body `{ headcount: 198, planBreakdown: [{planNo:"P1",headcount:42}, {planNo:"P2",headcount:156}] }`. Server returned success; toast surfaced "Aggregate census saved".
+5. Re-fetched the quote — `headcount: 198` confirmed persisted.
+6. Clicked Edit file format → modal opened with all four fields pre-filled from the parsed `censusFileFormatJson`:
+   - `fileType` select = "CSV"
+   - `sheetName` text empty (and visibly hidden via `visibleWhen: fileType === XLSX`)
+   - `schemaJson` json-textarea = the inner stringified schema blob
+   - `dialectJson` json-textarea = the inner stringified dialect blob
+7. Save format button rendered; Cancel closed modal cleanly.
+
+## Backend behavior note (surface, do not paper over)
+
+`GET /api/quotation/quotes/{id}` returns only the rolled-up `headcount`, not `aggregateCensus.planBreakdown`. The PUT accepts and persists the breakdown server-side, but the GET-response shape omits it. Consequence: after Save + page reload, the editable table seeds each row to 0 again (the user can no longer see the per-plan allocation they just submitted).
+
+This is a backend response-shape gap, not a frontend bug. Two paths forward:
+- (Backend) Add `aggregateCensus` to the QuoteDto response shape — DSL already has `aggregateCensus: AggregateCensus?` on the Quote entity (`docs/spec/quotation/QuotationDomain.domain:25`), so the response is silently missing a documented field.
+- (Frontend interim) None warranted — per CORE_MEMORY honesty pattern, do not mock-fix what backend should expose.
+
+Filed as a follow-up note in PROP-0005's Implementation notes; surfaced here so a backend ticket can be filed against group-pas. No build action.
+
+## Coverage gaps
+
+- No Jest tests added (same call as PROP-0004; deferred for batch speed). The live smoke covers the happy path end-to-end including the PUT round-trip.
+
+## Schema-fix during VERIFY
+
+- Wrapped the file-format section in a `section-group` so the "Census file format" header is rendered. `key-value-grid` doesn't render its `title` prop; SectionGroup does. Small one-line change, no code touched.
+
+## OverlaidForm pre-fill extension recap
+
+Added small, broadly useful extension to `injectRowData` in `OverlaidForm.tsx`:
+
+- Optional per-field `sourcePath: string` — read pre-fill from a dotted path on rowData instead of `rowData[field.name]`.
+- Optional per-field `sourceParseJson: boolean` — JSON.parse the value at sourcePath before drilling further.
+- Optional per-field `sourceSubPath: string` — second dotted-path drill after parse.
+
+Default behavior unchanged (`rowData[field.name]`) so all existing forms keep working. Mirrors the KeyValueGrid `parseJson`/`subPath` pattern; future forms that need to read from stringified JSON entity fields use this without bespoke plumbing.
+
+## Verified — ready to commit
+
+PROP-0005 complete. Two commits incoming (src + context split).

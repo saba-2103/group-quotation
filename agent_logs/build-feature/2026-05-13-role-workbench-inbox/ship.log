@@ -1,0 +1,27 @@
+# SHIP — 2026-05-13-role-workbench-inbox
+
+No public deploy from this skill — local dev server already running on
+http://localhost:3000 (preview server id 48abc5c5-cf86-454f-8224-c01c85ff2165,
+started 2026-05-12). Verified in-browser:
+
+## Verified flows
+1. **Default role** = `sales`. Dashboard renders 2 inbox sections (10 draft
+   quotes + 3 submitted proposals), Business Processes + Quick Actions
+   visible.
+2. **Switch to `mph`** → Inbox swaps to MPH-only section ("No quotes awaiting
+   acceptance" empty state, expected — no SENT_TO_CLIENT fixtures). Business
+   Processes + Quick Actions hidden (sales-only `visibleRoles`). Menu filters
+   to Home + Quotation + Issuance (Policy Admin + Accounting hidden per
+   `allowedRoles`).
+3. **Switch to `ops`** → Inbox shows 3 members in `REPAIR_PENDING` with
+   correct state-badge rendering. Menu filters to Home + Policy Admin only.
+
+## Console
+Zero error-level console logs across role switches.
+
+## Next user action
+- Live dev URL auto-deploys from `feat/new-buisiness` to
+  https://keystone-ui-dev.anairacloud.com on push. CI/CD takes ~4 min after
+  the `feat(...)` commit at `16d17d2`. No manual deploy needed.
+- Run `/preview-and-deploy` only if a separate Cloudflare/PR-preview is
+  desired — not the standard path for this project.

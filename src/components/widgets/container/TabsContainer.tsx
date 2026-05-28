@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useActionHandler } from "@/hooks/useActionHandler";
+import { useSmartQuery } from "@/hooks/useSmartQuery";
+import { evaluateCondition } from "@/lib/conditions";
 import { ActionRenderer } from "@/components/widgets/controls/ActionRenderer";
 import { LucideIcon } from "@/components/ui/lucide-icon";
 
@@ -46,7 +48,7 @@ interface TabPanelProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) => {
-    const { children } = config;
+    const { children, dataSource } = config;
     const {
         hasWorkflow = false,
         confirmNavigation = false,
@@ -57,16 +59,43 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
 
     const handleAction = useActionHandler();
 
-    const [activeTab, setActiveTab] = useState(children?.[0]?.id ?? "");
+    // When `dataSource` is set, fetch the parent entity so we can evaluate
+    // each child tab's `visibleWhen` against it. Cheap because useSmartQuery
+    // is dedupe-keyed by endpoint — other widgets on the same page that hit
+    // the same URL share the cache.
+    const { data: entity } = useSmartQuery(dataSource);
+
+    // Filter children whose visibleWhen rejects against the current entity.
+    // If the entity hasn't loaded yet, tabs with `visibleWhen` are hidden
+    // (default-deny) to avoid flicker; once data arrives they reappear.
+    const visibleChildren = React.useMemo(() => {
+        if (!children) return [] as WidgetConfig[];
+        return children.filter((tab) => {
+            if (!tab.visibleWhen) return true;
+            if (!entity) return false;
+            return evaluateCondition(tab.visibleWhen, entity);
+        });
+    }, [children, entity]);
+
+    const [activeTab, setActiveTab] = useState(visibleChildren[0]?.id ?? children?.[0]?.id ?? "");
     const [pendingTab, setPendingTab] = useState<string | null>(null);
     const [showNavGuard, setShowNavGuard] = useState(false);
 
-    if (!children || children.length === 0) return null;
+    // If the active tab is no longer in the visible set (entity loaded and
+    // hid it), snap to the first visible tab.
+    React.useEffect(() => {
+        if (visibleChildren.length === 0) return;
+        if (!visibleChildren.find((t) => t.id === activeTab)) {
+            setActiveTab(visibleChildren[0].id);
+        }
+    }, [visibleChildren, activeTab]);
 
-    const currentIndex = children.findIndex((t) => t.id === activeTab);
+    if (!visibleChildren || visibleChildren.length === 0) return null;
+
+    const currentIndex = visibleChildren.findIndex((t) => t.id === activeTab);
     const isFirst = currentIndex === 0;
-    const isLast = currentIndex === children.length - 1;
-    const currentTabProps = (children[currentIndex]?.props ?? {}) as TabPanelProps;
+    const isLast = currentIndex === visibleChildren.length - 1;
+    const currentTabProps = (visibleChildren[currentIndex]?.props ?? {}) as TabPanelProps;
     const deleteAction = currentTabProps.deleteAction;
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -98,7 +127,7 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                 <div className="w-full mb-6 flex items-center gap-1 border-b border-border">
                     <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/40">
                         <TabsList className="inline-flex w-max">
-                            {children.map((tab) => (
+                            {visibleChildren.map((tab) => (
                                 <TabsTrigger key={tab.id} value={tab.id}>
                                     {tab.props?.icon && (
                                         <LucideIcon name={tab.props.icon as string} size={14} className="mr-1.5 shrink-0" />
@@ -117,7 +146,7 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
-                            {children.map((tab) => (
+                            {visibleChildren.map((tab) => (
                                 <DropdownMenuItem
                                     key={tab.id}
                                     onSelect={() => requestNavigate(tab.id)}
@@ -131,7 +160,7 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
                 </div>
 
                 {/* Tab content */}
-                {children.map((tab) => (
+                {visibleChildren.map((tab) => (
                     <TabsContent key={tab.id} value={tab.id}>
                         <React.Suspense fallback={null}>
                             {tab.children?.map((child: WidgetConfig) => (
@@ -149,13 +178,13 @@ export const TabsContainer: React.FC<{ config: WidgetConfig }> = ({ config }) =>
 
                     <div className="flex items-center gap-2">
                         {!isFirst && (
-                            <Button variant="outline" size="sm" onClick={() => requestNavigate(children[currentIndex - 1].id)}>
+                            <Button variant="outline" size="sm" onClick={() => requestNavigate(visibleChildren[currentIndex - 1].id)}>
                                 <ChevronLeft className="h-4 w-4 mr-1" />
                                 {prevLabel}
                             </Button>
                         )}
                         {!isLast && (
-                            <Button size="sm" onClick={() => requestNavigate(children[currentIndex + 1].id)}>
+                            <Button size="sm" onClick={() => requestNavigate(visibleChildren[currentIndex + 1].id)}>
                                 {nextLabel}
                                 <ChevronRight className="h-4 w-4 ml-1" />
                             </Button>

@@ -1,0 +1,185 @@
+{
+  "id": "client-detail-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "client-detail-header",
+      "type": "page-header",
+      "props": {
+        "backHref": "/policy-admin/clients",
+        "backLabel": "All clients",
+        "title": "Client {{id}}",
+        "description": "Group policyholder profile. Policies on this client live at the bottom."
+      }
+    },
+    {
+      "id": "client-state-summary",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/clients/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "columns": 4,
+        "fields": [
+          { "id": "name", "label": "Name", "accessorKey": "name" },
+          { "id": "clientNumber", "label": "Client #", "accessorKey": "clientNumber" },
+          {
+            "id": "state",
+            "label": "State",
+            "accessorKey": "state",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "ACTIVE", "label": "Active", "variant": "success" },
+              { "value": "INACTIVE", "label": "Inactive", "variant": "secondary" }
+            ]
+          },
+          {
+            "id": "isVip",
+            "label": "VIP",
+            "accessorKey": "isVip",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "true", "label": "VIP", "variant": "warning" },
+              { "value": "false", "label": "Standard", "variant": "outline" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "client-identity",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/clients/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Identity",
+        "columns": 3,
+        "fields": [
+          { "id": "alternateName", "label": "Alternate name", "accessorKey": "alternateName" },
+          { "id": "businessRegistrationNumber", "label": "Business registration #", "accessorKey": "businessRegistrationNumber" },
+          { "id": "incorporationDate", "label": "Incorporation date", "accessorKey": "incorporationDate", "type": "date" },
+          { "id": "clientCategory", "label": "Category", "accessorKey": "clientCategory" },
+          { "id": "industryCategory", "label": "Industry", "accessorKey": "industryCategory" },
+          { "id": "countryCode", "label": "Country", "accessorKey": "countryCode" }
+        ]
+      }
+    },
+    {
+      "id": "client-tax",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/clients/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Tax & regulatory",
+        "columns": 2,
+        "fields": [
+          { "id": "gstRegistrationNumber", "label": "GST registration #", "accessorKey": "gstRegistrationNumber" },
+          { "id": "taxReferenceNumber", "label": "Tax reference #", "accessorKey": "taxReferenceNumber" }
+        ]
+      }
+    },
+    {
+      "id": "client-contact",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/clients/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Contact",
+        "columns": 2,
+        "fields": [
+          { "id": "contactPersonName", "label": "Contact person", "accessorKey": "contactPersonName" },
+          { "id": "contactPersonPhone", "label": "Contact phone", "accessorKey": "contactPersonPhone" },
+          { "id": "communicationPreference", "label": "Comm. preference", "accessorKey": "communicationPreference" },
+          { "id": "clientUrl", "label": "URL", "accessorKey": "clientUrl" }
+        ]
+      }
+    },
+    {
+      "id": "client-flags",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/clients/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Flags & dates",
+        "columns": 3,
+        "fields": [
+          {
+            "id": "isSubsidiary",
+            "label": "Subsidiary",
+            "accessorKey": "isSubsidiary",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "true", "label": "Yes", "variant": "info" },
+              { "value": "false", "label": "No", "variant": "outline" }
+            ]
+          },
+          {
+            "id": "isBlacklisted",
+            "label": "Blacklisted",
+            "accessorKey": "isBlacklisted",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "true", "label": "Blacklisted", "variant": "destructive" },
+              { "value": "false", "label": "Clear", "variant": "outline" }
+            ]
+          },
+          { "id": "effectiveDate", "label": "Effective date", "accessorKey": "effectiveDate", "type": "date" },
+          { "id": "endDate", "label": "End date", "accessorKey": "endDate", "type": "date" }
+        ]
+      }
+    },
+    {
+      "id": "client-policies-table",
+      "type": "data-table",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/policy-admin/policies/search",
+          "method": "GET",
+          "params": { "clientId": "{{id}}", "page": 0, "size": 50 }
+        }
+      },
+      "props": {
+        "title": "Policies on this client",
+        "columns": [
+          {
+            "id": "policyNumber",
+            "accessorKey": "policyNumber",
+            "fallbackKey": "id",
+            "label": "Policy #",
+            "type": "link",
+            "linkRoute": "/policy-admin/policies/:id"
+          },
+          { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+          { "id": "effectiveDate", "accessorKey": "effectiveDate", "label": "Effective", "type": "date" },
+          { "id": "expiryDate", "accessorKey": "expiryDate", "label": "Expiry", "type": "date" },
+          {
+            "id": "estimatedPremium",
+            "accessorKey": "estimatedPremiumAmount",
+            "label": "Premium",
+            "type": "currency",
+            "currency": "INR"
+          },
+          { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policy" }
+        ],
+        "rowActions": [
+          {
+            "id": "view-policy-btn",
+            "label": "View",
+            "icon": "Eye",
+            "type": "navigate",
+            "target": "/policy-admin/policies/:id"
+          }
+        ],
+        "emptyState": {
+          "title": "No policies on this client yet",
+          "description": "Policies appear here once Sales finalizes a Proposal for this client."
+        }
+      }
+    }
+  ]
+}

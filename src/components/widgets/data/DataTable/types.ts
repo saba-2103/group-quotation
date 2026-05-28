@@ -32,18 +32,20 @@ export interface ColumnConfig {
   valueMapping?: ValueMapping[];
   linkRoute?: string;
   format?: string;
+  // Optional accessor consulted when `accessorKey` resolves to an empty value
+  // (null / undefined / empty string). Lets a column show a human-friendly
+  // identifier (e.g. `quoteNumber`) with a deterministic fallback (`id`) when
+  // the friendly field isn't populated yet.
+  fallbackKey?: string;
   // Used by the `state-badge` cell type to pick the right map in state-map.ts.
   entity?: string;
-  // ── Cross-array join (consumed by useDataTable) ───────────────────────
-  // When all three are set, the data-table enriches each row by looking up
-  // a sibling array on the same response payload (no extra fetch). The
-  // sibling-array location is `joinSource` (dotted path); the column on this
-  // row whose value to match against the sibling is `joinKey`; the field to
-  // pull from the matched sibling is `joinField`. No match → cell undefined
-  // → standard "—" empty rendering.
-  joinSource?: string;
-  joinKey?: string;
-  joinField?: string;
+  // Cross-array join — copy a field from a sibling array on the response root.
+  // All three must be set for the join to fire. No match → cell renders empty.
+  // Scoped tight: only joins against arrays already present on the response
+  // payload that `useDataTable` fetched. See PROP-0006.
+  joinSource?: string;   // dotted path to the sibling array on the response root
+  joinKey?: string;      // row's column whose value matches `joinKey` on each sibling
+  joinField?: string;    // field to pull from the matched sibling row
   // Optional per-column currency override for `type: "currency"`. Default USD.
   currency?: string;
 }

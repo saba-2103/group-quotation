@@ -13,15 +13,16 @@ import {
   type ReactNode,
 } from 'react';
 
-import { ROLES, type Role } from '@/types/role';
+import { ROLES, type Role } from '@/types/group-pas/roles';
 import { useWidgetState } from '@/hooks/useWidgetState';
 
-const STORAGE_KEY = 'keystone:current-role';
+const STORAGE_KEY = 'group-pas:current-role';
 // Schemas can subscribe via `stateDependencies: ['global:current-role']` and
-// gate on `{ "==": [{ "var": "global:current-role" }, "maker"] }` without each
-// widget having to consume React context directly.
+// gate on `{ "==": [{ "var": "global:current-role" }, "sales"] }` without each
+// widget having to consume React context directly. Documented in
+// docs/STATE_MANAGEMENT_GUIDE.md + docs/schema-design-reference/07.
 const ROLE_STATE_KEY = 'global:current-role';
-const DEFAULT_ROLE: Role = 'maker';
+const DEFAULT_ROLE: Role = 'sales';
 
 export interface RoleContextValue {
   role: Role;
@@ -33,12 +34,10 @@ export const RoleContext = createContext<RoleContextValue | undefined>(undefined
 function readStoredRole(): Role {
   if (typeof window === 'undefined') return DEFAULT_ROLE;
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  // Validate against ROLES so adding a new role to @/types/role automatically
-  // extends what we accept from localStorage — no hand-rolled string union
-  // to keep in sync.
-  return (ROLES as readonly string[]).includes(stored ?? '')
-    ? (stored as Role)
-    : DEFAULT_ROLE;
+  if (stored && (ROLES as string[]).includes(stored)) {
+    return stored as Role;
+  }
+  return DEFAULT_ROLE;
 }
 
 export function RoleProvider({ children }: { children: ReactNode }) {

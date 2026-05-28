@@ -1,0 +1,44 @@
+{
+  "id": "repair-policy-member-form",
+  "type": "form-container",
+  "props": {
+    "title": "Repair member & re-classify",
+    "description": "Edit the flagged fields and resubmit. Saving resets the member to CREATED so the workflow re-prices and re-classifies.",
+    "columns": 2,
+    "fields": [
+      { "id": "planNo", "name": "planNo", "label": "Plan", "type": "text", "order": 1, "size": "md" },
+      { "id": "name", "name": "name", "label": "Full name", "type": "text", "order": 2, "size": "md", "validations": [{ "rule": "required", "message": "Name is required" }] },
+      { "id": "dob", "name": "dob", "label": "Date of birth", "type": "date", "order": 3, "size": "md" },
+      { "id": "gender", "name": "gender", "label": "Gender", "type": "text", "order": 4, "size": "md" },
+      { "id": "salary", "name": "salary", "label": "Salary (INR)", "type": "number", "order": 5, "size": "md" },
+      { "id": "occupation", "name": "occupation", "label": "Occupation", "type": "text", "order": 6, "size": "md" },
+      { "id": "sumInsured", "name": "sumInsured", "label": "Sum insured (INR)", "type": "number", "order": 7, "size": "md", "validations": [{ "rule": "required", "message": "Sum insured is required" }] }
+    ],
+    "actions": [
+      {
+        "id": "submit-repair",
+        "label": "Save & re-classify",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/issuance/policy-members",
+        "api": {
+          "endpoint": "/api/issuance/policy-members/:id",
+          "method": "PUT"
+        },
+        "successMessage": "Member saved; re-classification triggered",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "repair-policy-member-form" }
+        ]
+      },
+      {
+        "id": "cancel-repair",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "repair-policy-member-form",
+        "submitAction": false
+      }
+    ]
+  }
+}

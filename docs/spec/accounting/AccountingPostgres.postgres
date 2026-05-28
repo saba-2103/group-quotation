@@ -1,0 +1,160 @@
+package com.anaira.accounting.postgres;
+
+postgres AccountingEventEntity {
+    id: string
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    eventDate: date
+    reversedEventId: string
+    reference: string
+    remarks: string
+    state: string
+    errorDetails: string
+    postedJournalsJson: string
+    postingErrorsJson: string
+
+    @primary(id)
+    @notNull(lob)
+    @notNull(businessKey)
+    @notNull(businessProcessCode)
+    @notNull(eventDate)
+    @notNull(state)
+}
+
+postgres EventDetailEntity {
+    detailId: string
+    eventId: string
+    accountGroup: string
+    accountSubgroup: string
+    entity1Type: string
+    entity1Id: string
+    entity2Type: string
+    entity2Id: string
+    effectiveDate: date
+    transactionDate: date
+    transactionCurrency: string
+    glCurrency: string
+    exchangeRate: float
+    amountMinorUnits: int
+    glAmountMinorUnits: int
+    shouldUpdateAccountSummary: boolean
+    billNumber: string
+    referencesText: string
+    remarks: string
+    lineItemNumber: int
+
+    @primary(detailId)
+    @notNull(accountGroup)
+    @notNull(accountSubgroup)
+    @foreignKey(eventId) references AccountingEventEntity(id)
+}
+
+postgres AccountingJournalEntity {
+    journalNumber: string
+    journalDate: date
+    component: string
+    lob: string
+    businessKey: string
+    businessProcessCode: string
+    accountingEventId: string
+    accountGroup: string
+    journalType: string
+    state: string
+    reverseeJournalNumber: string
+    reverserJournalNumber: string
+    postingDate: date
+    glExtractReference: string
+    periodId: string
+
+    @primary(journalNumber)
+    @unique(journalNumber)
+    @notNull(journalDate)
+    @notNull(component)
+    @notNull(lob)
+    @notNull(businessKey)
+    @notNull(businessProcessCode)
+    @notNull(journalType)
+    @notNull(state)
+    @notNull(periodId)
+}
+
+postgres JournalDetailEntity {
+    lineItemId: string
+    journalNumber: string
+    accountSubgroup: string
+    entity1Type: string
+    entity1Id: string
+    entity2Type: string
+    entity2Id: string
+    transactionDate: date
+    transactionCurrency: string
+    transactionAmountMinorUnits: int
+    glCurrency: string
+    exchangeRate: float
+    glAmountMinorUnits: int
+    debitCreditIndicator: string
+    glPseudoName: string
+    remarks: string
+    shouldUpdateSummary: boolean
+    lineItemNumber: int
+
+    @primary(lineItemId)
+    @notNull(accountSubgroup)
+    @notNull(debitCreditIndicator)
+    @notNull(glPseudoName)
+    @foreignKey(journalNumber) references AccountingJournalEntity(journal_number)
+}
+
+postgres AccountingPeriodEntity {
+    id: string
+    displayId: string
+    startDate: date
+    endDate: date
+    state: string
+
+    @primary(id)
+    @notNull(displayId)
+    @notNull(startDate)
+    @notNull(endDate)
+    @notNull(state)
+}
+
+postgres PostingRuleEntity {
+    id: string
+    lob: string
+    businessProcessCode: string
+    accountGroup: string
+    accountSubgroup: string
+    debitCreditIndicator: string
+    glPseudoName: string
+
+    @primary(id)
+    @notNull(lob)
+    @notNull(businessProcessCode)
+    @notNull(accountGroup)
+    @notNull(accountSubgroup)
+    @notNull(debitCreditIndicator)
+    @notNull(glPseudoName)
+}
+
+postgres AccountSummaryEntity {
+    id: string
+    entityId: string
+    lob: string
+    entity1Type: string
+    entity1Id: string
+    entity2Type: string
+    entity2Id: string
+    accountSubgroup: string
+    balanceMinorUnits: int
+    balanceCurrency: string
+
+    @primary(id)
+    @notNull(entityId)
+    @notNull(lob)
+    @notNull(accountSubgroup)
+    @notNull(balanceMinorUnits)
+    @notNull(balanceCurrency)
+}

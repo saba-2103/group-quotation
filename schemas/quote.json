@@ -1,0 +1,146 @@
+{
+  "id": "quote-list-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "quote-list-header",
+      "type": "page-header",
+      "props": {
+        "title": "Quotations",
+        "description": "Group Term Life — quote authoring, approval, and finalization."
+      }
+    },
+    {
+      "id": "quote-list-filters",
+      "type": "filter-bar",
+      "props": {
+        "stateKey": "quote-list-filters",
+        "searchKey": "search",
+        "filters": [
+          {
+            "id": "status",
+            "label": "Status",
+            "type": "select",
+            "options": [
+              { "value": "DRAFT", "label": "Draft" },
+              { "value": "SUBMITTED", "label": "Submitted" },
+              { "value": "SENT_TO_CLIENT", "label": "Sent to client" },
+              { "value": "ACCEPTED", "label": "Accepted" },
+              { "value": "FINALIZED", "label": "Finalized" },
+              { "value": "REJECTED", "label": "Rejected" },
+              { "value": "WITHDRAWN", "label": "Withdrawn" },
+              { "value": "EXPIRED", "label": "Expired" }
+            ]
+          },
+          {
+            "id": "policyType",
+            "label": "Policy type",
+            "type": "select",
+            "options": [
+              { "value": "GTL", "label": "GTL — Group Term Life" },
+              { "value": "GCL", "label": "GCL — Group Credit Life" },
+              { "value": "GH", "label": "GH — Group Health" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "quotes-table",
+      "type": "data-table",
+      "dataSource": {
+        "api": {
+          "endpoint": "/api/quotation/quotes/search",
+          "method": "GET",
+          "params": { "page": 0, "size": 50 }
+        },
+        "stateDependencies": ["quote-list-filters"]
+      },
+      "props": {
+        "title": "Quotes",
+        "headerActions": [
+          {
+            "id": "new-quote-btn",
+            "label": "New Quote",
+            "icon": "Plus",
+            "type": "open-modal",
+            "target": "create-quote-form",
+            "variant": "default"
+          }
+        ],
+        "columns": [
+          {
+            "id": "quoteNumber",
+            "accessorKey": "quoteNumber",
+            "fallbackKey": "id",
+            "label": "Quote #",
+            "type": "link",
+            "linkRoute": "/quotation/:id"
+          },
+          {
+            "id": "clientName",
+            "accessorKey": "clientName",
+            "label": "Client",
+            "type": "text"
+          },
+          {
+            "id": "policyType",
+            "accessorKey": "policyType",
+            "label": "Type",
+            "type": "text"
+          },
+          {
+            "id": "status",
+            "accessorKey": "status",
+            "label": "Status",
+            "type": "state-badge",
+            "entity": "quote"
+          },
+          {
+            "id": "headcount",
+            "accessorKey": "headcount",
+            "label": "Headcount",
+            "type": "number"
+          },
+          {
+            "id": "premium",
+            "accessorKey": "premiumAmount.amount",
+            "label": "Annual premium (INR)",
+            "type": "currency",
+            "currency": "INR"
+          }
+        ],
+        "rowActions": [
+          {
+            "id": "view-quote-btn",
+            "label": "View",
+            "icon": "Eye",
+            "type": "navigate",
+            "target": "/quotation/:id"
+          },
+          {
+            "id": "withdraw-quote-btn",
+            "label": "Withdraw",
+            "icon": "Ban",
+            "type": "api-mutation",
+            "variant": "destructive",
+            "confirm": {
+              "title": "Withdraw quote",
+              "message": "Are you sure you want to withdraw this quote? Withdrawal is terminal."
+            },
+            "refreshKey": "/api/quotation/quotes/search",
+            "api": {
+              "endpoint": "/api/quotation/quotes/:id/withdraw",
+              "method": "POST"
+            }
+          }
+        ],
+        "emptyState": {
+          "title": "No quotes yet",
+          "description": "Click \"New Quote\" to start one."
+        }
+      }
+    }
+  ]
+}

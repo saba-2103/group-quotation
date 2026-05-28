@@ -1,0 +1,200 @@
+package com.anaira.policyadmin.domain;
+
+// ── Client aggregate ───────────────────────────────────────────────────────────
+// State: ACTIVE only (single state for MVP — see AGENT.md §16.1).
+
+entity Client {
+    id: string
+    clientNumber: string
+    name: string
+    alternateName?: string
+    businessRegistrationNumber: string
+    incorporationDate?: date
+    gstRegistrationNumber?: string
+    taxReferenceNumber?: string
+    clientCategory?: string
+    industryCategory?: string
+    countryCode: string
+    communicationPreference?: CommunicationPreference
+    clientUrl?: string
+    // PII — repo-encryption + Cerbos (post-MVP).
+    contactPersonName?: string
+    contactPersonPhone?: string
+    isSubsidiary: boolean
+    isVip: boolean
+    isBlacklisted: boolean
+    effectiveDate: date
+    endDate?: date
+    state: ClientState
+
+    check isActive() {
+        error("CLI_PRE_001", "Client must be in ACTIVE state")
+    }
+}
+
+// ── Policy aggregate ───────────────────────────────────────────────────────────
+// States: CREATED → PENDING → ACTIVE | CANCELLED.
+// Activation driven by PolicyActivationFlow (per AGENT.md §16.3).
+
+entity Policy {
+    id: string
+    policyNumber: string
+    clientId: string
+    proposalId: string
+    policyType: string
+    effectiveDate?: date
+    expiryDate?: date
+    premiumType?: string
+    lineOfBusiness?: string
+    riskTermClassification?: string
+    inceptionDate?: date
+    ageDefinitionRule?: string
+    activationThreshold: int
+    pendingReason?: PolicyPendingReason
+    state: PolicyState
+    plans: list<PolicyPlanConfig>
+    estimatedPremium: Money
+
+    check isCreated() {
+        error("POL_PRE_001", "Policy must be in CREATED state")
+    }
+
+    check isActive() {
+        error("POL_PRE_002", "Policy must be in ACTIVE state to add members")
+    }
+
+    check isPending() {
+        error("POL_PRE_003", "Policy must be in PENDING state")
+    }
+
+    check isPendingOrActive() {
+        error("POL_PRE_004", "Policy must be in PENDING or ACTIVE state to enrol members")
+    }
+
+    check isNotCancelled() {
+        error("POL_INV_001", "Policy has been cancelled")
+    }
+
+    invariant isNotCancelled;
+
+    function activate(): void {
+        precondition isPending;
+        emits PolicyActivated;
+    }
+
+    function cancel(reason: string): void {
+        precondition isPendingOrActive;
+        emits PolicyCancelled;
+    }
+}
+
+// ── Member aggregate ───────────────────────────────────────────────────────────
+// States: PENDING → ACTIVE | VOID | (future) CANCELLED | LAPSED.
+// Lifecycle driven by MemberEnrollmentFlow (per AGENT.md §16.2).
+
+entity Member {
+    id: string
+    memberNumber: string
+    policyId: string
+    policyMemberId: string
+    planNo: string
+    state: MemberState
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    occupation?: string
+    // PII — repo-encryption + Cerbos (post-MVP).
+    mobile?: string
+    email?: string
+    governmentIdType?: string
+    governmentIdNumber?: string
+    sumInsured: double
+    // Postgres flattens to annualPremiumAmount/Currency + premiumBreakupJson.
+    premium: MemberPremium
+    uwDecision?: MemberUwDecision
+    transactionRefs: list<string>
+    floatReservationId?: string
+    pendingReason?: MemberPendingReason
+    voidReason?: MemberVoidReason
+    cancellationReason?: string
+    // Product-specific extensions (GCL loan*, GTL employee*, partner refs). Opaque to PAM.
+    additionalAttributesJson?: string
+
+    check isPending() {
+        error("MEM_PRE_001", "Member must be in PENDING state")
+    }
+
+    check isActive() {
+        error("MEM_PRE_002", "Member must be in ACTIVE state")
+    }
+
+    function activate(): void {
+        precondition isPending;
+        emits MemberActivated;
+    }
+
+    // PENDING → VOID. Pre-activation terminal driven by MemberEnrollmentFlow compensation.
+    function voidEnrollment(reason: string): void {
+        precondition isPending;
+        emits MemberVoided;
+    }
+
+    // ACTIVE → CANCELLED. Placeholder for future post-activation MemberCancellationFlow.
+    function cancel(reason: string): void {
+        precondition isActive;
+        emits MemberCancelled;
+    }
+}
+
+// ── External service bindings (sync REST, mocked for MVP) ──────────────────────
+
+service NumberGeneratorClient {
+    function generate(entityType: string, schemaCode: string, contextJson: string): string;
+}
+
+service FloatManagementClient {
+    function reserve(policyId: string, memberId: string, transactionRefs: list<string>, amount: Money): FloatReservationResult;
+    function release(reservationId: string): void;
+}
+
+// ── Factories ──────────────────────────────────────────────────────────────────
+// V1 KSL: factories can't depend on services. Handlers pre-generate identifiers
+// (e.g. policyNumber via NumberGeneratorClient) and pass them in.
+
+service ClientFactory {
+    function create(clientNumber: string, registrationData: ClientRegistrationData): Client {
+        emits ClientCreated;
+    }
+}
+
+service PolicyFactory {
+    function create(
+        policyNumber: string,
+        clientId: string,
+        proposalId: string,
+        policyType: string,
+        effectiveDate: date,
+        expiryDate: date,
+        premiumType: string,
+        lineOfBusiness: string,
+        riskTermClassification: string,
+        inceptionDate: date,
+        ageDefinitionRule: string,
+        activationThreshold: int,
+        plans: list<PolicyPlanConfig>,
+        estimatedPremium: Money
+    ): Policy {
+        emits PolicyCreated;
+    }
+}
+
+service MemberFactory {
+    function enroll(
+        memberNumber: string,
+        policyId: string,
+        enrollmentData: MemberEnrollmentData
+    ): Member {
+        emits MemberEnrolled;
+    }
+}

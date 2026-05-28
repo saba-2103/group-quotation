@@ -1,0 +1,8 @@
+{
+  "id": "plan-edit-form",
+  "type": "plan-form",
+  "props": {
+    "title": "Plan editor",
+    "description": "Structured editor for a Quote Plan. Manages products (with nested benefits and exclusions), cover formula, and free-cover-limit formula. Handles Add or Edit based on the overlay payload `_mode`. Submits to POST /quotation/quotes/{id}/plans or PUT /quotation/quotes/{id}/plans/{planNo}; refreshes the quote query on success and closes the modal."
+  }
+}

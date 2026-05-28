@@ -1,0 +1,4 @@
+memberId,planNo,name,dob,gender,salary,occupation,sumInsured
+EMP-1001,PLAN-A,Aisha Khan,1989-04-12,F,1200000,Software Engineer,3600000
+EMP-1002,PLAN-A,Rahul Mehta,1985-08-30,M,1450000,Product Manager,4350000
+EMP-1003,PLAN-B,Sara Iyer,1992-11-04,F,900000,Designer,2700000

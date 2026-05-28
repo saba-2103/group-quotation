@@ -1,0 +1,122 @@
+PROP-0001 build log
+====================
+
+[setup]
+- Worktree was checked out from origin/main, NOT from
+  feature/2026-05-13-fleet-all-approved as the orchestrator brief stated.
+  Anchor files (src/lib/api/issuance.ts, src/lib/polling.ts,
+  src/hooks/useSmartQuery.ts, the issuance proxy catch-all, etc.) did not
+  exist on main. Worktree was clean (no prior commits), so I `git reset --hard
+  feature/2026-05-13-fleet-all-approved` (dd66fd2) to align with the design's
+  reuse anchors. Build commits on top of dd66fd2.
+
+[reads]
+- proposals/PROP-0001-census-submission-ui.md
+- context/build-fleet/2026-05-13-fleet-all-approved/PROP-0001-design.md
+- context/HANDOFF.md
+- context/CORE_MEMORY.md
+- docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md
+- src/lib/api/issuance.ts                     — confirmed all 6 census wrappers present
+- src/types/group-pas/issuance.ts             — CensusSubmissionDto / RowDto / InitiateResult
+- src/lib/polling.ts                          — STANDARD_POLL_SCHEDULE
+- src/hooks/useSmartQuery.ts                  — pollSchedule + stopWhen flow
+- src/components/widgets/forms/formContainer/FieldRenderer.tsx
+- src/components/widgets/forms/formContainer/index.tsx
+- src/components/widgets/forms/formContainer/useFormContainer.ts
+- src/components/widgets/forms/formContainer/utils.ts
+- src/components/widgets/forms/formContainer/types.ts
+- src/components/widgets/forms/formContainer/constants.ts
+- src/components/widgets/forms/OverlaidForm.tsx
+- src/components/providers/OverlayProvider.tsx
+- src/components/widgets/controls/ActionRenderer.tsx
+- src/hooks/useActionHandler.ts
+- src/types/widget.ts
+- src/lib/schemaResolver.ts
+- src/lib/endpointUtils.ts
+- src/components/widgets/state/state-map.ts   — censusSubmission entity registered
+- schemas/tabs/proposal/members.json, overview.json
+- schemas/proposal-detail.json
+- schemas/policy-member-detail.json           — pattern reference for state actions + KVG polling
+- schemas/forms/add-policy-member-form.json   — pattern reference for `/members/new` route
+- src/app/issuance/proposals/[id]/page.tsx
+- src/app/issuance/proposals/[id]/members/new/page.tsx
+- src/app/issuance/policy-members/[policyMemberId]/page.tsx
+- src/app/api/forms/[id]/route.ts
+- src/app/api/issuance/[[...path]]/route.ts   — mock census handlers (read-only ref)
+
+[decisions / deviations]
+- Modal vs. route: the design called for an open-modal Upload-census flow.
+  The existing engine's `open-modal` action dispatches *without* schema-level
+  rowData, and `injectRowData` only substitutes `:param` not `{{...}}` in
+  endpoints. Substituting `{{policyId}}` into the form runtime via the modal
+  path would require either a form-loader query param or extending the
+  injectRowData substitutor. Both would expand scope beyond the design.
+  Existing convention (add-policy-member-form) uses a sibling route
+  `/members/new` to render a server-substituted form. I mirrored that and
+  added `/issuance/proposals/[id]/census/new` as the form-render route;
+  the census tab's headerAction is now `type: navigate` instead of
+  `open-modal`. Logged here because it deviates from the design.
+- Files-touched additions beyond design files_touched[]:
+  1. src/lib/schemaResolver.ts — added support for `schemas/tables/` and
+     `schemas/views/` $ref prefixes. The design references the new
+     `tables/census-submission-rows.json` from `views/census-submission-detail.json`
+     via `$ref`, but the resolver only handled `schemas/tabs/` and
+     `schemas/forms/`. Without this extension the rows table inside the
+     detail view would never bundle. Two-line addition mirroring the
+     existing tabs branch.
+  2. src/components/widgets/forms/formContainer/types.ts — added `accept?`
+     to FormFieldConfig (file field's allow-list); widened FormFieldValue
+     to include `File | null`. Required to type the new `file` field.
+  3. src/components/widgets/forms/formContainer/utils.ts — added a `file`
+     branch to buildFieldSchema (Zod refinement that asserts File when
+     required) and a `null` default in buildDefaultValues.
+  4. src/types/widget.ts — added `uploadField?: string` to the api-mutation
+     action variant so the FormContainer two-step submit can pick the
+     named file field declaratively.
+  5. src/app/issuance/proposals/[id]/census/new/page.tsx — new file (route
+     to render the upload form server-side with `{{policyId}}` substituted).
+     Sibling to the two files_touched routes; not listed in design but
+     forced by the modal→route decision above.
+
+[changes]
+- src/components/widgets/forms/formContainer/types.ts
+    + FormFieldValue widened to `File | null`
+    + FormFieldConfig.accept added
+- src/components/widgets/forms/formContainer/utils.ts
+    + buildFieldSchema: `file` branch with z.any() + required refinement
+    + buildDefaultValues: file → null
+- src/components/widgets/forms/formContainer/FieldRenderer.tsx
+    + FileField component (native <input type=file>, filename + size readout)
+    + FIELD_TYPE_MAP['file'] registered
+- src/components/widgets/forms/formContainer/useFormContainer.ts
+    + handleAction return type accepts optional rowData
+    + handleSubmit: two-step branch when submitAction.uploadField is set —
+      POST JSON → expect { uploadUrl, submissionId } → PUT File → interpolate
+      `{{key}}` placeholders on `onSuccess[]` from initiate response →
+      dispatch each onSuccess action.
+- src/types/widget.ts
+    + api-mutation action variant: `uploadField?: string`
+- src/lib/schemaResolver.ts
+    + `schemas/tables/` and `schemas/views/` $ref prefix handlers.
+- schemas/forms/upload-census-form.json (new)
+- schemas/tabs/proposal/census.json (new)
+- schemas/tabs/proposal/members.json — added Bulk-upload headerAction
+- schemas/views/census-submission-detail.json (new)
+- schemas/tables/census-submission-rows.json (new)
+- src/app/issuance/proposals/[id]/census/page.tsx (new)
+- src/app/issuance/proposals/[id]/census/new/page.tsx (new — deviation note above)
+- src/app/issuance/proposals/[id]/census/[submissionId]/page.tsx (new)
+
+[verification]
+- npx tsc --noEmit: only the 4 pre-existing `schemas/forms` module-resolution
+  errors remain (api/forms/[id]/route.ts, members/new/page.tsx, lib/schemaResolver.ts,
+  + the new census/new/page.tsx). All caused by the generated schemas/forms/index.ts
+  file not existing yet — orchestrator regenerates post-merge per the brief.
+  No new compiler errors introduced by my changes.
+
+[commits]
+- feat(forms)(PROP-0001): add 'file' field type + two-step upload submit
+- feat(resolver)(PROP-0001): support schemas/tables/ + schemas/views/ $ref prefixes
+- feat(schemas)(PROP-0001): add census tab, upload form, detail view + rows table
+- feat(routes)(PROP-0001): add census list/upload/detail routes under proposal
+

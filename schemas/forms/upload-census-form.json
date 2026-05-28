@@ -1,0 +1,72 @@
+{
+  "id": "upload-census-form",
+  "type": "form-container",
+  "props": {
+    "title": "Upload census",
+    "description": "Pick the file you want to bulk-load. We'll initiate the submission, upload your file to backend storage, parse it, and take you to the per-row validation view.",
+    "columns": 1,
+    "fields": [
+      {
+        "id": "file",
+        "name": "file",
+        "label": "Census file",
+        "type": "file",
+        "accept": ".csv,.xlsx",
+        "helperText": "CSV or XLSX. One row per member, header row in row 1. Use the template above if you're starting from scratch.",
+        "validations": [
+          { "rule": "required", "message": "Choose a census file to upload" }
+        ]
+      },
+      {
+        "id": "templateFormat",
+        "name": "templateFormat",
+        "label": "Template format",
+        "type": "select",
+        "options": [
+          { "value": "STANDARD_GTL", "label": "Standard GTL census" },
+          { "value": "STANDARD_GCL", "label": "Standard GCL census" }
+        ],
+        "helperText": "Tells the parser which column-map to apply. Pick the one matching the template you downloaded."
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-upload-census",
+        "label": "Start upload",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "uploadField": "file",
+        "successMessage": "Census uploaded; parsing now…",
+        "refreshKey": "/api/issuance/policies/{{policyId}}/census-submissions",
+        "api": {
+          "endpoint": "/api/issuance/policies/{{policyId}}/census-submissions",
+          "method": "POST"
+        },
+        "onSuccess": [
+          {
+            "id": "trigger-ingest",
+            "type": "api-mutation",
+            "api": {
+              "endpoint": "/api/issuance/census-submissions/{{submissionId}}/ingest",
+              "method": "POST"
+            }
+          },
+          {
+            "id": "go-to-submission",
+            "type": "navigate",
+            "target": "/issuance/proposals/{{proposalId}}/census/{{submissionId}}"
+          }
+        ]
+      },
+      {
+        "id": "cancel-upload-census",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "upload-census-form",
+        "submitAction": false
+      }
+    ]
+  }
+}

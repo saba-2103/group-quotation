@@ -1,0 +1,126 @@
+{
+  "id": "quote-census-tab",
+  "type": "tab-panel",
+  "props": { "value": "census", "label": "Census", "icon": "Users" },
+  "children": [
+    {
+      "id": "quote-census-aggregate",
+      "type": "editable-table",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Aggregate census",
+        "description": "Headcount allocated per plan. Edits commit the whole AggregateCensus to the backend.",
+        "keyArrayPath": "plans",
+        "keyField": "planNo",
+        "labelField": "planName",
+        "valueArrayPath": "aggregateCensus.planBreakdown",
+        "valueArrayPathFallbacks": ["plan.breakdown", "planBreakdown"],
+        "valueField": "headcount",
+        "keyLabel": "Plan #",
+        "labelLabel": "Plan name",
+        "valueLabel": "Headcount",
+        "inputType": "number",
+        "min": 0,
+        "step": 1,
+        "showTotal": true,
+        "totalLabel": "Total",
+        "stateField": "status",
+        "editableStates": ["DRAFT"],
+        "editableRoles": ["sales"],
+        "emptyState": {
+          "title": "No plans configured yet",
+          "description": "Headcount is allocated per plan. Add plans on the Plans tab first."
+        },
+        "saveAction": {
+          "endpoint": "/api/quotation/quotes/{{id}}/aggregate-census",
+          "method": "PUT",
+          "bodyShape": "aggregate-census",
+          "refreshKey": "/api/quotation/quotes/{{id}}",
+          "successMessage": "Aggregate census saved"
+        }
+      }
+    },
+    {
+      "id": "quote-census-format-section",
+      "type": "section-group",
+      "props": { "title": "Census file format", "columns": 1 },
+      "children": [
+        {
+          "id": "quote-census-format-grid-inner",
+          "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Census file format",
+        "description": "Defines how census uploads are parsed.",
+        "columns": 2,
+        "fields": [
+          {
+            "id": "fileType",
+            "label": "File type",
+            "accessorKey": "censusFileFormatJson",
+            "parseJson": true,
+            "subPath": "fileType"
+          },
+          {
+            "id": "sheetName",
+            "label": "Sheet name",
+            "accessorKey": "censusFileFormatJson",
+            "parseJson": true,
+            "subPath": "sheetName"
+          },
+          {
+            "id": "schemaPresence",
+            "label": "Schema",
+            "accessorKey": "censusFileFormatJson",
+            "parseJson": true,
+            "subPath": "schemaJson",
+            "type": "presence"
+          },
+          {
+            "id": "dialectPresence",
+            "label": "Dialect",
+            "accessorKey": "censusFileFormatJson",
+            "parseJson": true,
+            "subPath": "dialectJson",
+            "type": "presence"
+          }
+        ]
+      }
+    },
+        {
+          "id": "quote-census-format-actions",
+          "type": "action-bar",
+          "dataSource": {
+            "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+          },
+          "props": {
+            "stateField": "status",
+            "stateActions": { "DRAFT": ["edit-census-file-format"] },
+            "roleActions": {
+              "sales": ["edit-census-file-format"],
+              "partner_agent": ["edit-census-file-format"],
+              "mph": [],
+              "member": [],
+              "uw": [],
+              "ops": []
+            },
+            "actions": [
+              {
+                "id": "edit-census-file-format",
+                "label": "Edit file format",
+                "icon": "Pencil",
+                "type": "open-modal",
+                "target": "census-file-format-form",
+                "variant": "outline"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

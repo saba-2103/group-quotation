@@ -1,0 +1,178 @@
+{
+  "id": "add-policy-admin-member-form",
+  "type": "form-container",
+  "props": {
+    "title": "Add member to policy",
+    "description": "Ops-initiated mid-policy add. Backs the PAM AddMember endpoint (POST /api/policy-admin/policies/{policyId}/members). New row lands at PENDING; MemberEnrollmentFlow drives PENDING -> ACTIVE.",
+    "columns": 2,
+    "fields": [
+      {
+        "id": "policyMemberId",
+        "name": "policyMemberId",
+        "label": "PolicyMember reference (HR ref)",
+        "type": "text",
+        "order": 1,
+        "size": "md",
+        "helperText": "Caller-supplied identifier for cross-system reconciliation.",
+        "validations": [{ "rule": "required", "message": "PolicyMember reference is required" }]
+      },
+      {
+        "id": "planNo",
+        "name": "planNo",
+        "label": "Plan",
+        "type": "select",
+        "order": 2,
+        "size": "md",
+        "options": [
+          { "value": "PLAN-GTL-001", "label": "GTL Term Life — Standard" },
+          { "value": "PLAN-GTL-002", "label": "GTL Term Life — Enhanced" }
+        ],
+        "validations": [{ "rule": "required", "message": "Plan is required" }]
+      },
+      {
+        "id": "name",
+        "name": "name",
+        "label": "Full name",
+        "type": "text",
+        "order": 3,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Name is required" }]
+      },
+      {
+        "id": "dob",
+        "name": "dob",
+        "label": "Date of birth",
+        "type": "date",
+        "order": 4,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Date of birth is required" }]
+      },
+      {
+        "id": "gender",
+        "name": "gender",
+        "label": "Gender",
+        "type": "select",
+        "order": 5,
+        "size": "md",
+        "options": [
+          { "value": "M", "label": "Male" },
+          { "value": "F", "label": "Female" },
+          { "value": "O", "label": "Other" }
+        ],
+        "validations": [{ "rule": "required", "message": "Gender is required" }]
+      },
+      {
+        "id": "salary",
+        "name": "salary",
+        "label": "Salary (INR)",
+        "type": "number",
+        "order": 6,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Salary is required" }]
+      },
+      {
+        "id": "occupation",
+        "name": "occupation",
+        "label": "Occupation",
+        "type": "text",
+        "order": 7,
+        "size": "md"
+      },
+      {
+        "id": "mobile",
+        "name": "mobile",
+        "label": "Mobile",
+        "type": "tel",
+        "order": 8,
+        "size": "md"
+      },
+      {
+        "id": "email",
+        "name": "email",
+        "label": "Email",
+        "type": "email",
+        "order": 9,
+        "size": "md"
+      },
+      {
+        "id": "governmentIdType",
+        "name": "governmentIdType",
+        "label": "Government ID type",
+        "type": "select",
+        "order": 10,
+        "size": "md",
+        "options": [
+          { "value": "AADHAAR", "label": "Aadhaar" },
+          { "value": "PAN", "label": "PAN" },
+          { "value": "PASSPORT", "label": "Passport" },
+          { "value": "DRIVING_LICENSE", "label": "Driving licence" }
+        ]
+      },
+      {
+        "id": "governmentIdNumber",
+        "name": "governmentIdNumber",
+        "label": "Government ID number",
+        "type": "text",
+        "order": 11,
+        "size": "md"
+      },
+      {
+        "id": "sumInsured",
+        "name": "sumInsured",
+        "label": "Sum insured (INR)",
+        "type": "number",
+        "order": 12,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Sum insured is required" }]
+      },
+      {
+        "id": "annualPremiumAmount",
+        "name": "annualPremiumAmount",
+        "label": "Annual premium (INR)",
+        "type": "number",
+        "order": 13,
+        "size": "md",
+        "helperText": "V1 captures premium as a single annual amount; currency is hard-coded INR. Premium breakup lands when Rule Engine wires up.",
+        "validations": [{ "rule": "required", "message": "Annual premium is required" }]
+      },
+      {
+        "id": "currency",
+        "name": "currency",
+        "label": "Currency",
+        "type": "select",
+        "order": 14,
+        "size": "sm",
+        "defaultValue": "INR",
+        "options": [
+          { "value": "INR", "label": "INR" }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-add-policy-admin-member",
+        "label": "Add member",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/policy-admin/members/search",
+        "api": {
+          "endpoint": "/api/policy-admin/policies/{{id}}/members",
+          "method": "POST"
+        },
+        "successMessage": "Member added. New row is PENDING; MemberEnrollmentFlow will activate it.",
+        "onSuccess": [
+          { "type": "navigate", "target": "/policy-admin/policies/{{id}}" }
+        ]
+      },
+      {
+        "id": "cancel-add-policy-admin-member",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "add-policy-admin-member-form",
+        "submitAction": false
+      }
+    ]
+  }
+}

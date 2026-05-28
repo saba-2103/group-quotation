@@ -1,0 +1,13 @@
+# CLARIFY — PROP-0007
+
+## Round 1 (2026-05-13)
+
+### Q1: Role-gating for "Replace mapping"?
+**Answer:** Checker only (per proposal text). Deviates from V1's other writes (all maker-gated) but matches the proposal — DMN authoring is treated as an actuarial-team task rather than a producer one.
+
+## Decisions
+
+1. Bespoke `dmn-decision-table` widget — dynamic columns from inputs + outputs (proposed without asking; live data shape proves a static-column data-table would be wrong).
+2. Replace action gated DRAFT + checker.
+
+No remaining ambiguity. Proceeding to DESIGN.

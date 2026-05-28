@@ -4,6 +4,7 @@ import React, { createContext, useContext, ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AppConfig } from "@shared/types";
 import { Loader2 } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
 
 interface AppContextType {
     config: AppConfig | null;
@@ -22,11 +23,16 @@ export function AppContextProvider({
     defaultAppId?: string;
 }) {
     const [appId] = React.useState(defaultAppId);
+    // Role is part of the queryKey so the menu re-fetches (and React Query
+    // caches per-role) when the user picks a different role in RoleSwitcher.
+    // Matches the post-auth posture where the backend would filter the menu
+    // off the JWT before sending it down. See PROP-0009.
+    const { role } = useRole();
 
     const { data: config, isLoading, error } = useQuery({
-        queryKey: ["appConfig", appId],
+        queryKey: ["appConfig", appId, role],
         queryFn: async () => {
-            const res = await fetch(`/api/config/app?appId=${appId}`);
+            const res = await fetch(`/api/config/app?appId=${appId}&role=${role}`);
             if (!res.ok) {
                 throw new Error("Failed to fetch application configuration");
             }

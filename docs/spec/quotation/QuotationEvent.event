@@ -1,0 +1,116 @@
+package com.anaira.quotation.event;
+
+event QuoteCreated {
+    quoteId: string
+    clientId: string
+    policyType: PolicyType
+}
+
+// Generic mutation event emitted by Quote write-side functions other than create/finalize/terminal transitions.
+event QuoteUpdated {
+    quoteId: string
+}
+
+// Emitted when QuotePremium is set on the Quote (manual entry or rule-engine result).
+event QuotePremiumUpdated {
+    quoteId: string
+    premium: QuotePremium
+}
+
+event QuotePriceRequested {
+    quoteId: string
+    clientId: string
+    policyType: PolicyType
+}
+
+event QuotePriceUpdated{
+    quoteId: string
+    clientId: string
+    policyType: PolicyType
+    premium: QuotePremium
+}
+
+event QuoteSubmitted {
+    quoteId: string
+    clientId: string
+    policyType: PolicyType
+    ageDefinitionRule: AgeDefinitionRule
+    riskTermClassification: RiskTermClassification
+    lineOfBusiness: LineOfBusiness
+    premium: QuotePremium
+}
+
+event QuoteSentToClient {
+    quoteId: string
+    clientId: string
+}
+
+event QuoteAccepted {
+    quoteId: string
+    clientId: string
+}
+
+event QuoteRejected {
+    quoteId: string
+    clientId: string
+}
+
+event QuoteWithdrawn {
+    quoteId: string
+    clientId: string
+}
+
+event QuoteExpired {
+    quoteId: string
+    clientId: string
+}
+
+event QuoteFinalized {
+    quoteId: string
+    clientId: string
+    policyType: PolicyType
+    inceptionDate: date
+    ageDefinitionRule: AgeDefinitionRule
+    riskTermClassification: RiskTermClassification
+    lineOfBusiness: LineOfBusiness
+    plans: list<Plan>
+    aggregateCensus: AggregateCensus
+    censusFileFormat: CensusFileFormat
+    memberToPlanMapping: string
+    premium: QuotePremium
+}
+
+event MemberQuoteCreated {
+    memberQuoteId: string
+    policyId: string
+    sumAssured?: Money
+}
+
+event MemberQuotePlanSet {
+    memberQuoteId: string
+    policyId: string
+    planNo: string
+}
+
+event MemberQuotePremiumUpdated {
+    memberQuoteId: string
+    policyId: string
+    sumAssured?: Money
+    premium?: MemberQuotePremium
+}
+
+event MemberQuoteSubmitted {
+    memberQuoteId: string
+    policyId: string
+    planNo: string
+    premium: MemberQuotePremium
+    memberData: MemberData
+}
+
+event MemberQuoteFinalized {
+    memberQuoteId: string
+    policyId: string
+    planNo: string
+    premium: MemberQuotePremium
+    memberData: MemberData
+}

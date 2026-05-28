@@ -1,0 +1,114 @@
+{
+  "id": "add-policy-member-form",
+  "type": "form-container",
+  "props": {
+    "title": "Add policy member",
+    "description": "Single-step add (the auth-branch 5-step stepper is over-spec'd for V1).",
+    "columns": 2,
+    "fields": [
+      {
+        "id": "memberId",
+        "name": "memberId",
+        "label": "Member identifier (HR ref)",
+        "type": "text",
+        "order": 1,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Member ID is required" }]
+      },
+      {
+        "id": "planNo",
+        "name": "planNo",
+        "label": "Plan",
+        "type": "select",
+        "order": 2,
+        "size": "md",
+        "options": [
+          { "value": "PLAN-GTL-001", "label": "GTL Term Life — Standard" },
+          { "value": "PLAN-GTL-002", "label": "GTL Term Life — Enhanced" }
+        ],
+        "validations": [{ "rule": "required", "message": "Plan is required" }]
+      },
+      {
+        "id": "name",
+        "name": "name",
+        "label": "Full name",
+        "type": "text",
+        "order": 3,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Name is required" }]
+      },
+      {
+        "id": "dob",
+        "name": "dob",
+        "label": "Date of birth",
+        "type": "date",
+        "order": 4,
+        "size": "md"
+      },
+      {
+        "id": "gender",
+        "name": "gender",
+        "label": "Gender",
+        "type": "select",
+        "order": 5,
+        "size": "md",
+        "options": [
+          { "value": "M", "label": "Male" },
+          { "value": "F", "label": "Female" },
+          { "value": "O", "label": "Other" }
+        ]
+      },
+      {
+        "id": "salary",
+        "name": "salary",
+        "label": "Salary (INR)",
+        "type": "number",
+        "order": 6,
+        "size": "md"
+      },
+      {
+        "id": "occupation",
+        "name": "occupation",
+        "label": "Occupation",
+        "type": "text",
+        "order": 7,
+        "size": "md"
+      },
+      {
+        "id": "sumInsured",
+        "name": "sumInsured",
+        "label": "Sum insured (INR)",
+        "type": "number",
+        "order": 8,
+        "size": "md",
+        "validations": [{ "rule": "required", "message": "Sum insured is required" }]
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-add-member",
+        "label": "Add member",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/issuance/proposals/{{proposalId}}/members",
+        "api": {
+          "endpoint": "/api/issuance/proposals/{{proposalId}}/members",
+          "method": "POST"
+        },
+        "successMessage": "Policy member created",
+        "onSuccess": [
+          { "type": "navigate", "target": "/issuance/proposals/{{proposalId}}" }
+        ]
+      },
+      {
+        "id": "cancel-add-member",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "add-policy-member-form",
+        "submitAction": false
+      }
+    ]
+  }
+}

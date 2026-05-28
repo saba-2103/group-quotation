@@ -1,0 +1,72 @@
+{
+  "id": "create-quote-form",
+  "type": "form-container",
+  "props": {
+    "title": "New Quote",
+    "description": "Create a new Group quotation. Plans, census, mapping, and pricing are configured on the detail page.",
+    "columns": 2,
+    "fields": [
+      {
+        "id": "clientId",
+        "name": "clientId",
+        "label": "Client",
+        "type": "select",
+        "order": 1,
+        "size": "md",
+        "dataSource": {
+          "api": {
+            "endpoint": "/api/policy-admin/clients/list?page=0&size=200",
+            "method": "GET"
+          }
+        },
+        "optionLabel": "name",
+        "optionValue": "id",
+        "validations": [
+          { "rule": "required", "message": "Client is required" }
+        ]
+      },
+      {
+        "id": "policyType",
+        "name": "policyType",
+        "label": "Policy type",
+        "type": "select",
+        "order": 2,
+        "size": "md",
+        "options": [
+          { "value": "GTL", "label": "GTL — Group Term Life" },
+          { "value": "GCL", "label": "GCL — Group Credit Life" },
+          { "value": "GH", "label": "GH — Group Health" }
+        ],
+        "validations": [
+          { "rule": "required", "message": "Policy type is required" }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-create-quote",
+        "label": "Create quote",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/quotation/quotes/search",
+        "api": {
+          "endpoint": "/api/quotation/quotes",
+          "method": "POST"
+        },
+        "successMessage": "Quote created",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "create-quote-form" }
+        ]
+      },
+      {
+        "id": "cancel-create-quote",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "create-quote-form",
+        "submitAction": false
+      }
+    ]
+  }
+}

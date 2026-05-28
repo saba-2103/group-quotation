@@ -1,0 +1,102 @@
+{
+  "id": "quote-pricing-tab",
+  "type": "tab-panel",
+  "props": { "value": "pricing", "label": "Pricing", "icon": "Calculator" },
+  "children": [
+    {
+      "id": "quote-pricing-status",
+      "type": "polling-banner",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" },
+        "pollSchedule": {
+          "initialIntervalMs": 2000,
+          "initialDurationMs": 10000,
+          "fallbackIntervalMs": 5000,
+          "maxDurationMs": 60000
+        },
+        "stopWhen": { ">": [{ "var": "estimatedPremium.totalAmount" }, 0] }
+      },
+      "props": {
+        "stateKey": "pricing-pending:{{id}}",
+        "pendingMessage": "Pricing computing… The page will update automatically when the workflow completes.",
+        "pendingWhenMissing": ["estimatedPremium.totalAmount"]
+      }
+    },
+    {
+      "id": "quote-pricing-grid",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Pricing",
+        "description": "Press Request price to invoke the pricing workflow. Backend computes a deterministic premium (mock Rule Engine, 2% of cover) and the fields below populate once the workflow completes.",
+        "columns": 2,
+        "fields": [
+          { "id": "premiumTotal", "label": "Annual premium (total)", "accessorKey": "estimatedPremium.totalAmount" },
+          { "id": "premiumCurrency", "label": "Currency", "accessorKey": "estimatedPremium.currency" }
+        ]
+      }
+    },
+    {
+      "id": "quote-pricing-by-plan",
+      "type": "data-table",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" },
+        "dataPath": "estimatedPremium.byPlanJson",
+        "parseJson": true
+      },
+      "props": {
+        "title": "Per-plan premium breakdown",
+        "description": "Rows are parsed from estimatedPremium.byPlanJson (opaque JSON string on the quote response, implied shape: [{ planNo, amount, currency }]). Plan name is joined from plans[] by planNo via the data-table cross-array join.",
+        "columns": [
+          { "id": "planNo", "accessorKey": "planNo", "label": "Plan #", "type": "text" },
+          { "id": "planName", "accessorKey": "planName", "label": "Plan name", "type": "text", "joinSource": "plans", "joinKey": "planNo", "joinField": "planName" },
+          { "id": "amount", "accessorKey": "amount.amount", "label": "Annual premium", "type": "currency", "currency": "INR", "align": "right" },
+          { "id": "currency", "accessorKey": "amount.currency", "label": "Currency", "type": "text" }
+        ],
+        "emptyState": {
+          "title": "Pricing not yet computed",
+          "description": "Press Request price to invoke the pricing workflow. Rows populate once the backend mock Rule Engine returns a per-plan breakdown."
+        }
+      }
+    },
+    {
+      "id": "quote-pricing-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "stateField": "status",
+        "stateActions": { "DRAFT": ["request-price"] },
+        "roleActions": { "sales": ["request-price"], "partner_agent": [], "mph": [], "member": [], "uw": [], "ops": [] },
+        "actions": [
+          {
+            "id": "request-price",
+            "label": "Request price",
+            "icon": "Calculator",
+            "type": "api-mutation",
+            "refreshKey": "/api/quotation/quotes/{{id}}",
+            "api": {
+              "endpoint": "/api/quotation/quotes/{{id}}/request-price",
+              "method": "POST"
+            },
+            "successMessage": "Pricing requested — premium will populate once the workflow completes.",
+            "onSuccess": [
+              {
+                "id": "mark-pricing-pending",
+                "type": "update-widget-state",
+                "props": {
+                  "key": "pricing-pending:{{id}}",
+                  "operation": "set",
+                  "value": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

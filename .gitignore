@@ -74,3 +74,5 @@ storybook-static
 
 # Local planning and spec docs not intended for version control
 docs/SPECS/
+playwright-report/
+test-results/

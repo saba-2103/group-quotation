@@ -15,11 +15,13 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
 ## Context
 
 **Repo:** keystone-ui
-**Branch:** feat/design-system-pass-a (current; all V1 work happens on this branch unless explicitly branched)
-**Product:** Group PAS — Quotation, Issuance (Proposal + PolicyMember + Census), Policy Admin (Client/Policy/Member)
-**Backend specs:** `<group-pas-repo>/spec/` — see [HANDOFF.md → Local environment](HANDOFF.md#local-environment) for how to resolve `<group-pas-repo>` on your machine.
-**Backend blueprint:** `<group-pas-repo>/plans/team_nb_blueprint_v3.md`
+**Branch:** check `git branch --show-current`. Recent V1 plan work was on `feat/group-pas-v1-plan`; new build branch may have been cut by user.
+**Product:** Group PAS — Quotation, Issuance (Proposal + PolicyMember + Census), Policy Admin (Client/Policy/Member). UI-only maker-checker overlay for V1 demo.
+**Backend specs:** [docs/spec/](../docs/spec/) (DSL, canon).
+**Backend blueprint:** [docs/planning/team_nb_blueprint_v3.md](../docs/planning/team_nb_blueprint_v3.md).
+**OpenAPI snapshot (stale):** [docs/planning/openapi.json](../docs/planning/openapi.json) — useful for shape cross-check; trust DSL on conflict.
 **V1 implementation plan:** [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md)
+**Reference precedence + interim assumptions:** [context/CORE_MEMORY.md](CORE_MEMORY.md#reference-doc-precedence-group-pas-v1).
 
 ---
 
@@ -35,6 +37,1873 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
   - Fresh `context/HANDOFF.md`, `context/SESSION_LOG.md` (this file), `context/CORE_MEMORY.md`, `context/ARCH_TRANSITION.md` — process preserved, contents reset for group-pas V1.
 - Next: kickoff Phase 0 (teardown of legacy quotations module).
 
+### 2026-05-07 — Plan verification + maker-checker overlay added
+
+User added authoritative reference docs into the repo (`docs/planning/openapi.json`, `docs/planning/team_nb_blueprint_v3.md`, `docs/planning/SAMPLE-WORKFLOW.md`, `docs/planning/GTL Quotation Module (3).md`) and copied DSL specs to `docs/spec/`. Also confirmed maker-checker is needed in V1 demo via UI-only role switcher.
+
+**Backend Q&A absorbed:**
+- `docs/spec/` (DSL) is canon. All DSL values for enums, structs, API contracts are stable.
+- Issuance entity is `PolicyMember` (not `ProposalMember` as OpenAPI suggested) — OpenAPI snapshot is stale on this point.
+- PAM cross-ref is `policyMemberId` (final, not `proposalMemberId`).
+- PAM API delta absorbed: `GET /api/policy-admin/members/by-proposal-member/{...}` → `GET /api/policy-admin/members/by-policy-member/{policyMemberId}`. `MemberDto` adds `pendingReason?`, `voidReason?`, `cancellationReason?`. `MemberSummaryDto` adds `pendingReason?`.
+
+**Reference-doc precedence locked** (now in `context/CORE_MEMORY.md`): DSL → blueprint v3 → GTL Quotation Module (3).md → OpenAPI (stale) → SAMPLE-WORKFLOW.md (future).
+
+**V1 interim assumptions logged** (8 entries in `context/ARCH_TRANSITION.md` + scope-locks summary in `context/CORE_MEMORY.md`):
+1. Async signalling = 5s polling
+2. Quote → Proposal handoff = auto-create on finalize
+3. send-for-issuance → PAM Member visibility = async, poll
+4. Error response shape = Spring-style `{ message, errors? }`
+5. Member-to-Plan DMN = opaque file ref
+6. GCL endpoints = stub
+7. Auth = open API in V1
+8. File upload = mock-first via Next.js routes
+
+**Maker-checker UI overlay** (new ARCH_TRANSITION entry): role switcher widget (Maker / Checker / Ops / Viewer), `roleActions` map alongside `stateActions` on schemas, `awaitingApproval: true` UI-overlay state on Quote/Proposal. Checker's "Approve" calls real backend `submit`. Backend stays unchanged.
+
+**Plan structure changes:**
+- Phase 0 deletion list extended to include auth-branch zombie forms (`add-member-form`, `bulk-upload-form` etc.) bundled in `schemas/forms/index.ts` whose widgets aren't on this branch.
+- Phase 1 gains **Task 1.9 — Role switcher + role-aware action gating**.
+- Tasks 1.1, 1.5, 1.8 updated for `cancellationReason`, summary `pendingReason`, CANCELLED state.
+- Tasks 3.3, 3.4, 5.1 updated for `by-policy-member` endpoint rename + reason badges in member lists.
+- Task 4.4 explicitly drops the auth-branch 5-step add-member wizard; uses single-step `form-container` with the 8 V1 fields.
+- All quote/proposal/member tasks gained `roleActions` gating notes.
+- Conventions section restructured: precedence ranking, frontend conventions, coding conventions.
+
+**Files touched:** `docs/group-pas-v1-plan.md` (full rewrite), `context/HANDOFF.md` (drop Local environment section, list canonical docs with precedence), `context/CORE_MEMORY.md` (add precedence rule + V1 assumptions + maker-checker scope lock), `context/ARCH_TRANSITION.md` (added 7 new interim contracts; total 9 entries now), this log.
+
+**Next:** kickoff Phase 0 teardown.
+
+### 2026-05-07 (continued) — Architecture audit + small engine extension
+
+Audited current widget engine vs V1 plan needs. Verdict: existing arch supports the plan with two real gaps (small wrappers) and two verbosity-tax patterns (workable today, future widget-engine cleanups noted).
+
+**Real gaps resolved:**
+
+1. **Polling with stop-condition.** Extended `useSmartQuery` to take `stopWhen: VisibilityCondition` and `maxPollMs?` on `DataSourceConfig`. Implementation uses TanStack's function-form `refetchInterval` — returns `false` when `stopWhen` evaluates truthy against latest data, otherwise returns `refreshInterval`. ~10 LOC added; `npx tsc --noEmit` clean.
+   - Files: `src/hooks/useSmartQuery.ts`, `src/types/widget.ts`.
+   - Used by Pricing tab (Task 2.4.5) — schema declares poll cadence + stop predicate; component owns hard timeout.
+
+2. **Composite cells deferred.** V1 renders `state` and `pendingReason` as two separate columns instead of building a `composite` cell type. ~20 LOC saved for now; documented as a future widget-engine cleanup.
+
+**Verbosity-tax patterns documented in `docs/STATE_MANAGEMENT_GUIDE.md` (new §8):**
+
+- §8.1 Polling until an async backend computation completes (uses the new `stopWhen`).
+- §8.2 State-driven detail page (sibling widgets gated by entity state via `useWidgetState` + `visibleWhen`).
+- §8.3 Form fields disabled by parent entity state or current role (dual sibling widgets — editable form vs read-only key-value-grid).
+- §8.4 Role context as a global state key (`global:current-role`) so role gating uses the same `stateDependencies` plumbing as state gating.
+
+**ARCH_TRANSITION.md additions:**
+- Updated "Async transition signalling" entry to reflect the new `stopWhen` capability.
+- Added "State-conditional siblings via `useWidgetState`" — interim verbose pattern, future `state-conditional-section` widget.
+- Added "Form-level disable via dual sibling widgets" — interim dual-render pattern, future `disabledWhen` on `FieldConfig`.
+- Added "Composite cells deferred — two-column rendering for V1" — interim two-column approach, future `composite` cell type.
+
+**Plan updates:**
+- Conventions section now references `STATE_MANAGEMENT_GUIDE.md §8` so all detail-page tasks follow the canonical patterns.
+- Task 2.4.5 (Pricing tab) explicitly uses `dataSource.stopWhen` per §8.1.
+- Task 3.3 (Policy detail → Members tab) explicitly uses two columns for state + reason.
+- New "Future widget-engine cleanups" section in plan listing the 4 deferred items so they don't get lost.
+
+**Files touched:** `src/hooks/useSmartQuery.ts`, `src/types/widget.ts`, `docs/STATE_MANAGEMENT_GUIDE.md`, `docs/group-pas-v1-plan.md`, `context/ARCH_TRANSITION.md`, this log.
+
+**Next:** Phase 0 teardown.
+
+### 2026-05-07 (continued) — Three more backend clarifications absorbed
+
+Backend confirmed:
+
+1. **Polling cadence:** 2s for first 10s, then back off to 5s up to ~60s. Use this for any GET endpoint after triggering an async action.
+2. **Error response shape:** Spring default `{ timestamp, status, error, message, path }` for V1. No field-level error array yet. Backend will add a `{ code, message, fieldErrors: [{ field, code, message }] }` envelope on request — small lift, but only when frontend forms actually need it.
+3. **Pending breakdown:** no dedicated endpoint in V1. Derive client-side by grouping `MemberSummaryDto.pendingReason` from the members list response. Server-side aggregate added later if it becomes hot.
+
+**Engine work:**
+- Extended `useSmartQuery` to support `pollSchedule: { initialIntervalMs, initialDurationMs, fallbackIntervalMs, maxDurationMs? }` for backoff polling. Falls back to fixed `refreshInterval` when no schedule is given. `stopWhen` halts either kind early. Implementation uses `useRef` to track polling-cycle start time.
+- Added `src/lib/polling.ts` exporting `STANDARD_POLL_SCHEDULE = { 2s for 10s → 5s up to 60s }`. All polling consumers reference this constant rather than hardcoding intervals; one tuning point for cadence.
+- Typecheck clean.
+
+**Plan + docs updates:**
+- Task 1.2 (API clients): error mapper notes Spring default shape, no field-level errors, envelope-upgrade trigger documented.
+- Task 2.4.5 (Pricing tab): replaced fixed 5s with `STANDARD_POLL_SCHEDULE`; "still working…" banner appears once initial-cadence phase ends (≥10s).
+- Task 3.3 (Policy detail): pending breakdown card derives client-side; no `GetPolicyPendingBreakdownQuery` endpoint; shared dataSource between card and members tab via `useWidgetState` or a `useMemberPendingBreakdown` selector hook.
+- `STATE_MANAGEMENT_GUIDE.md §8.1`: schema example switched to `pollSchedule` + the constant; explanation of fast/slow phases.
+- `ARCH_TRANSITION.md`:
+  - "Async transition signalling" updated for backoff cadence + new risks.
+  - "Error response shape" rewritten to match Spring default + envelope-upgrade convergence trigger.
+  - New entry "Pending-breakdown derived client-side" with risks (paginated list drift) and convergence trigger.
+- `CORE_MEMORY.md` V1 assumption list updated: now 9 items (added pending-breakdown), polling cadence + error shape revised.
+
+**Files touched:** `src/hooks/useSmartQuery.ts`, `src/types/widget.ts`, `src/lib/polling.ts` (new), `docs/STATE_MANAGEMENT_GUIDE.md`, `docs/group-pas-v1-plan.md`, `context/ARCH_TRANSITION.md`, `context/CORE_MEMORY.md`, this log.
+
+**Process answer to user's `/build-feature` question:** the skill takes proposal id, free-form ask, **or path to a design doc**. Plan tasks have Context/Output/Done structured like a design doc, so `/build-feature Task 0.1 per docs/group-pas-v1-plan.md` works. Proposals are only needed for out-of-plan changes.
+
+**Next:** Phase 0 teardown.
+
+### 2026-05-07 (continued) — V1 demo execution strategy locked, cuts captured
+
+User flagged: the full plan is too big to iterate task-by-task with `/build-feature` against the Friday demo deadline. Strategy locked:
+
+**3 batches, mostly direct execution (no `/build-feature` overhead) for mechanical work:**
+
+- Batch 1 — Foundation (Phase 0 + Phase 1 demo subset: Tasks 1.1, 1.2, 1.3, 1.4, 1.5, 1.8, 1.9; skip 1.6 + 1.7).
+- Batch 2 — Quote happy path (Tasks 2.1, 2.2, 2.3, 2.4.1 editable + 2.4.2/3/4 **read-only** + 2.4.5 with poll + 2.4.6 placeholder).
+- Batch 3 — Issuance + PAM + demo glue (Tasks 3.1 light + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 4.4 single-member-only + 5.1 + 5.3 walkthrough).
+
+`/build-feature` reserved for the two genuinely ambiguous design points: action-bar maker-checker overlay (Batch 2) and state-driven PolicyMember detail (Batch 3). Everything else executes directly against the plan as design doc.
+
+**Deferred-from-V1-demo backlog (D1–D12)** captured in [docs/group-pas-v1-plan.md → V1 demo — execution strategy + deferred work](../docs/group-pas-v1-plan.md#v1-demo--execution-strategy--deferred-work):
+
+- D1 Plans CRUD, D2 Census authoring, D3 DMN replace flow, D4 Bulk census flow, D5 Operational queue index, D6 Tests, D7 PresignedUploader, D8 useEnum, D9 Clients detail, D10 UW review queue surface, D11 Terminal-state polish, D12 Saved-view chip variants.
+
+**Demo-time-only shortcuts** (correctness-debt to clean up immediately post-demo):
+- Mock route accepts any POST as successful upload (no PresignedUploader).
+- Inline-hardcoded enum options instead of `useEnum`.
+- Forms render top-level message only (no field-level errors); request envelope upgrade from backend if pain surfaces.
+
+HANDOFF Active Workstreams updated to show the 3-batch view + pointer to the strategy section. Future AI/human picking up work reads that section before any task.
+
+**Files touched:** `docs/group-pas-v1-plan.md`, `context/HANDOFF.md`, this log.
+
+**Next:** kick off Batch 1 — Phase 0 teardown.
+
+### 2026-05-07 (continued) — Batch 1 in progress
+
+Starting **Batch 1 — Foundation**. Order:
+
+1. Task 0.1 — Teardown legacy quotations + auth-branch zombie forms.
+2. Task 0.2 — Nav config update (3 modules + GCL placeholder).
+3. Task 1.1 — TypeScript domain types.
+4. Task 1.5 — Mock fixtures.
+5. Task 1.4 — Mock API route handlers (catch-all per module).
+6. Task 1.2 — API clients.
+7. Task 1.9 — Role switcher (must land before ActionBar consumes it).
+8. Task 1.3 — ActionBar widget.
+9. Task 1.8 — StateBadge + ReasonBanner widgets.
+
+Tasks 1.6 (PresignedUploader) and 1.7 (useEnum) explicitly skipped per V1 demo strategy — replaced with mock-accept-anything + inline enum constants.
+
+In progress.
+
+#### Task 0.1 — Teardown legacy quotations + auth-branch zombies — DONE
+
+Bulk delete (90 files, ~24,500 LoC removed):
+
+- Routes: `src/app/quotations/`, `src/app/api/quotations/` (catch-all + 7 sub-routes).
+- Page schemas: `schemas/quotations.json`, `schemas/quotations-detail.json`.
+- Tab schemas (all only referenced by the deleted detail): `plans`, `plan-products`, `plan-product-credit-life`, `plan-product-health`, `plan-product-investment`, `plan-product-term-life`, `plan-product-benefits`, `plan-product-benefits-health`, `benefit-investment`, `policy-profile`, `policy-exclusion`, `common-header`, `premium-method-05/06/07/08`, `headcount`, `subsidiaries`, `members`, `documents`, `qtn-detail-help-sheet`.
+- Forms (33 deleted): per the plan list + the orphan `plan-product-*`, `premium-method-*`, `benefit-investment`, `add-product`, `policy-configuration`, `policy-details` forms (none referenced elsewhere). Auth-branch zombies (`add-member-form`, `bulk-upload-form`) removed from the bundled `schemas/forms/index.ts`. Survivors: 7 accounting/payout forms.
+- Tests: `QuotationListTable.test.tsx`, `CreateQuotationForm.test.tsx`, `FilterBar.unit.test.tsx` (the FilterBar test sourced its config from `quotations.json` so deleted alongside).
+- Mocks: `src/mocks/original/seeds/` (entire dir — orphan after `quotation-mock.ts` removed), `quotations-list-page-config-mock.ts`, `quotations-detail-page-config-mock.ts`, `tab-config-mock.ts`, `table-config-mock.ts`, `form-config-mock.ts`, `data/quotation-mock.ts`, `data/index.ts`, `data/` (empty dir removed implicitly).
+- Updated registries: `schemas/forms/index.ts` (removed deleted entries + zombies), `src/mocks/original/page-config-mock.ts` (no quotation re-exports), `src/mocks/original/group-insurance/page-config-service.ts` (no quotation registry entries), `src/mocks/original/group-insurance/config/index.ts` (no quotation/tab/form/table-config-mock exports).
+- Dashboard schema (`schemas/dashboard.json`) + `dashboard-page-config-mock.ts` cards repurposed: legacy "Group Quotation" / "Group New Business" cards → "Quotation" / "Issuance" / "Policy Admin" cards pointing at the new module routes; legacy `metric-pending-quotations` renamed to `metric-pending-quotes`; `new-quotation-action` → `new-quote-action` navigating to `/quotation`.
+- `src/app/page.tsx` legacy "Quotations List" card removed.
+
+#### Task 0.2 — Nav config update — DONE (folded into 0.1)
+
+`src/mocks/original/group-insurance/config/app-config-mock.ts`: legacy "Group Quotation" multi-link nav entry replaced with three new top-level items — **Quotation** (`/quotation`, with disabled "Member Quotes (GCL) — coming soon" sub-item), **Issuance** (`/issuance/proposals`), **Policy Admin** (`/policy-admin/clients` and `/policy-admin/policies` sub-items). Lucide icons: FileText, ShieldCheck, Building2.
+
+**Verify:**
+- `npx tsc --noEmit` clean (modulo stale `.next/` cache from a previous branch).
+- `npm run build` succeeds.
+- Test failures: 2 files (`DataTable.unit`, `FormContainer.unit`) — confirmed pre-existing on the prior commit via stash dance; not introduced by this batch. Filed as part of pre-existing tech debt; will revisit in Batch 3 polish.
+
+**Next:** Phase 1 — types, mocks, API clients, widgets.
+
+---
+
+### 2026-05-07 — Thread handoff
+
+This conversation is closing because the context window is filling up. **Pick up in a new thread starting at Task 1.1.**
+
+State at handoff:
+- HEAD: `f5f97e8 feat(group-pas): Phase 0 teardown` on `feat/new-buisiness` (pushed).
+- Phase 0 (Tasks 0.1, 0.2) — done.
+- Batch 1 — Phase 1 — not started. Order to follow: 1.1 → 1.5 → 1.4 → 1.2 → 1.9 → 1.3 → 1.8. Tasks 1.6 (PresignedUploader) and 1.7 (useEnum) skipped for V1 demo per cuts D7, D8.
+- `useSmartQuery` already extended with `pollSchedule` + `stopWhen`; `STANDARD_POLL_SCHEDULE` exported from `src/lib/polling.ts`. No further widget-engine work needed before Phase 1.
+- Test failures pre-exist: `DataTable.unit`, `FormContainer.unit`. Will revisit in Batch 3 polish.
+
+Resume entry point: read `context/HANDOFF.md` first. It links to CORE_MEMORY, this log, and the V1 plan with the demo execution strategy section.
+
+### 2026-05-07 (continued) — Task 1.1 — TypeScript domain types — DONE
+
+Picked up Batch 1 / Phase 1 in a fresh thread per the previous handoff.
+
+Created `src/types/group-pas/{common,quotation,issuance,policy-admin,roles,index}.ts` from the DSL specs in `docs/spec/`. Source of truth is DSL (per CORE_MEMORY precedence).
+
+Decisions baked in:
+- `Money = { amount: number; currency: 'INR' | 'USD' }` per `CommonData.data`.
+- DSL optional `?` → TS `?:`. `list<X>` → `X[]`. `date` → `ISODate` (string alias). `datetime` → `ISODateTime`.
+- Domain entities use strict enum unions (e.g. `Quote.status: QuoteStatus`); wire DTOs keep loose `string` for the fields the DSL DTOs declare as `string`. Mappers in Task 1.2 will narrow at the API-client boundary.
+- DTO `*Json` string fields (e.g. `plansJson`, `aggregateCensusJson`, `byPlanJson`) carry serialized payloads. Modelled as `string` here; Task 1.2 mappers will parse to typed `Plan[]` / `AggregateCensus` / etc.
+- `ClassificationLane` aliased to DSL `UwLane = 'STP' | 'REPAIR' | 'REVIEW' | 'REJECT'` per Task 1.1 wording in the plan.
+- PAM `MemberSummaryDto.pendingReason?: string` is optional per the latest backend additions noted in HANDOFF; PAM `MemberDto` carries `pendingReason / voidReason / cancellationReason` as required strings (DSL declares them non-optional but they'll be empty when the entity isn't in that state — same pattern as existing `archivedReason` etc.).
+- Roles per scope-lock: `Role = 'maker' | 'checker' | 'ops' | 'viewer'`. `RoleContext` carries `currentRole` plus reserved `userId` / `displayName` slots so post-V1 auth can fill them without changing call sites.
+
+**Files created:**
+- `src/types/group-pas/common.ts` — Money, AmountFormula, Plan(+children), AggregateCensus, QuotePremium, MemberPremium, MemberData, file-flow DTOs.
+- `src/types/group-pas/quotation.ts` — Quote, MemberQuote, all enums (QuoteStatus etc.), CensusFileFormat, QuoteDto/QuoteSummaryDto/QuotePlanDto/EstimatedPremiumDto/MemberQuoteDto.
+- `src/types/group-pas/issuance.ts` — Proposal, PolicyMember, CensusSubmission(+Row), enums (ProposalState, PolicyMemberState, UwLane, CensusSubmission*), value objects (ClassifyMemberResult, UwDecisionResult, MemberRepairCorrections), all DTOs.
+- `src/types/group-pas/policy-admin.ts` — Client, Policy, Member, ClientRegistrationData, MemberEnrollmentData, PolicyPlan*, all enums (PolicyState, MemberState, PolicyPendingReason, MemberPendingReason, MemberVoidReason, ClientState, CommunicationPreference, FloatReservationStatus), workflow signal payloads, all DTOs (incl. ReasonCount + PolicyPendingBreakdownDto).
+- `src/types/group-pas/roles.ts` — Role, RoleContext.
+- `src/types/group-pas/index.ts` — barrel re-export.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0). No callers yet, so this just guarantees the types compile in isolation; they'll get exercised by Tasks 1.2 (API clients) and 1.5 (fixtures).
+
+**Next:** Task 1.5 — Mock fixtures (per the order locked at the previous handoff: 1.1 → 1.5 → 1.4 → 1.2 → 1.9 → 1.3 → 1.8). Skip 1.6 (PresignedUploader) and 1.7 (useEnum) per V1 demo cuts D7/D8.
+
+### 2026-05-07 (continued) — Task 1.5 — Mock fixtures — DONE
+
+Created `src/mocks/group-pas/` typed against the Task 1.1 interfaces. The legacy mock pattern at `src/mocks/original/group-insurance/data/` was deleted during Phase 0 (Task 0.1), so this batch establishes the new layout. Each fixture file exports typed arrays + a derived summary array; the `src/mocks/group-pas/index.ts` barrel re-exports them so Task 1.4 mock route handlers can pull from a single import.
+
+UI-overlay state: `awaitingApproval` is added on the Quote fixtures as a non-DSL mock-only flag via `MockQuote = Quote & { awaitingApproval?: boolean }` — it is purely a UI-layer demo affordance for the role-switcher per CORE_MEMORY scope-locks.
+
+Also fixed a Phase 0 stale stub: `src/mocks/original/group-insurance/index.ts` still re-exported `./data` (deleted in Task 0.1). Only `app/api/config/app/route.ts` imported the deeper file directly, so the broken barrel never tripped tsc — but it would have bitten the next caller. Removed the stale re-export.
+
+**Coverage notes:**
+- `quotes.ts` — 10 quotes covering all 8 `QuoteStatus` values; one (QTE-2026-0002) flagged `awaitingApproval: true` for the maker-checker demo. `QUOTE_SUMMARIES` derived from the long-form list so list endpoints stay in sync.
+- `proposals.ts` — 5 proposals: POLICY_CREATED (with policyNumber), FINALIZED, SUBMITTED, DRAFT, CANCELLED. Plan + premium carried verbatim from the parent Quote (W2 step 1 contract).
+- `policy-members.ts` — 20 PolicyMembers covering every DSL state: CREATED, PRICED, MAF_PENDING, MAF_CONFIRMED, CLASSIFYING, APPROVED, REPAIR_PENDING (with classification errors on PMB-0007 + PMB-0020), REFERRED_TO_UW, REJECTED, SENT_FOR_ISSUANCE, ADDED, ARCHIVED. Plan task wording said "REVIEW_PENDING" loosely — the canonical DSL state is REFERRED_TO_UW.
+- `census.ts` — 2 submissions: CSB-0001 INGESTED with mixed-status rows (ACCEPTED / INGESTED / REJECTED); CSB-0002 COMPLETED with all rows accepted.
+- `clients.ts` — 5 clients, all ACTIVE per ClientState MVP single state.
+- `policies.ts` — 5 policies covering CREATED, PENDING (`AWAITING_MIN_MEMBERS` and `AWAITING_COMPLIANCE`), ACTIVE, CANCELLED.
+- `members.ts` — 15 members:
+  - PENDING samples covering every `MemberPendingReason` (PENDING_FLOAT_RESERVATION, PENDING_APPROVAL, PENDING_POLICY_ACTIVATION).
+  - 4 ACTIVE samples (with `floatReservationId` set per MemberEnrollmentFlow).
+  - VOID samples covering every `MemberVoidReason` (FLOAT_UNAVAILABLE, APPROVAL_REJECTED, POLICY_CANCELLED, WITHDRAWN_BY_PROPOSER).
+  - 1 CANCELLED with a free-text `cancellationReason` (MEM-0013).
+  - `MEMBER_SUMMARIES` carries `pendingReason` so the policy → members tab can render reason badges inline (Task 3.3 requirement).
+
+**ID conventions:** quotes `QTE-YYYY-NNNN`, proposals `PRO-YYYY-NNNN`, policies `POL-YYYY-NNNN`, policy-members `PMB-NNNN`, members `MEM-NNNN`, clients `CLI-NNNN`, plans `PLAN-GTL-NNN`, census submissions `CSB-NNNN`. Cross-refs preserved (e.g. PRO-2026-0001 → QTE-2026-0006 → CLI-0005 → POL-2026-0001).
+
+**Files created:** `src/mocks/group-pas/{quotation/quotes,issuance/proposals,issuance/policy-members,issuance/census,policy-admin/clients,policy-admin/policies,policy-admin/members,index}.ts`. **Files touched:** `src/mocks/original/group-insurance/index.ts` (removed dangling `./data` re-export).
+
+**Verify:** `npx tsc --noEmit` clean (exit 0). Fixtures will be exercised by Task 1.4 mock routes next.
+
+**Next:** Task 1.4 — Mock API route handlers (catch-all per module).
+
+### 2026-05-07 (continued) — Task 1.4 — Mock API route handlers — IN PROGRESS
+
+About to do: build catch-all `[[...path]]/route.ts` handlers for `/api/quotation`, `/api/issuance`, `/api/policy-admin`, backed by a shared in-memory mock layer cloned from the Task 1.5 fixtures. The accounting catch-all is a pure proxy — too thin for V1 since the backend isn't deployed — so this lays down a richer mock-first layer with a `GROUP_PAS_BACKEND_URL` proxy toggle for the day backend goes live (interim assumption #8 → "Auth = open API in V1").
+
+Shared infra plan (`src/lib/api-mock/group-pas/`):
+- `store.ts` — global mutable store cloned from fixtures. Hot-reload safe via `globalThis` so the dev server doesn't reset state on every save.
+- `http.ts` — `matchPath`, `ok`, `json`, plus a `proxyIfConfigured` helper.
+- `dtos.ts` — entity → DTO mappers (Quote → QuoteDto, Proposal → ProposalDto, Policy → PolicyDto, PolicyMember → PolicyMemberDto, Member → MemberDto, plus the *Json fields the DSL flattens).
+- `simulator.ts` — `scheduleTransition` (setTimeout) for the state-transition delays so polling consumers (Pricing tab, send-for-issuance → PAM visibility) see realistic asynchrony. Default cadence aligned with `STANDARD_POLL_SCHEDULE` (delays in the 2–6s window so the first 2s poll catches the change).
+
+State-transition coverage (demo-critical):
+- Quote: requestPrice (DRAFT, sets `premium` after delay), submit (→ SUBMITTED), sendToClient (→ SENT_TO_CLIENT), accept (→ ACCEPTED), finalize (→ FINALIZED, then auto-creates Proposal).
+- Proposal: submit (DRAFT → SUBMITTED), finalize (→ FINALIZED, then creates Policy + transitions to POLICY_CREATED).
+- PolicyMember: priceMember (CREATED → PRICED), sendForIssuance (APPROVED → SENT_FOR_ISSUANCE, then creates PAM Member visibility after delay).
+- Census: initiate (creates INITIATED), ingest (→ INGESTED), submit (→ SUBMITTED, then COMPLETED).
+
+Unmatched mutation paths (e.g. updatePolicyDetail, addPlan, updateAggregateCensus, etc.) return 200 echo-success — the demo flows don't gate on them but the backend contract is satisfied. Unmatched GETs return 404 so missing paths surface loudly.
+
+**Files created:**
+- `src/lib/api-mock/group-pas/store.ts` — `globalThis`-backed mutable store + `nextId` + `scheduleTransition`.
+- `src/lib/api-mock/group-pas/http.ts` — `matchPath`, `dispatch`, `json`, `ok`, `notFound`, `readJson`, `proxyIfConfigured`, `RouteEntry`.
+- `src/lib/api-mock/group-pas/dtos.ts` — entity → DTO mappers for Quote, Proposal, PolicyMember, Census(+Row), Client, Policy, Member.
+- `src/app/api/quotation/[[...path]]/route.ts` — Quotation catch-all (3 common, 5 quote list/search, 1 quote-by-id, 8 mutators, 8 state transitions). `finalize` schedules an auto-Proposal creation after 4s.
+- `src/app/api/issuance/[[...path]]/route.ts` — Issuance catch-all. Proposal CRUD + state transitions. PolicyMember list/by-id/mutators. Census submission lifecycle. `finalize` proposal → auto-Policy creation; `send-for-issuance` PolicyMember → auto-PAM-Member creation (mirrors the W2/W3 cross-module hooks documented in the issuance domain).
+- `src/app/api/policy-admin/[[...path]]/route.ts` — PAM catch-all. Client/Policy/Member CRUD + lookups. `pending-breakdown` derives reason tallies client-side per V1 interim assumption #5 (no dedicated backend endpoint).
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- Smoke-tested every category against the dev server already running on :3000:
+  - `GET /api/quotation/quotes/list` → 200, payload shape correct (incl. `headcount` + `premiumAmount`).
+  - `GET /api/quotation/quotes/QTE-2026-0002` → 200 (specific Quote).
+  - `GET /api/quotation/quotes/by-status?status=SUBMITTED` → 200, filtered correctly.
+  - `GET /api/quotation/enums/QuoteStatus` → 200, all 8 enum values.
+  - `GET /api/issuance/proposals/list` → 200; `proposals/by-quote/QTE-2026-0006` → 200.
+  - `GET /api/issuance/policies/POL-2026-0001/members` → 200, returns 20 PolicyMember summaries.
+  - `GET /api/issuance/policies/POL-2026-0001/census-submissions` → 200; `census-submissions/CSB-0001/rows` → 200.
+  - `GET /api/policy-admin/clients/list`, `clients/CLI-0001`, `policies/list`, `members/by-policy-member/PMB-0010` → all 200.
+  - `GET /api/policy-admin/policies/POL-2026-0002/pending-breakdown` → derives `pendingByReason: [PENDING_FLOAT_RESERVATION:1, PENDING_APPROVAL:1, PENDING_POLICY_ACTIVATION:2]` from the live members store.
+  - `GET /api/quotation/non-existent` → 404 (loud failure for missing GET paths).
+  - `POST /api/quotation/quotes/.../whatever` → 200 (echo-success for unmatched mutations).
+  - State-transition simulator: `POST /api/quotation/quotes/QTE-2026-0010/finalize` → 200, then 5s later `GET /api/issuance/proposals/by-quote/QTE-2026-0010` → 200 (auto-Proposal landed).
+
+**Next:** Task 1.2 — API clients (typed wrappers around these endpoints, error-mapper for the Spring default error shape).
+
+### 2026-05-07 (continued) — Task 1.2 — API clients — IN PROGRESS
+
+About to do: typed client functions per endpoint in the three `.api` files, fronted by a thin `request()` wrapper with a bearer-token slot (`configureApiClient({ bearerToken })`) so swapping in real auth later is a config change. Error mapper handles the **Spring default envelope** `{ timestamp, status, error, message, path }` per the locked V1 interim assumption #4 (no field-level errors); on non-OK responses the wrapper throws an `ApiError` carrying the parsed envelope so React Query consumers can render `error.message` directly.
+
+ARCH_TRANSITION's "Error response shape" entry already documents the envelope-upgrade trigger (added in the 2026-05-07 backend-clarifications batch), so no further doc update needed.
+
+Layout:
+- `src/lib/api/client.ts` — fetch wrapper, ApiError class, configure hook.
+- `src/lib/api/error-mapper.ts` — `parseSpringError(res)`.
+- `src/lib/api/quotation.ts` — one function per QuotationApi endpoint.
+- `src/lib/api/issuance.ts` — one function per IssuanceApi endpoint (incl. CensusSubmissionAPI).
+- `src/lib/api/policy-admin.ts` — one function per PolicyAdminApi endpoint, incl. the by-policy-member cross-ref.
+- `src/lib/api/index.ts` — barrel.
+
+Naming: function names mirror the DSL operation names (e.g. `createQuote`, `requestQuotePrice`, `findMembersByPolicy`). Path concatenation is inline; query params built via `URLSearchParams`. All paths are relative — Next.js routes proxy or mock per Task 1.4.
+
+**Files created:**
+- `src/lib/api/error-mapper.ts` — `SpringErrorEnvelope`, `ApiError` class (carries `status`, `spring` envelope, `path`), `parseSpringError(res)`.
+- `src/lib/api/client.ts` — `configureApiClient`, `api.get/post/put/patch/del`, `QueryParams` (loose `Record<string, unknown>` so endpoint-specific param types compose without explicit index signatures), `buildUrl` with empty-skipping.
+- `src/lib/api/quotation.ts` — 26 typed functions covering QuotationCommonAPI, QuoteAPI, MemberQuoteAPI.
+- `src/lib/api/issuance.ts` — 24 typed functions covering ProposalAPI, PolicyMemberAPI, CensusSubmissionAPI.
+- `src/lib/api/policy-admin.ts` — 22 typed functions covering ClientAPI, PolicyAdminCommonAPI, PolicyAPI, MemberAPI (incl. PAM cross-ref `findMemberByPolicyMember` per the 2026-05-07 backend Q&A) + the `getPolicyPendingBreakdown` derived endpoint.
+- `src/lib/api/index.ts` — barrel re-exporting client/error-mapper plus the three module namespaces (`quotation`, `issuance`, `policyAdmin`).
+
+**One small wrapper-ergonomics decision:** `Search*Params` interfaces had to become `type` aliases — TS interfaces don't satisfy `Record<string, unknown>` index signatures structurally even though their fields are compatible. Switching to `type` keeps call sites zero-cast. Documented in the file header comments so the next person doesn't "fix" it back.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- Live server check: `GET /api/quotation/quotes/list` still returns 200 (Task 1.4 routes unaffected).
+- Direct Node smoke skipped — clients call relative paths and require a bundler/TS loader to import. The wire layer was already covered by Task 1.4's smoke tests; the clients are 1:1 thin wrappers around those endpoints, so typecheck is sufficient confidence here.
+
+**ARCH_TRANSITION** "Error response shape" entry already documents the `{ code, message, fieldErrors }` envelope-upgrade trigger — no further docs change needed for V1.
+
+**Next:** Task 1.9 — Role switcher + role-aware action gating (must land before Task 1.3 ActionBar consumes it).
+
+### 2026-05-07 (continued) — Task 1.9 — Role switcher + role-aware gating — IN PROGRESS
+
+About to do: build the V1 demo's UI-only role context + switcher per ARCH_TRANSITION's "Maker-checker UI overlay" entry. Default role is `maker`; localStorage key `group-pas:current-role` so a refresh keeps the demoer's chosen role.
+
+Layout decisions:
+- `RoleProvider` mounts in `src/app/layout.tsx` between `Providers` and `AppContextProvider` so the switcher renders before app-config loads (cheap; no network).
+- `RoleSwitcher` mounts at the top of `<main>` (right-aligned). Avoids restructuring the layout into a dedicated top-bar; keeps the existing `SidebarTrigger` slot intact.
+- WidgetRegistry gets `"role-switcher"` so future schemas can also embed it inline.
+
+Maker-checker UI-overlay state:
+- `MockQuote.awaitingApproval` already exists on the fixtures (added in Task 1.5). Adding two UI-only mock routes — `POST /api/quotation/quotes/:quoteId/awaiting-approval` (set true) and `DELETE /api/quotation/quotes/:quoteId/awaiting-approval` (clear) — neither is in the DSL. They're explicitly tagged "UI-only" and will simply not exist when `GROUP_PAS_BACKEND_URL` is set (the proxy will 404 them). When the maker-checker overlay disappears post-V1 (real Keycloak + backend-enforced approval), these routes get deleted.
+- `src/lib/maker-checker.ts` exposes `sendForApproval(entityType, id)` and `clearApproval(entityType, id)` calling those routes; ActionBar (Task 1.3) wires its "Send for approval" action to this helper.
+
+The Checker → Approve action calls the real `submitQuote(id)` from Task 1.2 (no special handling needed — once `awaitingApproval` clears, the entity moves through the DSL flow normally).
+
+**Files created:**
+- `src/contexts/RoleContext.tsx` — `RoleProvider` + `RoleContext`. Hydration-safe (SSR sees `maker`; effect upgrades to the localStorage value on mount). `STORAGE_KEY = 'group-pas:current-role'`.
+- `src/hooks/useRole.ts` — `useRole(): { role, setRole }` with provider-presence guard.
+- `src/components/widgets/role/RoleSwitcher.tsx` — top-shell dropdown with all four roles, lucide icons, descriptions; uses existing `dropdown-menu` primitive.
+- `src/lib/maker-checker.ts` — `sendForApproval(entity, id)` / `clearApproval(entity, id)` for `'quote' | 'proposal'`. Calls the new mock routes; does nothing else (Checker's Approve calls real `submitQuote` from Task 1.2).
+
+**Files touched:**
+- `src/components/registry/WidgetRegistry.tsx` — registered `"role-switcher"`.
+- `src/app/layout.tsx` — mounted `RoleProvider` (between `Providers` and `AppContextProvider`) and `RoleSwitcher` in the top-right of `<main>` (`absolute top-4 right-6 z-50`).
+- `src/lib/api-mock/group-pas/store.ts` — added `MockProposal = Proposal & { awaitingApproval?: boolean }` and re-typed `proposals` as `MockProposal[]`.
+- `src/lib/api-mock/group-pas/dtos.ts` — `MockQuoteDto` + `MockProposalDto` extend the wire DTOs with the optional `awaitingApproval` flag; mappers populate it from the store. Real backend never returns it; field disappears once V1 maker-checker lands.
+- `src/app/api/quotation/[[...path]]/route.ts` — added `POST/DELETE /quotes/:quoteId/awaiting-approval` (UI-only, not in DSL).
+- `src/app/api/issuance/[[...path]]/route.ts` — added `POST/DELETE /proposals/:proposalId/awaiting-approval`; switched `findProposal` return type to `MockProposal`.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- Live smoke against existing dev server on :3000:
+  - `POST /api/quotation/quotes/QTE-2026-0001/awaiting-approval` → 200; subsequent GET returns `awaitingApproval: true`.
+  - `DELETE` → 200; subsequent GET returns `awaitingApproval: false`.
+  - Fixture-default `QTE-2026-0002` returns `awaitingApproval: true` immediately (round-trips the seed value).
+  - Proposal `POST /api/issuance/proposals/PRO-2026-0001/awaiting-approval` → 200, GET returns `awaitingApproval: true`.
+  - `GET /` returns 200 and the rendered HTML references `RoleSwitcher` chunk (mounted in layout).
+
+**Done-criteria deferred to Task 1.3:** ActionBar consumes `useRole()` + `awaitingApproval` to render Maker → Send for approval → Checker → Approve. The infra is in place; gating logic lives in ActionBar per the original task split.
+
+**Next:** Task 1.3 — ActionBar widget (state + role gating, consumed by every detail page).
+
+### 2026-05-07 (continued) — Task 1.3 — ActionBar widget — IN PROGRESS
+
+About to do: schema-driven action bar consumed by every detail page (Quote, Proposal, Policy, PolicyMember). Reads the entity's current `state` + `useRole()` and renders the per-schema action set with disabled buttons + hover tooltip explaining the gate.
+
+Props:
+- `state: string` — entity state pulled from the page's data
+- `stateActions: Record<string, string[]>` — state → allowed action IDs
+- `roleActions?: Record<string, string[]>` — role → allowed action IDs (optional; absence = no role gate)
+- `actions: ActionConfig[]` — full set of action configs (from `@/types/widget`)
+- `awaitingApproval?: boolean` — UI-only maker-checker flag from the dto; when true, the Maker can't re-submit and the Checker's Approve becomes the primary call-to-action.
+
+Special action types (id-conventional, not new types in `ActionConfig`):
+- `id: 'send-for-approval'` and `id: 'clear-approval'` are intercepted before delegating to `useActionHandler` so they call `sendForApproval(entity, id)` / `clearApproval(entity, id)` from `@/lib/maker-checker`. The schema declares `entityType: 'quote' | 'proposal'` + `entityId` via `props`. Everything else flows through the existing `useActionHandler` plumbing unchanged.
+
+Disabled tooltip messages:
+- State-disabled: `"Not available in {state}"`
+- Role-disabled: `"Requires {allowed roles}"` — computed from which roles allow this action.
+- Awaiting-approval lock (Maker editing actions): `"Awaiting checker approval"`.
+
+The widget consumes `useWidgetState()` to optionally pull `state` and `awaitingApproval` from a sibling-published widget state (e.g. the entity-detail dataSource), so the schema can wire it without prop drilling. Falls back to direct props when published state is absent.
+
+Test plan: a Jest unit covering 3 sample states × 3 sample roles, asserting which actions are enabled/disabled and which tooltip message renders.
+
+**Files created:**
+- `src/components/widgets/actions/ActionBar.tsx` — schema-driven action bar. Reads `state` + `awaitingApproval` either from props or (when `stateKey` is set) from a sibling-published widget state via `useWidgetState()`. Three gating layers in order: (1) state, (2) role, (3) maker-checker approval lock for `role === 'maker'` when `awaitingApproval=true`. Disabled buttons render through a `<Tooltip>` with the gating reason. Special action ids `'send-for-approval'` and `'clear-approval'` short-circuit `useActionHandler` and call the `@/lib/maker-checker` helpers with `entityType` + `entityId` props. Other action ids flow through the existing `useActionHandler` pipeline unchanged.
+- `src/tests/unit/actions/ActionBar.unit.test.tsx` — Jest unit with 6 cases: Maker DRAFT (state-allowed actions enabled, others disabled); Checker SUBMITTED (Approve enabled, Edit state-disabled with right tooltip); Maker DRAFT + awaitingApproval=true (edit/send locked with "Awaiting checker approval"; Approve still state-disabled because state gate wins); Viewer DRAFT (everything role-disabled); Checker click → handleAction dispatch; Maker click on send-for-approval → maker-checker helper called, handleAction NOT called.
+
+**Files touched:**
+- `src/components/registry/WidgetRegistry.tsx` — registered `"action-bar"`.
+
+**Done-criteria (Task 1.9 + 1.3 combined):** the maker-checker overlay can now be wired end-to-end on a quote — schemas declare `roleActions: { maker: ['edit', 'send-for-approval'], checker: ['submit', 'send-to-client', 'finalize', 'clear-approval'], ... }` and the ActionBar handles the rest. End-to-end demo wiring lives in the Quote/Proposal detail-page schemas (Phase 2 / 3).
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- `npx jest src/tests/unit/actions/ActionBar.unit.test.tsx` — 6/6 pass.
+
+**Next:** Task 1.8 — StateBadge + ReasonBanner widgets (simple presentational helpers consumed by every list/detail page).
+
+### 2026-05-07 (continued) — Task 1.8 — StateBadge + ReasonBanner — IN PROGRESS
+
+About to do: presentational widgets used by every list cell + detail header to render the entity state and any pending/void/cancellation reason. One canonical map (`state-map.ts`) keeps all label + colour pairs in one place so ActionBar tooltips and list cells share copy.
+
+Coverage matrix:
+- 5 entity types: quote, proposal, policyMember, policy, member.
+- All states from Task 1.1 enums (8/5/12/4/4 = 33 states total).
+- 3 enum reason groups (PolicyPendingReason × 2, MemberPendingReason × 3, MemberVoidReason × 4) + free-text `cancellationReason` (member only) + `Quote.awaitingApproval` UI overlay.
+
+Variant assignments follow a simple convention: terminal-success → `success`; in-progress → `info`; awaiting-something → `warning`; terminal-rejection/cancel → `destructive`; archived → `grey`. Existing Badge variants reused; no new design tokens.
+
+Test plan: snapshot-style test per entity asserting every enum value resolves to a non-empty label + a defined variant; one render test for the cancellation free-text passthrough.
+
+**Files created:**
+- `src/components/widgets/state/state-map.ts` — single source of truth. `getStateMeta(entity, state)` covers all 38 enum values across `quote / proposal / policyMember / policy / member / censusSubmission`; `getReasonMeta(group, value)` covers `policyPending`, `memberPending`, `memberVoid`, plus `memberCancellation` (free-text passthrough). `reasonGroupFor(entity, state, hasCancellationReason)` is the convenience the ReasonBanner uses to pick the right map without the schema spelling it out.
+- `src/components/widgets/state/StateBadge.tsx` — Badge wrapper supporting both schema-render mode (props on `config.props`) and direct-render mode (column-cell usage). `aria-label` carries the canonical label.
+- `src/components/widgets/state/ReasonBanner.tsx` — banner with icon + canonical copy. Reads live entity from `useWidgetState({ stateKey })` falling back to literal props. Returns `null` when no reason group applies.
+- `src/tests/unit/state/StateBadge.unit.test.tsx` — Jest unit asserting (a) every state in every entity yields non-empty label + defined variant; (b) unknown state falls back to `outline` variant; (c) every reason enum value resolves to copy that mentions the gating concept; (d) `memberCancellation` passes free text through verbatim; (e) StateBadge renders the right label in both prop modes; (f) ReasonBanner renders the canonical text for PENDING + the verbatim text for CANCELLED, and returns null when no reason applies.
+
+**Files touched:**
+- `src/components/registry/WidgetRegistry.tsx` — registered `"state-badge"` and `"reason-banner"`.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- `npx jest src/tests/unit/state/ src/tests/unit/actions/` — 15/15 pass (9 state + 6 ActionBar).
+
+**Batch 1 complete.** Phase 0 + Phase 1 demo subset done. The widget engine + all foundational primitives, mocks, clients, role + maker-checker plumbing, ActionBar, and StateBadge/ReasonBanner are all in place.
+
+**Next:** Batch 2 — Quote happy path. Tasks 2.1, 2.2, 2.3, 2.4.1 (editable) + 2.4.2/3/4 (read-only) + 2.4.5 (with poll) + 2.4.6 (placeholder). `/build-feature` reserved for the action-bar maker-checker overlay design point in this batch per the locked execution strategy.
+
+### 2026-05-07 (continued) — Batch 2 — Quote happy path — IN PROGRESS
+
+User reported the Quotation card on the dashboard 404s — that's expected (Phase 0 wired the nav target; the page lands now in Batch 2). Starting Task 2.1 first to surface a clickable list, then 2.2 → 2.3 → tabs.
+
+Mechanical execution per the strategy:
+- Schema-driven, leveraging existing primitives (`data-table`, `tabs-container`, `form-container`, `key-value-grid`, `action-bar`, `state-badge`, `reason-banner`).
+- Saved-view chips (D12) explicitly deferred per execution strategy — list will ship with `filter-bar` for status/policyType filtering, no chip variants.
+- Row-level role gating on actions: deferred to D12-equivalent — page-header "New Quote" button gates to Maker; row actions ungate for V1 demo (ActionBar in detail view does the heavy gating).
+- Plans / Census / Member-mapping tabs render read-only displays of fixture data per Batch 2 cuts D1/D2/D3.
+- Member Quotes tab is the GCL placeholder per cut D5/D8.
+
+**CellRenderer extension:** adding a `state-badge` cell type that dispatches to the canonical `StateBadge` widget so the list table and detail header share copy + variant from `state-map.ts` instead of duplicating valueMapping JSON. Also adding an `awaiting-approval` cell type that renders a small warning badge when the value is truthy.
+
+**Files created:**
+- `schemas/quote.json` — list page: page-header, filter-bar (status + policyType), data-table backed by `/api/quotation/quotes/search` with `stateDependencies: ['quote-list-filters']`, columns include `state-badge` cell. Header action `New Quote` opens `create-quote-form` modal. Row actions: View (navigate), Withdraw (api-mutation).
+- `schemas/forms/create-quote-form.json` — 2-field form (clientId select sourced from PAM clients/list, policyType static select) → POST `/api/quotation/quotes` → `refreshKey` invalidates the list query.
+- `schemas/quote-detail.json` — 5-section page: page-header (title interpolates `{{id}}`), state-summary key-value-grid, action-bar with full state×role matrix per the plan + maker-checker overlay flags, tabs-container with 6 tab refs.
+- `schemas/tabs/quote/{key-data,plans,census,member-mapping,pricing,member-quotes-placeholder}.json` — Key Data + read-only Plans/Census/Member-mapping (D1-D3 deferred), GCL placeholder, Pricing tab with `pollSchedule: { initialIntervalMs: 2000, initialDurationMs: 10000, fallbackIntervalMs: 5000, maxDurationMs: 60000 }` + `stopWhen: { '!=': [{ var: 'estimatedPremium.totalAmount' }, 0] }` and a Maker-only "Request price" action.
+- `src/app/quotation/page.tsx` — server component, resolves the list schema and renders.
+- `src/app/quotation/[id]/page.tsx` — dynamic route mirroring the accounting `[module]/[id]` pattern; resolves schema, substitutes `{{id}}`, renders with `force-dynamic`.
+
+**Files touched:**
+- `src/components/widgets/data/CellRenderer.tsx` + `.../DataTable/types.ts` — added `state-badge` and `awaiting-approval` cell types; `entity?: string` field on ColumnConfig.
+- `src/components/widgets/actions/ActionBar.tsx` — now reads live entity from three sources (in priority order): explicit `useWidgetState({ stateKey })` slot → `useSmartQuery(config.dataSource)` (auto-fetched when the widget config carries a dataSource) → literal props. Lets a detail-page schema drop an action-bar inline with a dataSource and have it self-fetch live state. React Query dedupes the request with sibling widgets sharing the same key.
+- `src/components/widgets/state/ReasonBanner.tsx` — same dataSource-aware extension as ActionBar.
+- `src/tests/unit/{state,actions}/*.test.tsx` — wrapped renders in `QueryClientProvider` (required after the dataSource extension); 15/15 pass.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- `npx jest src/tests/unit/state src/tests/unit/actions` — 15/15.
+- Live smoke against existing dev server on :3000:
+  - `GET /quotation` → 200; rendered HTML carries the `Quotations` page title and `New Quote` action.
+  - `GET /quotation/QTE-2026-0001` → 200; all 6 tabs (Key Data / Plans / Census / Member-to-Plan Mapping / Pricing / Member Quotes) render in the markup; action-bar mounts; header interpolates the id.
+  - `GET /api/quotation/quotes/QTE-2026-0001` → 200 with `status: DRAFT, awaitingApproval: false`. Detail page consumers will pull live state from this on hydration.
+
+**Demo verification still TODO** (next session, ideally with the user): walk Maker → Send for approval → switch to Checker → Approve → Send to client → Accept → Finalize → confirm Proposal auto-creates in Issuance.
+
+**Next:** Batch 3 — Issuance + PAM + glue. Tasks 3.1 (light) + 3.2 + 3.3 + 3.4 + 4.1 + 4.2 + 4.3 + 4.4 + 5.1 + 5.3.
+
+### 2026-05-07 (continued) — Batch 3 — Issuance + PAM + glue — IN PROGRESS
+
+About to do (per the locked execution strategy):
+- 3.1 light — Clients list only (D9 defers detail page).
+- 3.2 — Policies list with status chips.
+- 3.3 — Policy detail with client-side derived pending-breakdown + members tab (per V1 interim assumption #5).
+- 3.4 — PAM Member detail with `ReasonBanner` for every reason family.
+- 4.1 — Proposals list with state chips.
+- 4.2 — Proposal detail shell + action bar (state×role from plan table).
+- 4.3 — Members tab inside proposal.
+- 4.4 — Single-member add form + state-driven PolicyMember detail (the core operational screen). Executes directly per strategy; `/build-feature` reserved for it but the plan task is detailed enough to act as the design doc.
+- 5.1 — Cross-module deep-link verification.
+- 5.3 — End-to-end demo walkthrough deferred to a session with the user.
+
+Skipped per V1 cuts: 4.5 (D4 census flow — single-member-add covers demo), 5.2 (D5 ops queue index), 5.4 (D6 critical-path tests).
+
+Pattern reuse:
+- Three list pages clone the Quote list pattern (filter-bar + data-table + state-badge column + row navigate action).
+- Detail pages clone the Quote detail shell (state-summary KVG + ActionBar with dataSource + tabs-container).
+- PAM Member detail uses `reason-banner` registered in WidgetRegistry.
+- Mock layer already has all the routes Batch 3 needs (Task 1.4).
+
+**Files created:**
+
+PAM (Phase 3):
+- `schemas/client.json` + `src/app/policy-admin/clients/page.tsx` — list only per cut D9. Filter-bar + data-table over `/clients/search`.
+- `schemas/policy.json` + `src/app/policy-admin/policies/page.tsx` — list with state + policyType filters, state-badge column, link-cell to detail.
+- `schemas/policy-detail.json` + `src/app/policy-admin/policies/[id]/page.tsx` — state summary, action-bar (Cancel: PENDING/ACTIVE under Checker), 2 tabs.
+- `schemas/tabs/policy/{overview,members}.json` — Overview includes the activation-watch breakdown card (consumes the `/policies/:id/pending-breakdown` route built in Task 1.4 — server-side mock derives the same way the plan describes client-side; matches V1 interim assumption #5). Members tab has state filter + state-badge + pendingReason column rendered as separate text column per the V1 convention (composite cell deferred per ARCH_TRANSITION).
+- `schemas/member-detail.json` + `src/app/policy-admin/members/[id]/page.tsx` — read-only with reason-banner widget (auto-picks PENDING/VOID/CANCELLED groups via `reasonGroupFor()`), identity + coverage + cancellation note + additionalAttributesJson sections.
+
+Issuance (Phase 4):
+- `schemas/proposal.json` + `src/app/issuance/proposals/page.tsx` — list with state filter, state-badge column.
+- `schemas/proposal-detail.json` + `src/app/issuance/proposals/[id]/page.tsx` — state summary, action-bar (Submit/Maker, Finalize/Checker, Cancel/Checker), 2 tabs.
+- `schemas/tabs/proposal/{overview,members}.json` — Overview shows carried-from-quote data; Members tab embeds the proposal's PolicyMember list with full state filter + "Add member" header action navigating to /members/new.
+- `schemas/forms/add-policy-member-form.json` — single-step add with V1 fields per `CreatePolicyMemberRequest`. Hardcoded to `POL-2026-0001` for the demo (multi-policy multi-tenancy is backend-future).
+- `schemas/forms/repair-policy-member-form.json` — repair edit form. Used by the `repair-edit` action on the state-driven PolicyMember detail when the workflow lane is REPAIR.
+- `src/app/issuance/proposals/[id]/members/new/page.tsx` — wraps the add form in a stack-layout with a contextual page header.
+- `schemas/policy-member-detail.json` + `src/app/issuance/proposals/[id]/members/[memberId]/page.tsx` — single page with state-summary, large action-bar covering the full DSL lifecycle (price / classify / repair-edit / uw-approve / uw-reject / reject / archive / send-for-issuance / pam-link), classification + UW JSON section, and member-data section. State-driven UI is fully expressed through the action bar's state×role gating (no top-level conditional widget rendering needed for V1).
+
+**Engine extensions:** none. Pure schema + route-file work. The earlier ActionBar/ReasonBanner dataSource extension already covered state-driven needs; the `state-badge` cell type covered list rendering.
+
+**Verify:**
+- `npx tsc --noEmit` clean (exit 0).
+- `npx jest src/tests/unit/{state,actions}/` — 15/15 still pass.
+- 10 new pages all return 200 against the live dev server on :3000 (4 lists + 6 detail/create surfaces).
+- Cross-module deep-link APIs all 200: `/issuance/proposals/by-quote/QTE-2026-0006`, `/policy-admin/policies/by-proposal/PRO-2026-0001`, `/policy-admin/members/by-policy-member/PMB-0011`.
+- `/policies/:id/pending-breakdown` derives the right reason tally from the in-memory store (`PENDING_FLOAT_RESERVATION:1, PENDING_APPROVAL:1, PENDING_POLICY_ACTIVATION:2` for POL-2026-0002).
+
+**Cross-module deep links wired (Task 5.1) — all return 200:**
+- Quote detail's `finalize` success message → user follows up by polling `/issuance/proposals/by-quote/<id>` (mock auto-creates Proposal 4s after finalize, per Task 1.4).
+- Proposal detail header surfaces `policyId` once POLICY_CREATED; manual navigation suffices for V1 demo.
+- PolicyMember detail's `pam-link` action navigates to `/policy-admin/members/MEM-:memberId` (the simulator names PAM members as `MEM-<timestamp>` so the link is approximate for fixture-seeded members; for newly-created PolicyMembers the real created MEM id is `MEM-<base36-ts>` — exact resolution needs a `findMemberByPolicyMember` lookup, deferred to D-cleanup).
+
+**Demo verification (Task 5.3):** deferred to a session with the user. Walking the 9-step happy path is out of scope for the unattended build.
+
+**Skipped per V1 cuts:** 4.5 (D4 census flow), 5.2 (D5 ops queue index), 5.4 (D6 critical-path tests).
+
+**Batch 3 complete. Demo build done.**
+
+### 2026-05-07 (continued) — Post-Batch-3 polish + demo prep (commit-log catch-up)
+
+This entry catches the running log up to actual repo state. Twelve commits landed after the "Batch 3 complete" entry above without being logged at the time. Captured here for resumption fidelity. Source: `git log 6dccea9..HEAD`.
+
+**UI polish (`docs/V1_DEMO_ISSUES.md` Pass 1 + selected Pass 2):**
+
+- `5cd9968` — motion + depth pass per Keystone "Elegance" principle.
+- `a88e3c6` — resolved hardcoded IDs + cross-module deep-link gaps (already-fixed list at the bottom of `docs/V1_DEMO_ISSUES.md`).
+- `4ead472` (P1.1) — ActionBar hides role-gated actions, keeps state-gated visible-but-disabled per design deck v2.
+- `91c2909` (P1.2) — back button on every detail page (`page-header` extended with `backHref`).
+- `97a8caa` (P1.3–P1.9) — `KeyValueGrid` nested accessors + raw-JSON cleanup across PAM Member detail, Quote/Proposal overview, Quote census, PolicyMember detail; GCL placeholder tab swapped to a clean empty-state widget.
+- `356f995` (P2.2) — DTOs enriched with `clientName` so detail headers surface labels instead of raw IDs.
+- `12a91fe` — ActionBar refinement: Checker hides pre-submit actions (Maker-only), Maker retains Withdraw while under approval lock.
+
+**Demo replay infra:**
+
+- `8b7191c` — new `POST /api/dev/reset` endpoint that re-clones fixtures into the in-memory store so the 5.3 walkthrough can replay from clean state without a server restart.
+
+**Demo-prep docs (untracked):**
+
+- `docs/Demo_Script_Day_in_the_Life.md` — minute-by-minute talk track for the live walkthrough.
+- `docs/Demo_Prep_Business_Context.md` (committed in `85edb4d`/`a5dc8d1`/`156df2c`/`b2fec97`) — insurance-101 + glossary + finance/regulatory cheatsheet for the demoer.
+- `docs/Keystone_UI_Design_Principles.pptx` + `_v2.pptx` + speaker notes (`*_Speaker_Notes.md`) — design-principles deck.
+- `docs/generate_slides.js` + `generate_slides_v2.js` — pptx generator scripts.
+
+**Other untracked items not part of demo-prep:**
+
+- `docs/archV1/12-ARCHITECTURE-FREEZE-DECISIONS.md` — companion doc for the older `arch_v0` → `archV1` review captured in `ARCH_REVIEW_SCRATCH.md` (also untracked). Both are scratch/review notes from a parallel branch and unrelated to the Group PAS V1 demo build.
+- `backend/` — FastAPI scaffold (alembic + app/{core,routers,tests} + venv + .db) with no source files currently checked in (only `__pycache__/`). Likely the residue of an earlier `/build-backend` exploration on a different branch; not driving any current keystone-ui work and not referenced from the V1 plan.
+- `test-results/` — empty directory; safe to ignore.
+
+**Unstaged file:** `context/CORE_MEMORY.md` — adds the "Two distinct rules on rework" build-approach bullets (frontend builds to real-backend contract; mock-backend simulations get deferred). Matches the user's standing feedback memory ("Build to expected scope") and ARCH_TRANSITION's deferral rationale. Not yet committed; leaving it staged-but-unmodified until a logical commit window opens.
+
+**V1_DEMO_ISSUES outstanding (per `docs/V1_DEMO_ISSUES.md`):**
+
+- Pass 1: all P1.1–P1.9 done.
+- Pass 2: P2.2 done. **Open:** P2.1 (cancel/reject/archive use a hardcoded reason — wants a confirm-with-input dialog; needs `confirm` action shape extension), P2.3 (Quote → Proposal "open created proposal" navigates to list, not specific proposal — needs chained action handler), P2.4 (no breadcrumbs; back-button considered sufficient for V1), P2.5 (Pricing tab "still working…" banner not implemented), P2.6 (filter-bar empty-state reset on chip clear — verify in walkthrough).
+- Pass 3 (D1–D12) post-demo backlog — untouched, as planned.
+
+**Demo target unchanged:** internal demo 2026-05-08 (Friday, tomorrow). Task 5.3 (end-to-end walkthrough) still gated on user session — see HANDOFF Active Workstreams.
+
+**No new code changes in this session.** Read-only reconciliation pass.
+
+**Next:** waiting on user direction. Plausible candidates surfaced from repo state, in rough priority order:
+1. Run task 5.3 demo walkthrough together (gated on user attendance).
+2. Burn down remaining V1_DEMO_ISSUES Pass 2 (P2.1 confirm-with-input is the highest-impact open item before tomorrow).
+3. Decide what to do with the unstaged `CORE_MEMORY.md` rework rules and the untracked design-principles deck / `Demo_Script_Day_in_the_Life.md` (commit, leave, or discard).
+4. Triage `backend/` and `ARCH_REVIEW_SCRATCH.md` — both look like residue from parallel work; confirm with user whether to gitignore, archive, or pursue.
+
+### 2026-05-07 (continued) — Backend deployed; investigation pass against `/Users/seriousblack/dev_anaira/group-pas/`
+
+User pointed at the live backend repo. Three-way diff (DSL ↔ deployed OpenAPI ↔ our mock) + code-level investigation against the actual Java/Spring source. Findings drive the day's build decisions.
+
+**Spec ⇔ deployed OpenAPI**: zero drift. 85 group-pas endpoints in DSL, 85 deployed, byte-identical method/path. DTO field counts match (QuoteDto:16, QuoteSummaryDto:6, ProposalDto:11, PolicyDto:17, MemberDto:24, MemberSummaryDto:11, PolicyMemberDto:19).
+
+**Mock ⇔ deployed delta**: our 86 mock endpoints include 7 that won't exist on backend — all expected/UI-only:
+- 4 `/awaiting-approval` (UI maker-checker overlay; deletes when backend ships real approval; see below).
+- 1 `/policies/:id/pending-breakdown` (V1 interim assumption #5 — derive client-side; backend has no plans for it).
+- 2 proposal-scoped `/proposals/:id/members` shortcuts (we resolve to backend's `/policies/:id/members` via the proposal's policyId).
+
+Backend has **6 GCL `MemberQuote` endpoints we deliberately didn't mock** — those are out of V1 demo cuts. **Backend has them all implemented** (`MemberQuoteAPI.java`, `MemberQuoteCommands.java` are real, not stubs). Decision (this turn): build the GCL frontends so the placeholder tab stops being a placeholder.
+
+**Critical backend-status findings (read directly from Java source):**
+
+1. **File upload — NOT WIRED.**
+   - `quotation/QuotationCommand/src/main/java/com/anaira/quotation/command/FileUrlCommands.java:21` throws `UnsupportedOperationException("File URL generation not yet wired")` for both upload + download. Comment: `// TODO: wire S3 presigner — cross-cutting infra not in repo yet.`
+   - `policyAdmin/PolicyAdminCommand/src/main/java/com/anaira/policyadmin/command/PolicyFileUrlCommands.java` returns a stub URL pointing at `https://policy-files.local/stub/...` — not a real bucket; effectively broken too.
+   - **Implication:** D7 (PresignedUploader) stays deferred. D2/D3 (file-flow CRUD on Quote) likewise. Frontend won't build until backend infra lands.
+
+2. **Rule Engine — request-price is a no-op on backend.**
+   - `QuoteCommands.java:110` calls `quote.requestPrice()` which emits `QuotePriceRequested` to Kafka. **No listener consumes that event** (verified via grep across `quotation`, `issuance`, `policyAdmin` modules — only test references).
+   - DSL has `Quote.updatePremium(premium)` as a domain method but **NO REST endpoint** is exposed for it (`QuotationApi.api` lacks a `PUT /quotes/:id/premium`). So Sales currently has no way to manually set the premium against the real backend.
+   - Decision (this turn): **keep "Request price" button** (it's the expected production flow once Rule Engine lands), keep the mock simulator, do NOT add a manual-entry UI today (would require backend exposing `updatePremium` over REST first).
+
+3. **Number generation — sync, in-memory counter.**
+   - `policyAdmin/.../NumberGeneratorClient.java`: `ConcurrentMap<String, AtomicLong>` returning `CLI-NNN` / `POL-NNN` / `MEM-NNN` / `CNT-NNN`. Live verified: `POST /clients` returns `clientId` (UUID) + `clientNumber` synchronously.
+   - **Implication:** no polling needed for numbers. `CreateClientResponse` carries them.
+
+4. **Float Management — stub, always RESERVED.**
+   - `policyAdmin/.../FloatManagementClient.java`: `doReserve` always returns `FloatReservationStatus.RESERVED` with `R-NNN`.
+   - `app/src/main/.../MockFloatManagementClient.java`: `deduct` returns a fresh UUID, no ledger.
+   - **Implication:** `FLOAT_UNAVAILABLE` void reason and `PENDING_FLOAT_RESERVATION` pending reason can't naturally trigger via real backend. Decision (this turn): drop the `MEM-0009` VOID/`FLOAT_UNAVAILABLE` fixture row to align frontend with backend reality.
+
+5. **Maker-checker on Quote — does NOT exist in spec.**
+   - `QuotationDomain.domain:152` comment on `submit()` says "internal approval/QC complete" — meaning the submitter QCs their own work; no separate Checker entity. Verified via grep: zero `approve`/`maker`/`checker` references in `quotation/` source or DSL.
+   - PAM module has a "MemberApprovalCompletedListener" but that's for **member-enrollment-time approval** (PAM workflow's `RequestApproval` step routes to a "central Approval module" outside this codebase). Quote-level has no equivalent.
+   - **Implication:** the UI-only `awaitingApproval` overlay has no backend counterpart and isn't getting one without an explicit DSL change. Either keep the overlay forever, or escalate to backend for a DSL extension.
+   - **Specific question to backend** drafted in this turn (in chat) for the user to forward.
+
+6. **Workflows (Temporal) — running for PAM only.**
+   - `policyAdmin/PolicyAdminWorkflow/.../WorkflowRuntimeConfiguration.java` wires Temporal in `app/` profile. PAM's `MemberEnrollmentFlow` and `PolicyActivationFlow` execute on Temporal in production.
+   - `issuance-code-review.md` and direct grep: Quote and Proposal workflows are NOT yet running. Quote/Proposal state transitions are direct command handlers, no async workflow.
+   - **Implication:** activation cascade demo is real on backend (scenarios.sh proves it); Quote→Proposal handoff is sync on backend; `request-price` polling fiction is mock-only.
+
+7. **Error envelope — actual backend shape differs from V1 assumption #4.**
+   - `QuotationExceptionHandler.java` returns `{ "error": "NOT_FOUND" | "BAD_REQUEST", "message": "..." }` for 404/400. NOT the Spring default `{ timestamp, status, error, message, path }`.
+   - Other paths fall back to Spring's default 500 envelope.
+   - Decision (this turn): update `src/lib/api/error-mapper.ts` to handle both shapes.
+
+8. **Auth on dev — open.** `app/src/main/.../DevSecurityConfiguration.java`: `permitAll()` + synthetic dev-user with tenantId `00000000-0000-0000-0000-000000000001`. No headers needed for V1 demo.
+
+9. **Live data on dev backend (sparse):** 3 clients (Acme Corp ×3 — different reg numbers), 2 quotes (DRAFT), 2 proposals, 1 policy (POL-001), 1 member (MEM-001/PM-001 PENDING). User can re-run `scenarios.sh` against the dev URL for richer demo data, or ask backend to seed.
+
+10. **Known backend bugs surfaced by `issuance-code-review.md`:** census `memberId` silently discarded (synthetic IDs); float-deduct ↔ PAM-add not atomic (orphan reservations possible); `PolicyMember.canUpdate()` guard not invoked; no DB indexes on hot read columns. Not ours to fix; flagged for awareness mid-demo.
+
+**Decisions taken this turn:**
+- Drafted file-upload feedback question for backend (precise endpoints + status by module).
+- Updating error-mapper to absorb backend's actual `{ error, message }` shape.
+- Removing `MEM-0009` VOID/`FLOAT_UNAVAILABLE` fixture row (frontend follows backend stub reality).
+- Building GCL frontends (list + detail + create form + sidebar nav update + mock routes) since backend exposes the contract.
+- Keep request-price button + mock simulator as-is; defer manual-entry UI until backend exposes `PUT /quotes/:id/premium`.
+- Maker-checker overlay stays as permanent V1 fixture pending a backend DSL extension.
+
+**Files about to touch:** `src/lib/api/error-mapper.ts`, `src/mocks/group-pas/policy-admin/members.ts`, new `src/app/quotation/member-quotes/{page.tsx,[id]/page.tsx}`, new `schemas/member-quote.json` + `schemas/member-quote-detail.json` + create form, sidebar nav update.
+
+**Next:** execute the above, verify, commit, push.
+
+### 2026-05-07 (continued) — End-of-thread handoff snapshot
+
+Context window filled; new thread starts after this entry. Everything above stays canonical. New thread should read this entry + `context/HANDOFF.md` + `docs/Demo_Prep_Business_Context.md` + the latest commit log. No action lost.
+
+**Commits landed this thread (chronological):**
+
+| SHA | Title | Notes |
+|---|---|---|
+| `3f30dca` | feat(group-pas): align with deployed backend — error envelope, GCL screens, FLOAT cleanup | Error mapper handles `{ error, message }` + Spring default; `MEM-0009 FLOAT_UNAVAILABLE` fixture removed; full GCL Member Quote frontends built (list / detail / create / set-premium / sidebar nav / 6 mock routes / 3 fixtures / state-map entry). |
+| `3abd301` | feat(api-mock): proxy mode wired to live backend with UI-only short-circuits | Set `GROUP_PAS_BACKEND_URL` in `.env.local` → catch-all proxies to backend. `MOCK_ONLY_PATTERNS` keeps `/awaiting-approval`, `/pending-breakdown`, proposal-scoped `/members` local. Approval overlay decoupled to `Map<string, boolean>` so UUIDs work. `.env.example` documents the switch. |
+
+**Verified live (proxy on, against `https://group-pas-dev.anairacloud.com`):**
+- All 5 list pages render real backend rows.
+- Detail pages with real UUIDs render.
+- `POST /quotes` and `POST /member-quotes` create real entities; appear in subsequent reads.
+- PAM Member by-policy-member redirect resolves real UUIDs.
+- UI-only awaiting-approval works in proxy mode (overlay map keyed by id).
+- 16/16 jest tests pass; `tsc --noEmit` clean.
+
+**Known limitations in proxy mode** (documented for the demo, not blockers):
+- Backend `QuoteSummaryDto` carries `clientId` but no `clientName` → list pages show UUIDs in proxy mode. Mitigation = build a `useClientNames()` resolver hook (~2h, future polish).
+- `request-price` proxies through but backend has no Rule Engine listener — premium never populates. Demo runs in mock mode where the simulator works.
+- File upload endpoints throw `UnsupportedOperationException` on backend — D7/D2/D3 stay deferred until backend wires S3.
+- Quote-level maker-checker `awaitingApproval` overlay only persists locally — backend doesn't carry the field on its DTOs.
+
+**Architecture decision locked this thread (Quote-level maker-checker):**
+
+User chose **option 1** — backend should own Quote-level approval, frontend overlay is **transitional scaffolding only** (delete when backend ships). The path to send to backend (short version):
+
+> **Subject: Quote-level maker-checker — extend the PAM approval pattern to Quote?**
+>
+> We're keeping our UI-only `awaitingApproval` overlay only as transitional scaffolding. Real ownership belongs in backend. Can you apply the same pattern you already shipped on PAM (`RequestApprovalCommand` → `MemberApprovalRequested` event → central Approval module → `ApprovalCompletedListener` → `Member.pendingReason = PENDING_APPROVAL`) to Quote?
+>
+> Concrete ask: a `RequestQuoteApprovalCommand`, a corresponding `QuoteApprovalRequested` event, an in-flight state on Quote (matching whatever shape — flag, enum, or aggregate — you prefer for consistency with Member), a listener back from the Approval module, and Cerbos enforcement on `submit`.
+>
+> Once your contract lands, we delete the overlay and read your field directly (~half day cleanup on our side). Timeline / priority?
+
+That question hasn't been sent yet (user task). Also outstanding:
+- **File upload feedback to backend**: `POST /api/quotation/files/upload-url` and `POST /api/quotation/files/download-url` throw `UnsupportedOperationException` (`group-pas/quotation/QuotationCommand/.../FileUrlCommands.java:21`). PolicyAdmin equivalent returns invalid stub URLs (`https://policy-files.local/stub/...`). All four file-URL endpoints non-functional — needs S3 wiring before D7 unblocks.
+
+**Deploy issue surfaced at end of thread (Cloudflare Workers):**
+
+`npm run deploy` fails — bundle is 8.4 MB, free-tier limit is 3 MiB. Top contributors: `pdfmake` + `vfs_fonts` (1.78 MB + 834 KB), `@vercel/og` (resvg + edge + yoga = 2.2 MB), `xlsx` (402 KB), Next.js runtime + SSR chunk. Three options offered to user (paid tier $5/mo for 10 MB; remove pdfmake+xlsx via dropping table-export feature; aggressive purge). User has not chosen yet.
+
+**Where next thread should start:**
+
+1. **Send the two questions to backend** (maker-checker pattern + file upload status). Both fully drafted in this log entry — copy-paste ready.
+2. **Decide deploy path** (pay tier vs prune) before attempting `npm run deploy` again.
+3. **Demo walkthrough Task 5.3** still gated on user attendance — not done.
+4. **Pass-2 V1_DEMO_ISSUES** still has open items (P2.1 confirm-with-input, P2.5 "still working" banner, P2.6 filter-bar reset).
+5. **Optional polish:** `useClientNames()` resolver for proxy-mode list pages (~2h).
+
+**Demo posture at thread close:**
+- Mock mode (default `.env.local` flipped off): rich fixture data, full demo path works including request-price simulator and maker-checker overlay. Recommended for Friday.
+- Proxy mode (`.env.local` flipped on): real backend wiring proven, gaps documented. Demo as proof of integration, not full walkthrough.
+- Switch between modes by editing `.env.local` (1 line, restart `npm run dev`).
+
+**Untouched untracked files** still on disk (same as previous handoff entry, no decision yet):
+- `ARCH_REVIEW_SCRATCH.md`, `backend/`, `docs/Demo_Script_Day_in_the_Life.md`, `docs/Keystone_UI_Design_Principles{,.v2}*.{pptx,md}`, `docs/archV1/12-ARCHITECTURE-FREEZE-DECISIONS.md`, `docs/generate_slides{,_v2}.js`, `test-results/`, `.env.local` (gitignored).
+
+### 2026-05-07 (continued) — New tighter mock rule: don't simulate backend-missing behavior
+
+User directive (this turn): "i dont want to mock functionality which are not there in the actual backend, much rather i would show a tooltip that says that backend does not have the functionality."
+
+This is a **stronger** version of the existing build-to-expected-scope rule. Where the prior rule said "don't build mock-route logic real backend will replace," the new rule says: when frontend has an affordance but real backend can't deliver the behavior at all (endpoint missing, throws, fires-and-forgets to no listener, no DSL concept), render the affordance **disabled with a tooltip explaining the gap** rather than mock-simulating the behavior. Honest > demo-pretty. Memory updated: [feedback_build_to_expected_scope.md](../.claude/projects/-Users-seriousblack-dev-anaira-sandbox-keystone-ui/memory/feedback_build_to_expected_scope.md) (rule #6 added).
+
+**Three targets confirmed by user:**
+
+1. **Quote pricing — `request-price` flow.** Backend Kafka event has no Rule Engine listener; mock auto-populates `premium`. Convert: action button visible-but-disabled with tooltip "Pricing engine not yet wired on backend"; drop premium-auto-populate timer; drop "still working" cadence simulator on Pricing tab; replace tab body with explanatory empty state.
+
+2. **Quote-level maker-checker approval-lock.** Backend has no Quote-level approval concept. Convert: approval-related actions (request-approval / approve / reject) visible-but-disabled with tooltip "Quote approval not yet wired on backend"; remove `awaitingApproval` UI-state, the `/awaiting-approval` mock endpoints, the lock overlay, and the `MOCK_ONLY_PATTERNS` carve-out for them. **Keep** role-switcher widget + role-aware action gating in schemas (that's real UX, not a fiction).
+
+3. **Quote → Proposal handoff polling.** Backend creates Proposal synchronously; mock fakes async with 4s timer + frontend polling. Convert: mock returns Proposal immediately on `POST /quotes/:id/finalize` (response includes `proposalId`); frontend stops polling `/proposals/by-quote/:id`; "Open created proposal" action navigates straight to the new id (resolves P2.3).
+
+**Not changing** (already honest): file upload (no UI exists), Plans/Census/Member-Mapping (read-only "Configured/Not configured"), Float reservation (already aligned), pending-breakdown (frontend-only derivation), PAM Member async (real on backend).
+
+**Demo impact** (1 day before demo, accepted by user):
+- Pricing tab story is reduced from "watch it compute" to "explanation of where pricing fits when backend wires Rule Engine."
+- Maker-checker narrative is reduced from "Maker prepares → Checker approves" to "role-adaptive UI with the approval handoff disabled (deck shows the future state).""
+- Quote → Proposal handoff is sharper (sync), no polling banner.
+
+**Plan for execution (this turn):**
+1. Audit current locations (mock routes, schemas, ActionBar/tooltip plumbing, overlay components, polling consumers).
+2. Convert #1 pricing → tooltip.
+3. Convert #2 maker-checker overlay → tooltip + scrub.
+4. Convert #3 Q→P → sync.
+5. Update tests, ARCH_TRANSITION entries, this log, HANDOFF.
+6. `tsc --noEmit` + jest + dev-server smoke against the changed routes.
+7. Commit.
+
+**Outcome (this turn):**
+
+- **New schema field** `disabledTooltip?: string` on `BaseActionConfig` (`src/types/widget.ts`). Set on a schema action → ActionBar renders the button visible-but-disabled with that tooltip, **overriding state-gating**. Role-gating still applies (so the right roles see the gap explanation). One mechanism, three uses today: pricing button, approval-flow buttons.
+- **Pricing tab (`schemas/tabs/quote/pricing.json`):** dropped `pollSchedule` + `stopWhen`; rewrote tab description to explain backend gap; `request-price` action now carries `disabledTooltip`. Mock route `POST /quotes/:id/request-price` is now a no-op (matches backend's Kafka-emit-no-listener). `QuotePremium` import dropped from the route file.
+- **Maker-checker overlay scrub:**
+  - `src/lib/maker-checker.ts` — deleted.
+  - `quote-detail.json` — removed `clear-approval` action; `send-for-approval` converted to api-mutation with `disabledTooltip`; `submit` added to maker's `roleActions`; `Approve & submit` label simplified to `Submit`. `entityType`/`entityId` props removed from both `quote-detail.json` and `proposal-detail.json` (no longer needed without the maker-checker code path).
+  - `src/lib/api-mock/group-pas/store.ts` — removed `approvalOverlay` map, `setApprovalOverlay`/`getApprovalOverlay` exports, `MockProposal.awaitingApproval` field; `MockProposal` is now an alias of `Proposal`.
+  - `src/lib/api-mock/group-pas/dtos.ts` — `awaitingApproval` dropped from `MockQuoteDto`/`MockProposalDto` shape and field copy.
+  - `src/lib/api-mock/group-pas/http.ts` — `MOCK_ONLY_PATTERNS` regex for `/awaiting-approval` removed; comment updated.
+  - `src/app/api/{quotation,issuance}/[[...path]]/route.ts` — `/awaiting-approval` POST/DELETE handlers removed; unused `setApprovalOverlay` import dropped.
+  - `src/mocks/group-pas/quotation/quotes.ts` — `MockQuote` is now an alias of `Quote`; `awaitingApproval: true` fixture flag on `QTE-2026-0002` removed.
+  - `src/components/widgets/data/CellRenderer.tsx` — `case "awaiting-approval"` removed (was unused after schema cleanup).
+  - `src/components/widgets/actions/ActionBar.tsx` — full strip of `awaitingApproval`/`SEND_FOR_APPROVAL_ID`/`CLEAR_APPROVAL_ID` codepath; new `disabledTooltip` rendering logic added.
+  - `src/components/widgets/role/RoleSwitcher.tsx` — Maker/Checker descriptions updated to drop the "submits for approval / approves submissions" wording (now "submits to advance state" / "sends to client, accepts, rejects, finalizes").
+  - `.env.example` — comment updated to drop `awaiting-approval` from the MOCK_ONLY list.
+- **Q→P handoff sync:** `autoCreateProposalFromQuote()` now returns the new (or existing, idempotent) `proposalId`; `quotes/:id/finalize` mock route returns `{ proposalId }` synchronously; `scheduleTransition` import dropped from the quotation route. Quote-detail finalize `successMessage` updated to "Quote finalized; Proposal created in Issuance."
+- **Tests:** `src/tests/unit/actions/ActionBar.unit.test.tsx` rewritten — 7 tests covering role-hide, disabledTooltip override, state-gated default tooltip, dispatch behaviour. `npx tsc --noEmit` clean (exit 0). `npx jest src/tests/unit/actions` 7/7 pass.
+- **Pre-existing test failures** in `DataTable.unit.test.tsx` and `FormContainer.unit.test.tsx` (56 failures total) confirmed to fail on clean HEAD too — not introduced by this change. Untouched.
+- **Docs:** `ARCH_TRANSITION.md` — "Async transition signalling" updated to remove pricing simulator reference; "Quote → Proposal handoff" rewritten as "synchronous"; "Maker-checker UI overlay" rewritten as "Maker-checker — role-adaptive UI only". `CORE_MEMORY.md` — V1 scope-locks + interim-assumptions sections updated to match. `HANDOFF.md` — Active Workstreams gains a "Honesty pass" row; demo posture updated to drop simulator/overlay mentions.
+
+**Memory updated:** `feedback_build_to_expected_scope.md` — rule #6 added: "If the frontend affordance exists but the real backend can't deliver the behavior yet, render disabled with a tooltip explaining the backend gap rather than building a mock simulator."
+
+**Files touched** (commit candidates):
+- Code/schemas: `src/types/widget.ts`, `src/components/widgets/actions/ActionBar.tsx`, `src/components/widgets/data/CellRenderer.tsx`, `src/components/widgets/role/RoleSwitcher.tsx`, `src/lib/api-mock/group-pas/{store,dtos,http}.ts`, `src/app/api/{quotation,issuance}/[[...path]]/route.ts`, `src/mocks/group-pas/quotation/quotes.ts`, `src/tests/unit/actions/ActionBar.unit.test.tsx`, `schemas/quote-detail.json`, `schemas/proposal-detail.json`, `schemas/tabs/quote/pricing.json`, `.env.example`. Deleted: `src/lib/maker-checker.ts`.
+- Docs: `context/HANDOFF.md`, `context/CORE_MEMORY.md`, `context/ARCH_TRANSITION.md`, this log.
+
+**Demo readiness check** (mock mode, default): unchanged — happy path still works through Quote → Proposal → Policy → PolicyMember. Pricing tab now correctly shows zero premium with a tooltip explaining why. Maker → submit → checker → finalize narrative still works (Maker can submit because backend doesn't actually distinguish, role-switcher adapts the rest of the buttons).
+
+**Next thread should pick up from:**
+1. Demo walkthrough Task 5.3 (still gated on user attendance).
+2. Two backend questions (full text in earlier "End-of-thread handoff snapshot" entry) — still unsent. The maker-checker question is now extra-relevant since we've explicitly chosen to wait on backend rather than fake the workflow.
+3. Cloudflare deploy decision — still open.
+4. Pass-2 V1_DEMO_ISSUES open items: **P2.1 confirm-with-input dialog** is the highest-value remaining; P2.5 (still-working banner) is moot now that the polling story is gone; P2.6 (filter-bar reset) verify in walkthrough.
+5. Optional polish: `useClientNames()` resolver for proxy-mode list pages.
+
+### 2026-05-07 (continued) — Backend seed script
+
+User wanted scripted seeding so proxy-mode demos aren't stuck with the 3-Acme-Corp / 2-DRAFT-quote skeleton the dev environment ships with. Wrote `scripts/seed-backend.ts` (TypeScript via tsx).
+
+**Constraints surfaced while writing the script (probed live against the dev backend):**
+
+- `POST /quotes` returns a DRAFT quote shell. Decorating it requires a strict order: PUT `/policy-detail` and PUT `/census-file-format` first; only then POST `/plans` (PUT `/plans/:planNo` updates an existing plan and returns "Plan not found" if used to add); finally PUT `/aggregate-census` and PUT `/member-to-plan-mapping`. Wrong order returns confusing "Census file format must be set before submitting" errors on the plan/mapping endpoints.
+- `POST /quotes/:id/submit` requires premium ("Estimated premium must be calculated before submitting"). The Rule Engine has no listener (`requestPrice` Kafka emit is a no-op); `Quote.updatePremium()` is a domain method with **no REST endpoint**. **Net: no live quote can transition past DRAFT.** The seed leaves all 9 quotes in DRAFT and skips the submit/finalize chain. Same gap surfaced in UI as disabled-with-tooltip.
+- `POST /api/policy-admin/policies` works for direct PAM policy creation (used by backend's own scenarios.sh). Bypasses the Quote → Proposal → Policy workflow entirely. Required body fields: clientId, proposalId (synthetic ok — backend stores verbatim), policyType, dates, premium type, plans, estimatedPremium. Returns `{ policyId, policyNumber }`.
+- `POST /api/policy-admin/policies/:id/cancel` works with `{ reason }` body, returns 204.
+- `POST /api/policy-admin/policies/:id/members` works with the AddMember body shape from DSL. Returns `{ memberId, memberNumber }`. Members come back PENDING with no premium (Float Management stub), regardless of input — that's a backend stub gap, surfaced in mock fixtures the same way.
+- Activation workflow on dev backend: not observed firing for `activationThreshold: 1` policy with 8 members. Either Temporal worker isn't running on dev, or the workflow takes longer than the seed's runtime. Documented in script as "may auto-activate".
+
+**Seed shape (matches local mock fixtures `src/mocks/group-pas/`):**
+- 6 clients (Acme Industries / Brightline Tech / Caravel Logistics / Deltawave Solutions / Evergreen Foods / FinHealth — varied industries, mirrors `CLIENTS` mock).
+- 9 quotes, all DRAFT, fully decorated (plans, census-file-format, aggregate-census, member-to-plan-mapping, policy-detail). Spread across the 6 clients with varied plan/census shapes.
+- 5 PAM policies (1 low-threshold "active intent", 2 PENDING with thresholds 30/50, 1 CREATED, 1 immediately CANCELLED).
+- 20 PAM members spread across 3 of the 5 policies (deltawave-CREATED and brightline-CANCEL deliberately empty).
+
+**Run end-to-end against `https://group-pas-dev.anairacloud.com`:** all 40 entities created, all calls 200/201/204. Verified via `GET /quotes/list` (16 total = 5 pre-existing + 2 probe + 9 seeded), `GET /policies/list` (10 total = 5 pre-existing + 5 seeded incl. POL-010 CANCELLED), `GET /policies/<active>/members` (8 members on the active policy).
+
+**Idempotency:** timestamp-suffixed reg numbers (`ACME-{TS_SUFFIX}` etc.) and synthetic proposalIds, so re-runs add fresh entities without uniqueness collisions. Backend exposes no delete-client endpoint, so the seed is append-only — long-term cleanup needs a backend-side tenant flush or DB reset.
+
+**Logs:** every request/response written to `/tmp/keystone-seed/seed-<ISO-timestamp>/<NNN>-<label>.json` for debugging.
+
+**New dev dependency:** `tsx@^4.21.0` (added to `package.json`). New npm script: `seed:backend`.
+
+**Files touched:** `scripts/seed-backend.ts` (new, ~470 LOC), `package.json` + `package-lock.json` (tsx dep + script), `context/HANDOFF.md` (Demo posture section gains a seeding note), this log.
+
+**`tsc --noEmit`:** clean.
+
+**Next thread:** unchanged from earlier — demo walkthrough, backend questions, deploy decision, P2.1 dialog, useClientNames polish. Seed script means proxy-mode demo is now actually demo-able for the Quotation list and PAM modules; Issuance module stays sparse (no Proposals seeded since the only path is via finalized Quotes which we can't produce).
+
+### 2026-05-11 — Schema-driven forms: close modal / navigate back after success (`onSuccess`)
+
+**Bug surfaced by user during a demo run-through:**
+1. Create Quote — toast "Quote created" fired but the modal stayed open and the quote table didn't visibly refresh.
+2. Issuance → Add Member — toast "Policy member created" fired but the user was left sitting on `/issuance/proposals/<id>/members/new` instead of being returned to the proposal.
+
+**Root cause:** every schema-driven form submits via [`useActionHandler`](../src/hooks/useActionHandler.ts) → `api-mutation` case, which fires `toast.success` + `queryClient.invalidateQueries` but had no schema hook to express "what to do next on success." So the modal couldn't be closed, the user couldn't be navigated, and the pattern was systemic across **27 form schemas** under `schemas/forms/` (initial scan said 19; a follow-up sweep caught 8 more accounting/journal forms with `submitAction: true, type: "api-mutation"` but no `successMessage`).
+
+**Fix (commit `37adbad`):**
+- [`src/types/widget.ts`](../src/types/widget.ts) — `api-mutation` variant of `ActionConfig` gains `onSuccess?: ActionConfig[]`. Optional; existing schemas keep working unchanged.
+- [`src/hooks/useActionHandler.ts`](../src/hooks/useActionHandler.ts) — anonymous returned dispatcher hoisted to `const dispatch = async (...)` so it can recurse. After the existing `toast.success` + `invalidateQueries` block, loops `action.onSuccess` and `await dispatch(next)` for each entry. Lives inside the same `try` so the existing `catch` keeps error-path semantics untouched — `onSuccess` only fires on resolved mutations.
+- 27 `schemas/forms/*.json` — every form with an `api-mutation` submit action got an `onSuccess` entry:
+  - Modal/sheet-mounted forms (26): `[{ "type": "trigger-event", "target": "<form-id>" }]`. Overlay id matches form id in [`OverlayProvider.tsx`](../src/components/providers/OverlayProvider.tsx), so `close(target)` dismisses the modal.
+  - Page-mounted form (`add-policy-member-form`): `[{ "type": "navigate", "target": "/issuance/proposals/{{proposalId}}" }]`. Page substitutes `{{proposalId}}` server-side in [`src/app/issuance/proposals/[id]/members/new/page.tsx`](../src/app/issuance/proposals/[id]/members/new/page.tsx).
+
+**Why not magic auto-close in the handler:** form-id ↔ overlay-id is a convention, not a guarantee — `add-policy-member-form` already breaks it (page-mounted, not modal). And the page case needs a target route the handler can't infer. Declarative `onSuccess` keeps the contract in the schema, consistent with the rest of the codebase.
+
+**Why not also `onError`:** explicitly chose no — every current form wants "stay open + show backend message" on failure, which already happens. Symmetric API surface with zero callers is the kind of speculative scaffolding [`feedback_build_to_expected_scope.md`](../../../.claude/projects/-Users-seriousblack-dev-anaira-sandbox-keystone-ui/memory/feedback_build_to_expected_scope.md) flags against. Decision recorded in user dialogue this session; trivial to add later if a real `onError` case shows up.
+
+**Verification (preview against mock mode):**
+- Quote create: `POST /api/quotation/quotes → 200` immediately followed by `GET /api/quotation/quotes/search → 200` (cache invalidated), and `role="dialog"` gone from DOM. Full success path proven.
+- Error path: add-member POST returned `400 "proposal has no policy yet"`; URL stayed on `/members/new`, no toast spam — `onSuccess` correctly skipped on failure.
+- Add-member success path: code-path equivalent to the verified quote case (same `dispatch` function, different switch arm). Couldn't drive a 2xx end-to-end without a proposal in `POLICY_CREATED` state; left for the demo walkthrough.
+- `tsc --noEmit`: clean. `npm run lint` errors out because the repo script `next lint` interprets its CLI as a directory — pre-existing repo issue, not caused by this change.
+
+**Files touched (commit `37adbad`):**
+- Code: `src/types/widget.ts`, `src/hooks/useActionHandler.ts`.
+- Schemas (27): all `schemas/forms/*-form.json` files with an `api-mutation` submit action — see `git show 37adbad --stat`.
+
+**Auto-generated artifact:** `schemas/forms/index.ts` is regenerated on `predev`/`prebuild` via [`scripts/generate_form_index.mjs`](../scripts/generate_form_index.mjs) and is gitignored. No manual touch needed; next `npm run dev` picks up the schema edits.
+
+**Next thread should pick up from:** unchanged from prior entries (demo walkthrough, backend questions, deploy decision, P2.1 dialog). This fix unblocks every form-driven create/edit flow in the demo — modals now actually close, the issuance add-member flow now actually returns to the proposal.
+
+### 2026-05-11 — archV1 layered execution plan + per-track AI agent briefings
+
+User asked to convert the archV1 design (`docs/archV1/00..13`) into an executable build plan that can be parallelized across multiple AI coding agents, with schema delivery / materialization explicitly deferred — schemas keep being served from `/schemas/` via `src/lib/schemaResolver.ts` as today. Drafted plan, ran 4 review agents in parallel (completeness vs archV1, task distribution / merge-risk, per-task AI context sufficiency, clarity / ambiguity), then rewrote the plan against their findings.
+
+**What changed:**
+- New plan at [docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md](../docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md). Pre-decided technical choices (Zustand, zod, Vitest, Playwright, wildcard barrels per subdir, wrap-don't-refactor existing widgets), 11 tracks, staged pilot (10a read-only → 10b full workflow), file-ownership table guaranteeing no cross-track writes.
+- 12 self-contained per-track briefings under [docs/archV1/tracks/](../docs/archV1/tracks/), each with exact TS signatures it exports, worked examples, edge cases, allowed deps, DoD with concrete `yarn test ...` commands, and spec references cited as `file:line` for verifiability.
+- Kickoff prompt template at [docs/archV1/tracks/AGENT-KICKOFF-TEMPLATE.md](../docs/archV1/tracks/AGENT-KICKOFF-TEMPLATE.md) — wraps each briefing with hard constraints (owned-dir-only, no new deps, no `any` in exports, no skip-to-green), STOP conditions, and DoD reiteration.
+- README/index at [docs/archV1/tracks/README.md](../docs/archV1/tracks/README.md).
+
+**Gaps the review agents caught that the final plan addresses:**
+- Missing cross-track interface specs (every track now publishes the exact TS shape downstream tracks consume).
+- Missing scope items from archV1: `flow.*` scope, access policy enforcement, schema version validator, `$t` + locale formatters, `announce()`, persistence `clearOn` triggers, test-harness contracts. All folded into the relevant tracks.
+- Pilot too ambitious as a single integration: split into 10a (read-only) and 10b (workflow).
+- Root `src/lib/runtime/index.ts` merge contention: wildcard re-export, written once by Track 0, untouched after.
+- Maker-checker overlay (`src/lib/maker-checker.ts` — already deleted in honesty pass) and runtime devtools explicitly listed as out-of-scope.
+
+**What this is NOT yet:** code. This commit ships the build plan only. Layer 1 implementation hasn't begun. Layer 2 (porting the 26 existing schemas) only starts after Track 10b passes. Layer 3 (schema delivery / materialization) is deferred.
+
+**Files committed in `6e91be8` (pushed to origin `feat/new-buisiness`):** 15 new files under `docs/archV1/`, +2533 lines, no code changes. Other in-flight working-tree changes (the V1 demo schema edits, widget tweaks, the untracked `12-ARCHITECTURE-FREEZE-DECISIONS.md`) left alone.
+
+**Next thread (archV1 stream specifically):** hand `tracks/00-workspace-scaffold.md` through the kickoff template to an agent to lay the `src/lib/runtime/` scaffold, then fan out Tracks 1–9 per the dependency graph at [14:99](../docs/archV1/14-IMPLEMENTATION-EXECUTION-PLAN.md#L99). Coordinator owns Tracks 0, 1, 10a, 10b. The Group PAS V1 demo stream is unchanged — both streams now run in parallel.
+
+### 2026-05-11 (continued) — Audit pass + maker-checker overlay restored
+
+User asked for an audit on Group PAS V1 against the Keystone design deck v2 and the V1 issues backlog. Five parallel Explore agents covered ActionBar state/role gating, detail-page structure, mock-vs-proxy honesty, empty/loading/error state coverage, and design-token drift. Findings synthesized into a 14-item P1/P2/P3 punch list; user applied inline calls on every item; landed as 5 grouped commits on `feat/new-buisiness`.
+
+**Single biggest reversal:** the 2026-05-07 honesty-pass removal of the maker-checker overlay (this log → "New tighter mock rule" entry) was undone for the Quote/Proposal flow. Rationale from user: with real auth (Keycloak/Cerbos) not shipping, the role-switcher + `awaitingApproval` overlay is the only way to demo segregation-of-duties on the Quote workflow. The "don't simulate behavior backend can't deliver" rule still holds in principle — the overlay is restored as **transitional scaffolding** with a documented removal trigger (backend extends the PAM approval pattern to Quote via `RequestQuoteApprovalCommand` + central Approval module, or Cerbos lands and `Quote.submit()` becomes role-aware on the server). Surface fully grep-able for the eventual deletion. See [context/ARCH_TRANSITION.md](ARCH_TRANSITION.md) → "Maker-checker — UI-only overlay (transitional, until auth lands)" — the section documents both the 2026-05-07 removal and 2026-05-11 restoration so the reasoning trail stays intact.
+
+**Restored surface (commit `a26feac`):** `src/lib/maker-checker.ts` (new helper), `awaitingApproval` field on `MockQuote`/`MockProposal` + carried through DTOs, standalone `approvalOverlay` Map keyed by `entity:id` in `src/lib/api-mock/group-pas/store.ts` (globalThis-pinned), `/awaiting-approval` POST/DELETE handlers in both module routes, `MOCK_ONLY_PATTERNS` carve-out so it works in proxy mode, `awaiting-approval` cell renderer back with a pulsing warning dot, ActionBar overlay branches (Maker locked with "Awaiting checker approval" except Withdraw / Clear; Checker's approval-flow actions hidden until Maker sends), RoleSwitcher copy referencing "approval", QTE-2026-0002 seeded with `awaitingApproval:true` for the demo. ActionBar unit tests rewritten — 8/8 pass.
+
+**Other audit items shipped:**
+- **Commit `b6f0396` — refactor(tokens):** added `--warning` / `--warning-foreground` and `--success` / `--success-foreground` semantic tokens to [src/app/globals.css](../src/app/globals.css) (light + dark + `@theme inline`). Swapped hardcoded palettes in `ErrorBanner` (red-* → destructive), `MetricCard` trend (green/red → success/destructive). `Stack`/`Grid` layouts moved from inline `style={{ gap: \`${gap*0.25}rem\` }}` to a static `gapClass()` lookup (new `src/components/widgets/layout/gap-tokens.ts`) so the Tailwind JIT can resolve. Primitive cleanup: `badge` `text-[11px]` → `text-xs`, `tooltip` `rounded-[2px]` → `rounded-sm`.
+- **Commit `138d225` — fix(group-pas):** `schemas/tabs/quote/pricing.json` ActionBar previously hardcoded `state: "DRAFT"`, would have shown the Request-price button as DRAFT-state on any quote; now reads live state via `dataSource` + `stateField:"status"`. `schemas/policy-member-detail.json` `archive` action added to Checker roleActions (Task 1.9 table assigns Reject + Archive to both Checker and Ops; was previously Ops-only).
+- **Commit `a26feac` also bundles:** `expire` action added to Quote `SENT_TO_CLIENT` stateActions (spec'd in plan Task 2.3, was missing). `view-proposal` moved out of the ActionBar's `FINALIZED` stateActions and into the page-header's `actions` array as "Open in Issuance" — FINALIZED is now truly terminal in the action map, matching the role-action-table spec. Fetch-error surfacing added to `ActionBar` and `ReasonBanner`: when the widget owns its `useSmartQuery` and `.error` is truthy, render an inline alert instead of a half-populated shell. Verified by hitting `/quotation/QTE-NONEXISTENT` → "Actions unavailable — Failed to fetch: Not Found".
+- **Commit `63c4b08` — feat(group-pas):** empty-state config added to `schemas/tabs/proposal/members.json` and `schemas/tabs/policy/members.json` (same shape used by the top-level list pages). New shared `<DetailPageSkeleton>` component at `src/components/layout/DetailPageSkeleton.tsx` replaces six per-route `<Suspense fallback="Loading…">` strings — gives the page-header + key-value-grid + action-bar shape a coherent skeleton.
+- **Commit `acb89c6` — chore:** `npm run typecheck` script added (`tsc --noEmit`). Audit also asked for a pre-commit hook running lint + typecheck + test; **deferred** because the existing lint surface has 5,083 errors / 70k warnings (mostly `@typescript-eslint/no-explicit-any` + Storybook renderer-import) and the test suite has 56 pre-existing failures. Gating commits today would force `--no-verify` on every commit. Tracked in [docs/V1_DEMO_ISSUES.md](../docs/V1_DEMO_ISSUES.md) "Deferred infrastructure" for pickup once the lint/test debt is brought down or `lint-staged` is wired.
+
+**Verification:** `tsc --noEmit` clean throughout. `npm test`: 56 pre-existing failures unchanged, 69 passing (was 68 — gained one from the rewritten ActionBar overlay tests). No new regressions. Manual smoke against fixtures in mock mode (`.env.local` temporarily moved aside, restored after) via Claude Preview MCP — confirmed:
+- Maker on QTE-2026-0002 sees Edit + Send-for-approval locked with "Awaiting checker approval"; Withdraw enabled.
+- Checker sees Clear-approval + Approve & submit enabled; state-locked actions tooltipped; Maker-only actions hidden.
+- Mark-expired present in Checker bar (state-disabled in DRAFT, would enable in SENT_TO_CLIENT).
+- "Open in Issuance" in page-header instead of ActionBar.
+- Pricing tab Request-price renders with `disabledTooltip` text (proves `stateField` resolved state correctly — otherwise we'd see the generic "Not available in this state").
+- `/quotation/QTE-NONEXISTENT` surfaces the error inline rather than rendering an empty/half toolbar.
+- Archive enabled for Checker on REPAIR_PENDING PolicyMember.
+- ReasonBanner computed styles confirm `border-warning/40 bg-warning/10 text-warning-foreground` resolving to the new tokens with correct contrast.
+
+**Order matters in the commit graph:** design-token additions (`b6f0396`) had to land before the overlay restore (`a26feac`) because the restored `awaiting-approval` cell renderer uses `bg-warning`, which only resolves once the token exists in `@theme inline`. Dependency order: `acb89c6` (chore) → `b6f0396` (tokens) → `a26feac` (overlay + errors) → `138d225` (pricing + archive) → `63c4b08` (empty-state + skeleton).
+
+**Notable new files:** `src/lib/maker-checker.ts`, `src/components/widgets/layout/gap-tokens.ts`, `src/components/layout/DetailPageSkeleton.tsx`. **Doc updates:** `context/ARCH_TRANSITION.md` (maker-checker section rewritten), `docs/V1_DEMO_ISSUES.md` (Deferred-infrastructure section added).
+
+**No Playwright in the repo.** User asked for Playwright tests; flagged honestly that `playwright` is installed as a dep but there's no `playwright.config.ts`, no `.spec.ts` files. Did the smoke via Claude Preview MCP instead. Pre-commit hook + Playwright bootstrap are both queued in the deferred-infrastructure section.
+
+**Next thread should pick up from:** demo walkthrough Task 5.3 still gated on user attendance. Backend questions (Quote-level approval pattern, file upload S3 wiring) still drafted. Cloudflare deploy decision still pending. Pass-2 polish items (P2.1, P2.5, P2.6). New backlog from this pass: pre-commit hook + the lint/test cleanup it implies; Playwright bootstrap.
+
+### 2026-05-11 → 2026-05-12 — Off Cloudflare, onto AWS (K3s + ECR + Helm), auto-deploy live
+
+Cloudflare Workers deploy was blocked: the OpenNext build emits an 8.4 MB worker, free-tier limit is 3 MiB. Migrated UI to a container-on-K3s setup using existing Anaira infra (the same K3s box hosting the backend). Site now live at https://keystone-ui-dev.anairacloud.com, auto-deployed on every push to `feat/new-buisiness`.
+
+**Path chosen:** cherry-pick the deploy artifacts from saigita's stalled [PR #28 (`deployment/ci-cd`)](https://github.com/Anaira-AI/keystone-ui/pull/28) (Docker + Helm + ECR push workflow), drop the bits that were quality-debt or out of scope, and fix the one real bug (env-var plumbing). Rebuild-from-scratch was rejected — deadline was today/tomorrow and saigita's chart had already been iterated on for a month.
+
+**What did NOT come over from PR #28:** the eslint rule relaxation (errors → warnings, `no-explicit-any` off, etc.), the `|| true`-masked CI steps, the `useFormContainer.ts` edit, the deletion of `wrangler.jsonc` / `open-next.config.ts` / `cloudflare-env.d.ts` / the `deploy`/`upload`/`preview`/`cf-typegen` scripts — Cloudflare files kept as fallback per user direction until AWS deploy is verified live (it now is; cleanup is a separate decision).
+
+**Commit `6bf8e62` — feat(deploy): AWS container deploy path (Docker + Helm + ECR)**
+- `Dockerfile` (multi-stage Node 24-alpine, standalone Next.js), `.dockerignore`, `docker-compose.yml`.
+- `helm/keystone-ui/`: `Chart.yaml`, `templates/{deployment,service,ingress,_helpers.tpl}`, single `values.yaml` (no env split — user asked for one env for now).
+- `.github/workflows/publish.yml` (workflow_dispatch only at this point).
+- `next.config.ts`: `output: 'standalone'` (required for the Dockerfile's `.next/standalone` copy); CF dev import guarded behind `NODE_ENV === 'development' && !DOCKER_BUILD` with a soft-fail catch so a slim runtime image without `@opennextjs/cloudflare` still works.
+- `package.json`: `docker:up`/`docker:down`/`docker:logs`/`docker:rebuild` scripts added; CF scripts kept.
+- **One real bug fix on top of saigita's chart:** the Helm chart only injected `NODE_ENV`/`PORT`/`HOSTNAME`. `GROUP_PAS_BACKEND_URL` is server-side (see [`src/lib/api-mock/group-pas/http.ts:78`](../src/lib/api-mock/group-pas/http.ts#L78) + the three catch-all proxy routes) — without it, pods would silently serve mock data in prod. Now baked into `values.yaml` (`https://group-pas-dev.anairacloud.com`) and rendered in `deployment.yaml`.
+- **`NEXT_PUBLIC_BASE_URL` removed entirely** rather than plumbed: the sole consumer (`src/app/policy-admin/members/by-policy-member/[policyMemberId]/page.tsx`) constructed an absolute URL because Node's server-side `fetch()` has no default origin. Replaced with `headers()` to derive origin from the incoming request (`x-forwarded-proto` + `host`). No config needed in dev, Docker, or behind ALB.
+
+**Commit `91348df` — ci(publish): trigger on push + pull_request, not just workflow_dispatch**
+- `workflow_dispatch` alone requires the workflow file on the default branch to appear in the Actions UI. Added `push: [main, feat/new-buisiness]` + `pull_request: [main]` so the build fires without first landing on main. Image-tag step rewritten to fall back to `github.head_ref` / `pull_request.head.sha` (on pull_request, `GITHUB_REF`/`GITHUB_SHA` are the merge-test ref/commit, useless as a tag).
+- First successful image: `149916142454.dkr.ecr.ap-south-1.amazonaws.com/anaira/keystone-ui:feat-new-buisiness_91348dfd`. DevOps deployed it manually that day.
+
+**Commit `acba003` — ci(deploy): add deploy-dev job + values-dev.yaml for K3s dev environment** (next morning)
+DevOps sent [`docs/planning/keystone-ui-deployment-guide.md`](../docs/planning/keystone-ui-deployment-guide.md) — "Option A: self-managed CD" — with the exact `values-dev.yaml` template and a `deploy-dev` job pattern that uses a `K3S_KUBECONFIG` GitHub secret (set by infra on 2026-05-12) instead of AWS IAM/OIDC for cluster auth.
+- `helm/keystone-ui/values-dev.yaml` new: `service.type: NodePort` (required for ALB `target-type=instance` — overrides the `ClusterIP` in base `values.yaml`); ALB ingress annotations including `group.name: anaira-dev-tools` (shared ALB), wildcard ACM cert ARN, `healthcheck-path: /`, `success-codes: "200,302"`; hostname `keystone-ui-dev.anairacloud.com`; `ecr-secret` for `imagePullSecrets`.
+- `.github/workflows/publish.yml` → renamed to `ci-cd.yml`. `build` job now exports `image_tag` as a step output. New `deploy-dev` job: installs helm, writes `K3S_KUBECONFIG` to `~/.kube/config`, `helm upgrade --install keystone-ui ./helm/keystone-ui --namespace dev-env -f helm/keystone-ui/values-dev.yaml --set image.tag=${{ needs.build.outputs.image_tag }}`, then a `curl -w "%{http_code}"` smoke test against the URL. Gated to `github.event_name == 'push' && github.ref == 'refs/heads/feat/new-buisiness'` (no PR deploys, no main deploys until promotion is wired).
+- First end-to-end run: build 3m31s → deploy 30s → smoke 200 in 16s. Wall-clock 4m14s. Image `feat-new-buisiness_acba0036` deployed, helm release `keystone-ui` REVISION 2 in namespace `dev-env`.
+
+**GitHub repo configuration that was already in place (set 2026-04-16 by saigita while iterating PR #28):**
+- `vars.ECR_AWS_REGION = ap-south-1`
+- `vars.ECR_REGISTRY = 149916142454.dkr.ecr.ap-south-1.amazonaws.com`
+- `vars.ECR_REPOSITORY = anaira/keystone-ui`
+- `vars.STAGING_AWS_IAM_ROLE_ARN = arn:aws:iam::149916142454:role/GitHubActions-Nonprod` (used only by the build job for ECR push)
+- `secrets.K3S_KUBECONFIG` (added 2026-05-12 by infra) — kubeconfig file content; deploy job writes it to `~/.kube/config` and helm just works. No AWS creds needed for the deploy step.
+
+**AWS-side infra (owned by the DevOps head, no per-deploy work needed):**
+- K3s single-node, EC2 `i-0360bd69f2a893af4`, namespace `dev-env`.
+- AWS Load Balancer Controller installed; shared ALB tagged `anaira-dev-tools` — each service adds its own host rule to the existing ALB via the group annotation rather than provisioning a new one (~$20/mo saved per service).
+- ACM wildcard cert `*.anairacloud.com` — anything `*.anairacloud.com` pointed at the ALB is HTTPS automatically.
+- Route53 A-alias `keystone-ui-dev.anairacloud.com` → shared ALB.
+- `ecr-secret` (kubernetes.io/dockerconfigjson) pre-created in `dev-env` namespace.
+
+**Rollback path:** `helm rollback keystone-ui -n dev-env` (release history is kept by helm; revisions are durable). Or push a known-good commit to retrigger forward. ECR tags are immutable so old images stay available; tag pattern is `feat-new-buisiness_<short-sha>`.
+
+**Migration note from the deployment guide:** infra team plans to replace this "self-managed CD" path with reusable `devops-platform` workflows that handle ECR push + helm deploy + smoke + environment promotion + SonarQube + pre-commit hooks. **No action needed now — infra will guide the migration.** When that lands, expect `.github/workflows/ci-cd.yml` to be replaced by a `uses:` reference.
+
+**Cloudflare files kept on `feat/new-buisiness` for now (intentionally not deleted):** `wrangler.jsonc`, `open-next.config.ts`, `cloudflare-env.d.ts`, `@opennextjs/cloudflare` dep, `deploy`/`upload`/`preview`/`cf-typegen` scripts in `package.json`. Now that AWS is verified live, removing them is a low-risk follow-up but the option is being left open in case AWS needs to be paused.
+
+**Branch dance worth noting for the next AI:** mid-session the user switched local working branches (`feat/new-buisiness` → `extract/schema-engine`) while another change was underway. The deploy-related edits I'd staged on the wrong branch were stashed, then recreated cleanly on `feat/new-buisiness` (rather than popping the stash, since `next.config.ts` had diverged on the two branches). Lesson: when the user shares a deployment-guide-style doc, double-check `git branch` before editing — particularly when multiple workstreams are interleaved.
+
+**Files committed (3 commits, all on `feat/new-buisiness`, pushed):** `6bf8e62`, `91348df`, `acba003`. Together: 16 new files + 3 edits.
+
+**Next thread should pick up from:** Cloudflare-cleanup decision (delete the leftover files / scripts / dep, or keep as fallback indefinitely). PR #56 (`feat/new-buisiness` → `main`) is open and now has a working CD pipeline gating on it. The CI workflow's lint/test masking (`|| true`, tests commented out) is unrelated to deploy and still pending. Infra team's planned migration to `devops-platform` reusable workflows will replace `.github/workflows/ci-cd.yml` eventually.
+
+**Follow-up (same day):**
+- Commit `26fba8d` — added `paths-ignore` to both `push` and `pull_request` triggers in `.github/workflows/ci-cd.yml` for `**/*.md`, `docs/**`, `context/**`, `proposals/**`, `.gitignore`, `LICENSE`. Docs-only commits no longer fire the ~4-min build+deploy cycle.
+- **Stop hook installed at `.claude/settings.json`** (gitignored per repo convention — personal scope, not team-shared) that emits `{"decision":"block","reason":...}` when there are commits on the current branch since the last commit to `context/SESSION_LOG.md` that touched files outside `context/`. Silent on uncommitted-only work and on pure Q&A turns. Reason text points the AI back to the resume protocol in `context/HANDOFF.md`. Invariant: hook fires after code is committed but before logs are updated; goes silent again once a follow-up commit touches `context/SESSION_LOG.md`. Replaces the manual "update repo context logs" nudge in every session.
+
+### 2026-05-12 — Two-panel navigation (icon rail + grouped submenu) — Commit 1 of 2
+
+Designer mockup (Motor Insurance "Decisions" screen) showed a VSCode-style two-tier nav: narrow icon rail + wider submenu panel with uppercase section headers. User asked to adopt the **pattern**, not the mockup's specific items. Replaced the single nested `AppSidebar` with a new dual-panel chrome and migrated both mocked portals (group-insurance, auto-claims) to it.
+
+**Approach decisions captured during planning** (via AskUserQuestion):
+- Two-panel rail + grouped submenu — replaces single nested sidebar (no `SideBarType.NESTED` consumers left).
+- `group?: string` field on `NavigationItem` for the eventual section labels (kept ungrouped for this commit — see below).
+- Both portals migrate now (no opt-in fallback), since they're mocks anyway.
+- Rail expanded by default, Ctrl+B still collapses to icon-only.
+- Rail items follow the V1 spec modules — **not** the mockup's labels. Rationale: user pushed back on the first plan that invented group labels and rail items off-screenshot. Spec-aligned rail uses Home / Quotation / Issuance / Policy Admin / Accounting (from [docs/group-pas-v1-plan.md:119](../docs/group-pas-v1-plan.md) Task 0.2 + [docs/spec/](../docs/spec/) domains).
+
+**Grouping deferred:** the `group` field exists on the type and is honored by `SubmenuPanel`, but no mock config sets it yet. The open question is whether module-detail tabs (e.g. Quotation → Proposal → Members) should appear as submenu rows under uppercase group labels — answered in a separate session once that pattern is decided. For now the submenu is a flat list per rail item.
+
+**Commit-strategy decision:** split into two sequential commits on `feat/new-buisiness` so dev deploys can live-test each independently. Commit 1 is purely additive on the runtime path (old `AppSidebar.tsx` is left in the tree unreferenced) — if a regression shows up on dev, a single revert undoes it without touching the legacy component. Commit 2 deletes `AppSidebar.tsx`, removes `SideBarType.NESTED` / `UNGROUPED`, and is held until Commit 1 is live-verified.
+
+**Commit `4de1efd` — feat(nav): two-panel navigation (icon rail + submenu):**
+- [src/shared/types.ts](../src/shared/types.ts): added `SideBarType.DUAL_PANEL` and optional `group?: string` on `NavigationItem`. `NESTED` / `UNGROUPED` kept for Commit 2.
+- New folder [src/components/navigation/](../src/components/navigation/):
+  - `DualPanelNav.tsx` — top-level shell, derives active rail item from `usePathname()` via `itemMatchesPathname`, renders `<IconRail/>` + (when the active item has `subMenuItems`) `<SubmenuPanel/>`. Owns no state.
+  - `IconRail.tsx` — 80px expanded / 48px collapsed (reads `useSidebar().state`). Icon stacked over label. Active item gets `bg-background shadow-sm ring-1` over `bg-sidebar`.
+  - `SubmenuPanel.tsx` — 240px column. Uses `groupSubItems` helper to bucket items by `group` (preserving first-seen order); rail items without any `group` set render as a single ungrouped list.
+  - `groupSubItems.ts` — pure helper, easy to unit-test.
+  - `navHelpers.ts` — `resolveIcon`, `isActive`, `itemMatchesPathname`, `firstNavigableUrl`. `IconComponent = ComponentType<SVGProps<SVGSVGElement>>` type used to avoid the lucide `createLucideIcon`-factory leakage TS hit on the first attempt.
+- [src/app/layout.tsx](../src/app/layout.tsx): swapped `<AppSidebar />` → `<DualPanelNav />`. `SidebarProvider` left untouched — `IconRail` still uses the existing Ctrl+B collapse state.
+- [src/mocks/original/group-insurance/config/app-config-mock.ts](../src/mocks/original/group-insurance/config/app-config-mock.ts): replaced 250+ lines of placeholder menu (Workflow, Corporate Clients, Channel Maintenance, System Management, Approval — none had backing routes) with the spec-aligned rail. `sideBarType: DUAL_PANEL`.
+- [src/mocks/original/auto-claims/config/app-config-mock.ts](../src/mocks/original/auto-claims/config/app-config-mock.ts): same shape, 4 flat rail items (Home, Claims, Reports, Settings). `sideBarType: DUAL_PANEL`. Aspirational routes preserved — only `/claims` exists today.
+
+**Verification via Claude Preview MCP at 1280×800:**
+- Rail rendered all 5 group-insurance items; "Home" active with white-tile treatment on `/`.
+- `/quotation` → submenu (240px) shows Quotations + Member Quotes; "Quotation" active on rail, "Quotations" active in submenu.
+- `/policy-admin/policies` deep-link → "Policy Admin" active on rail, "Policies" active in submenu, Clients also listed.
+- `/accounting` → submenu shows Accounting + Payout.
+- Ctrl+B keydown collapses rail to 48px, labels hidden; second press restores to 80px.
+- Auto-claims config fetched via `/api/config/app?appId=auto-claims` returns `sideBarType: DUAL_PANEL` + 4 items, confirmed.
+- Layout fits viewport: rail 80 + submenu 240 + main 954 = 1274px in a 1280px viewport.
+- `tsc --noEmit` clean (after one fix on the IconComponent type).
+- No console warnings or errors during navigation.
+
+**Files NOT touched in this commit (per plan, removed in Commit 2):** `src/components/AppSidebar.tsx` (left unreferenced), `SideBarType.NESTED` / `UNGROUPED` enum members.
+
+**Next:** Commit 2 once https://keystone-ui-dev.anairacloud.com renders the new chrome correctly. Commit 2 scope: delete `AppSidebar.tsx`, remove the two stale enum members, sweep references in [docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md](../docs/NEW_MODULE_IMPLEMENTATION_GUIDE.md) and [docs/group-pas-v1-plan.md:116](../docs/group-pas-v1-plan.md). After Commit 2 is live-tested clean, merging `feat/new-buisiness` → `main` becomes a separate piece of work.
+
+**Open question for the next session (intentionally deferred per user):** does Quotation detail's tab structure (Plans / Census / Mapping / Pricing) belong in the submenu panel under uppercase group labels, or stay as in-page tabs? Today's commit assumes in-page tabs and leaves the submenu flat with module-list links only.
+
+### 2026-05-12 (continued) — Commit-hygiene rule + two-panel nav Commit 2
+
+After Commit 1 (`4de1efd`) deployed cleanly to https://keystone-ui-dev.anairacloud.com (live-verified via `gh run view 25720296930` — both `build` and `deploy-dev` jobs green in 2m51s; and via `curl` of the dev URL HTML, which references the new `DualPanelNav` client component and no `AppSidebar`), user flagged a workflow concern: when docs/context updates get bundled with src changes, the CI deploy graph becomes ambiguous (a follow-up docs-only push doesn't move the deploy SHA, so "what's live" requires walking back the commit history). Asked me to make this a standing rule.
+
+**Commit `92dd2b6` — docs(context): split src and docs commits — no mixed deploy/no-op:**
+- New "Commit hygiene — split src from docs" section in [context/CORE_MEMORY.md](CORE_MEMORY.md): never bundle `paths-ignore` paths (`docs/**`, `context/**`, `proposals/**`, `**/*.md`, `.gitignore`, `LICENSE`) with non-ignored changes (`src/**`, `schemas/**`, `helm/**`, `.github/**`, root configs) in the same commit. Land context updates as separate follow-up commits — they'll be skipped by `paths-ignore` as designed, keeping the deploy graph readable.
+- Carve-out preserved: the existing "in the same commit" guidance under Mandatory logging protocol still applies to keeping `proposals/PROP-*.md` frontmatter grouped with `HANDOFF.md` (both are under `paths-ignore` — that group is fine).
+
+**Commit `7d8a913` — chore(nav): remove legacy AppSidebar; collapse SideBarType enum** (src-only, triggers deploy):
+- Deleted `src/components/AppSidebar.tsx` (no remaining importers).
+- [src/shared/types.ts](../src/shared/types.ts): removed `SideBarType` enum entirely. Since `DUAL_PANEL` was the only consumer, the `sideBarType` field on `AppConfig.navigation` was also removed — the runtime always uses `DualPanelNav`. Net: 7 lines removed from the type file.
+- Both mock configs ([group-insurance](../src/mocks/original/group-insurance/config/app-config-mock.ts), [auto-claims](../src/mocks/original/auto-claims/config/app-config-mock.ts)) dropped the `SideBarType` import and the `sideBarType:` line.
+- Pre-commit sweep: `grep -rn "AppSidebar|SideBarType|sideBarType" src schemas docs` returned zero hits.
+- Verification: `tsc --noEmit` clean; preview server still renders rail (80px, 5 items) + submenu (240px) on `/quotation` with active states on both rail and submenu; no console / server errors.
+
+**Commit (this one, docs-only) — docs(context): log Commit 2 + sweep AppSidebar refs in docs:**
+- This entry in [context/SESSION_LOG.md](SESSION_LOG.md) and the Active Workstreams row in [context/HANDOFF.md](HANDOFF.md).
+- [docs/CODEBASE_OVERVIEW.md](../docs/CODEBASE_OVERVIEW.md): file-tree comment updated from `AppSidebar.tsx` → `navigation/`.
+- [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md): two references at Task 0.2 (line 116) and Task 1.9 (line 266) repointed from `src/components/AppSidebar.tsx` to `src/components/navigation/`.
+
+**Two-panel nav workstream status:** Commit 1 (feat) and Commit 2 (cleanup) both shipped and live on `feat/new-buisiness`. Merging to `main` is a separate decision (not blocked by anything in this stream). Open design question about module-detail tabs in the submenu still deferred to a future session per user.
+
+### 2026-05-12 (continued) — Two-panel nav cherry-picked to main as PR #58
+
+User asked for a clean PR against `main` carrying just the two-panel nav change. First attempt (`git cherry-pick 4de1efd 7d8a913` onto a fresh `feat/two-panel-nav` branch off `origin/main`) hit conflicts in `src/app/layout.tsx` and the group-insurance mock config — because `feat/new-buisiness` is 64 commits ahead of `main` and the nav commits were authored alongside unrelated changes (`RoleProvider`, `RoleSwitcher`, `Toaster`, animation wrapper). Pulling those in would have polluted the PR. Aborted and rebuilt the change manually against `main`.
+
+**PR #58 — feat(nav): two-panel navigation (icon rail + grouped submenu)** — single clean commit `025e719` on `feat/two-panel-nav` (off `origin/main`):
+- `src/shared/types.ts`: `NavigationItem` gains `group?: string`; `SideBarType` enum + `sideBarType` field removed entirely (one variant only).
+- New `src/components/navigation/` folder copied verbatim from feat branch (`DualPanelNav`, `IconRail`, `SubmenuPanel`, `groupSubItems`, `navHelpers`).
+- `src/app/layout.tsx`: minimal two-line edit — import swap + `<AppSidebar />` → `<DualPanelNav />`. Everything else on main's layout (no `RoleProvider`/`Toaster` yet) stays untouched.
+- Both mock configs (`group-insurance`, `auto-claims`) replaced with the spec-aligned versions.
+- `src/components/AppSidebar.tsx` deleted.
+- Doc refs in `docs/CODEBASE_OVERVIEW.md` and `docs/group-pas-v1-plan.md` repointed from `AppSidebar.tsx` → `navigation/`.
+- `tsc --noEmit` clean after wiping stale `.next/dev/types/validator.ts` cache (the validator had references to routes only on the feat branch).
+- Preview verified at 1280×800: rail renders all 5 group-insurance items, Home active.
+
+**Diff stats:** 12 files, +290 / −362 (net −72; the legacy mock had 200+ placeholder menu items that never had backing routes).
+
+**Heads-up flagged in PR description:** the spec-aligned rail points at `/quotation`, `/issuance/proposals`, `/policy-admin/clients`, `/policy-admin/policies` — none of which exist on `main` today. The V1 plan ([Task 0.2](../docs/group-pas-v1-plan.md)) explicitly accepts this: "clicking each navigates to a placeholder page (404 acceptable until pages exist)." IA lands first so Phases 2/3/4 can ship into it. Routes that DO work post-merge on main: `/` and `/accounting` (+ Payout via Accounting's submenu).
+
+**PR URL:** https://github.com/Anaira-AI/keystone-ui/pull/58
+
+**Process note worth keeping:** when the feature branch is far ahead of `main` and you only want a slice on main, **don't** `git cherry-pick` — it drags in conflicts from unrelated changes that happen to touch the same files. **Do** create a fresh branch off `origin/main`, copy the relevant files via `git show <feat-sha>:path > path`, manually apply the minimal source edits (import + JSX swap), and commit as one focused commit. That keeps the PR diff aligned with what a reviewer expects to see for the feature.
+
+### 2026-05-12 (continued) — Schema-engine extraction PR #57 (separate from #58)
+
+Second slice taken to `main` in the same session: the schema-runtime / widget-engine extensions that piggybacked on `feat/new-buisiness` for Group PAS V1 but are useful to any future schema-driven module. User asked for these to land separately so other teams can adopt the engine without inheriting Group PAS mocks, role overlay, or in-flight state machine. Plan file: `~/.claude/plans/read-the-context-logs-starry-sketch.md`.
+
+**Branch:** `extract/schema-engine` off `origin/main` (03c9b7d). 13 commits, **+1591 / −85** across 55 files, all engine-layer. Negative-leakage check passes (no files under `src/lib/api-mock/`, `src/mocks/group-pas/`, `src/types/group-pas/`, `src/lib/api/{quotation,issuance,policy-admin}.ts`, `src/lib/maker-checker.ts`).
+
+**Scope (per user decision):** "pure-engine commits only" widened to also carry the new schema-driven widgets (`ActionBar`, `StateBadge`, `ReasonBanner`, `RoleSwitcher`) with light refactors so they ship domain-agnostic — see refactor commits below.
+
+**Layer 1 — runtime extensions (cherry-pick with conflict surgery):**
+- `bba4b67` (`5b4b0ab` ← `useSmartQuery.stopWhen` + widget types). Dropped doc payload (`docs/spec/**`, `docs/planning/**`, `context/*`).
+- `c30ba14` (`17e4efc` ← poll backoff + Spring-default errors + STANDARD_POLL_SCHEDULE).
+- `5097867` (`483f93b` ← `select.dataSource` + `optionLabel`/`optionValue`).
+- `7a5582e` (`f1611f6` ← KeyValueGrid `parseJson`/`subPath`/`nestedParseAt`/`list`/`presence` cell types). Dropped Group PAS `schemas/tabs/quote/*.json` hunks.
+- `4f81a4f` (`97a8caa` ← KeyValueGrid nested accessors + raw-JSON cleanup). Dropped all Group PAS `schemas/*` hunks.
+- `947b79e` (`b6f0396` ← semantic warning/success tokens + `gap-tokens.ts`).
+- `4710fe1` (`32efd3a` ← native `<Toaster />` + `useActionHandler` toast wiring + Spring error envelope parsing).
+- `0077520` (`37adbad` ← `onSuccess[]` chaining on `api-mutation` + 19 accounting/event/journal/period/posting/payout form schemas). Dropped 4 Group PAS form hunks (`add-policy-member-form.json`, `create-member-quote-form.json`, `create-quote-form.json`, `edit-quote-policy-detail-form.json`, `repair-policy-member-form.json`, `set-member-quote-premium-form.json`).
+
+**Layer 2 — schema-driven widgets:**
+- `021c811` — role-switcher + RoleContext + useRole. Refactored inline to drop `@/types/group-pas/roles` → new generic `@/types/role`. Storage key renamed `group-pas:current-role` → `keystone:current-role`.
+- `50cf515` (`23bc0a6` ← ActionBar widget). Cherry-picked; `@/types/group-pas/roles` import rewritten to `@/types/role`.
+- `0ad1d5a` — StateBadge + ReasonBanner + state-map. **Refactored state-map** into a generic registry (`registerStateMap` / `registerReasonMap` / `registerReasonGroupResolver`) with empty default maps. Group PAS data file stays on feat branch.
+- `558f9b6` — combined commit replacing ActionBar with its post-bfc292c state (no maker-checker overlay, `disabledTooltip` field, `stateField` override) + applies 5cd9968's motion/depth pass on ui primitives + adds `state-badge` cell type to CellRenderer + `ColumnConfig.entity`. ActionBar unit test refreshed from bfc292c snapshot (7/7 pass). The full cherry-pick of `5cd9968` / `bcd1c99` / `bfc292c` was abandoned for being too entangled with intermediate ActionBar commits (`23bc0a6 → 4ead472 → 12a91fe → 5cd9968 → a88e3c6 → bcd1c99 → bfc292c → a26feac`); taking the post-bfc292c snapshot directly was simpler than chaining 7 cherry-picks with conflict surgery.
+
+**Layer 3 — cleanup:**
+- `9722a37` — drop unused `FieldValue` import in KeyValueGrid.
+- `d969827` — PR #57 review feedback (see below).
+
+**PR #57 review feedback addressed in `d969827`:**
+Two reviewers (Copilot bot + nishanthbs1998, `CHANGES_REQUESTED`). 9 fixes landed in one commit:
+- **Must-fix (3):** dropped `throw err` from `useActionHandler.api-mutation` (toast is the user surface; rethrow was producing unhandled-promise rejections at every caller); added defensive try/catch in `ActionBar.onClick` + switched `rowData` to `liveEntity ?? fetchedEntity`; replaced in-place mutation in `KeyValueGrid.resolveFieldValue` with a new `immutableSet()` helper that clones the path so the React Query cache isn't corrupted.
+- **Should-fix (4):** `state-map.__resetRegistriesForTests()` for Jest test pollution; `types/role.ROLES` const array drives `readStoredRole` validation (adding a Role member automatically extends the guard); renamed dead `RoleContext` interface in `types/role.ts` → `RoleClaimPayload` (future Keycloak claims slot) to resolve name collision with the React context object; `gap-tokens.gapClass()` now returns `undefined` + dev `console.warn` for unmapped values instead of silently rendering `gap-4`.
+- **Copilot extras (2):** `useSmartQuery` resets `pollStartRef` via `useEffect` when queryKey inputs (endpoint/method/params/dependent state/pollSchedule on/off) change so a mounted component flipping entity id starts a fresh backoff cycle; `RoleProvider` write-throughs to `useWidgetState` under `global:current-role`, matching what STATE_MANAGEMENT_GUIDE.md §8.4 documents.
+- **Nits (2):** trailing newline on `useSmartQuery.ts`; `catch (e)` → bare `catch` in `useActionHandler` (unused-binding lint).
+- **Declined:** layout entry-animation re-fires on every navigation — design call, kept matching `feat/new-buisiness` behavior; moved-into-per-page wrapper deferred to a follow-up if design confirms.
+
+Verified: `tsc --noEmit` clean; `ActionBar.unit.test.tsx` 7/7 pass; baseline test failures (`92 failed / 113 passed`) match `origin/main` baseline byte-for-byte — no regressions.
+
+**Merge-back impact for `feat/new-buisiness`:** documented in PR body. Rebase will silently skip Layer 1 commits (identical patches) via patch-id matching. Friction expected on Layer 2 / surgical-subset commits where hunks were dropped during extraction — `git checkout --ours` resolves those. Layer 3 refactors (Role type move, state-map registry split) need feat branch to repoint `@/types/group-pas/roles` → `@/types/role` and ship a `state-map.group-pas.ts` data file that registers the maps at module load.
+
+**PR URL:** https://github.com/Anaira-AI/keystone-ui/pull/57
+**Reviewer reply:** https://github.com/Anaira-AI/keystone-ui/pull/57#issuecomment-4431040695
+
+**Process note:** combining 7 messy cherry-picks (`23bc0a6` through `bfc292c`) into a single "snapshot-the-end-state" commit was the right move once it became clear the intermediate commits churned the same file repeatedly with maker-checker add/restore noise. Same lesson as PR #58's process note — when chained cherry-picks fight you, take the final state directly and write one focused commit.
+
+### 2026-05-13 — Group PAS API coverage audit + PROP-0001/2/3 approved + scope policy shift
+
+**Trigger:** user asked whether the keystone-ui frontend uses every endpoint in `https://group-pas-dev.anairacloud.com/v3/api-docs`, suspecting Member GCL existed in backend but not in UI.
+
+**Audit findings** (full report at `/Users/seriousblack/.claude/plans/do-you-have-repo-clever-diffie.md`):
+- 21 + 11 + 9 + 13 + 7 + 3 + 3 = 67 endpoints across `quote/proposal/policy/policy-member/client/commons/catalog` — all wired.
+- 6 `census-submission-api` endpoints — **0 UI wired**. Biggest gap; same scope as V1 plan Task 4.5 (deferred-from-demo backlog D4).
+- 6 `member-quote-api` endpoints — client wrappers + types + form schemas exist; no pages.
+- 1 `policy-admin.addMember` endpoint — wrapper exists, no UI for post-issuance member add.
+- ~30 accounting endpoints — entire domain unwired. Out of scope per user.
+
+**Proposals filed:**
+- [proposals/PROP-0001-census-submission-ui.md](../proposals/PROP-0001-census-submission-ui.md) — Census Submission UI · high · l · **approved**
+- [proposals/PROP-0002-member-quote-gcl-ui.md](../proposals/PROP-0002-member-quote-gcl-ui.md) — Member-Quote (GCL/W4) UI · medium · m · **approved**
+- [proposals/PROP-0003-post-issuance-add-member-ui.md](../proposals/PROP-0003-post-issuance-add-member-ui.md) — Post-issuance AddMember UI · medium · s · **approved**
+
+**Policy shift (user, 2026-05-13):** scope-lock list at [CORE_MEMORY.md "Group PAS V1 — scope locks"](CORE_MEMORY.md) had GCL MemberQuote and (implicitly) post-issuance AddMember in "Out of V1". User decision: **"if backend API exists and behaviour is understood, build the UI"** — don't gate on conceptual buckets like GCL / endorsement / post-issuance when the API surface is there.
+
+**CORE_MEMORY changes:**
+- New principle "API-driven scope (2026-05-13)" added to Group PAS V1 — scope locks.
+- "Out of V1" trimmed to backend-absent capabilities only: real auth (Keycloak), backend-enforced maker-checker, PII/Cerbos UI gating, PDF's UW/RI review states. GCL MemberQuote and post-issuance AddMember moved in-scope.
+- Interim assumption #7 "GCL endpoints" rewritten — endpoints are DSL-canonical at [docs/spec/quotation/MemberQuoteWorkflow.workflow](../docs/spec/quotation/MemberQuoteWorkflow.workflow); UI builds, runtime-stub behaviour surfaced via disabled-with-tooltip pattern.
+
+**Next steps:**
+- `/build-feature PROP-0001` first (largest impact, replaces V1 plan D4 tracking).
+- Update [docs/group-pas-v1-plan.md](../docs/group-pas-v1-plan.md) D4/Task 4.5 to point at PROP-0001 to avoid duplicate tracking.
+- PROP-0002 build needs to remove the `member-quotes-placeholder` tab (Task 2.4.6) as part of CLARIFY.
+- PROP-0003 build needs CLARIFY pass on affordance copy so "Add member" doesn't imply full endorsement-lifecycle support.
+
+**Files changed (docs-only — separate commit per [commit-hygiene rule](CORE_MEMORY.md#commit-hygiene--split-src-from-docs)):**
+- [context/CORE_MEMORY.md](CORE_MEMORY.md) — scope-lock policy update
+- [context/SESSION_LOG.md](SESSION_LOG.md) — this entry
+- [context/HANDOFF.md](HANDOFF.md) — Active Workstreams updated
+- `proposals/PROP-0001-census-submission-ui.md` (new, approved)
+- `proposals/PROP-0002-member-quote-gcl-ui.md` (new, approved)
+- `proposals/PROP-0003-post-issuance-add-member-ui.md` (new, approved)
+- `proposals/_index.md` (new)
+
+---
+
+## 2026-05-13 — Quotation Detail tab expansion (PROP-0004..0008): plan + first lane
+
+### Planning
+
+Plan written at `/Users/seriousblack/.claude/plans/quotation-detail-pages-view-happy-bee.md`. Five proposals filed to lift the demo cuts D1/D2/D3 plus surface API data the schemas were dropping on the floor:
+
+- PROP-0004 — Plans tab card grid + structured plan editor
+- PROP-0005 — Census tab aggregate breakdown editable table + file-format editor
+- PROP-0006 — Pricing tab per-plan premium breakdown
+- PROP-0007 — Member-to-Plan mapping DMN view + blob-replace flow
+- PROP-0008 — Split monolithic action-bar Edit into per-tab edit ownership
+
+Parallelism plan: file footprints disjoint except for `WidgetRegistry.tsx` (PROP-0004/0005 both register a new widget) → pre-register stubs in a setup step so the parallel lanes don't collide.
+
+### Setup commit (`c11efb8`)
+
+- Pre-registered `card-grid` and `editable-table` widget types in `WidgetRegistry.tsx` with stub components at `src/components/widgets/data/{CardGrid,EditableTable}.tsx`.
+- Folded in Lane A's earlier PROP-0006 work on `schemas/tabs/quote/pricing.json` (per-plan breakdown via `data-table` against `estimatedPremium.byPlanJson`).
+
+### Proposals commit (`4f42cf9`)
+
+- Five new proposal markdowns under `proposals/`. Status: `approved`. Pre-existing PROP-0001..0003 + `_index.md` left untracked (other workstreams).
+
+### PROP-0004 BUILD (`b1718a6`) — via `/build-feature` skill
+
+Run-id `2026-05-13-plans-cards-grid`. Followed the CLARIFY → DESIGN → BUILD → VERIFY pipeline.
+
+CLARIFY decisions (user):
+1. Branch: stay on `feat/new-buisiness`, sequential commits split src vs context.
+2. Per-card Edit affordance: wire pre-fill plumbing in this lane.
+3. Plan edit form: structured editor for products/benefits/formula now (not raw JSON).
+
+DESIGN doc at `context/build-feature/2026-05-13-plans-cards-grid/design.md` — bespoke `PlanForm` widget escape hatch to avoid the recursive form-container refactor. Arch transition note appended to `context/ARCH_TRANSITION.md`.
+
+BUILD: 7 files changed, +1331/-58.
+- `src/components/widgets/data/CardGrid.tsx` — stub replaced; iterates array at `arrayPath` from `dataSource`, renders a registered card widget per item with `item` + `parent` props.
+- `src/components/widgets/data/PlanCard.tsx` — new; parses wire's stringified `productsJson` / `coverAmountFormulaJson` / `freeCoverLimitFormulaJson`. Edit/Delete buttons DRAFT + maker gated.
+- `src/components/widgets/forms/PlanForm.tsx` — new; bespoke structured editor for the nested Plan shape (products[] repeater with nested benefits/exclusions, AmountFormulaField for cover and FCL).
+- `src/components/widgets/forms/AmountFormulaField.tsx` — new; discriminated-union sub-form switching by `AmountFormulaType`.
+- `schemas/tabs/quote/plans.json` — rewritten to `action-bar` + `card-grid`.
+- `schemas/forms/plan-edit-form.json` — new; registers `plan-form` for OverlaidForm.
+- `src/components/registry/WidgetRegistry.tsx` — register `plan-card` + `plan-form`.
+
+Deviations from design:
+- OverlaidForm pre-fill plumbing **not needed** — `injectRowData` already handles scalar pre-fill, and PlanForm reads `useOverlayStore` directly for the nested shape it owns. Zero changes to OverlaidForm / useFormContainer.
+- `disabledTooltip` removed from Add Plan during VERIFY — it forces always-disabled per ActionBar contract; precondition `hasCensusFileFormat` now surfaces via server-toast on submit (CORE_MEMORY honesty pattern).
+
+VERIFY:
+- `tsc --noEmit` PASS.
+- ESLint clean on new files. Pre-existing `any` in `WidgetRegistry.tsx:23` left untouched.
+- Live browser smoke test against `https://group-pas-dev.anairacloud.com` via dev proxy: quote `170ea9b1-2eeb-4a88-934b-07afa4112ea4` (2 plans) renders both cards with full product/benefit/formula detail; Edit modal pre-fills nested fields; Add Plan enabled in DRAFT+maker.
+- Coverage gap: no Jest tests added (deferred follow-up).
+
+PROP-0004 status: `done`.
+
+### Files changed
+
+- `src/components/registry/WidgetRegistry.tsx` (setup + PROP-0004)
+- `src/components/widgets/data/CardGrid.tsx` (new, real impl)
+- `src/components/widgets/data/EditableTable.tsx` (new stub, awaiting PROP-0005)
+- `src/components/widgets/data/PlanCard.tsx` (new)
+- `src/components/widgets/forms/PlanForm.tsx` (new)
+- `src/components/widgets/forms/AmountFormulaField.tsx` (new)
+- `schemas/tabs/quote/plans.json` (rewritten)
+- `schemas/tabs/quote/pricing.json` (Lane A, PROP-0006)
+- `schemas/forms/plan-edit-form.json` (new)
+- `proposals/PROP-0004..0008-*.md` (new)
+- `proposals/PROP-0004-quote-detail-plans-cards.md` (status → done, implementation notes)
+- `context/ARCH_TRANSITION.md` (new entry: bespoke plan-form widget)
+- `agent_logs/build-feature/2026-05-13-plans-cards-grid/` (discover/clarify/verify logs)
+- `context/build-feature/2026-05-13-plans-cards-grid/design.md` (design doc)
+
+### Next steps
+
+PROP-0005 (Census), PROP-0007 (Mapping), PROP-0008 (Edit-bar split) remain. Each is a separate `/build-feature` run. PROP-0006 (Pricing) already shipped via the setup commit; can flip its proposal status to `done` when the registry/widget gaps it noted are filed as their own follow-ups.
+
+---
+
+## 2026-05-13 — PROP-0005: Census tab editable aggregate + file-format editor
+
+Run-id `2026-05-13-census-editable-table`. Built via `/build-feature PROP-0005`.
+
+### CLARIFY answers
+
+1. **Land `json-textarea` + `json` validation rule here** instead of in PROP-0007. PROP-0007's lane shrinks accordingly.
+2. **Bespoke EditableTable** for the aggregate-census join shape — narrow contract (join-shaped numeric edit, single PUT body), not a DataTable refactor.
+
+### Commit (`4aece0a`) — 6 files, +572/-31
+
+- `src/components/widgets/data/EditableTable.tsx` — stub replaced. Joins a key array (`plans[]`) with a value array (`aggregateCensus.planBreakdown[]`) on a `keyField`, renders inline numeric inputs per row in DRAFT+maker, auto-sums total, commits a single PUT via a `bodyShape: "aggregate-census"` builder.
+- `schemas/forms/census-file-format-form.json` — new. FormContainer form with `fileType` (select), `sheetName` (text, visible only for XLSX), `schemaJson` (json-textarea), `dialectJson` (json-textarea). Each field carries `sourcePath: "censusFileFormatJson"` + `sourceParseJson: true` + `sourceSubPath: <field>` to pre-fill from the stringified entity blob.
+- `schemas/tabs/quote/census.json` — rewritten. EditableTable + SectionGroup-wrapped key-value-grid + action-bar.
+- `src/components/widgets/forms/OverlaidForm.tsx` — extended `injectRowData` with per-field `sourcePath` / `sourceParseJson` / `sourceSubPath`. Default behavior unchanged. Mirrors KeyValueGrid pattern.
+- `src/components/widgets/forms/formContainer/FieldRenderer.tsx` — `json-textarea` field type (monospace textarea).
+- `src/components/widgets/forms/formContainer/utils.ts` — `json` validation rule via `.refine(JSON.parse)`.
+
+### Verify
+
+- `tsc --noEmit` PASS.
+- ESLint clean on touched files. 2 pre-existing unused-var warnings on `api-dropdown` handlers left untouched.
+- Live browser smoke against `https://group-pas-dev.anairacloud.com`: edited two rows to 42 + 156 via React props onChange (preview_fill DOM event doesn't propagate to React state — automation quirk). Save PUT round-tripped; re-GET confirmed `headcount: 198`. File-format modal pre-filled all four fields including the doubly-stringified inner schema/dialect blobs.
+
+### Backend gap (surfaced, not papered over)
+
+`GET /quotation/quotes/{id}` doesn't echo `aggregateCensus.planBreakdown`, even though DSL declares it on the Quote entity at `docs/spec/quotation/QuotationDomain.domain:25`. UI shows per-plan values as 0 on reload; only the rolled-up `headcount` survives the round trip visibly. Backend ticket warranted; no UI workaround per CORE_MEMORY honesty pattern.
+
+### Architecture transition entries
+
+- **EditableTable** — join-shaped numeric-edit. Convergence: when a second consumer of cell-level editing lands, fold into DataTable's column API or retire.
+- **OverlaidForm `sourcePath`** — interim form-engine extension. Convergence: shared `resolveAccessor` utility, likely as part of the Layer 1 runtime extraction (PR #57).
+
+### Files changed (this run)
+
+- `src/components/widgets/data/EditableTable.tsx`
+- `src/components/widgets/forms/OverlaidForm.tsx`
+- `src/components/widgets/forms/formContainer/FieldRenderer.tsx`
+- `src/components/widgets/forms/formContainer/utils.ts`
+- `schemas/tabs/quote/census.json`
+- `schemas/forms/census-file-format-form.json`
+- `proposals/PROP-0005-quote-detail-census-editable.md` (status → done)
+- `context/ARCH_TRANSITION.md` (two new entries)
+- `agent_logs/build-feature/2026-05-13-census-editable-table/` (discover/clarify/verify)
+- `context/build-feature/2026-05-13-census-editable-table/design.md`
+
+### Remaining workstreams
+
+PROP-0007 (Mapping DMN view) and PROP-0008 (Edit-bar split) remain. PROP-0007's lane is now smaller — only the mapping-replace flow, since `json-textarea` and `json` validation already shipped here.
+
+---
+
+## 2026-05-13 — PROP-0007: Member-to-Plan DMN view + blob-replace
+
+Run-id `2026-05-13-mapping-dmn-view`. Built via `/build-feature PROP-0007`.
+
+### CLARIFY answer
+
+Replace action gated to **checker** per the proposal text (deviates from V1's maker-everywhere convention for writes; intentional — DMN authoring is treated as actuarial review).
+
+### Commit (`478e29c`) — 4 files, +343/-38
+
+- `src/components/widgets/data/DmnDecisionTable.tsx` — new bespoke widget. Parses stringified `memberToPlanMappingJson`, drills `decisionTable.{hitPolicy, inputs, outputs, rules}`, renders header chips + dynamic-column rules table. Accepts both wrapped and unwrapped shapes.
+- `schemas/forms/member-mapping-replace-form.json` — new. Single `mapping` json-textarea field, pre-fills via `sourcePath: "memberToPlanMappingJson"`, validates via `json` rule, submits `PUT /quotation/quotes/{id}/member-to-plan-mapping` body `{mapping: string}`.
+- `schemas/tabs/quote/member-mapping.json` — rewritten. Replaces broken key-value-grid (used wrong field paths `hits`/`rules` vs the live `decisionTable.hitPolicy`/`decisionTable.rules`).
+- `src/components/registry/WidgetRegistry.tsx` — register `dmn-decision-table`.
+
+### Verify
+
+- `tsc --noEmit` PASS.
+- ESLint clean on the new widget.
+- Live browser smoke against group-pas-dev: DMN renders (hitPolicy FIRST, salary input, planNo output, 2 rules). Replace modal pre-fills with full stringified blob. Negative path confirmed: malformed JSON disables submit + surfaces "Mapping must be valid JSON".
+
+### Reused from PROP-0005
+
+- `json-textarea` field type
+- `json` validation rule
+- `sourcePath` per-field pre-fill plumbing
+
+The PROP-0007 lane was lighter than originally specced because PROP-0005 lifted these form-engine pieces forward.
+
+### Architecture transition
+
+`dmn-decision-table` is bespoke read-only. Convergence: a structured DMN editor (future PROP-0009/0010-class) either upgrades this widget to `editable: true` mode or replaces it with a sibling editor. API contract is stable.
+
+### Backend / spec note
+
+The proposal text said top-level `hits` + `rules` in the mapping JSON. Live shape nests under `decisionTable` with per-rule `when`/`then` dicts. Backend is authoritative; proposal text was wrong and is corrected in PROP-0007's Implementation notes.
+
+### Remaining
+
+One workstream left: PROP-0008 (Edit-bar split — sequencing last per its own design note so users never see both the top-action-bar Edit and per-tab Edit at once).
+
+---
+
+## 2026-05-13 — PROP-0008: Action-bar Edit split (closes Quote Detail expansion)
+
+Run-id `2026-05-13-edit-bar-split`. Built via `/build-feature PROP-0008`. Sequencing-last lane of the 5-proposal Quote Detail batch.
+
+### Commit (`f19d7f2`) — 2 files, +30/-11
+
+- `schemas/quote-detail.json` — removed `edit` from `stateActions.DRAFT`, from `roleActions.maker`, and the action object itself. Also fixed a trailing-comma artifact from the deletion.
+- `schemas/tabs/quote/key-data.json` — added inline `action-bar` with single `edit-policy-detail` action that opens the existing `edit-quote-policy-detail-form` modal. DRAFT + maker gated.
+
+No source code, no new widgets, no API changes.
+
+### Verify
+
+- JSON parse + tsc clean.
+- Browser smoke against group-pas-dev: top action bar shows `Send for approval` + `Withdraw` for maker/DRAFT (no `Edit`); Key Data tab's new Edit button opens the existing form modal pre-filled with all 8 scalar policy fields.
+
+### Quotation Detail batch — summary
+
+The PROP-0004..0008 batch is complete:
+
+| Prop | Surface | Status |
+|------|---------|--------|
+| PROP-0004 | Plans tab card grid + structured editor (PlanCard, PlanForm, AmountFormulaField, CardGrid widget) | done |
+| PROP-0005 | Census tab editable aggregate + file-format editor (EditableTable widget; json-textarea field type + json validation rule + OverlaidForm sourcePath plumbing) | done |
+| PROP-0006 | Pricing tab per-plan premium breakdown (data-table consumer) | done (shipped in setup commit) |
+| PROP-0007 | Member-to-Plan DMN view + blob-replace (DmnDecisionTable widget; reused PROP-0005 form-engine pieces) | done |
+| PROP-0008 | Split monolithic action-bar Edit; per-tab edit ownership | done |
+
+Net new widgets registered: `card-grid`, `editable-table`, `plan-card`, `plan-form`, `dmn-decision-table`. Net new form fields: `json-textarea` + `json` validation rule. Net new OverlaidForm pre-fill primitive: `sourcePath` + `sourceParseJson` + `sourceSubPath`.
+
+Backend gaps surfaced (not papered over):
+- `GET /quotation/quotes/{id}` doesn't echo `aggregateCensus.planBreakdown` — DSL declares it on the entity. After Save + reload, per-plan headcount values render as 0; only the rolled-up `headcount` survives the round trip visibly. Backend ticket warranted.
+
+ARCH_TRANSITION entries added: bespoke `plan-form`, `EditableTable`, OverlaidForm `sourcePath` pre-fill, and `dmn-decision-table` — each with convergence triggers tied to future generic primitives (recursive form repeater, inline-editable DataTable cells, shared schemaAccessor resolver, structured DMN editor).
+
+---
+
+## 2026-05-13 — PROP-0006: data-table dataSource parseJson + cross-array column join
+
+Run-id `2026-05-13-datatable-parsejson-join`. Built via `/build-feature PROP-0006`.
+
+Lifted the KeyValueGrid `parseJson + subPath` pattern up to the data-table dataSource layer, plus added a small cross-array `joinSource/joinKey/joinField` primitive on columns. With both landed, the Pricing tab's forward-declared per-plan breakdown (shipped in setup commit `c11efb8`) now actually renders.
+
+### CLARIFY answers
+
+1. parseJson failure mode: **throw** — surface as ErrorState.
+2. Join miss: **leave cell empty / dash**.
+
+### Commit (`9e37194`) — 5 files, +182/-30
+
+- `src/types/widget.ts` — DataSourceConfig: optional `parseJson?: boolean`, `dataPath?: string`.
+- `src/components/widgets/data/DataTable/types.ts` — ColumnConfig: optional `joinSource`, `joinKey`, `joinField`.
+- `src/hooks/useDataTable.ts` — new resolver: drill dataPath → optional JSON.parse → fall back to auto-discovery → enrich rows with column joins. Returns `dataError` on parse failure.
+- `src/components/widgets/data/DataTable/index.tsx` — surface `dataError` via existing ErrorState; merge `config.dataSource` into props (WidgetRenderer doesn't flatten it); new `cellValue` helper for dotted accessorKey.
+- `schemas/tabs/quote/pricing.json` — drop stale `"data": []`; use dotted `amount.amount` / `amount.currency` (DSL Money shape); wire `planName` cross-array join.
+
+### Bugs caught during VERIFY
+
+1. **dataSource not in props.** WidgetRenderer flattens `config.props` onto the widget but leaves `config.dataSource` separate. useDataTable expects it in props. Fixed by merging at the DataTable call site.
+2. **Dotted accessorKey didn't auto-nest.** TanStack table treats `accessorKey: "amount.amount"` as a flat key. Added `accessorFn` for dotted keys in the columnDef builder + a `cellValue` helper for the explicit row lookups.
+3. **Wire shape was nested Money** (`{amount: {amount, currency}}` from `QuotePlanPremium`). Schema updated to use dotted accessors.
+4. **Dev server stuck on stale chunk error** for census.json. Unrelated; `touch` forced re-parse.
+
+### Verify
+
+- `tsc --noEmit` PASS.
+- ESLint clean on touched files.
+- Live browser smoke: `P1 / Standard Cover / ₹24,192,000 / INR` and `P2 / Enhanced Cover / ₹134,784,000 / INR`; total 158,976,000 = sum.
+
+### Architecture transition
+
+Cross-ref appended under existing "OverlaidForm sourcePath" entry. Three consumers now hold the same parseJson/dataPath pattern (KeyValueGrid field-level, OverlaidForm field-level, data-table dataSource-level + column join). All three converge onto a shared `resolveAccessor` utility when the schema-engine extraction PR #57 lands.
+
+### Status update
+
+PROP-0006 → done. The Quotation Detail tab expansion (PROP-0004..0008) is now fully complete — Pricing was the last lane where the forward-declared schema needed widget enhancements to actually render.
+
+### Remaining approved-but-not-started proposals
+
+- PROP-0001 (Census Submission UI)
+- PROP-0002 (Member-Quote GCL)
+- PROP-0003 (Post-issuance AddMember)
+
+---
+
+### 2026-05-13 — Role-workbench planning + 5 new proposals filed (PROP-0009..PROP-0013)
+
+**Why:** [docs/planning/DEMO_NARRATIVE_GTL_GCL.md](../docs/planning/DEMO_NARRATIVE_GTL_GCL.md) walks 6 personas (Sales, Partner Agent, MPH, Member, UW, Ops). Current portal shows the same menu/actions to every role. User asked for a feasibility pass: what's there, what's the gap, what to ask the API team.
+
+**Plan written:** `/Users/seriousblack/.claude/plans/read-docs-planning-demo-narrative-gtl-gc-cosmic-dove.md` (approved by user).
+
+**Findings (against keystone-ui + live OpenAPI at https://group-pas-dev.anairacloud.com/v3/api-docs):**
+- Role type, RoleSwitcher, action-level RBAC (`roleActions` in ActionBar) — all present.
+- Navigation NOT role-aware: `/api/config/app` returns same menu for every role; `NavigationItem` has no `roles` field.
+- No Inbox/workbench concept in `src/`; dashboard is metric-cards-only.
+- No schema-level `visibleRoles` field — `WidgetRenderer` renders every child unconditionally.
+- Backend state-based filtering covers every demo inbox: `quotes/search?status=`, `proposals/search?state=`, `policy-members/search?state=REFERRED_TO_UW`, `members/search?state=REPAIR_PENDING`. UW transitions (`/uw/approve`, `/uw/reject`) and MAF confirm (`POST .../confirm-maf`) all exist.
+- Backend ownership filters NOT needed for V1 — auth is open, role is UI-local, inbox filters by state.
+- `partner_agent` and `mph` are separate backend identities (confirmed by user).
+
+**Five proposals filed:**
+- [PROP-0009](../proposals/PROP-0009-role-workbench-inbox.md) — Role-workbench + Dashboard Inbox in `group-insurance` portal (Sales + Partner Agent). Introduces the three shared primitives (6-role enum sweep, `visibleRoles` renderer field, role-aware `/api/config/app`). **Build first.**
+- [PROP-0010](../proposals/PROP-0010-mph-portal.md) — MPH portal (deferred). Blocking question: MPH-side accept endpoint.
+- [PROP-0011](../proposals/PROP-0011-member-portal.md) — Member portal — MAF landing + OTP (deferred). Backend ready.
+- [PROP-0012](../proposals/PROP-0012-uw-portal.md) — UW workbench portal (deferred). Backend ready.
+- [PROP-0013](../proposals/PROP-0013-ops-portal.md) — Ops repair portal (deferred). Blocking question: post-repair persist endpoint.
+
+**Open questions to API team — all 3 resolved 2026-05-13 by direct investigation of `group-pas` backend source at `/Users/seriousblack/dev_anaira/group-pas`:**
+
+1. **GTL threshold counter** — `activationThreshold` + `pendingReason` ARE returned on `GET /api/policy-admin/policies/{policyId}` via `PolicyDto` ([PolicyDto.java:31-32](file:///Users/seriousblack/dev_anaira/group-pas/group-pas/policyAdmin/PolicyAdminQuery/src-gen/main/java/com/anaira/policyadmin/query/PolicyDto.java)). Current member count is **not** in the response — UI computes it from `GET /api/issuance/policies/{policyId}/members`. Workflow's `memberCount` is private to its `dataAttributes`. PROP-0009 updated.
+
+2. **Ops repair persist + re-classify** — two-step pattern:
+   - `PUT /api/issuance/policy-members/{policyMemberId}` (UpdateMemberRequest) — persists corrections ([PolicyMemberAPI.java:55-68](file:///Users/seriousblack/dev_anaira/group-pas/group-pas/issuance/IssuanceApi/src/main/java/com/anaira/issuance/api/PolicyMemberAPI.java))
+   - `POST /api/issuance/policy-members/{policyMemberId}/send-for-issuance` — re-enters classification (same file:109-112)
+   - Backend gap noted: domain `completeMemberRepair(MemberRepairCorrections)` exists but has no API endpoint. Surface as backend feedback if the two-step UX bites. PROP-0013 updated.
+
+3. **MPH accept** — acceptance is at the **Quote** level, not Proposal. `POST /api/quotation/quotes/{quoteId}/accept` transitions `SENT_TO_CLIENT` → `ACCEPTED` ([QuoteAPI.java:117-120](file:///Users/seriousblack/dev_anaira/group-pas/group-pas/quotation/QuotationApi/src/main/java/com/anaira/quotation/api/QuoteAPI.java)). Proposal has no `SENT_TO_CLIENT` state or accept endpoint — Proposal is created after Quote acceptance. Demo narrative wording needs a small adjustment when PROP-0010 is built: MPH accepts the *quote*, not the proposal. PROP-0010 updated.
+
+**Files changed:** 5 new proposals + 3 proposal updates (PROP-0009, PROP-0010, PROP-0013) reflecting answered questions. No `src/` touched.
+
+**Next steps:**
+- All three API questions are answered; no outbound message to backend team needed.
+- ~~`/build-feature PROP-0009`~~ — **done 2026-05-13**, see entry below.
+- After PROP-0009 lands, sequence PROP-0010 → PROP-0011 → PROP-0012 → PROP-0013. All four deferred portals are now unblocked from a backend-contract perspective.
+
+---
+
+### 2026-05-13 (continued) — PROP-0009 BUILD landed
+
+`/build-feature PROP-0009` ran end-to-end with explicit user gates at DESIGN. Scope expanded during CLARIFY to ship the 6-role enum + 7-section Inbox as a stopgap for all personas (rather than just sales + partner_agent) — user direction to make the demo walk before MPH/Member/UW/Ops portals exist.
+
+**Two commits on `feat/new-buisiness`:**
+- `53c7a13` — docs(proposals): 5 new proposals + HANDOFF/SESSION_LOG updates.
+- `16d17d2` — feat(role-workbench): 25 files, +534/-105.
+
+**What landed:**
+- 6-role enum `sales | partner_agent | mph | member | uw | ops` + ROLES const ([src/types/group-pas/roles.ts](../src/types/group-pas/roles.ts)).
+- `visibleRoles?: Role[]` on `WidgetConfig`; honored by [WidgetRenderer](../src/components/registry/WidgetRenderer.tsx).
+- `allowedRoles?: Role[]` on `NavigationItem`; [/api/config/app](../src/app/api/config/app/route.ts) filters menu server-side.
+- [AppContextProvider](../src/components/providers/AppContextProvider.tsx) re-fetches on role change (role in queryKey).
+- 11-schema sweep: `maker→sales`, `checker→sales` (most) / `mph` (accept/reject). `viewer` keys dropped.
+- New `confirm-maf` action on [policy-member-detail](../schemas/policy-member-detail.json) for member role.
+- Dashboard Inbox: 7 role-scoped data-table sections in [dashboard.json](../schemas/dashboard.json).
+- ActionBar maker-checker overlay theatre preserved by string-rename in [ActionBar.tsx](../src/components/widgets/actions/ActionBar.tsx).
+- Tests: ActionBar suite rewritten (8 pass); new WidgetRenderer.visibleRoles suite (4 pass).
+
+**Verification:**
+- `tsc --noEmit`: PASS.
+- Targeted tests (actions + registry): 12/12 PASS.
+- Full jest: 56 failures unchanged from pre-change baseline — all pre-existing in DataTable + FormContainer suites, not caused by this work.
+- `npm run lint` script broken at repo level (Next.js scriptarg mismatch, pre-existing). Ran `npx eslint` on touched files — only pre-existing `any`-type warnings in widget.ts (already present), one new unused-import warning fixed.
+- **Browser verify (preview server id `48abc5c5-...`):** zero console errors across role switches. Confirmed: default role=sales (2 inbox sections + Business Processes), mph view (1 inbox section, narrow menu), ops view (3 REPAIR_PENDING members, Home+Policy Admin menu).
+
+**Files changed:** 25 (src + schemas + 1 new test file). Build log: [agent_logs/build-feature/2026-05-13-role-workbench-inbox/](../agent_logs/build-feature/2026-05-13-role-workbench-inbox/).
+
+**PROP-0009 status:** `done`. Dev auto-deploys to https://keystone-ui-dev.anairacloud.com within ~4 min via CI/CD.
+
+**Next:** the four deferred portals (PROP-0010..PROP-0013) are unblocked. Sequence determined by user priority — backend contracts are confirmed for all four.
+
+---
+
+### 2026-05-13 (continued) — Playwright e2e suite + 4 PROP-0009 gap fixes shipped
+
+**Why:** post-deploy, user verified PROP-0009 in the browser and confirmed the dev URL was live. Then asked for a Playwright suite covering the demo narrative + extended flows, with the explicit goal of bubbling up gaps before the product team uses it.
+
+**Suite landed:** `tests/e2e/` — 8 spec files, 151 tests. Runs against https://keystone-ui-dev.anairacloud.com by default (override via `PLAYWRIGHT_BASE_URL`). Read + interaction + schema-coherence layers — see [tests/e2e/README.md](../tests/e2e/README.md).
+
+**First pass (read-only):** 64 pass / 14 fail / 8 skip. Surfaced 2 product gaps but missed the New Quote crash because tests didn't click anything.
+
+**Second pass (after user feedback — added interactions.spec.ts and schema-coherence.spec.ts):** 115 pass / 28 fail / 8 skip. Surfaced 4 demo-blocking product gaps:
+
+| Gap | Detail | Failures caught |
+|---|---|---|
+| 3 | `useRole must be used inside <RoleProvider>` — PROP-0009's `useRole()` in WidgetRenderer threw whenever a widget rendered through a portal (form modals, Radix dropdowns). Caused the New Quote crash the user reported. | 13 |
+| 0 | Sales held both halves of the maker-checker overlay (send-for-approval + submit). User flagged this directly. Schema-coherence auditor surfaced it. | 1 |
+| 1 | DataTable never rendered its `title` prop — every list page + every Inbox section was missing its header (pre-existing bug exposed by PROP-0009's multi-section dashboard). | 10 |
+| 2 | UW/Member/Ops Inbox click landed on the PAM-side `member-detail.json` (no policy-member workflow actions) via a redirect from `/policy-admin/members/by-policy-member/:id`. | 4 |
+
+**Fixes (commits `acdb06a` + `ca116c8`):**
+- [src/hooks/useRole.ts](../src/hooks/useRole.ts) — return a `{role: 'sales', setRole: noop}` fallback when context missing instead of throwing.
+- [schemas/quote-detail.json](../schemas/quote-detail.json) — dropped `send-for-approval` + `clear-approval` actions; renamed `submit` label to "Submit quote".
+- [src/components/widgets/data/DataTable/index.tsx](../src/components/widgets/data/DataTable/index.tsx) — toolbar now renders `{title}` to the left of headerActions/Export.
+- [src/app/issuance/policy-members/[policyMemberId]/page.tsx](../src/app/issuance/policy-members/) — new standalone route that loads `policy-member-detail.json` directly (resolves proposalId server-side from the policy-member payload for `{{id}}` substitution).
+- [schemas/dashboard.json](../schemas/dashboard.json) — Inbox `linkRoute`s now point to `/issuance/policy-members/:id`.
+- [tsconfig.json](../tsconfig.json) — exclude `tests/e2e/**` from main type-check so Playwright tests don't pollute the build.
+
+**5th gap surfaced — filed as proposal, not fixed in this pass:**
+- [PROP-0015](../proposals/PROP-0015-proposal-members-wiring.md) — `/api/issuance/proposals/{id}/members` 404s on the live backend (pre-existing). Both GET and POST in `schemas/tabs/proposal/members.json` + `add-policy-member-form.json` wire to a route that doesn't exist; correct path is `/api/issuance/policy-members/search?proposalId=...` for read and `/api/issuance/policies/{policyId}/members` for write. Test `interactions.spec.ts > Sales clicking "Add member"` marked `test.fixme` pending the proposal. (Originally numbered PROP-0014; renumbered after discovering a pre-existing untracked PROP-0014-product-catalog-compose-plan.md.)
+
+**Verification:**
+- `tsc --noEmit`: PASS.
+- Playwright local (`PLAYWRIGHT_BASE_URL=http://localhost:3000`): **136 pass / 0 fail / 15 skip** (8 data-state skips, 6 no-row-data skips, 1 PROP-0015 fixme).
+- Browser preview: New Quote modal opens cleanly (was crashing); Inbox sections show their titles; no console errors on role switches.
+- Live deploy pushed to `feat/new-buisiness`; CI/CD auto-deploys to https://keystone-ui-dev.anairacloud.com.
+
+**Files changed across the two fix commits:** 6 src/schema files + 1 new route + 1 tsconfig + 1 new proposal + 3 test syncs. Test suite commits: 2 (`3fdf7ec` + `22e2b43`) totaling 8 spec files, helpers, README, gap report.
+
+**Status:**
+- PROP-0009 → `done` (closes the 4 just-shipped gaps; demo-walkable now).
+- PROP-0010..PROP-0013 → still draft (deferred portals).
+- PROP-0015 → draft, ready for `/build-feature` once the proposal Members tab fix is prioritized.
+
+**Next:** monitor the live URL after CI lands, then user can walk the demo end-to-end. Open items: PROP-0015 fix, and the 8 seed-data-skipped tests (need backend admin endpoint or richer seed script to create PENDING policies, SENT_TO_CLIENT quotes, MAF_PENDING / REFERRED_TO_UW / REPAIR_PENDING members).
+
+---
+
+### 2026-05-14 — Narrative walkthrough suite + two Quote-detail fixes
+
+**Why:** user asked to verify how walkable the GTL/GCL demo narrative is on the live dev URL against a freshly-scrubbed backend, AND to seed entities at every workflow stage *through the portal* (no API calls) so QA can browse each state per role.
+
+**Two phases shipped:**
+
+1. **Portal-driven narrative walkthrough** (Phase A). One `test()` per beat of [docs/planning/DEMO_NARRATIVE_GTL_GCL.md](../docs/planning/DEMO_NARRATIVE_GTL_GCL.md); soft-records gaps via [tests/e2e/lib/coverage.ts](../tests/e2e/lib/coverage.ts) so an early gap doesn't cascade-skip independent beats downstream. [scripts/render-narrative-coverage.ts](../scripts/render-narrative-coverage.ts) compiles the JSONL into `tests/e2e/NARRATIVE_COVERAGE_<date>.md`.
+
+2. **State-matrix seeder** (Phase B). [tests/e2e/seed-portal.spec.ts](../tests/e2e/seed-portal.spec.ts) drives the portal `SEED_COUNT` times (default 3) producing 9 distinct workflow-stage groups (Quote DRAFT/SENT_TO_CLIENT/ACCEPTED, Proposal DRAFT, Policy PENDING/ACTIVE, PolicyMember MAF_PENDING/REFERRED_TO_UW/REPAIR_PENDING/ACTIVE). [scripts/render-seeded-state.ts](../scripts/render-seeded-state.ts) emits a click-through index.
+
+**Reusable verbs:** [tests/e2e/helpers/portal-actions.ts](../tests/e2e/helpers/portal-actions.ts) — `createQuote`, `submitAndSendToClient`, `mphAccept`, `finalizeQuote`/`Proposal`, `uploadCensus`, `confirmMaf`, `uwApprove`, `opsRepair`, `switchRole`. Every helper detects `data-disabled-reason` and returns a gap-note rather than failing the test, so the walkthrough reports backend blockers as data points instead of red Xs.
+
+**Initial coverage run (pre-fix):** 6/17 walkable, 10 gaps, 1 fail. **Root cause** for every gap past beat 1.4: backend `Quote.submit` requires `estimatedPremium`, which the UI was preventing the user from requesting. Backend reality check against `/Users/seriousblack/dev_anaira/group-pas/group-pas/quotation/`: the pricing path IS wired via the Temporal workflow `CalculateQuotePremiumState.java` (2%-of-cover deterministic mock). The disabledTooltip on the schema's `request-price` action was a stale lie from before that workflow shipped.
+
+**Two Quote-detail fixes landed in commit `6edbb02`:**
+
+1. **GCL Member Quotes tab leaked onto GTL.** Added data-conditioned visibility to `TabsContainer`:
+   - [src/types/widget.ts](../src/types/widget.ts) — `visibleWhen?: Record<string, unknown>` (json-logic) on `WidgetConfig`.
+   - [src/components/widgets/container/TabsContainer.tsx](../src/components/widgets/container/TabsContainer.tsx) — when the container declares a `dataSource`, fetches the entity (deduped by `useSmartQuery`, no extra request), filters tabs whose `visibleWhen` rejects. Snaps active tab to first visible if current disappears.
+   - [schemas/quote-detail.json](../schemas/quote-detail.json) — tabs-container declares `/api/quotation/quotes/{{id}}` as its dataSource.
+   - [schemas/tabs/quote/member-quotes-placeholder.json](../schemas/tabs/quote/member-quotes-placeholder.json) — `visibleWhen: { "==": [{var:"policyType"},"GCL"] }`.
+
+2. **Request Pricing was rendered disabled.** Backend was already wired; copy was stale.
+   - [schemas/tabs/quote/pricing.json](../schemas/tabs/quote/pricing.json) — dropped `disabledTooltip`, added `successMessage`, rewrote tab description + empty-state copy.
+   - [src/app/api/quotation/[[...path]]/route.ts](../src/app/api/quotation/[[...path]]/route.ts) — updated mock-handler comment so offline mode no longer perpetuates the "engine not shipped" myth.
+
+**Verification:**
+- New spec [tests/e2e/verify-fixes.spec.ts](../tests/e2e/verify-fixes.spec.ts) — 3/3 pass against `localhost:3000` (proxy → live backend): GTL hides the GCL tab, GCL shows it, Request Price button is enabled on DRAFT.
+- ActionBar unit tests (8/8) still pass — generic `disabledTooltip` machinery untouched.
+- Phase A coverage post-fix: **8/17 walkable** (beat 1.4 Request Pricing now ✅ for both LoBs). Remaining gaps are timing-related — the Temporal workflow that computes premium is async, so test races it when clicking Submit. Next move is a test-side `useSmartQuery.stopWhen` poll for premium to populate. Not a UI/backend gap.
+
+**Commits pushed to `feat/new-buisiness`:**
+- `a142a64` feat(tests): narrative walkthrough + state-matrix seeder for GTL/GCL demo
+- `6edbb02` fix(quote): hide GCL Member Quotes tab on GTL + un-gate Request Pricing
+
+**Files added:**
+- `tests/e2e/helpers/portal-actions.ts`, `tests/e2e/lib/coverage.ts`
+- `tests/e2e/narrative-walkthrough-{gtl,gcl}.spec.ts`, `tests/e2e/seed-portal.spec.ts`, `tests/e2e/verify-fixes.spec.ts`
+- `tests/e2e/fixtures/census-{gtl,gcl,with-uw-row,with-repair-row}.csv`
+- `scripts/render-{narrative-coverage,seeded-state}.ts`
+- `tests/e2e/NARRATIVE_COVERAGE_2026-05-14.md`, `tests/e2e/SEEDED_STATE_2026-05-13.md`
+
+**Status:** dev URL auto-deploys from the push (~4 min). After deploy, the live `New Quote → Pricing tab → Request price` button should fire the backend workflow and populate `estimatedPremium`. Once verified, the test-side polling tweak unblocks the rest of the narrative path.
+
+**Open items:**
+- Add `stopWhen` poll on the quote-detail data source so the walkthrough can wait for `estimatedPremium` before clicking Submit, then re-run Phase A and Phase B for a fuller coverage number.
+- PROP-0015 (Proposal Members tab wiring) still draft.
+- Ops Inbox click-through to repair-edit still missing (PROP-0010-style routing) — surfaced as GTL §4 gap.
+
+### 2026-05-14 (continued) — Error toast legibility fix
+
+User reported the error toast was illegible: red background with white text. Root cause was [src/components/ui/toast.tsx:82](../src/components/ui/toast.tsx) using `text-destructive-foreground` (which resolves to `#ffffff` in light mode per `globals.css`) on a `bg-destructive/10` tint — white on near-white. The sibling banners (`ErrorBanner`, `ReasonBanner`) already use `text-destructive` on the same tint; aligned the toast to match (added `dark:text-destructive` for symmetry with the existing `dark:bg-destructive/20`).
+
+Verified via `preview_start` + injected probe: computed color is now `rgb(239, 68, 68)` (destructive red) on the tinted background — legible.
+
+**Files touched:** `src/components/ui/toast.tsx` (one line).
+**Commit:** `196f969` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+### 2026-05-14 (continued) — Quote display polish + API drift sweep
+
+User flagged three live-backend issues and asked for a drift sweep:
+
+1. **Show `quote.quoteNumber` instead of `quote.id`, fallback to `id` where blank.** Backend now returns a friendly `quoteNumber` (e.g. `QUO-042`) alongside the opaque UUID `id` on the summary endpoint but **not** on the detail endpoint.
+2. **No visual signal that a pricing request was made.** Pressing *Request price* toasted "Pricing requested" but nothing on the Pricing tab updated until manual reload — the schema was missing the `pollSchedule` the rest of the codebase already uses.
+3. **Headcount resets to 0 after save.** PUT body matches the spec (`{headcount, planBreakdown[]}` under `aggregateCensus`), but the GET response returns `planBreakdown[]` at the **root** and omits `aggregateCensus`. EditableTable was joining against `aggregateCensus.planBreakdown` and seeing nothing.
+
+**Pattern landed (UI side, not backend):**
+
+- `fallbackKey` on DataTable columns ([src/components/widgets/data/DataTable/types.ts](../src/components/widgets/data/DataTable/types.ts), [index.tsx:28](../src/components/widgets/data/DataTable/index.tsx)) — primary accessor with deterministic fallback.
+- `fallbackKey` on KeyValueGrid fields ([src/components/widgets/data/types.ts](../src/components/widgets/data/types.ts), [KeyValueGrid.tsx:43](../src/components/widgets/data/KeyValueGrid.tsx)).
+- `titleTemplate` on PageHeader ([src/components/widgets/layout/PageHeader/index.tsx](../src/components/widgets/layout/PageHeader/index.tsx)) with `{accessor|fallback}` chain, sourced from `config.dataSource` — fetches only when the template is declared.
+- `valueArrayPathFallbacks` on EditableTable ([src/components/widgets/data/EditableTable.tsx:185](../src/components/widgets/data/EditableTable.tsx)) — tries `valueArrayPath` first, then each fallback, then derives rows inline from the key array if the value field lives on each key row.
+- New widget `polling-banner` ([src/components/widgets/state/PollingBanner.tsx](../src/components/widgets/state/PollingBanner.tsx)) — registered in [WidgetRegistry](../src/components/registry/WidgetRegistry.tsx). Polls via `useSmartQuery` and renders spinner+message when the configured `pendingWhenMissing[]` accessors all resolve blank. Stops when the backend populates the value (relies on dataSource's `stopWhen`).
+
+**Schemas wired up:**
+
+- [schemas/quote.json](../schemas/quote.json) Quote column → `quoteNumber` w/ `fallbackKey: id`.
+- [schemas/proposal.json](../schemas/proposal.json) Proposal column → `proposalNumber` w/ `fallbackKey: id`.
+- [schemas/policy.json](../schemas/policy.json) Policy column → `policyNumber` w/ `fallbackKey: id`.
+- [schemas/quote-detail.json](../schemas/quote-detail.json) — PageHeader `titleTemplate: "Quote {quoteNumber|id}"` + dataSource; Client KVG field gains `fallbackKey: clientId`.
+- [schemas/proposal-detail.json](../schemas/proposal-detail.json), [schemas/policy-detail.json](../schemas/policy-detail.json) — Client KVG field gains `fallbackKey: clientId`.
+- [schemas/tabs/quote/key-data.json](../schemas/tabs/quote/key-data.json) — Quote ID → Quote # with fallback; Client with fallback.
+- [schemas/tabs/proposal/overview.json](../schemas/tabs/proposal/overview.json) — Proposal ID → Proposal # with fallback; Client with fallback.
+- [schemas/tabs/quote/census.json](../schemas/tabs/quote/census.json) — `valueArrayPathFallbacks: ["plan.breakdown", "planBreakdown"]` so the EditableTable picks up the real backend's root-level `planBreakdown[]`.
+- [schemas/tabs/quote/pricing.json](../schemas/tabs/quote/pricing.json) — new `polling-banner` at the top with `pollSchedule` (2s/5s/60s cap) and `stopWhen: { ">": [{var:"estimatedPremium.totalAmount"}, 0] }`. `>` was deliberate over `!=` because json-logic loose-equality treats `null != 0` as true — would have stopped polling on the missing-field case.
+
+**Types/mocks:**
+
+- `Quote`, `QuoteDto`, `QuoteSummaryDto` gained optional `quoteNumber` ([src/types/group-pas/quotation.ts](../src/types/group-pas/quotation.ts)).
+- Mock fixtures + mappers pass it through ([src/mocks/group-pas/quotation/quotes.ts](../src/mocks/group-pas/quotation/quotes.ts), [src/lib/api-mock/group-pas/dtos.ts](../src/lib/api-mock/group-pas/dtos.ts)).
+
+**Drift sweep — full table in [docs/API_DRIFT_2026-05-14.md](../docs/API_DRIFT_2026-05-14.md).** Headline findings:
+
+- **Quote detail** is missing `quoteNumber`, `clientName`, `clientNumber` (all present on summary).
+- **Quote detail** returns `planBreakdown[]` at the root — spec puts it under `aggregateCensus`.
+- **Proposal detail** is missing `proposalNumber`, `clientName`, `clientNumber`.
+- **Policy detail** is missing `clientName`, `clientNumber`; `estimatedPremium` shape disagrees with summary (object vs flat `estimatedPremiumAmount` + `estimatedPremiumCurrency`).
+- **Policy member detail** is missing `policyMemberNumber`, `mobile`, `pendingReason`/`voidReason`/`cancellationReason` — last three are what ReasonBanner consumes.
+- **`PolicySummaryDto` spec is stale** — backend already returns the extended set.
+
+UI fallbacks are intentionally inert once the backend ships the enrichments listed in the drift doc's action-items section.
+
+**Verified on dev (proxy mode):**
+
+- Quote list shows `QUO-042` (from `quoteNumber`) and falls back to UUID for rows where `quoteNumber` is empty.
+- Quote detail (FINALIZED) — Census tab renders P1=8 / P2=2 / total 10 from root-level `planBreakdown[]`.
+- Quote detail (DRAFT, no premium) — Pricing tab shows *"Pricing computing… The page will update automatically when the workflow completes."* with spinner; banner disappears once `estimatedPremium.totalAmount > 0`.
+- No console errors after edits.
+
+**Files touched / commit:**
+
+- 22 files; new: [docs/API_DRIFT_2026-05-14.md](../docs/API_DRIFT_2026-05-14.md), [src/components/widgets/state/PollingBanner.tsx](../src/components/widgets/state/PollingBanner.tsx).
+- Commit `db53240` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+**Open items:**
+
+- Backend enrichment work tracked in the drift doc; once it lands, the `fallbackKey`s and `valueArrayPathFallbacks` declared in the schemas above become inert and can be cleaned up.
+- Quote detail header still shows the UUID because the detail endpoint omits `quoteNumber`; the fallback in `titleTemplate` keeps the page usable but it's the backend gap surfacing.
+
+### 2026-05-14 (continued) — Polling banner gated on user action
+
+User reported the *"Pricing computing…"* banner shipped earlier today was firing on every DRAFT page load — including quotes that couldn't even be priced yet (no plans) — instead of only after pressing **Request price**.
+
+**Fix (commit `98d9ba4`):**
+
+- [src/components/widgets/state/PollingBanner.tsx](../src/components/widgets/state/PollingBanner.tsx) — added optional `stateKey` prop. When set, the banner is opt-in: it reads `useWidgetState().values[stateKey]` and only polls/renders while that flag is truthy. When the response satisfies `pendingWhenMissing`, a `useEffect` clears the flag so the banner self-dismisses. Without a `stateKey` the prior always-on behaviour is preserved.
+- [schemas/tabs/quote/pricing.json](../schemas/tabs/quote/pricing.json) — polling-banner gets `stateKey: "pricing-pending:{{id}}"`. The Request-price action's `onSuccess[]` now dispatches an `update-widget-state` step that sets the same key to `true`. Failures (e.g. 400 from the no-plans case) skip `onSuccess` entirely (useActionHandler throws), so the flag never flips and the banner stays hidden.
+- Reload-resilient: a hard refresh drops the flag, so a stale request can't leave the banner stuck forever; the next poll's response is the source of truth.
+
+**Verified on dev (proxy):**
+
+- DRAFT quote w/ plans + premium already populated (`QUO-035` ACCEPTED state, Pricing tab open) → banner hidden ✅.
+- DRAFT quote w/o plans (`QUO-041`) → Request price click → 400 from backend → banner stays hidden ✅ (correct: don't claim "computing" when the request was rejected).
+- The full success path (`200` → flag flips → banner shows → premium populates → banner clears) couldn't be exercised end-to-end against the dev cluster because every existing DRAFT either has no plans or already has a premium. Wiring uses the same `onSuccess[].update-widget-state` → `useWidgetState` pattern that ships in RoleSwitcher and form `onSuccess[]` flows, so confidence is high; flagged in the user-facing summary so the next person can demo with a fresh fixture.
+
+**Files touched / commit:** 2 files, commit `98d9ba4` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+### 2026-05-14 (continued) — Anaira logomark wired as brand mark
+
+User dropped the official Anaira logomark at [docs/Logomark - Anaira.svg](../docs/Logomark%20-%20Anaira.svg) and asked for it to show up at minimum as the tab favicon, plus suggestions for other surfaces.
+
+**Brand changes (commit `8191b06`):**
+
+- [public/favicon.svg](../public/favicon.svg) — replaced the old "AN" letter mark with the radial-gradient Anaira logomark.
+- [public/anaira-logomark.svg](../public/anaira-logomark.svg) — same asset under a stable name so app UI (sidebar, future PDFs/emails) references the brand path instead of `favicon.svg`.
+- [docs/Logomark - Anaira.svg](../docs/Logomark%20-%20Anaira.svg) — committed the source asset alongside the public copies so designers and devs share one origin.
+- [src/app/layout.tsx](../src/app/layout.tsx) — metadata title flipped from `Create Next App` → `Anaira`, description updated, and `icons` registered for `icon`, `shortcut`, and `apple` (apple-touch picks up the SVG too).
+- [src/components/navigation/IconRail.tsx](../src/components/navigation/IconRail.tsx) — rail header now renders `<Image src="/anaira-logomark.svg" />` inside the home link; dropped the `bg-primary` square wrapper since the gradient logomark carries its own colour. `logoIconName` prop kept on the interface so existing nav configs (`logo: { icon: "Users" }`) still type-check, but the prop is no longer read.
+
+**Verified on dev (proxy mode, 1280×800):**
+
+- Tab favicon resolves to `/favicon.svg` and the SVG body contains the `radial-gradient` (confirmed via `fetch('/favicon.svg')` in-browser).
+- `document.title === "Anaira"`.
+- Sidebar rail header shows the gradient logomark (32×32 inside a 36×36 link container); no console errors.
+
+**Suggested next surfaces for the logomark** (presented to user; not yet built):
+
+1. Sidebar rail header — ✅ done in this commit.
+2. Login / auth screen — when the screen lands.
+3. Loading / splash state before role context resolves.
+4. 404 / empty-state illustration corners.
+5. Generated PDFs (quote, policy schedule, claim receipt).
+6. Email templates (quote-sent, claim-acknowledged, payout notice).
+7. Print stylesheet header for screens users `Cmd+P`.
+8. Open Graph image (`app/opengraph-image.png`) for link previews.
+9. Desktop toast / system-notification icon (favicon is reused automatically once metadata is set).
+
+**Files touched / commit:** 5 files, commit `8191b06` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+### 2026-05-14 (continued) — MemberQuote (GCL) deletion reverted — actually required
+
+Misunderstanding earlier in the session led to deleting the entire MemberQuote (GCL) surface (commit `381945c`, logged in `a7e15e6`). User clarified after the push: MemberQuote IS required for GCL-type quotes — per-loan-disbursement member quotes hanging off the GCL master Policy, exactly as [docs/spec/quotation/QuotationDomain.domain:202](../docs/spec/quotation/QuotationDomain.domain) describes. The "GCL only - W4" spec note meant gated by policy type, not "not in scope".
+
+**Reverted (commits `1d770e7` for the log entry, `1e2e364` for the code, both via `git revert`):**
+
+- All deleted files restored: `src/app/quotation/member-quotes/`, `schemas/member-quote.json`, `schemas/member-quote-detail.json`, `schemas/forms/{create-member-quote,set-member-quote-premium}-form.json`, `schemas/tabs/quote/member-quotes-placeholder.json`, `src/mocks/group-pas/quotation/member-quotes.ts`.
+- All type/handler/registry edits reverted in: [src/types/group-pas/quotation.ts](../src/types/group-pas/quotation.ts), [src/lib/api/quotation.ts](../src/lib/api/quotation.ts), [src/lib/api-mock/group-pas/{dtos,store}.ts](../src/lib/api-mock/group-pas/), [src/app/api/quotation/[[...path]]/route.ts](../src/app/api/quotation/[[...path]]/route.ts), [src/mocks/group-pas/index.ts](../src/mocks/group-pas/index.ts), [src/components/widgets/state/state-map.ts](../src/components/widgets/state/state-map.ts), [src/tests/unit/state/StateBadge.unit.test.tsx](../src/tests/unit/state/StateBadge.unit.test.tsx), [schemas/quote-detail.json](../schemas/quote-detail.json), [src/mocks/original/group-insurance/config/app-config-mock.ts](../src/mocks/original/group-insurance/config/app-config-mock.ts).
+- `schemas/forms/index.ts` regenerated; `tsc --noEmit` clean.
+
+**Net effect of `381945c` + `1e2e364` on `feat/new-buisiness`:** zero — the code on disk matches `68a8dd1` for the MemberQuote surface. History preserved (no force-push).
+
+**Open follow-ups for the next session:**
+
+1. The quote-detail tab `member-quotes-placeholder.json` is gated `visibleWhen: policyType === 'GCL'` — content is still a directional placeholder pointing at `/quotation/member-quotes`. Decision pending whether to embed the real list + add-member action inline on the GCL quote-detail tab, or keep the placeholder-then-deep-link UX.
+2. Backend question still open: `QuoteDto` carries no `policyId`, and `MemberQuote.policyId` only resolves once the GCL quote has been `finalize()`d into a Policy. UI scoping the in-quote-detail list needs either (a) `policyId` nullable on `QuoteDto`, (b) a `?quoteId=` filter on `GET /member-quotes`, or (c) explicit "available once finalized" empty state.
+3. Sidebar "Member Quotes" link is live but unscoped (cross-policy view). Worth a label tweak / scoping pass if the in-quote UX lands first.
+
+**Lesson recorded for future me:** when a user says "X isn't a requirement", read it as a scope question, not a deletion order — confirm intent before deleting whole entities. Especially when the spec explicitly defines them.
+
+### 2026-05-14 (continued) — Display quote/proposal numbers, not IDs, on remaining list/detail surfaces
+
+User flagged that some dashboards/lists/detail headers still showed raw IDs (`quote.id`, `proposal.id`) where the prior rollout had already switched most surfaces to the human-friendly number with an ID fallback. Goal: tighten display-only — keep IDs for navigation, route params, GETs/POSTs.
+
+**Pattern reused (no renderer changes):**
+
+- `data-table` column: `accessorKey: "<entity>Number"` + `fallbackKey: "id"` (or `<entity>Id`). Renderer falls back when the primary is blank (`DataTable/index.tsx:38`).
+- `key-value-grid` field: same `accessorKey`/`fallbackKey` (`KeyValueGrid.tsx:45-48`).
+- `page-header`: `dataSource` + `titleTemplate: "Proposal {proposalNumber|id}"` — mirrors what `schemas/quote-detail.json:16` already did for quote-detail.
+- `linkRoute` continues to substitute `row.id` from the row object (`DataTable/index.tsx:282,458`), so display changes don't affect navigation.
+
+**Schemas touched (commit `27f7bd5`):**
+
+- [schemas/dashboard.json](../schemas/dashboard.json) — three inbox tables: Sales draft quotes (`:112`), Sales proposals-to-finalize (`:137`, both "Proposal #" and "Source quote" prefer `quoteNumber`), MPH quotes-awaiting-acceptance (`:187`).
+- [schemas/proposal.json:57](../schemas/proposal.json) — list "Source Quote" column → `quoteNumber` w/ fallback `quoteId`.
+- [schemas/proposal-detail.json](../schemas/proposal-detail.json) — header gets a `dataSource` and `titleTemplate: "Proposal {proposalNumber|id}"`; state-summary "Source quote" prefers `quoteNumber`.
+- [schemas/tabs/proposal/overview.json:36](../schemas/tabs/proposal/overview.json) — "Source quote" → `quoteNumber` w/ fallback.
+- [schemas/tabs/policy/overview.json:27](../schemas/tabs/policy/overview.json) — "Source proposal" → `proposalNumber` w/ fallback `proposalId`.
+
+**Left alone:**
+
+- `schemas/member-quote.json:65` ("Member Quote ID") — no `memberQuoteNumber` exists on `MemberQuoteDto`, nothing to prefer.
+- All `linkRoute`s, all `dataSource.endpoint`s, all `{{id}}` route params — unchanged. ID remains canonical for fetches and writes.
+
+**Backend dependency:** these `fallbackKey`s are inert today wherever the backend payload omits the number field (e.g. proposal list/detail, GCL `quoteNumber` on `MemberQuote`). They keep the page usable but the real win lands once the API populates `proposalNumber` / surfaces `quoteNumber` in cross-entity payloads (proposal → source quote, policy → source proposal). Same drift logged on 2026-05-14 for quote-detail still applies.
+
+**Files touched / commit:** 5 files, commit `27f7bd5` — pushed to `feat/new-buisiness`, auto-deploys to dev URL.
+
+### 2026-05-14 (continued) — Surface DRAFT proposals on the sales dashboard + array-param infra
+
+User opened the sales dashboard and noticed draft proposals were absent from the inbox, even though `/issuance/proposals` showed them. Root cause: the only proposals inbox widget ([schemas/dashboard.json](../schemas/dashboard.json) `inbox-sales-finalize-proposal`) hardcoded `params.state: "SUBMITTED"`, and `/api/issuance/proposals/search` filters with strict equality. Per the demo narrative ([PROP-0010](../proposals/PROP-0010-mph-portal.md)) DRAFT (sales still completing) and SUBMITTED (awaiting MPH/UW) both belong in sales' worklist.
+
+**Approach (per user direction):** wanted to express OR in the schema declaratively. Split into two commits so the infra piece can cherry-pick to `main` independently of the demo schema change.
+
+**Commit 1 — `cae20af` `feat(infra): support array-valued params in schema-driven fetch`** (cherry-pickable to `main`):
+
+- [src/hooks/useSmartQuery.ts:33-52](../src/hooks/useSmartQuery.ts) — added `Array.isArray` branch ahead of the existing `typeof === 'object'` nested-spread branch. Array values now serialize as repeated keys (`state=DRAFT&state=SUBMITTED`) instead of being mistreated as objects with numeric keys `0`, `1`. Generic — every schema-driven data-table benefits.
+- [src/app/api/issuance/[[...path]]/route.ts:215](../src/app/api/issuance/[[...path]]/route.ts) — `proposals/search` handler swapped `sp.get('state')` for `sp.getAll('state')` and filter to `states.length === 0 || states.includes(p.state)`. Single-state callers unaffected.
+
+**Commit 2 — `b290391` `fix(sales-dashboard): surface DRAFT proposals as a sibling inbox`:**
+
+Originally planned as a single widget with `params.state: ["DRAFT","SUBMITTED"]`. During verification I discovered `GROUP_PAS_BACKEND_URL` is set on the dev environment, so the catch-all route proxies to the live Group PAS backend ([src/lib/api-mock/group-pas/http.ts:74-106](../src/lib/api-mock/group-pas/http.ts)). Probed the live backend with 5 multi-value conventions:
+
+| Query | Result |
+| --- | --- |
+| `state=POLICY_CREATED&state=DRAFT` | 0 (binds last value only) |
+| `state=POLICY_CREATED,DRAFT` | 0 (literal comparison) |
+| `state=POLICY_CREATED\|DRAFT` | 0 |
+| `state[]=...&state[]=...` | 5 (unknown param ignored — no filter applied) |
+| `states=...&states=...` | 5 (same — silent ignore) |
+| `state.in=POLICY_CREATED,DRAFT` | 5 (same — silent ignore) |
+
+None give true OR. **Pivoted commit 2 from "one OR widget" to "two single-state widgets"** so both modes work. Added a new `inbox-sales-draft-proposal` data-table ("Draft proposals — complete and submit", `state=DRAFT`) above the existing `inbox-sales-finalize-proposal` (renamed copy: "Proposals ready to finalize", `state=SUBMITTED`, empty-state description updated to "Proposals appear here once they have been submitted for review.").
+
+**Why keep commit 1 despite the pivot:** the array-param infra is generic and self-contained — useful for any future endpoint (mock or backend) that does support repeated keys. Zero UX impact in isolation. Pre-applied so the OR-widget design becomes a one-line schema change if/when the backend grows multi-state filtering.
+
+**Verification (browser via preview-mcp on running dev server, proxy mode):**
+
+- Both widgets render with correct empty states ("No draft proposals" / "No proposals to finalize") — confirmed via snapshot + screenshot. Backend currently holds 5 `POLICY_CREATED` proposals, zero DRAFT, zero SUBMITTED.
+- `/api/issuance/proposals/search?state=DRAFT` → 200 OK, `state=SUBMITTED` → 200 OK, `state=POLICY_CREATED` → 5 rows (backwards-compat confirmed).
+- `/api/issuance/proposals/search?state=DRAFT&state=SUBMITTED` → 200 OK from the proxy (returns 0 because the live backend collapses to last value; doesn't error).
+- `git log` shows two distinct commits, infra parent of feature; infra commit touches only `useSmartQuery.ts` + `route.ts`, feature commit touches only `schemas/dashboard.json`.
+
+**Follow-up to file (offered to user):** propose multi-state filtering on `/api/issuance/proposals/search` upstream so the OR-widget design becomes viable. Until then, two widgets stay.
+
+**Files touched / commits:** 3 files across 2 commits (`cae20af` infra, `b290391` feature) on `feat/new-buisiness` — not yet pushed.
+
+### 2026-05-14 (continued) — Issuance bulk-upload: fix broken flow + solid upload screen + backend CORS unblock (PROP-0017)
+
+User report: "Bulk upload in issuance screen is broken — can we fix that, and build a solid bulk upload screen described by specs and backend scope."
+
+**Root cause (real one, took two passes to find):** in proxy mode the dev backend returns a cross-origin `uploadUrl` (`https://group-pas-dev.anairacloud.com/api/issuance/_dev/census-uploads/{fileRef}`). Browser preflight `OPTIONS` got `403 Invalid CORS request` from Spring's `CorsFilter` — no `Access-Control-Allow-*` headers, no allowlist match. The `PUT` was silently dropped after a successful `POST .../census-submissions`, so initiate worked but the actual file never landed. Frontend was always correct against [docs/spec/issuance/IssuanceApi.api:201-232](../docs/spec/issuance/IssuanceApi.api) (`CensusSubmissionAPI`).
+
+**First-pass fix (built then reverted at user request):** added a Next.js same-origin forwarder in [src/app/api/issuance/[[...path]]/route.ts](../src/app/api/issuance/[[...path]]/route.ts) — `rewriteCensusInitiateUpload()` rewrote the cross-origin `uploadUrl` to a relative path, and `forwardCensusUpload()` streamed the binary body to backend with the original content-type. Verified end-to-end. Reverted because user preferred the fix at the backend boundary rather than maintaining a binary-streaming forwarder kept in sync with whatever shape the real presigned URLs eventually take. `route.ts` is back to HEAD.
+
+**Filed [PROP-0017](../proposals/PROP-0017-backend-cors-census-upload.md) → backend team → resolved same day:** explicit ask was an allowlist entry on `/api/issuance/_dev/census-uploads/**` for `http://localhost:3000` and `https://keystone-ui-dev.anairacloud.com` with `Access-Control-Allow-Methods: PUT, OPTIONS`, `Access-Control-Allow-Headers: Content-Type`, OPTIONS preflight returning 204 (not 403). Backend deployed it; verified via `curl -X OPTIONS` returning 200 with the allow-headers, then through the form in the browser (initiate 200 → cross-origin PUT 204 → ingest 204 → detail page renders parsed rows with the correct "Ingested" badge). Marked `status: done` with `resolution:` capturing the verification.
+
+**UI work shipped on `feat/new-buisiness` (commit pending — see "what's uncommitted"):**
+
+- [src/app/issuance/proposals/[id]/census/new/page.tsx](../src/app/issuance/proposals/[id]/census/new/page.tsx) — solid upload screen. Now: page-header → "Start from a template" quick-links row (two `api-download` cards pulling `public/templates/census-{gtl,gcl}.csv`) → two-column grid with the upload form on the left and a static "Expected columns" reference table on the right (column name, Required/Optional badge, example, notes — eight columns aligned to `CreatePolicyMemberRequest` in the spec).
+- [schemas/tables/census-submission-rows.json](../schemas/tables/census-submission-rows.json) and [schemas/views/census-submission-detail.json](../schemas/views/census-submission-detail.json) — **badge mapping bug fix.** Both files mapped row status to `VALID/WARNING/INVALID`, but the actual enum on the wire is `ACCEPTED/INGESTED/REJECTED` ([src/types/group-pas/issuance.ts:52](../src/types/group-pas/issuance.ts) — `CensusSubmissionRowStatus`). Every uploaded row was rendering as "Unknown". Fixed both the badge `valueMapping` and the filter `select` options.
+- [schemas/forms/upload-census-form.json](../schemas/forms/upload-census-form.json) — clearer helper-text + form description. Registry regenerated via `node scripts/generate_form_index.mjs`.
+- [public/templates/census-gtl.csv](../public/templates/census-gtl.csv), [public/templates/census-gcl.csv](../public/templates/census-gcl.csv) — sample CSV templates (3 example rows each), served as static assets.
+- [src/app/api/_mock/uploads/[[...path]]/route.ts](../src/app/api/_mock/uploads/[[...path]]/route.ts) — pure-mock upload sink for `PUT/POST/PATCH`. Only fires when `GROUP_PAS_BACKEND_URL` is unset; in proxy mode this path is never hit. Returns 200 with `{ ok: true, receivedBytes, contentType }` so the mock-only initiate response's `uploadUrl: /api/_mock/uploads/{id}` doesn't 404 (it did before — was the symptom I initially patched and then realised wasn't the actual bug).
+
+**Specs question: do we need a member-level upload on the *quote* census tab?** Audited [schemas/tabs/quote/census.json](../schemas/tabs/quote/census.json) and [docs/spec/quotation/QuotationApi.api](../docs/spec/quotation/QuotationApi.api). **No, by design.** Quote census tab is aggregate-only:
+
+- `aggregate-census` editable-table — headcount per plan, PUT `/api/quotation/quotes/:id/aggregate-census`. Drives pricing.
+- `census-file-format` viewer + editor (PROP-0005, done) — metadata only (file type, sheet name, schema, dialect) configuring how the *future* upload will be parsed.
+
+The Quotation API has no member-level census submission endpoint (only the generic `POST /files/upload-url` for arbitrary attachments like rate-card files: `GenerateFileUploadUrlCommand(fileName, contentType): string`). The full `Initiate → PUT → Ingest → Submit` lifecycle lives entirely under Issuance's `CensusSubmissionAPI`. Intent is clear: at quote time you size with headcounts; the per-member roster lands once the quote becomes a proposal. **Recommendation: don't add a quote-census upload — current aggregate-only layout matches the spec.**
+
+**What's uncommitted on `feat/new-buisiness` after this session:**
+
+Mine (this session) — to be committed:
+- `src/app/issuance/proposals/[id]/census/new/page.tsx`, the three census schemas (`schemas/forms/upload-census-form.json`, `schemas/tables/census-submission-rows.json`, `schemas/views/census-submission-detail.json`), `public/templates/`, `src/app/api/_mock/uploads/[[...path]]/route.ts`.
+- New: `proposals/PROP-0017-backend-cors-census-upload.md` (status `done`).
+- `proposals/_index.md` carries my PROP-0017 row plus state moves below.
+
+Not mine — left for the originating sessions to commit:
+- PROP-0010..0014, PROP-0016 `draft → under-review` from a parallel `/review-proposals` run (also lands in `_index.md`).
+- Untracked: `docs/DEMO_FRONTEND_PAM.md`, `src/tests/unit/navigation/navHelpers.unit.test.tsx`.
+
+**Lesson recorded for future me:** when a "broken upload" bug exists in proxy mode, do a same-origin `PUT` probe **before** patching the local mock layer. The presence of `/api/_mock/uploads/...` not existing was a red herring — the pure-mock path was never being hit in dev. The real failure was cross-origin CORS, only visible by either (a) reading the network panel for `OPTIONS → 403`, or (b) `curl -X OPTIONS` directly against the backend with `Origin` set.
+
+### 2026-05-14 (continued) — Census submission detail polish: errors cell + polling stop + manual test material
+
+Two observations from the user once the bulk upload itself worked:
+
+**1. Errors column was dumping JSON.** [schemas/tables/census-submission-rows.json](../schemas/tables/census-submission-rows.json) declared `type: "truncate"` for the `ingestionErrorsJson` field. CellRenderer has no `truncate` case so it fell through to `default → String(value)`. Compounding that, the issuance backend wraps the spec's `list<CensusRowError>` under `.errors` and echoes parsed memberData alongside (`{"errors":[...], "memberData":{...}}`), so even valid rows displayed a full JSON dump. Added `case "errors-list"` to [CellRenderer](../src/components/widgets/data/CellRenderer.tsx) — JSON-parses, drills into `.errors` (accepting either a top-level array or `{errors:[...]}`), renders one `field: message` line per entry in destructive red, muted dash on empty/parse-fail. Schema pointed at `errors-list`.
+
+**2. Polling never stopped at INGESTED.** [schemas/views/census-submission-detail.json](../schemas/views/census-submission-detail.json) `stopWhen` only halted on `COMPLETED`/`FAILED`. After parse completes the submission sits at `INGESTED` waiting for the user to click *Submit submission* — meanwhile the summary endpoint was getting polled every 5s for the full `maxDurationMs: 60000`. Added `INGESTED` to `stopWhen`. When the user clicks Submit the status flips to `SUBMITTED` (not in stopWhen), polling resumes via the refresh, then settles on `COMPLETED`. Verified: 0 summary fetches in 12s after landing on a sticky INGESTED page.
+
+**Verified end-to-end** by uploading a 3-row mixed file (one valid, one bad-DOB, one PLAN-XYZ): rejected row shows `dob: dob must be ISO-8601 (yyyy-MM-dd)` formatted with field bold + message red; accepted rows show `—`. Backend behavior note for the test script: `PLAN-XYZ` does **not** reject at the parse layer — the backend accepts the row and surfaces plan-existence errors downstream during member materialization.
+
+**Manual test material shipped alongside** (separate commit, `test(issuance): big census fixtures + manual upload test script`):
+- [tests/e2e/fixtures/census-{gtl,gcl}-big-{clean,mixed}.csv](../tests/e2e/fixtures/) — four 200-row fixtures (clean = all valid; mixed = 180 valid + 20 deterministic errors at fixed row numbers). Error map in the test doc lists which rows trigger which validation.
+- [scripts/generate_census_fixtures.mjs](../scripts/generate_census_fixtures.mjs) — deterministic generator (seeded LCG, fixed pools, fixed error positions). Re-running yields byte-identical output.
+- [tests/e2e/CENSUS_UPLOAD_MANUAL_TEST.md](../tests/e2e/CENSUS_UPLOAD_MANUAL_TEST.md) — five-test walkthrough (GTL happy, GTL validation, GCL happy, GCL validation, negative edge cases). Preflight section includes the CORS curl + a note that the test proposal needs plans `P1` and `P2`.
+
+**Commits on `feat/new-buisiness`:** `1ba1ee5` (fix), plus the test material commit + this log entry. Pushed.
+
+### 2026-05-14 (continued) — Census Submit button: action-bar reads wrong field name
+
+User report: "Submit submission" button on the census detail page rendered disabled with tooltip "Not available in this state", even though submission was at INGESTED with 200 accepted rows.
+
+**Spec check (asked + answered):** [docs/spec/issuance/IssuanceDomain.domain](../docs/spec/issuance/IssuanceDomain.domain) `canSubmit()` precondition is "CensusSubmission must be INGESTED with at least one accepted row" — clearly satisfied. State machine is `INITIATED → INGESTED → SUBMITTED → COMPLETED`. Spec wanted the button enabled.
+
+**Root cause was schema, not spec.** `ActionBar` defaults `stateField: "state"` (documented in [ActionBar.tsx:58](../src/components/widgets/actions/ActionBar.tsx)). The `CensusSubmissionDto` exposes the lifecycle field as `status`, not `state`. So `entity.state → undefined → '' → stateActions[''] = [] → submit not in list → disabled`. The schema declared `stateActions: { INGESTED: ["submit"] }` correctly but forgot the `stateField: "status"` override.
+
+**Fix:** added `"stateField": "status"` to the action-bar props in [schemas/views/census-submission-detail.json](../schemas/views/census-submission-detail.json). Verified in preview — button no longer disabled (`disabled: false`, no `data-disabled-reason`). Commit `370aadb`, pushed to `feat/new-buisiness`.
+
+**Lesson for future schemas:** any entity whose DTO uses `status` (CensusSubmission, possibly others) needs the explicit `stateField` override in action-bar props. Worth a sweep of remaining action-bar usages to catch other latent versions of this bug.
+
+### 2026-05-14 (continued) — Member-to-plan mapping: replace json-textarea with row-per-rule editor
+
+User pushback on the existing modal: "the JSON mapping isn't user-friendly — plan names are already known, why not an editable table with a plan dropdown?" Spec check first: [docs/spec/quotation/QuotationDomain.domain:24](../docs/spec/quotation/QuotationDomain.domain) and [QuotationApi.api:161](../docs/spec/quotation/QuotationApi.api) only require the field be stored as an opaque DMN JSON string. The "DMN authoring UI is out of V1 scope" copy in [Demo_Prep_Business_Context.md:147,743](../docs/Demo_Prep_Business_Context.md) is a scope statement, not a contract one — so a friendlier editor is allowed if we accept the scope expansion.
+
+Picked flavor B over per-member assignment: row-per-rule table with the **output column** as a plan dropdown, free-text input columns for conditions. Per-member tables don't fit DMN's rules-over-attributes model and break at >50 members; the row-per-rule shape is what real DMN editors (Camunda etc.) use and matches the existing read-only [DmnDecisionTable.tsx](../src/components/widgets/data/DmnDecisionTable.tsx) renderer.
+
+**Shipped:**
+- New [DmnRulesEditor.tsx](../src/components/widgets/forms/formContainer/DmnRulesEditor.tsx) — hit-policy selector, editable rules table with plan dropdown on the `planNo` output column, add/remove rules, raw-JSON escape-hatch toggle, legacy `{hits,rules:[{if,then}]}` mock-format migrated to canonical DMN on read.
+- New field type `dmn-rules-editor` in [FieldRenderer.tsx](../src/components/widgets/forms/formContainer/FieldRenderer.tsx). Value is the canonical DMN JSON string; existing `json` validator still applies on submit.
+- [OverlaidForm.tsx](../src/components/widgets/forms/OverlaidForm.tsx) `injectRowData` learned `optionsFromRowData: { path, valueField, labelField }` — field-level options resolved from the open entity's rowData, avoiding a second network round-trip. Backwards-compatible.
+- Schema [member-mapping-replace-form.json](../schemas/forms/member-mapping-replace-form.json) — field type → `dmn-rules-editor`, options bound to `quote.plans` (`planNo` → `planName`), copy refreshed ("Edit mapping", "Save mapping").
+- Tab schema [quote/member-mapping.json](../schemas/tabs/quote/member-mapping.json) — action renamed Edit mapping / Pencil icon; "out of V1 scope" copy removed from the read-only renderer's description.
+- Mock fixtures ([quotes.ts](../src/mocks/group-pas/quotation/quotes.ts), [issuance/proposals.ts](../src/mocks/group-pas/issuance/proposals.ts)) migrated from the legacy `{hits,rules:[{if,then}]}` shorthand to canonical DMN so the read-only renderer and the editor round-trip cleanly.
+
+**Verification (live against real backend, quote `e0a9d21b…` plans P1/P2):** modal opens with existing rules pre-filled (`>= 2000000` → Enhanced Cover, `< 2000000` → Standard Cover); plan dropdown only shows the two plans attached to that quote; "Edit raw JSON" toggle exposes the canonical DMN payload and round-trips back; "Add rule" appends a blank row with correctly-shaped `when`/`then` keyed by input/output ids; serialized `rules.length` increments. No console errors. The action-bar `stateField: status` gate was temporarily relaxed during verification and reverted before the commit.
+
+**Commit `87d0acf` on `feat/new-buisiness`, pushed.** Files: the new DmnRulesEditor + FieldRenderer + OverlaidForm + the two schemas + the two mock fixtures. Pre-existing uncommitted proposal/*.md edits and untracked agent_logs/context dirs were intentionally left out of the commit.
+
+**Scope-expansion note for review:** this knowingly steps past the deferred-D3 line that called full mapping authoring "post-V1." The data contract is unchanged (same canonical DMN, same `PUT /quotes/:id/member-to-plan-mapping` blob-replace), so the line moves on UX scope, not API scope. Worth a follow-up `/propose` if we want it formally tracked.
+
+### 2026-05-15 — ActivationCounter: fix 0/10 → 5/10 numerator via /pending-breakdown
+
+User flagged [src/components/widgets/data/ActivationCounter.tsx](../src/components/widgets/data/ActivationCounter.tsx) lines 67-70: numerator filtered members on `state === "ACTIVE"`, which is always 0 pre-threshold (members sit in `PENDING` with reasons `PENDING_POLICY_ACTIVATION`, `PENDING_FLOAT_RESERVATION`, `PENDING_APPROVAL`). Widget showed `0/N` until the threshold tripped, then jumped to `N/N`. The accompanying comment ("backend has no aggregate-count endpoint, /pending-breakdown was dropped") was also stale — `/pending-breakdown` shipped to group-pas-dev in PR #77 today.
+
+**Fix (Option B per user recommendation — cleaner, single round trip):** swapped the members-list fetch for `/api/policy-admin/policies/:id/pending-breakdown`. Numerator now binds to `breakdown.pendingMembers`, which the server pre-filters to `PENDING_POLICY_ACTIVATION` only — float-reservation and approval-pending members correctly excluded. Removed the unused `MemberSummaryDto` and the stale comment.
+
+**Verification (local preview, POL-010 = `3b3e11a8-2fe1-432c-9cce-811a7ad7fad2`):** breakdown endpoint returns `pendingMembers: 5, activationThreshold: 10` with `pendingByReason: [{PENDING_FLOAT_RESERVATION: 2}, {PENDING_POLICY_ACTIVATION: 5}]`. Widget renders `5 / 10 members (min to activate)`, matching the server count. No console errors. Screenshot captured.
+
+**Commit `99869dc` on `feat/new-buisiness`.** Single file changed. Unrelated uncommitted proposal/hook/schema edits in the working tree were intentionally left out of the commit.
+
+### 2026-05-15 (continued) — Widen Plan editor modal to 3xl
+
+User flagged the Add plan modal in quote detail as too cramped for comfortable editing/viewing. The shared overlay shell defaults to `max-w-lg` (512px) but PlanForm has a two-column grid (plan number / plan name), a products list with nested benefits + exclusions, and a JSON-shaped cover/free-cover formula editor — clearly more than `lg` can hold.
+
+**Fix:** added `size: "3xl"` to the action declarations for both Add (in [schemas/tabs/quote/plans.json](../schemas/tabs/quote/plans.json)) and Edit (in [PlanCard.tsx](../src/components/widgets/data/PlanCard.tsx)). Uses the existing per-action size override added in `754ce0f`. Matches the convention set by the DMN rules editor (also `3xl`).
+
+**Verified live:** opened Add plan on quote `706c8878…` — dialog renders at `max-w-3xl` (768px cap), Plan number / Plan name sit side-by-side with room, formula editor uses the full width. No console errors. Commit `207e5dc`.
 ### 2026-05-22 — Schema-driven framework reference docs
 
 - **Branch:** `docs/schema-design-reference` (branched from `origin/main` at `37772c00`).
@@ -313,3 +2182,61 @@ Update it before stopping work so any AI tool (or human) can pick up where we le
 - **Commit:** `fb7bde8c docs(new-module): correctness + completeness pass against feat/new-buisiness` (+340 / −126, 1 file). Pushed to `origin/docs/schema-design-reference`.
 - **Tests:** N/A (docs only).
 - **Next:** branch is ready to roll into PR #72's wake; `NEW_MODULE_IMPLEMENTATION_GUIDE.md` is now aligned with the `schema-design-reference/` companion docs.
+
+### 2026-05-27 → 05-28 — feat/new-buisiness → main integration (PR #56) + deploy fix + e2e CI gate
+
+- **Goal:** land PR #56 (`feat/new-buisiness` → `main`). `main` had diverged (+73 commits) and had piecemeal-extracted the framework out of NB (#57 schema-engine, #72 core-arch, #58 nav, #59/#71 deploy/CI), so a raw merge re-conflicted on all of it.
+- **Integration merge** (resolved on throwaway `merge/nb-to-main`, then fast-forward-pushed to `feat/new-buisiness`): merged `origin/main` into NB, resolved **113 conflicts**. Merge commit `88685c46`.
+  - **Resolution rules (load-bearing for future merges):**
+    - Framework engine (`useSmartQuery`, `useDataTable`, `useActionHandler`, `WidgetRenderer`, `OverlayProvider`, `schemaResolver`, `lib/api/client`) + infra (helm / Docker / CI / `next.config`) → **take main** (reviewed/hardened port).
+    - Domain (schemas, mocks, pages, plan/form widgets) → **take NB**. `FieldRenderer` **unioned** (main's a11y pass + NB's `file` / `dmn-rules-editor` / `json-textarea` field types).
+    - **Role system + state-map → take NB (domain-populated). GOTCHA:** main's generic `registerStateMap` / `RoleContext` registries are **never registered** anywhere, so taking them renders raw enum strings and breaks the 6-persona role type. NB's inlined `state-map.ts` + `roles.ts` (6 personas) are the working versions. Unit + e2e tests catch this.
+    - Type files (`widget.ts`, `DataTable/types.ts`) → **union** both sides. Renamed 2 `api.del()` callers → `.delete()` (main's client uses `delete`). Phase-0 teardown deletions (legacy quotations) → kept deleted.
+  - **Verified:** `tsc` clean, `next build` clean, `jest` 176/176, dev smoke + full Playwright suite **185 pass / 0 fail / 20 skip** (against the live `group-pas-dev` backend via local proxy).
+- **Follow-up commits (FF-pushed to feat/new-buisiness):**
+  - `451019ce` — satisfy main's `pre-commit` gate: deduped a duplicate `"typecheck"` key in `package.json` (check-json), trailing-whitespace/EOF on pre-existing NB files.
+  - `281eca9f` — `fix(helm)`: release-scope the ServiceAccount name. `values.yaml` hardcoded `serviceAccount.name: keystone-ui`, overriding the per-release `fullname`; per-PR preview releases collided on SA ownership in the shared `dev` namespace (this was the `deploy-preview` failure). Empty name → `fullname` (canonical SA unchanged, previews isolated). deploy-preview now passes.
+  - `6ac74e59` — `ci`: new **`e2e` job** — pure-mock, self-contained: `schema-coherence` + `smoke` + `role-rbac` (88 tests, no external backend). Verified locally in pure-mock (52 schema + 36 smoke/rbac pass).
+- **PRs:** closed **#49** (`feature/new-business`, April first-gen, superseded by #56 — 116/117 unique files gone from main). **#32** left open (stale copilot-instructions).
+- **Test audit:** source of truth = `docs/planning/DEMO_NARRATIVE_GTL_GCL.md` (⚠️ **cited by README/specs/roles.ts but NEVER committed to the repo**) + `docs/planning/` specs + the DSL schemas. e2e wasn't in CI (now partly fixed by `6ac74e59`). `schemas` jest project is empty (structural Zod validation would arrive via #63/#64).
+- **STATUS:** #56 **MERGEABLE**, all functional CI green (pre-commit, build, unit, deploy-preview, e2e), **BLOCKED only on the required review** (ruleset "Copilot review for default branch", `reviewDecision: REVIEW_REQUIRED` — cannot self-approve, do not `--admin`-bypass). Scanner checks (Trivy / Checkov / OWASP-DC / SonarQube / default-CodeQL) fail but are **non-required** (no required status checks configured) — pre-existing security/quality findings.
+- **NEXT:** (1) user approves + merges #56. (2) rebase follow-ons onto the new main: motor-claims stack (#76/#70/#69/#68/#67, retarget #77), then #61, then #63/#64/#54/#75. (3) hardening: mark `e2e` required in branch protection, land #63/#64 (Zod schema validation in CI), commit the missing `DEMO_NARRATIVE_GTL_GCL.md`, triage scanner findings, confirm the dev-deploy path (no `dev`/`develop` branch exists, so the pipeline's `deploy-dev` never fires).
+
+### 2026-05-28 — DEMO_NARRATIVE + spec-first DSL-conformance regression suite landed on #56
+
+- **Narrative doc:** user dropped the canonical `docs/planning/DEMO_NARRATIVE_GTL_GCL.md` (78 lines — screen+action, GTL PENDING vs GCL ACTIVE, threshold gating, MAF/OTP). Committed `d67d2583` to `feat/new-buisiness`; resolves the dangling refs in `tests/e2e/README.md`, the narrative spec files, `src/types/group-pas/roles.ts`, and `render-narrative-coverage.ts`.
+- **CI design correction:** flipped the `e2e` CI job from pure-mock to **proxy against the real `group-pas-dev` backend** (`5beb1e12`) — mocks can't catch backend contract drift; real-backend can. Read-only subset only (`schema-coherence` + `smoke` + `role-rbac` + `list-pages`). Run passed `e2e 7m22s` in CI ✓. Drift-disambiguation: smoke hitting `/api/issuance/policy-members/search` (UI path) passed against the live backend → confirms DSL/UI is correct, openapi.json is the stale side (matches CORE_MEMORY §Reference-doc precedence).
+- **Spec-first regression suite (DSL canon):** delegated to an isolated-worktree agent, then cherry-picked onto `feat/new-buisiness` per user direction. Commit `cd0b84c2` adds:
+  - `src/tests/schemas/_helpers/dsl.ts` — DSL `.api` + `.data` parser, UI-schema endpoint extractor, state vocab.
+  - `src/tests/schemas/endpoint-conformance.test.tsx` — every UI endpoint ⊆ DSL `.api` declarations.
+  - `src/tests/schemas/state-machine-conformance.test.tsx` — UI state maps + schema `stateActions` ⊆ DSL state enums.
+  - `tests/e2e/backend-contract.spec.ts` — live-backend GET responses conform to DSL shapes. **Deliberately not wired into the CI `e2e` job** (still under the agent's manual run pattern).
+- **Result:** jest `schemas` project = **111 pass / 13 fail** (verified locally); `unit` 176 pass; backend-contract **22/22** against live `group-pas-dev` (notable contract fact: backend returns bare JSON arrays, not Spring `content` envelopes).
+- **The 13 reds = a documented backlog**, NOT fixed in this push (per user: "may not be bugs — decide case-by-case"). Details in [docs/planning/SPEC_DRIFT_BACKLOG.md](../docs/planning/SPEC_DRIFT_BACKLOG.md): `policy-members/:id/classify` (DSL says workflow-internal), `proposals/:id/members` GET+POST (DSL puts members under policies; live 404 confirmed in `interactions.spec.ts`), and 10 Accounting endpoints (`direct-journals*`, `system-journals`, `…/lines` sub-resources — DSL uses `/journals` and embeds lines).
+- **Audit correction (now verified):** the earlier "policyMember state-machine divergence" hypothesis was the **blueprint §4.2 being stale**, not the UI — state-machine conformance is GREEN against the DSL canon. So reconcile the blueprint, not the UI.
+- **CI impact (acknowledged by user):** Unit Tests job will be RED on PR + post-merge on main until the 13 are reconciled (build, deploy-preview, e2e remain green; merge gate is review-only).
+- **NEXT:** unchanged — user approves + merges #56; follow-on rebases (rules → autoclaims) after; eventually fix or document-as-intentional each of the 13 spec-drift findings.
+
+### 2026-05-28 — fix: restore state-map framework↔domain decoupling (regressed by the merge)
+
+- **Caught in a sibling agentic conversation:** PR #57 had shipped a generic empty registry on `main` (`EntityKind = string`, `STATE_MAPS = {}`, `register*` exports) so the framework `state-map.ts` + `StateBadge` / `ReasonBanner` stay decoupled from any domain — the seam is the framework↔domain package boundary. The new-business → main integration re-coupled it (took NB's variant that imports `@/types/group-pas/*` and hardcodes every GP entity inline). That was a real regression of #57.
+- **Why the merge took the coupled version:** the registry seam shipped on main but the *domain registration module* (the missing piece) had never been written, so the empty registry was empty in production. NB's coupled state-map happened to make StateBadge work; the merge inherited it and lost the decoupling.
+- **Fix on `feat/new-buisiness`** (commit `8c5ae9de`, src-only):
+  - `src/components/widgets/state/state-map.ts` — restored to main's generic empty-registry shape.
+  - `src/lib/state-maps/group-pas.ts` — new domain registration module: holds the GP entity state maps + reason maps + the `reasonGroupFor` resolver and calls `registerStateMap` / `registerReasonMap` / `registerReasonGroupResolver` at module load.
+  - Side-effect imported from `src/components/providers.tsx` (client boot — before any consumer renders) and from `src/setupTests.ts` (each Jest worker).
+  - `src/tests/schemas/_helpers/dsl.ts` — re-pointed `STATE_MAP_PATH` to the new domain module so the spec-first state-machine-conformance test parses the right file.
+- **Regression-lens sweep done at the same time:** the only same-shape regression is state-map. The role-system (`RoleContext` / `useRole` / `RoleSwitcher`) was NOT decoupled on main — main shipped a stale closed union `Role = 'maker'|'checker'|'ops'|'viewer'` (a wrong-shape placeholder, not a registry seam). Taking NB's 6-persona Group PAS roles was correct functionally; introducing a generic `Role = string` + registered-roles seam is a separate refactor, not a regression to undo. `ReasonBanner` / `PollingBanner` don't import group-pas on either side; both versions are decoupled from the domain. No other "took NB → undid main's decoupling" candidates found.
+- **Verified:** `tsc --noEmit` clean; `jest` 287/300 (the 13 reds are unchanged — the documented endpoint-conformance backlog); live dev preview renders state badges with friendly labels ("Draft", "Finalized"), zero console errors — proves the side-effect import in `providers.tsx` populates the registry in the client bundle.
+
+### 2026-05-28 — fix: two more main features the merge regressed (RoleContext widget-state + PollingBanner)
+
+- **Triggered by the user's regression-lens question** after the state-map fix landed: "is there any other functionality that's better in main and we will regress if we merge this PR?" Yes — two more. Both src-only, no schema/UI change. Commit `99f14433`.
+- **`src/contexts/RoleContext.tsx` — restored `useWidgetState['global:current-role']` publish.** main's `RoleProvider` writes the active role into the widget-state store on mount + on every `setRole`. This is the documented framework convention (STATE_MANAGEMENT_GUIDE.md + schema-design-reference 01/04/07/13) so schemas can declare `stateDependencies: ['global:current-role']` to refetch on role change and read `{ "var": "global:current-role" }` in `visibleWhen`. The merge took NB's variant that dropped the publish — no schema currently uses the key but the convention is established and future role-gated stateDependencies would silently fail to react. Re-added the two `useWidgetState.getState().setValue(ROLE_STATE_KEY, …)` calls.
+- **`src/components/widgets/state/PollingBanner.tsx` — three regressions of #72/main hardening:**
+  - `0` was being treated as missing → infinite polling on legitimately-zero domain fields (`premium=0`, `memberCount=0`). main had explicitly fixed this; merge re-introduced. Removed the `v === 0 → true` line, restored the comment explaining why.
+  - Local 10-line `getNested` replaced the shared `@/lib/objectPath` helper — lost #72's prototype-pollution defense (rejects `__proto__`/`constructor`/`prototype`, uses `hasOwnProperty.call`). Switched back to the import.
+  - Dropped `useMemo` on `pendingWhenMissing` → effect re-ran on every render when callers passed inline arrays. Restored main's JSON-stable signature memo.
+- **Verified — runtime healthy after both fixes:** `tsc` clean; `jest` 287/300 (13 reds unchanged — the documented endpoint backlog); preview reload after `.next` cache clear renders role switcher "Sales", proposal STATE badge "Draft", zero console errors, no runtime alerts.
+- **NOT regressed (cleared in the sweep, kept as-is):** `useRole` FALLBACK is a deliberate fix for portal-mounted widgets (Radix Dialog/Toaster slots can render outside the provider subtree — main's throw would crash modals); `RoleSwitcher` 6 narrative personas vs main's stale 4-role placeholder (main had a wrong-shape closed union, not a decoupling seam); `ReasonBanner` is strictly more capable on NB (self-fetch via `useSmartQuery`, fetch-error UI, semantic color tokens); `CellRenderer` + `shared/types` are NB strict supersets of main.
+- **Audit conclusion:** the regression-lens sweep over the "took NB" surface is complete — state-map (8c5ae9de), RoleContext widget-state publish (99f14433), PollingBanner hardening (99f14433). No further regressions identified.

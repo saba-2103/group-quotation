@@ -1,0 +1,57 @@
+{
+  "id": "member-mapping-replace-form",
+  "type": "form-container",
+  "props": {
+    "title": "Edit member-to-plan mapping",
+    "description": "Each row routes members matching the condition to the chosen plan. Rows evaluate top-to-bottom under the selected hit policy. Use \"Edit raw JSON\" for rules that need multiple input columns.",
+    "columns": 1,
+    "fields": [
+      {
+        "id": "mapping",
+        "name": "mapping",
+        "label": "Rules",
+        "type": "dmn-rules-editor",
+        "order": 1,
+        "span": 1,
+        "sourcePath": "memberToPlanMappingJson",
+        "optionsFromRowData": {
+          "path": "plans",
+          "valueField": "planNo",
+          "labelField": "planName"
+        },
+        "placeholder": "{\"decisionTable\":{\"hitPolicy\":\"FIRST\",\"inputs\":[...],\"outputs\":[...],\"rules\":[...]}}",
+        "helperText": "Plan column lists the plans already attached to this quote. Add rules above and pick a plan from the dropdown.",
+        "validations": [
+          { "rule": "required", "message": "Mapping is required" },
+          { "rule": "json", "message": "Mapping must be valid JSON" }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "submit-replace-mapping",
+        "label": "Save mapping",
+        "variant": "default",
+        "type": "api-mutation",
+        "submitAction": true,
+        "refreshKey": "/api/quotation/quotes/:id",
+        "api": {
+          "endpoint": "/api/quotation/quotes/:id/member-to-plan-mapping",
+          "method": "PUT"
+        },
+        "successMessage": "Member-to-plan mapping updated",
+        "onSuccess": [
+          { "type": "trigger-event", "target": "member-mapping-replace-form" }
+        ]
+      },
+      {
+        "id": "cancel-replace-mapping",
+        "label": "Cancel",
+        "variant": "outline",
+        "type": "trigger-event",
+        "target": "member-mapping-replace-form",
+        "submitAction": false
+      }
+    ]
+  }
+}

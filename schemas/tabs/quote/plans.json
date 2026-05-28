@@ -1,0 +1,47 @@
+{
+  "id": "quote-plans-tab",
+  "type": "tab-panel",
+  "props": { "value": "plans", "label": "Plans", "icon": "Layers" },
+  "children": [
+    {
+      "id": "quote-plans-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "stateField": "status",
+        "stateActions": { "DRAFT": ["add-plan"] },
+        "roleActions": { "sales": ["add-plan"], "partner_agent": [], "mph": [], "member": [], "uw": [], "ops": [] },
+        "actions": [
+          {
+            "id": "add-plan",
+            "label": "Add plan",
+            "icon": "Plus",
+            "type": "open-modal",
+            "target": "plan-edit-form",
+            "size": "3xl",
+            "variant": "default"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quote-plans-grid",
+      "type": "card-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "arrayPath": "plans",
+        "cardWidgetType": "plan-card",
+        "columns": 2,
+        "cardProps": { "quoteId": "{{id}}" },
+        "emptyState": {
+          "title": "No plans configured yet",
+          "description": "Add a plan to start. Plans drive premium calculation and member-to-plan routing."
+        }
+      }
+    }
+  ]
+}

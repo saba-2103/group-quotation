@@ -46,9 +46,26 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
       );
     }
 
+    // Group PAS entity-state badge — colour + label sourced from state-map.ts
+    // so list cells and detail headers stay in sync.
     case "state-badge": {
       const entity = (column.entity as EntityKind | undefined) ?? "quote";
       return <StateBadge entity={entity} state={String(value)} />;
+    }
+
+    // Boolean → small "Awaiting approval" warning chip when truthy.
+    // The pulse on the dot is the cue for Checkers — "act on this."
+    case "awaiting-approval": {
+      if (!value) return <span className="text-muted-foreground">—</span>;
+      return (
+        <Badge variant="warning" className="gap-1.5">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-warning opacity-75" />
+            <span className="relative inline-flex size-2 rounded-full bg-warning" />
+          </span>
+          Awaiting approval
+        </Badge>
+      );
     }
 
     case "number":
@@ -71,6 +88,42 @@ export const CellRenderer: React.FC<CellRendererProps> = ({ column, value, rowId
 
     case "date":
       return <DateDisplay value={String(value)} />;
+
+    // Renders an array of {field, code, message} ingestion errors. Accepts
+    // either a raw array OR an object shaped {errors: [...]} (the issuance
+    // backend wraps the array under `.errors` and echoes parsed memberData
+    // alongside — only the errors are user-relevant). Empty → muted dash.
+    case "errors-list": {
+      const raw = String(value);
+      if (!raw) return <span className="text-muted-foreground">—</span>;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      const list = Array.isArray(parsed)
+        ? parsed
+        : (parsed && typeof parsed === "object" && Array.isArray((parsed as { errors?: unknown }).errors))
+          ? (parsed as { errors: unknown[] }).errors
+          : [];
+      if (list.length === 0) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+      return (
+        <ul className="space-y-0.5 text-sm">
+          {list.map((e, i) => {
+            const err = (e ?? {}) as { field?: string; code?: string; message?: string };
+            return (
+              <li key={i} className="leading-snug">
+                {err.field ? <span className="font-medium text-foreground">{err.field}: </span> : null}
+                <span className="text-destructive">{err.message ?? err.code ?? "Error"}</span>
+              </li>
+            );
+          })}
+        </ul>
+      );
+    }
 
     default:
       return <span>{String(value)}</span>;

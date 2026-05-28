@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom'
 
+// Register the Group PAS state/reason maps once per Jest worker so unit tests
+// of StateBadge / ReasonBanner / cell renderers find the registry populated.
+// Matches the boot wiring in src/components/providers.tsx.
+import '@/lib/state-maps/group-pas'
+
 // Radix UI uses pointer events which jsdom does not implement.
 // These stubs allow Radix Select, Dialog, and Sheet to open in tests.
 window.PointerEvent = class PointerEvent extends MouseEvent {} as any

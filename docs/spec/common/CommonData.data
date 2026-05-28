@@ -1,0 +1,220 @@
+package com.anaira.common.data;
+
+enum Currency {
+    INR
+    USD
+}
+
+enum DebitCreditIndicator {
+    DEBIT
+    CREDIT
+    BOTH
+}
+
+enum BalanceType {
+    DEBIT
+    CREDIT
+}
+
+enum EntityType {
+    POLICY
+    MEMBER
+    AGENT
+    RECEIPT
+    JOURNAL
+    CLAIM
+    PREMIUM
+    COMMISSION
+    ACCOUNTING_EVENT
+}
+
+data DateRange {
+    startDate: date
+    endDate: date
+}
+
+data OperationContext {
+    userId: string
+    timestamp: date
+    glCurrency: Currency
+    exchangeRate: double
+}
+
+data AccountingConfig {
+    zoneId: string
+    defaultCurrency: Currency
+}
+
+data Component {
+    value: string
+}
+
+data LineOfBusiness {
+    value: string
+}
+
+data BusinessProcessCode {
+    value: string
+}
+
+data AccountGroup {
+    value: string
+}
+
+data AccountSubgroup {
+    value: string
+}
+
+data GlPseudoName {
+    value: string
+}
+
+data Entity {
+    type: EntityType
+    id: string
+}
+
+data EntitySet {
+    primaryEntity: Entity
+    secondaryEntity: Entity
+}
+
+data AccountDimensionPair {
+    accountGroup: AccountGroup
+    accountSubgroup: AccountSubgroup
+}
+
+data Money {
+    amount: int
+    currency: Currency
+}
+
+// ── Shared plan/quote/policy value objects ────────────────────────────────────
+// These types flow through the Quote → Proposal → Policy lifecycle without
+// reshaping; consolidated here so each module references a single canonical
+// definition rather than re-declaring its own.
+
+enum AmountFormulaType {
+    MULTIPLE_OF_MEMBER_ATTRIBUTE
+    LOOKUP_ON_MEMBER_ATTRIBUTE
+    FIXED
+    DMN_TABLE
+}
+
+data AmountFormula {
+    type: AmountFormulaType
+    multiplicationFactor?: double
+    lookupTableJson?: string
+    memberAttributeName?: string
+    fixedAmount?: double
+    dmnTableFile?: string
+}
+
+data PlanBenefit {
+    code: string
+    name?: string
+    mandatory: boolean
+}
+
+data PlanExclusion {
+    code: string
+    name?: string
+}
+
+data PlanProduct {
+    productCode: string
+    productName?: string
+    productType: string
+    benefits: list<PlanBenefit>
+    exclusions: list<PlanExclusion>
+}
+
+data Plan {
+    planNo: string
+    planName?: string
+    products: list<PlanProduct>
+    rateCardFile: string
+    coverAmountFormula: AmountFormula
+    freeCoverLimitFormula?: AmountFormula
+}
+
+data PlanHeadcount {
+    planNo: string
+    headcount: int
+}
+
+data AggregateCensus {
+    headcount: int
+    planBreakdown: list<PlanHeadcount>
+}
+
+data QuotePlanPremium {
+    planNo: string
+    amount: Money
+}
+
+data QuotePremium {
+    amount: Money
+    breakup: list<QuotePlanPremium>
+}
+
+data PremiumBreakupItem {
+    productCode: string
+    benefitCode?: string
+    premium: Money
+}
+
+data MemberPremium {
+    annualPremium: Money
+    breakup: list<PremiumBreakupItem>
+}
+
+data UwExclusion {
+    code: string
+    description: string
+}
+
+// Superset shape covering the quote → proposal → policy flow: Quote stage may
+// only set the lifestyle fields (name, dob, gender, salary, occupation); planNo
+// and sumInsured are populated by the time Proposal/Policy receive the member.
+data MemberData {
+    name: string
+    dob?: date
+    gender?: string
+    salary?: double
+    occupation?: string
+    sumInsured?: double
+    planNo?: string
+}
+
+// ── Shared API DTOs ────────────────────────────────────────────────────────────
+// Wire-format request/response types reused across API modules (file URL flows,
+// amount-formula payloads). Live in common so each api can reference a single
+// canonical definition without cross-module name collisions.
+
+data FileUploadUrlRequest {
+    fileName: string
+    contentType: string
+}
+
+data FileUploadUrlResponse {
+    uploadUrl: string
+    fileId: string
+}
+
+data FileDownloadUrlRequest {
+    fileId: string
+}
+
+data FileDownloadUrlResponse {
+    downloadUrl: string
+}
+
+data AmountFormulaRequest {
+    type: string
+    multiplicationFactor?: double
+    lookupTableJson?: string
+    memberAttributeName?: string
+    fixedAmount?: double
+    dmnTableFile?: string
+}

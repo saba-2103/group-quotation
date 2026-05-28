@@ -1,0 +1,26 @@
+# CLARIFY — PROP-0004
+
+## Round 1 (2026-05-13)
+
+### Q1: Branch strategy for the 5 workstreams?
+**Answer:** Stay on feat/new-buisiness, sequential commits. Split src vs context per CORE_MEMORY commit-hygiene rule.
+
+### Q2: PROP-0004 per-card Edit affordance scope?
+**Answer:** Wire pre-fill plumbing in this lane. Ship full Edit affordance in V1.
+
+### Q3: Plan-edit-form fields — structured or raw JSON?
+**Answer:** Structured editor for products/benefits/formula now. **This materially expands the lane** beyond what PROP-0004 originally specified. Requires:
+- New multi-row repeater field type
+- Nested form for products → benefits → exclusions (two-level nested repeater)
+- AmountFormula sub-form with discriminated-union type switching (`type` select drives which subfields render)
+- AmountFormulaType enum surfacing in form select options
+
+Estimated cost: ~1.5–2 days vs ~4h for raw JSON option. User accepts the cost; documented here so future readers see the explicit tradeoff.
+
+## Decisions for DESIGN
+
+1. Single branch (feat/new-buisiness), incremental commits split src vs context.
+2. Per-card Edit wired in this lane via new pre-fill plumbing on OverlaidForm/FormContainer.
+3. Plan edit form is fully structured with nested repeaters + AmountFormula type switcher. Raw-JSON path is dropped.
+
+No remaining open items. Proceeding to DESIGN.

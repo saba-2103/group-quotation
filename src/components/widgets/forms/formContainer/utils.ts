@@ -31,6 +31,25 @@ const VALIDATION_APPLIERS: Partial<
     isNumber
       ? (schema as z.ZodNumber).max(Number(v.value), { message: v.message })
       : (schema as z.ZodString).max(Number(v.value), { message: v.message }),
+  // Refines a string schema so it must parse as JSON. Pairs with the
+  // `json-textarea` field type, but is also usable on any string field
+  // that carries a serialized JSON blob (e.g. the DMN mapping replace flow
+  // tracked in PROP-0007).
+  json: (schema, v, _isNumber, isStringType) =>
+    isStringType
+      ? (schema as z.ZodString).refine(
+          (s: string) => {
+            if (s == null || s === "") return true; // empty is allowed; pair with `required` if mandatory
+            try {
+              JSON.parse(s);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+          { message: v.message ?? "Must be valid JSON" },
+        ) as unknown as FieldSchema
+      : schema,
 };
 
 export const isRequiredField = (field: FormFieldConfig): boolean =>
@@ -44,6 +63,18 @@ const buildFieldSchema = (
   field: FormFieldConfig,
   required: boolean,
 ): z.ZodTypeAny => {
+  // File fields carry a runtime `File` object (or null). They bypass the
+  // string/number/boolean ladder; `required` is enforced via a refinement.
+  if (field.type === "file") {
+    const fileSchema: z.ZodTypeAny = z
+      .any()
+      .refine(
+        (v) => !required || (typeof File !== 'undefined' && v instanceof File),
+        { message: field.validations?.find((x) => x.rule === REQUIRED_RULE)?.message ?? `${field.label} is required` },
+      );
+    return required ? fileSchema : fileSchema.optional();
+  }
+
   let schema: z.ZodTypeAny =
     field.type === "number"
       ? z.coerce.number()
@@ -91,6 +122,8 @@ export const buildDefaultValues = (fields: FormFieldConfig[]): FormValues => {
       defaults[field.name] = field.defaultValue;
     } else if (field.type === "checkbox") {
       defaults[field.name] = false;
+    } else if (field.type === "file") {
+      defaults[field.name] = null;
     } else {
       defaults[field.name] = "";
     }

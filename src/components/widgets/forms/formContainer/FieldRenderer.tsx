@@ -11,6 +11,7 @@ import { NATIVE_INPUT_TYPES } from './constants';
 import ViewField from './ViewField';
 import { DateFormat } from '@/contexts/TenantConfigContext';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
+import { DmnRulesEditor } from './DmnRulesEditor';
 
 interface FieldRendererProps {
     field: FormFieldConfig;
@@ -133,6 +134,45 @@ const RadioField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'is
     );
 };
 
+const formatFileSize = (bytes: number): string => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    let value = bytes;
+    while (value >= 1024 && i < units.length - 1) {
+        value /= 1024;
+        i++;
+    }
+    return `${value.toFixed(value >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+};
+
+const FileField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => {
+    const value = fieldProps.value;
+    const selected = (typeof File !== 'undefined' && value instanceof File) ? value : null;
+    return (
+        <div className="flex flex-col gap-1.5">
+            <input
+                type="file"
+                id={field.name}
+                accept={field.accept}
+                disabled={isDisabled}
+                onChange={(e) => {
+                    const f = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+                    fieldProps.onChange(f);
+                }}
+                onBlur={fieldProps.onBlur}
+                ref={fieldProps.ref}
+                className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground hover:file:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+            {selected && (
+                <p className="text-xs text-muted-foreground">
+                    {selected.name} — {formatFileSize(selected.size)}
+                </p>
+            )}
+        </div>
+    );
+};
+
 const CheckboxField: React.FC<Pick<FieldRendererProps, 'field' | 'fieldProps' | 'isDisabled'>> = ({ field, fieldProps, isDisabled }) => {
     const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
     return (
@@ -156,6 +196,7 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
     select:   ({ field, fieldProps, isDisabled }) => <SelectField field={field} fieldProps={fieldProps} isDisabled={isDisabled} />,
     radio:    ({ field, fieldProps, isDisabled }) => <RadioField field={field} fieldProps={fieldProps} isDisabled={isDisabled} />,
     checkbox: ({ field, fieldProps, isDisabled }) => <CheckboxField field={field} fieldProps={fieldProps} isDisabled={isDisabled} />,
+    file:     ({ field, fieldProps, isDisabled }) => <FileField field={field} fieldProps={fieldProps} isDisabled={isDisabled} />,
     textarea: ({ field, fieldProps, isDisabled }) => {
         const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
         return (
@@ -168,6 +209,31 @@ const FIELD_TYPE_MAP: Record<string, React.FC<FieldRendererProps>> = {
             />
         );
     },
+    // Monospace textarea for JSON blobs. Pair with the `json` validation rule
+    // (see formContainer/utils.ts) to reject invalid JSON on submit.
+    'json-textarea': ({ field, fieldProps, isDisabled }) => (
+        <Textarea
+            placeholder={field.placeholder}
+            {...fieldProps}
+            value={(fieldProps.value as string) ?? ''}
+            disabled={isDisabled}
+            className="font-mono text-xs min-h-32"
+            spellCheck={false}
+        />
+    ),
+    // Row-per-rule DMN editor. Field value is the JSON string the backend
+    // stores; the editor parses/serializes on every change. Plan options are
+    // pre-filled by OverlaidForm.injectRowData from the quote's `plans`.
+    'dmn-rules-editor': ({ field, fieldProps, isDisabled }) => (
+        <DmnRulesEditor
+            value={(fieldProps.value as string) ?? ''}
+            onChange={fieldProps.onChange}
+            onBlur={fieldProps.onBlur}
+            disabled={isDisabled}
+            plans={field.options}
+            placeholder={field.placeholder}
+        />
+    ),
     date: ({ field, fieldProps, isDisabled }) => {
         const a11y = useFieldA11yProps({ hasHelperText: Boolean(field.helperText) });
         return (

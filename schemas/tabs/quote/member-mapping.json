@@ -1,0 +1,49 @@
+{
+  "id": "quote-member-mapping-tab",
+  "type": "tab-panel",
+  "props": { "value": "member-mapping", "label": "Member-to-Plan Mapping", "icon": "GitBranch" },
+  "children": [
+    {
+      "id": "quote-member-mapping-table",
+      "type": "dmn-decision-table",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Member-to-Plan mapping",
+        "description": "Decision table that routes each member to a plan. Edit rules inline via the action below.",
+        "mappingPath": "memberToPlanMappingJson"
+      }
+    },
+    {
+      "id": "quote-member-mapping-actions",
+      "type": "action-bar",
+      "dataSource": {
+        "api": { "endpoint": "/api/quotation/quotes/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "stateField": "status",
+        "stateActions": { "DRAFT": ["replace-mapping"] },
+        "roleActions": {
+          "sales": ["replace-mapping"],
+          "partner_agent": ["replace-mapping"],
+          "mph": [],
+          "member": [],
+          "uw": [],
+          "ops": []
+        },
+        "actions": [
+          {
+            "id": "replace-mapping",
+            "label": "Edit mapping",
+            "icon": "Pencil",
+            "type": "open-modal",
+            "target": "member-mapping-replace-form",
+            "size": "3xl",
+            "variant": "outline"
+          }
+        ]
+      }
+    }
+  ]
+}

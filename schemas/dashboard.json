@@ -10,7 +10,7 @@
             "type": "page-header",
             "props": {
                 "title": "Dashboard",
-                "description": "Group Insurance Overview"
+                "description": "Group PAS V1 — Quotation, Issuance, Policy Admin"
             }
         },
         {
@@ -22,7 +22,7 @@
             },
             "children": [
                 {
-                    "id": "metric-pending-quotations",
+                    "id": "metric-pending-quotes",
                     "type": "metric-card",
                     "dataSource": {
                         "api": {
@@ -31,14 +31,14 @@
                         }
                     },
                     "props": {
-                        "label": "Pending Quotations",
+                        "label": "Pending Quotes",
                         "icon": "FileText",
                         "format": "number",
                         "priority": 1
                     }
                 },
                 {
-                    "id": "metric-new-business",
+                    "id": "metric-quotes-finalized",
                     "type": "metric-card",
                     "dataSource": {
                         "api": {
@@ -47,14 +47,14 @@
                         }
                     },
                     "props": {
-                        "label": "New Business",
-                        "icon": "PlusCircle",
+                        "label": "Quotes Finalized",
+                        "icon": "CheckCircle2",
                         "format": "number",
                         "priority": 1
                     }
                 },
                 {
-                    "id": "metric-pending-alterations",
+                    "id": "metric-active-policies",
                     "type": "metric-card",
                     "dataSource": {
                         "api": {
@@ -63,14 +63,14 @@
                         }
                     },
                     "props": {
-                        "label": "Pending Alterations",
-                        "icon": "Edit",
+                        "label": "Active Policies",
+                        "icon": "ShieldCheck",
                         "format": "number",
                         "priority": 1
                     }
                 },
                 {
-                    "id": "metric-renewals-due",
+                    "id": "metric-members-in-flight",
                     "type": "metric-card",
                     "dataSource": {
                         "api": {
@@ -79,8 +79,8 @@
                         }
                     },
                     "props": {
-                        "label": "Renewals Due",
-                        "icon": "RefreshCw",
+                        "label": "Members in Flight",
+                        "icon": "Users",
                         "format": "number",
                         "priority": 1
                     }
@@ -88,8 +88,219 @@
             ]
         },
         {
+            "id": "inbox-section",
+            "type": "section-group",
+            "props": {
+                "title": "Inbox",
+                "columns": 1
+            },
+            "children": [
+                {
+                    "id": "inbox-sales-my-quotes",
+                    "type": "data-table",
+                    "visibleRoles": ["sales"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/quotation/quotes/search",
+                            "method": "GET",
+                            "params": { "status": "DRAFT", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Draft quotes awaiting your action",
+                        "columns": [
+                            { "id": "quoteNumber", "accessorKey": "quoteNumber", "fallbackKey": "id", "label": "Quote #", "type": "link", "linkRoute": "/quotation/:id" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+                            { "id": "status", "accessorKey": "status", "label": "Status", "type": "state-badge", "entity": "quote" }
+                        ],
+                        "emptyState": {
+                            "title": "No draft quotes",
+                            "description": "Start a new quote from /quotation."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-sales-draft-proposal",
+                    "type": "data-table",
+                    "visibleRoles": ["sales"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/proposals/search",
+                            "method": "GET",
+                            "params": { "state": "DRAFT", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Draft proposals — complete and submit",
+                        "columns": [
+                            { "id": "proposalNumber", "accessorKey": "proposalNumber", "fallbackKey": "id", "label": "Proposal #", "type": "link", "linkRoute": "/issuance/proposals/:id" },
+                            { "id": "quoteId", "accessorKey": "quoteNumber", "fallbackKey": "quoteId", "label": "Source quote", "type": "text" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "proposal" }
+                        ],
+                        "emptyState": {
+                            "title": "No draft proposals",
+                            "description": "Draft proposals appear here once a client accepts the quote and a proposal is created."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-sales-finalize-proposal",
+                    "type": "data-table",
+                    "visibleRoles": ["sales"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/proposals/search",
+                            "method": "GET",
+                            "params": { "state": "SUBMITTED", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Proposals ready to finalize",
+                        "columns": [
+                            { "id": "proposalNumber", "accessorKey": "proposalNumber", "fallbackKey": "id", "label": "Proposal #", "type": "link", "linkRoute": "/issuance/proposals/:id" },
+                            { "id": "quoteId", "accessorKey": "quoteNumber", "fallbackKey": "quoteId", "label": "Source quote", "type": "text" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "proposal" }
+                        ],
+                        "emptyState": {
+                            "title": "No proposals to finalize",
+                            "description": "Proposals appear here once they have been submitted for review."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-partner-onboard-members",
+                    "type": "data-table",
+                    "visibleRoles": ["partner_agent"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/policy-admin/policies/search",
+                            "method": "GET",
+                            "params": { "state": "PENDING", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Policies needing member onboarding",
+                        "columns": [
+                            { "id": "policyNumber", "accessorKey": "policyNumber", "label": "Policy #", "type": "link", "linkRoute": "/policy-admin/policies/:id" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policy" }
+                        ],
+                        "emptyState": {
+                            "title": "No policies need onboarding",
+                            "description": "Pending policies will appear here once they are created."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-mph-pending-acceptance",
+                    "type": "data-table",
+                    "visibleRoles": ["mph"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/quotation/quotes/search",
+                            "method": "GET",
+                            "params": { "status": "SENT_TO_CLIENT", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Quotes awaiting your acceptance",
+                        "columns": [
+                            { "id": "quoteNumber", "accessorKey": "quoteNumber", "fallbackKey": "id", "label": "Quote #", "type": "link", "linkRoute": "/quotation/:id" },
+                            { "id": "clientName", "accessorKey": "clientName", "label": "Client", "type": "text" },
+                            { "id": "policyType", "accessorKey": "policyType", "label": "Type", "type": "text" },
+                            { "id": "premium", "accessorKey": "premiumAmount.amount", "label": "Annual premium (INR)", "type": "currency", "currency": "INR" }
+                        ],
+                        "emptyState": {
+                            "title": "No quotes awaiting acceptance",
+                            "description": "Quotes from Sales will appear here when they are ready for your sign-off."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-member-confirm-enrolment",
+                    "type": "data-table",
+                    "visibleRoles": ["member"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/policy-members/search",
+                            "method": "GET",
+                            "params": { "state": "MAF_PENDING", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Confirm your enrolment",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/issuance/policy-members/:id" },
+                            { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
+                            { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
+                        ],
+                        "emptyState": {
+                            "title": "Nothing to confirm",
+                            "description": "Your enrolment notifications will appear here."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-uw-referred-members",
+                    "type": "data-table",
+                    "visibleRoles": ["uw"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/policy-members/search",
+                            "method": "GET",
+                            "params": { "state": "REFERRED_TO_UW", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Members referred for review",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/issuance/policy-members/:id" },
+                            { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
+                            { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
+                        ],
+                        "emptyState": {
+                            "title": "Queue is clear",
+                            "description": "No members are currently waiting for UW review."
+                        }
+                    }
+                },
+                {
+                    "id": "inbox-ops-repair-members",
+                    "type": "data-table",
+                    "visibleRoles": ["ops"],
+                    "dataSource": {
+                        "api": {
+                            "endpoint": "/api/issuance/policy-members/search",
+                            "method": "GET",
+                            "params": { "state": "REPAIR_PENDING", "page": 0, "size": 10 }
+                        }
+                    },
+                    "props": {
+                        "title": "Members flagged for repair",
+                        "columns": [
+                            { "id": "id", "accessorKey": "id", "label": "Member ref", "type": "link", "linkRoute": "/issuance/policy-members/:id" },
+                            { "id": "policyId", "accessorKey": "policyId", "label": "Policy", "type": "text" },
+                            { "id": "planNo", "accessorKey": "planNo", "label": "Plan", "type": "text" },
+                            { "id": "state", "accessorKey": "state", "label": "State", "type": "state-badge", "entity": "policyMember" }
+                        ],
+                        "emptyState": {
+                            "title": "Queue is clear",
+                            "description": "No members are currently flagged for repair."
+                        }
+                    }
+                }
+            ]
+        },
+        {
             "id": "business-processes-section",
             "type": "section-group",
+            "visibleRoles": ["sales"],
             "props": {
                 "title": "Business Processes",
                 "columns": 3
@@ -105,69 +316,36 @@
                         "layout": "grid",
                         "links": [
                             {
-                                "id": "group-quotation-card",
-                                "label": "Group Quotation",
+                                "id": "quotation-card",
+                                "label": "Quotation",
                                 "type": "card",
                                 "icon": "FileText",
-                                "description": "Manage group insurance quotations",
+                                "description": "Build and manage GTL quotes",
                                 "action": {
                                     "type": "navigate",
-                                    "target": "/quotations?status=pending"
+                                    "target": "/quotation"
                                 }
                             },
                             {
-                                "id": "group-new-business-card",
-                                "label": "Group New Business",
+                                "id": "issuance-card",
+                                "label": "Issuance",
                                 "type": "card",
-                                "icon": "PlusCircle",
-                                "description": "Process new policy applications",
+                                "icon": "ShieldCheck",
+                                "description": "Process proposals into policies",
                                 "action": {
                                     "type": "navigate",
-                                    "target": "/quotations?status=new-business"
+                                    "target": "/issuance/proposals"
                                 }
                             },
                             {
-                                "id": "group-major-alteration-card",
-                                "label": "Group Major Alteration",
+                                "id": "policy-admin-card",
+                                "label": "Policy Admin",
                                 "type": "card",
-                                "icon": "Edit",
-                                "description": "Handle major policy changes",
+                                "icon": "Building2",
+                                "description": "View clients, policies and members",
                                 "action": {
                                     "type": "navigate",
-                                    "target": "/alterations?type=major"
-                                }
-                            },
-                            {
-                                "id": "group-minor-alteration-card",
-                                "label": "Group Minor Alteration",
-                                "type": "card",
-                                "icon": "Edit",
-                                "description": "Process minor modifications",
-                                "action": {
-                                    "type": "navigate",
-                                    "target": "/alterations?type=minor"
-                                }
-                            },
-                            {
-                                "id": "group-renewals-card",
-                                "label": "Group Renewals",
-                                "type": "card",
-                                "icon": "RefreshCw",
-                                "description": "Manage policy renewals",
-                                "action": {
-                                    "type": "navigate",
-                                    "target": "/renewals"
-                                }
-                            },
-                            {
-                                "id": "short-term-extension-card",
-                                "label": "Short-term Extension",
-                                "type": "card",
-                                "icon": "Clock",
-                                "description": "Process short-term extensions",
-                                "action": {
-                                    "type": "navigate",
-                                    "target": "/extensions"
+                                    "target": "/policy-admin/policies"
                                 }
                             }
                         ]
@@ -176,74 +354,9 @@
             ]
         },
         {
-            "id": "ai-insights-section",
-            "type": "section-group",
-            "props": {
-                "title": "AI-Powered Insights & Predictions",
-                "columns": 2
-            },
-            "children": [
-                {
-                    "id": "premium-revenue-forecast",
-                    "type": "chart-widget",
-                    "dataSource": {
-                        "api": {
-                            "endpoint": "/api/dashboard/ai/revenue-forecast",
-                            "method": "GET"
-                        }
-                    },
-                    "props": {
-                        "title": "Premium Revenue Forecast",
-                        "chartType": "area"
-                    }
-                },
-                {
-                    "id": "portfolio-risk-analysis",
-                    "type": "chart-widget",
-                    "dataSource": {
-                        "api": {
-                            "endpoint": "/api/dashboard/ai/risk-analysis",
-                            "method": "GET"
-                        }
-                    },
-                    "props": {
-                        "title": "Portfolio Risk Analysis",
-                        "chartType": "donut"
-                    }
-                },
-                {
-                    "id": "conversion-funnel-analysis",
-                    "type": "chart-widget",
-                    "dataSource": {
-                        "api": {
-                            "endpoint": "/api/dashboard/ai/conversion-funnel",
-                            "method": "GET"
-                        }
-                    },
-                    "props": {
-                        "title": "Conversion Funnel Analysis",
-                        "chartType": "bar"
-                    }
-                },
-                {
-                    "id": "claims-prediction-model",
-                    "type": "chart-widget",
-                    "dataSource": {
-                        "api": {
-                            "endpoint": "/api/dashboard/ai/claims-prediction",
-                            "method": "GET"
-                        }
-                    },
-                    "props": {
-                        "title": "Claims Prediction Model",
-                        "chartType": "line"
-                    }
-                }
-            ]
-        },
-        {
             "id": "quick-actions-section",
             "type": "section-group",
+            "visibleRoles": ["sales"],
             "props": {
                 "title": "Quick Actions",
                 "columns": 3
@@ -259,33 +372,13 @@
                         "layout": "grid",
                         "links": [
                             {
-                                "id": "new-quotation-action",
-                                "label": "New Quotation",
+                                "id": "new-quote-action",
+                                "label": "New Quote",
                                 "type": "link",
                                 "icon": "Plus",
                                 "action": {
-                                    "type": "open-modal",
-                                    "target": "create-quotation-form"
-                                }
-                            },
-                            {
-                                "id": "process-renewals-action",
-                                "label": "Process Renewals",
-                                "type": "link",
-                                "icon": "RefreshCw",
-                                "action": {
                                     "type": "navigate",
-                                    "target": "/renewals/process"
-                                }
-                            },
-                            {
-                                "id": "new-business-action",
-                                "label": "New Business",
-                                "type": "link",
-                                "icon": "FileText",
-                                "action": {
-                                    "type": "open-modal",
-                                    "target": "new-business-form"
+                                    "target": "/quotation"
                                 }
                             }
                         ]

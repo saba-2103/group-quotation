@@ -1,0 +1,236 @@
+package com.anaira.policyadmin.api;
+
+// ── Request / Response DTOs ────────────────────────────────────────────────────
+
+data CreateClientRequest {
+    registrationData: ClientRegistrationData
+}
+
+data CreateClientResponse {
+    clientId: string
+    clientNumber: string
+}
+
+data CreatePolicyRequest {
+    clientId: string
+    proposalId: string
+    policyType: string
+    effectiveDate: date
+    expiryDate: date
+    premiumType: string
+    lineOfBusiness: string
+    riskTermClassification: string
+    inceptionDate: date
+    ageDefinitionRule: string
+    // GTL: positive integer. GCL: 0 (immediate activation).
+    activationThreshold: int
+    plans: list<PolicyPlanRequest>
+    estimatedPremium: Money
+}
+
+data PolicyPlanRequest {
+    planNo: string
+    planName?: string
+    products: list<PolicyPlanProductRequest>
+    rateCardFile: string
+    coverAmountFormula: AmountFormulaRequest
+    freeCoverLimitFormula?: AmountFormulaRequest
+}
+
+data PolicyPlanProductRequest {
+    productCode: string
+    productName?: string
+    productType: string
+    benefits: list<PolicyPlanBenefitRequest>
+    exclusions: list<PolicyPlanExclusionRequest>
+}
+
+data PolicyPlanBenefitRequest {
+    code: string
+    name?: string
+    mandatory: boolean
+}
+
+data PolicyPlanExclusionRequest {
+    code: string
+    name?: string
+}
+
+data CreatePolicyResponse {
+    policyId: string
+    policyNumber: string
+    // State always PENDING at sync response — activation is async via PolicyActivationFlow.
+}
+
+data CancelPolicyRequest {
+    reason: string
+}
+
+data AddMemberRequest {
+    policyMemberId: string
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    occupation?: string
+    // PII — repo-encryption + Cerbos (post-MVP).
+    mobile?: string
+    email?: string
+    governmentIdType?: string
+    governmentIdNumber?: string
+    sumInsured: double
+    planNo: string
+    premium: MemberPremium
+    uwDecision?: MemberUwDecision
+    transactionRefs: list<string>
+    additionalAttributesJson?: string
+}
+
+data AddMemberResponse {
+    memberId: string
+    memberNumber: string
+    // State always PENDING at sync response — lifecycle driven by MemberEnrollmentFlow.
+}
+
+// ── Client API ────────────────────────────────────────────────────────────────
+
+api ClientAPI base "/api/policy-admin" {
+
+    POST("/clients") createClient(@body request: CreateClientRequest): CreateClientResponse {
+        command CreateClientCommand;
+    }
+
+    GET("/clients/:clientId") getClientById(@path clientId: string): ClientDto {
+        query GetClientByIdQuery;
+    }
+
+    GET("/clients/by-number/:clientNumber") getClientByNumber(@path clientNumber: string): ClientDto {
+        query GetClientByNumberQuery;
+    }
+
+    GET("/clients/by-registration") getClientByRegistration(@query businessRegistrationNumber: string): ClientDto {
+        query GetClientByRegistrationQuery;
+    }
+
+    GET("/clients/by-name") findByName(@query ("name") clientName: string): list<ClientSummaryDto> {
+        query FindClientByNameQuery;
+    }
+
+    GET("/clients/search") searchClients(
+        @query? ("name") clientName: string,
+        @query? countryCode: string,
+        @query? industryCategory: string,
+        @query? clientCategory: string,
+        @query? state: string,
+        @query? isVip: boolean,
+        @query page: int,
+        @query size: int
+    ): list<ClientSummaryDto> {
+        query SearchClientsQuery;
+    }
+
+    GET("/clients/list") listAllClients(@query page: int, @query size: int): list<ClientSummaryDto> {
+        query ListAllClientsQuery;
+    }
+}
+
+// ── Common API (enums + presigned file URLs) ───────────────────────────────────
+
+api PolicyAdminCommonAPI base "/api/policy-admin" {
+
+    GET("/enums/:enumType") listEnumValues(@path enumType: string, @query? search: string): list<string> {
+        query ListPolicyEnumTypeValuesQuery;
+    }
+
+    POST("/files/upload-url") getFileUploadUrl(@body request: FileUploadUrlRequest): FileUploadUrlResponse {
+        command GeneratePolicyFileUploadUrlCommand;
+    }
+
+    POST("/files/download-url") getFileDownloadUrl(@body request: FileDownloadUrlRequest): FileDownloadUrlResponse {
+        command GeneratePolicyFileDownloadUrlCommand;
+    }
+}
+
+// ── Policy API ────────────────────────────────────────────────────────────────
+// No public activate endpoint — driven by PolicyActivationFlow (per AGENT.md §16.3).
+
+api PolicyAPI base "/api/policy-admin" {
+
+    POST("/policies") createPolicy(@body request: CreatePolicyRequest): CreatePolicyResponse {
+        command CreatePolicyCommand;
+    }
+
+    POST("/policies/:policyId/cancel") cancelPolicy(@path policyId: string, @body request: CancelPolicyRequest) {
+        command CancelPolicyCommand;
+    }
+
+    GET("/policies/:policyId") getPolicyById(@path policyId: string): PolicyDto {
+        query GetPolicyByIdQuery;
+    }
+
+    GET("/policies/by-number/:policyNumber") getPolicyByNumber(@path policyNumber: string): PolicyDto {
+        query GetPolicyByNumberQuery;
+    }
+
+    GET("/policies/by-proposal/:proposalId") getPolicyByProposal(@path proposalId: string): PolicyDto {
+        query FindPolicyByProposalIdQuery;
+    }
+
+    GET("/policies/by-client") findByClient(@query clientId: string): list<PolicySummaryDto> {
+        query FindPoliciesByClientQuery;
+    }
+
+    GET("/policies/by-state") findByState(@query state: string): list<PolicySummaryDto> {
+        query FindPoliciesByStateQuery;
+    }
+
+    GET("/policies/search") searchPolicies(@query? clientId: string, @query? state: string, @query? policyType: string, @query page: int, @query size: int): list<PolicySummaryDto> {
+        query SearchPoliciesQuery;
+    }
+
+    GET("/policies/list") listAllPolicies(@query page: int, @query size: int): list<PolicySummaryDto> {
+        query ListAllPoliciesQuery;
+    }
+}
+
+// ── Member API ────────────────────────────────────────────────────────────────
+
+api MemberAPI base "/api/policy-admin" {
+
+    POST("/policies/:policyId/members") addMember(@path policyId: string, @body request: AddMemberRequest): AddMemberResponse {
+        command AddMemberCommand;
+    }
+
+    GET("/members/:memberId") getMemberById(@path memberId: string): MemberDto {
+        query GetMemberByIdQuery;
+    }
+
+    GET("/members/by-number/:memberNumber") getMemberByNumber(@path memberNumber: string): MemberDto {
+        query GetMemberByNumberQuery;
+    }
+
+    GET("/policies/:policyId/members") findMembersByPolicy(@path policyId: string): list<MemberSummaryDto> {
+        query FindMembersByPolicyQuery;
+    }
+
+    GET("/members/by-policy-member/:policyMemberId") findByPolicyMember(@path policyMemberId: string): MemberDto {
+        query FindMemberByPolicyMemberIdQuery;
+    }
+
+    // governmentIdType + governmentIdNumber are co-required (handler returns 400/MEM_VAL_001 if exactly one is supplied).
+    GET("/members/search") searchMembers(
+        @query? policyId: string,
+        @query? planNo: string,
+        @query? ("name") memberName: string,
+        @query? policyMemberId: string,
+        @query? state: string,
+        @query? governmentIdType: string,
+        @query? governmentIdNumber: string,
+        @query? mobile: string,
+        @query? email: string,
+        @query page: int,
+        @query size: int
+    ): list<MemberSummaryDto> {
+        query SearchMembersQuery;
+    }
+}

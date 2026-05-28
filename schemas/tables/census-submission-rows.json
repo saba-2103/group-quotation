@@ -1,0 +1,46 @@
+{
+  "id": "census-submission-rows-table",
+  "type": "data-table",
+  "dataSource": {
+    "api": {
+      "endpoint": "/api/issuance/census-submissions/{{submissionId}}/rows",
+      "method": "GET"
+    },
+    "stateDependencies": ["census-submission-rows-filters"]
+  },
+  "props": {
+    "title": "Census rows",
+    "description": "Per-row parse + validation results. Filter by status to focus on the rows that need attention.",
+    "columns": [
+      { "id": "rowNumber", "accessorKey": "rowNumber", "label": "Row #", "type": "number" },
+      {
+        "id": "status",
+        "accessorKey": "status",
+        "label": "Status",
+        "type": "badge",
+        "valueMapping": [
+          { "value": "ACCEPTED", "label": "Accepted", "variant": "success" },
+          { "value": "INGESTED", "label": "Ingested", "variant": "info" },
+          { "value": "REJECTED", "label": "Rejected", "variant": "destructive" }
+        ]
+      },
+      {
+        "id": "policyMemberId",
+        "accessorKey": "policyMemberId",
+        "label": "Policy member",
+        "type": "link",
+        "linkRoute": "/issuance/policy-members/:policyMemberId"
+      },
+      {
+        "id": "ingestionErrors",
+        "accessorKey": "ingestionErrorsJson",
+        "label": "Errors",
+        "type": "errors-list"
+      }
+    ],
+    "emptyState": {
+      "title": "No rows match the current filter",
+      "description": "If the submission is still INITIATED, rows appear after parsing completes."
+    }
+  }
+}

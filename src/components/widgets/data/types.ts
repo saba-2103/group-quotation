@@ -34,8 +34,7 @@ export interface KeyValueField {
   // Consulted when `accessorKey` resolves to a blank value (null / undefined /
   // empty string). Lets a schema declare a friendly field with a deterministic
   // fallback (e.g. `clientName` → `clientId`) so detail pages don't render `—`
-  // when the backend skipped the enriched field. (Type added now; consumer
-  // hookup lives with the widget that opts in.)
+  // when the backend skipped the enriched field.
   fallbackKey?: string;
 }
 

@@ -46,6 +46,8 @@
 	],
 	"exclude": [
 		"node_modules",
-		"src/mocks/original"
+		"src/mocks/original",
+		"tests/e2e/**",
+		"playwright.config.ts"
 	]
 }

@@ -1,0 +1,64 @@
+# DISCOVER — PROP-0004 (Plans tab card grid)
+
+run-id: 2026-05-13-plans-cards-grid
+input-source: proposals/PROP-0004-quote-detail-plans-cards.md (status: approved, pre-approved via /Users/seriousblack/.claude/plans/quotation-detail-pages-view-happy-bee.md)
+
+## Surveyed paths
+
+- context/HANDOFF.md — Active Workstreams section. Relevant: "Plans/Census/Mapping read-only per cuts D1/D2/D3" — this proposal explicitly lifts the D1 cut.
+- context/CORE_MEMORY.md — rules: build to expected backend contract; new widgets must include registry integration + tests + real consumer; commit-hygiene split (src vs context); branch hygiene exception for /build-feature on dirty trees; DSL is canon.
+- docs/spec/quotation/QuotationDomain.domain — Quote entity functions: `addPlan`, `updatePlan(plan)`, `removePlan(planNo)`. Precondition for all three: `isDraft`. addPlan/updatePlan additionally require `hasCensusFileFormat` — UI must surface this dependency (cannot add/edit plans until census file format is set).
+- docs/spec/common/CommonData.data — DSL canonical shapes:
+  - `Plan { planNo, planName?, products: list<PlanProduct>, rateCardFile, coverAmountFormula, freeCoverLimitFormula? }`
+  - `PlanProduct { productCode, productName?, productType, benefits: list<PlanBenefit>, exclusions: list<PlanExclusion> }`
+  - `PlanBenefit { code, name?, mandatory }`
+  - `PlanExclusion { code, name? }`
+  - `AmountFormula { type: AmountFormulaType, multiplicationFactor?, lookupTableJson?, memberAttributeName?, fixedAmount?, dmnTableFile? }`
+- schemas/tabs/quote/plans.json — current key-value-grid extraction; to be rewritten.
+- schemas/forms/edit-quote-policy-detail-form.json — reference for form schema conventions.
+- src/components/widgets/data/CardGrid.tsx — stub already in place from setup step.
+- src/components/registry/WidgetRegistry.tsx — `card-grid` already registered to the stub component.
+- src/components/widgets/forms/formContainer/FieldRenderer.tsx — field-type registry; json-textarea field type will be added by PROP-0007 (separate workstream), so V1 of plan-edit-form will need plain textarea + manual JSON validation, or this lane adds json-textarea opportunistically.
+- src/components/widgets/forms/OverlaidForm.tsx — modal form wrapper; receives `data` from `open-modal` rowData per registry inventory, but pre-fill into form fields is uncertain.
+- src/lib/api/quotation.ts — existing API client; expected wrappers: addPlan / updatePlan / removePlan. Need to read to confirm.
+
+## API endpoints (proxied to https://group-pas-dev.anairacloud.com)
+
+- POST `/api/quotation/quotes/{id}/plans` — body: PlanRequest
+- PUT `/api/quotation/quotes/{id}/plans/{planNo}` — body: PlanRequest (full replace)
+- DELETE `/api/quotation/quotes/{id}/plans/{planNo}`
+- GET `/api/quotation/quotes/{id}` — drives the page; `plans[]` is the array we iterate
+
+## Known (locked)
+
+1. Cards iterate `plans[]` from `GET /api/quotation/quotes/{id}`.
+2. DSL data shapes for Plan / PlanProduct / PlanBenefit / PlanExclusion / AmountFormula are stable.
+3. Edits are DRAFT-only (precondition `isDraft`). Maker role.
+4. addPlan/updatePlan additionally require `hasCensusFileFormat` — the UI surfaces this as a disabled-with-tooltip when census file format is not set, per the existing precondition-tooltip pattern used by the pricing tab.
+5. New widget `card-grid` already pre-registered to a stub. This run replaces the stub with the real implementation.
+6. Proxy mode is live; no mock plumbing required.
+
+## Ambiguous (needs user input)
+
+1. **Per-card Edit modal pre-fill.** The Explore-agent inventory said "No pre-fill from entity context observed" — `open-modal` passes rowData to OverlaidForm but no clear plumbing turns rowData into pre-filled form-field values. Two options:
+   - (A) **Wire pre-fill in this lane** — small addition to OverlaidForm / FormContainer to seed initial values from rowData. Slightly bigger PROP-0004 but ships full Edit affordance.
+   - (B) **Ship cards + Add only**; defer per-card Edit to a follow-up (PROP-0009). User loses the inline edit but read-side gap is closed.
+2. **Branch strategy.** /build-feature's rule says "feature branch on dirty tree", which would mean five separate branches across the 5 workstreams. CORE_MEMORY's general rule says "stay on current branch". The current branch is `feat/new-buisiness` (not main), tree is dirty from setup-lane + Lane A. Three options:
+   - (A) Commit current dirty state first (Lane A's PROP-0006 work + setup-lane widget stubs), then run all 5 workstreams as sequential commits on `feat/new-buisiness`.
+   - (B) Five feature branches off `feat/new-buisiness` HEAD (skill default).
+   - (C) Single integration branch `feature/quote-detail-tabs-expansion` carrying all 5 sequentially.
+3. **Plan-edit-form structured fields vs raw JSON.** Proposal says V1 uses raw JSON textareas for `productsJson` / `coverAmountFormulaJson`. Per CORE_MEMORY "build to expected real-backend contract" — raw JSON is honest about the API but bad UX. Alternatives:
+   - (A) **Raw JSON V1, structured editor as PROP-0009** (current plan).
+   - (B) **Structured editor now** — large addition; needs multi-row repeater widget. Outside the lane's stated scope.
+
+## Derivable (will use existing pattern)
+
+- Card primitive: `src/components/ui/card.tsx` (existing).
+- Confirm-delete dialog: `src/components/widgets/ConfirmationDialog.tsx` (existing, used by other delete flows).
+- Disabled-with-tooltip pattern: cf. Pricing tab `request-price` button's `disabledTooltip` — apply to Add Plan when `hasCensusFileFormat` is unmet.
+- Modal opening + refresh-key wiring: existing `open-modal` action handler + `refreshKey` pattern.
+- Empty-state styling: existing `error-banner` widget pattern + DataTable's `emptyState` (cf. PROP-0006's `pricing.json` write).
+
+## Next step
+
+CLARIFY round 1 — ask the three ambiguous items above. Stop until answered.

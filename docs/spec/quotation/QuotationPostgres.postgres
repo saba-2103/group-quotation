@@ -1,0 +1,61 @@
+package com.anaira.quotation.postgres;
+
+postgres QuoteEntity {
+    id: string
+    clientId: string
+    policyType: string
+    premiumType: string
+    effectiveDate: date
+    expiryDate: date
+    inceptionDate: date
+    ageDefinitionRule: string
+    riskTermClassification: string
+    lineOfBusiness: string
+    status: string
+    headcount: int
+    estimatedPremiumAmount: double
+    estimatedPremiumCurrency: string
+    memberToPlanMappingJson: string
+    censusFileFormatJson: string
+
+    @primary(id)
+    @notNull(clientId)
+    @notNull(policyType)
+    @notNull(status)
+}
+
+postgres QuotePlanEntity {
+    id: string
+    quoteId: string
+    planNo: string
+    planName: string
+    productsJson: string
+    rateCardFile: string
+    coverAmountFormulaJson: string
+    freeCoverLimitFormulaJson: string
+
+    @primary(id)
+    @notNull(quoteId)
+    @notNull(planNo)
+    @foreignKey(quoteId) references QuoteEntity(id)
+}
+
+postgres MemberQuoteEntity {
+    id: string
+    policyId: string
+    planNo: string
+    status: string
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    occupation: string
+    sumAssured: double
+    annualPremiumAmount: double
+    annualPremiumCurrency: string
+    premiumBreakupJson: string
+
+    @primary(id)
+    @notNull(policyId)
+    @notNull(status)
+}

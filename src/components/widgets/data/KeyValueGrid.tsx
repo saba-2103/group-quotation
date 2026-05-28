@@ -8,6 +8,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { DateDisplay } from "@/components/widgets/controls/dateWidget/DateDisplay";
 import { BADGE_COLOR_TO_VARIANT } from "./DataTable/constants";
 
+// Walks dotted accessor keys (e.g. "estimatedPremium.totalAmount") so the
+// schema can pull nested DTO fields without flattening.
 function getNested(source: unknown, path: string): unknown {
   if (source == null || !path) return undefined;
   return path
@@ -21,6 +23,8 @@ function getNested(source: unknown, path: string): unknown {
     );
 }
 
+// Best-effort JSON-string parse. Returns the original value if not a string
+// or if parsing throws.
 function tryParseJson(v: unknown): unknown {
   if (typeof v !== 'string' || v.length === 0) return v;
   try {
@@ -45,8 +49,19 @@ function immutableSet(obj: unknown, path: string, val: unknown): unknown {
   };
 }
 
+// Resolves a field's value from raw row data, applying parseJson / subPath /
+// nestedParseAt transforms in order. Backend DTOs in this codebase serialize
+// composite shapes as escaped JSON strings (productsJson, censusFileFormatJson,
+// memberToPlanMappingJson) — these flags let schemas drill into them without a
+// per-shape custom renderer.
 function resolveFieldValue(field: KeyValueField, source: unknown): unknown {
   let value = getNested(source, field.accessorKey);
+  if (
+    field.fallbackKey &&
+    (value === undefined || value === null || value === '')
+  ) {
+    value = getNested(source, field.fallbackKey);
+  }
   if (field.parseJson) value = tryParseJson(value);
   if (field.subPath) value = getNested(value, field.subPath);
   if (field.nestedParseAt && value != null && typeof value === 'object') {
@@ -71,6 +86,9 @@ function isEmpty(v: unknown): boolean {
 }
 
 function renderFieldValue(field: KeyValueField, value: unknown): React.ReactNode {
+  // `presence` — render Configured / Not configured chip based on whether
+  // the source has a meaningful value. Used for opaque blobs (DMN ref,
+  // census-format JSON) where the demo just needs a "is it set" signal.
   if (field.type === "presence") {
     return isEmpty(value) ? (
       <Badge variant="grey">Not configured</Badge>
@@ -124,6 +142,9 @@ function renderFieldValue(field: KeyValueField, value: unknown): React.ReactNode
       );
     }
     case "list": {
+      // Render arrays as a comma-separated inline string. If `itemPath` is
+      // declared, drill that path inside each item; otherwise stringify.
+      // Keeps long lists from blowing layout — wraps as plain text.
       if (!Array.isArray(value) || value.length === 0) {
         return <span className="text-muted-foreground">—</span>;
       }

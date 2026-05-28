@@ -1,0 +1,21 @@
+{
+  "id": "quote-member-quotes-tab",
+  "type": "tab-panel",
+  "visibleWhen": { "==": [{ "var": "policyType" }, "GCL"] },
+  "props": { "value": "member-quotes", "label": "Member Quotes (GCL)", "icon": "Users2" },
+  "children": [
+    {
+      "id": "quote-member-quotes-empty",
+      "type": "key-value-grid",
+      "props": {
+        "title": "GCL Member Quotes — different shape from GTL",
+        "description": "MemberQuotes hang off a Policy, not a Quote — they're created per-loan-disbursement after the GCL master policy is in place. Open the GCL list directly to manage them.",
+        "columns": 1,
+        "data": { "where": "→ /quotation/member-quotes (linked from sidebar)" },
+        "fields": [
+          { "id": "where", "label": "GCL workflow lives at", "accessorKey": "where" }
+        ]
+      }
+    }
+  ]
+}

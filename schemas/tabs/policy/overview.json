@@ -1,0 +1,34 @@
+{
+  "id": "policy-overview-tab",
+  "type": "tab-panel",
+  "props": { "value": "overview", "label": "Overview", "icon": "Info" },
+  "children": [
+    {
+      "id": "policy-overview-grid",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/policies/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Policy details",
+        "columns": 3,
+        "fields": [
+          { "id": "policyNumber", "label": "Policy #", "accessorKey": "policyNumber" },
+          { "id": "clientId", "label": "Client", "accessorKey": "clientId" },
+          { "id": "policyType", "label": "Type", "accessorKey": "policyType" },
+          { "id": "premiumType", "label": "Premium type", "accessorKey": "premiumType" },
+          { "id": "lineOfBusiness", "label": "Line of business", "accessorKey": "lineOfBusiness" },
+          { "id": "riskTermClassification", "label": "Risk class", "accessorKey": "riskTermClassification" },
+          { "id": "ageDefinitionRule", "label": "Age definition rule", "accessorKey": "ageDefinitionRule" },
+          { "id": "effectiveDate", "label": "Effective date", "accessorKey": "effectiveDate", "type": "date" },
+          { "id": "expiryDate", "label": "Expiry date", "accessorKey": "expiryDate", "type": "date" },
+          { "id": "inceptionDate", "label": "Inception date", "accessorKey": "inceptionDate", "type": "date" },
+          { "id": "activationThreshold", "label": "Activation threshold (members)", "accessorKey": "activationThreshold" },
+          { "id": "pendingReason", "label": "Pending reason", "accessorKey": "pendingReason" },
+          { "id": "premiumAmount", "label": "Estimated premium", "accessorKey": "estimatedPremium.amount", "type": "currency", "currency": "INR" },
+          { "id": "proposalLink", "label": "Source proposal", "accessorKey": "proposalNumber", "fallbackKey": "proposalId" }
+        ]
+      }
+    }
+  ]
+}

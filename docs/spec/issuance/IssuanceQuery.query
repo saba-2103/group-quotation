@@ -1,0 +1,109 @@
+package com.anaira.issuance.query;
+
+data ProposalDto {
+    id: string
+    quoteId: string
+    clientId: string
+    policyType: string
+    state: string
+    plansJson: string
+    memberToPlanMapping: string
+    aggregateCensusJson: string
+    estimatedPremiumJson: string
+    policyId: string
+    policyNumber: string
+}
+
+data ProposalSummaryDto {
+    id: string
+    quoteId: string
+    clientId: string
+    policyType: string
+    state: string
+    policyId: string
+    policyNumber: string
+}
+
+data PolicyMemberDto {
+    id: string
+    policyId: string
+    memberId: string
+    planNo: string
+    state: string
+    name: string
+    dob: date
+    gender: string
+    salary: double
+    sumInsured: double
+    annualPremiumAmount: double
+    annualPremiumCurrency: string
+    classificationResultJson: string
+    uwDecisionJson: string
+    floatDeductionId: string
+    reclassificationCount: int
+    archivedReason: string
+    censusSubmissionId: string
+    censusRowNumber: int
+}
+
+data PolicyMemberSummaryDto {
+    id: string
+    policyId: string
+    memberId: string
+    planNo: string
+    state: string
+    name: string
+    annualPremiumAmount: double
+    annualPremiumCurrency: string
+}
+
+query-set ProposalQueries {
+    reads ProposalEntity;
+    reads ProposalPlanEntity;
+
+    query GetProposalByIdQuery(proposalId: string): ProposalDto;
+    query FindProposalsByClientQuery(clientId: string): list<ProposalSummaryDto>;
+    query FindProposalsByStateQuery(state: string): list<ProposalSummaryDto>;
+    query FindProposalByQuoteIdQuery(quoteId: string): ProposalDto;
+    query SearchProposalsQuery(clientId: string, state: string, page: int, size: int): list<ProposalSummaryDto>;
+    query ListAllProposalsQuery(page: int, size: int): list<ProposalSummaryDto>;
+}
+
+query-set PolicyMemberQueries {
+    reads PolicyMemberEntity;
+
+    query GetPolicyMemberByIdQuery(policyMemberId: string): PolicyMemberDto;
+    query FindMembersByPolicyQuery(policyId: string): list<PolicyMemberSummaryDto>;
+    query FindMembersByStateQuery(policyId: string, state: string): list<PolicyMemberSummaryDto>;
+    query FindMembersByMemberIdQuery(memberId: string): list<PolicyMemberSummaryDto>;
+    query SearchPolicyMembersQuery(policyId: string, state: string, page: int, size: int): list<PolicyMemberSummaryDto>;
+}
+
+data CensusSubmissionDto {
+    id: string
+    policyId: string
+    fileRef: string
+    status: string
+    totalRows: int
+    acceptedRows: int
+    rejectedRows: int
+    createdMemberCount: int
+}
+
+data CensusSubmissionRowDto {
+    id: string
+    submissionId: string
+    rowNumber: int
+    status: string
+    ingestionErrorsJson: string
+    policyMemberId: string
+}
+
+query-set CensusSubmissionQueries {
+    reads CensusSubmissionEntity;
+    reads CensusSubmissionRowEntity;
+
+    query GetCensusSubmissionByIdQuery(submissionId: string): CensusSubmissionDto;
+    query ListCensusSubmissionRowsQuery(submissionId: string, status: string): list<CensusSubmissionRowDto>;
+    query ListCensusSubmissionsByPolicyQuery(policyId: string): list<CensusSubmissionDto>;
+}

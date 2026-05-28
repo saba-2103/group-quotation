@@ -1,0 +1,38 @@
+# DISCOVER — PROP-0008 (Action-bar Edit split)
+
+run-id: 2026-05-13-edit-bar-split
+input-source: proposals/PROP-0008-quote-detail-edit-split.md (status: approved)
+
+## Surveyed paths
+
+- proposals/PROP-0008-quote-detail-edit-split.md — design contract.
+- schemas/quote-detail.json — currently carries the monolithic `edit` action at lines 170-176, with `"edit"` in `stateActions.DRAFT` (line 68) and `roleActions.maker` (line 78).
+- schemas/tabs/quote/key-data.json — currently only renders the key-value-grid; description line already says "Maker-only edit lands in D-edit", confirming this proposal was always the plan.
+- schemas/forms/edit-quote-policy-detail-form.json — existing form, no changes needed.
+- Existing precedent: every other tab (Plans, Census, Pricing, Mapping) now owns its own per-tab action-bar with Edit/Add/Replace actions. Key Data is the last holdout.
+
+## Known (fully locked from proposal)
+
+1. Remove `"edit"` from three places in `schemas/quote-detail.json`:
+   - Line 68 — `stateActions.DRAFT: [..., "edit", ...]`
+   - Line 78 — `roleActions.maker: [..., "edit", ...]`
+   - Lines 170-176 — the action object itself.
+2. Add an `action-bar` inside `schemas/tabs/quote/key-data.json` with a single `edit-policy-detail` action:
+   - `stateActions.DRAFT: ["edit-policy-detail"]`
+   - `roleActions.maker: ["edit-policy-detail"]`
+   - Action: `type: "open-modal"`, `target: "edit-quote-policy-detail-form"`
+3. No new widgets, no new forms, no API changes.
+
+## Ambiguous
+
+None. Proposal is mechanical and the sequencing constraint ("land last") is satisfied — PROP-0004 (Plans Add/Edit/Delete), PROP-0005 (Census Save + Edit format), PROP-0006 (Pricing), and PROP-0007 (Mapping Replace) are all done with per-tab edit affordances live.
+
+## Derivable (existing patterns reused)
+
+- `action-bar` widget pattern, identical to the one used in Plans / Census / Mapping tabs.
+- `open-modal` action handler; OverlaidForm consumes the existing form schema.
+- Commit-split rule: src vs context.
+
+## Next step
+
+CLARIFY confirmation round (one quick yes/no), then DESIGN doc, then BUILD.

@@ -1,0 +1,135 @@
+{
+  "id": "member-detail-page",
+  "type": "stack-layout",
+  "props": { "className": "p-6 gap-6" },
+  "children": [
+    {
+      "id": "member-detail-header",
+      "type": "page-header",
+      "props": {
+        "backHref": "/policy-admin/policies",
+        "backLabel": "Back to policies",
+        "title": "Member {{id}}",
+        "description": "PAM Member — final read of identity, plan, premium, reservations, and reason banners."
+      }
+    },
+    {
+      "id": "member-state-summary",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "columns": 4,
+        "fields": [
+          {
+            "id": "state",
+            "label": "State",
+            "accessorKey": "state",
+            "type": "badge",
+            "valueMapping": [
+              { "value": "PENDING", "label": "Pending", "variant": "warning" },
+              { "value": "ACTIVE", "label": "Active", "variant": "success" },
+              { "value": "VOID", "label": "Void", "variant": "destructive" },
+              { "value": "CANCELLED", "label": "Cancelled", "variant": "destructive" }
+            ]
+          },
+          { "id": "memberNumber", "label": "Member #", "accessorKey": "memberNumber" },
+          { "id": "policyId", "label": "Policy", "accessorKey": "policyId" },
+          { "id": "planNo", "label": "Plan", "accessorKey": "planNo" }
+        ]
+      }
+    },
+    {
+      "id": "member-reason-banner",
+      "type": "reason-banner",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
+      },
+      "props": { "entity": "member" }
+    },
+    {
+      "id": "member-identity",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Identity",
+        "columns": 3,
+        "fields": [
+          { "id": "name", "label": "Name", "accessorKey": "name" },
+          { "id": "dob", "label": "Date of birth", "accessorKey": "dob", "type": "date" },
+          { "id": "gender", "label": "Gender", "accessorKey": "gender" },
+          { "id": "occupation", "label": "Occupation", "accessorKey": "occupation" },
+          { "id": "mobile", "label": "Mobile", "accessorKey": "mobile" },
+          { "id": "email", "label": "Email", "accessorKey": "email" },
+          { "id": "governmentIdType", "label": "Government ID type", "accessorKey": "governmentIdType" },
+          { "id": "governmentIdNumber", "label": "Government ID #", "accessorKey": "governmentIdNumber" }
+        ]
+      }
+    },
+    {
+      "id": "member-coverage",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Coverage & premium",
+        "columns": 3,
+        "fields": [
+          { "id": "salary", "label": "Salary", "accessorKey": "salary", "type": "currency", "currency": "INR" },
+          { "id": "sumInsured", "label": "Sum insured", "accessorKey": "sumInsured", "type": "currency", "currency": "INR" },
+          { "id": "annualPremium", "label": "Annual premium", "accessorKey": "premium.annualPremium.amount", "type": "currency", "currency": "INR" },
+          {
+            "id": "premiumBreakup",
+            "label": "Premium breakup",
+            "accessorKey": "premium.breakup",
+            "type": "list",
+            "itemPath": "productCode"
+          },
+          { "id": "policyMemberId", "label": "PolicyMember ref", "accessorKey": "policyMemberId" },
+          { "id": "floatReservationId", "label": "Float reservation", "accessorKey": "floatReservationId" }
+        ]
+      }
+    },
+    {
+      "id": "member-uw-decision",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "UW decision",
+        "description": "Underwriting outcome on this member. Empty if no UW pass has been recorded.",
+        "columns": 2,
+        "fields": [
+          {
+            "id": "uwExclusions",
+            "label": "Exclusions",
+            "accessorKey": "uwDecision.exclusions",
+            "type": "list",
+            "itemPath": "code"
+          },
+          { "id": "uwNotes", "label": "Notes", "accessorKey": "uwDecision.notes" }
+        ]
+      }
+    },
+    {
+      "id": "member-additional-attributes",
+      "type": "key-value-grid",
+      "dataSource": {
+        "api": { "endpoint": "/api/policy-admin/members/{{id}}", "method": "GET" }
+      },
+      "props": {
+        "title": "Product-specific attributes",
+        "description": "Stored as opaque JSON in V1 — only a presence indicator is surfaced.",
+        "columns": 1,
+        "fields": [
+          { "id": "additionalAttributes", "label": "Additional attributes", "accessorKey": "additionalAttributesJson", "type": "presence" }
+        ]
+      }
+    }
+  ]
+}

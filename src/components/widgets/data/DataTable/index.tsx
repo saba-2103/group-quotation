@@ -5,6 +5,39 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 import { useActionHandler } from "@/hooks/useActionHandler";
 import { CellRenderer } from "../CellRenderer";
+
+// Walks dotted accessor keys (e.g. "amount.amount" for nested Money) so a
+// schema-declared column can reach into nested response shapes. Flat keys
+// keep their original behaviour. Mirrors useDataTable's columnDef builder.
+function cellValue(row: Record<string, unknown>, key: string): string | number | boolean | null | undefined {
+  if (!key.includes(".")) return row[key] as string | number | boolean | null | undefined;
+  const v = key
+    .split(".")
+    .reduce<unknown>(
+      (acc, k) =>
+        acc != null && typeof acc === "object" && k in (acc as object)
+          ? (acc as Record<string, unknown>)[k]
+          : undefined,
+      row,
+    );
+  if (v === null || v === undefined) return v as null | undefined;
+  if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return v;
+  return undefined; // non-primitives can't be rendered as a cell value
+}
+
+// Resolve a column's value, falling back to `fallbackKey` when the primary
+// accessor returns a blank (undefined / null / empty string). Real backends
+// often expose both an opaque id and a human-friendly number that may not yet
+// be populated; this lets schemas declare both without per-row branching.
+function resolveColumnValue(
+  row: Record<string, unknown>,
+  col: { accessorKey: string; fallbackKey?: string },
+): string | number | boolean | null | undefined {
+  const primary = cellValue(row, col.accessorKey);
+  const isBlank = primary === undefined || primary === null || primary === "";
+  if (isBlank && col.fallbackKey) return cellValue(row, col.fallbackKey);
+  return primary;
+}
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,8 +103,13 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     pagination,
     isQueryLoading,
     queryError,
-    dataError,
-  } = useDataTable({ props: config.props });
+    dataError
+  } = useDataTable({
+    // dataSource lives on `config`, not `config.props`. WidgetRenderer doesn't
+    // flatten it; merge it in here so useDataTable can read
+    // `dataSource.dataPath` / `dataSource.parseJson` from the schema.
+    props: { ...config.props, dataSource: config.dataSource ?? config.props?.dataSource }
+  });
 
   const { exportData } = useTableExport({
     columns: columns ?? [],
@@ -87,12 +125,12 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     exportData(rows, format);
   };
 
-  const { emptyState, isLoading: propLoading, error: propError, actionsLabel, headerActions } = config.props || {};
+  const { emptyState, isLoading: propLoading, error: propError, actionsLabel, headerActions, title } = config.props || {};
 
   const isLoading = propLoading || isQueryLoading;
-  // Surface dataPath/parseJson resolver errors the same way fetch errors are
-  // surfaced — otherwise a backend response-shape regression would silently
-  // render an empty table.
+  // dataError covers resolver-stage failures (e.g. JSON.parse failure on
+  // dataSource.dataPath). Surfaces the same way as queryError so loud
+  // failures aren't hidden behind an empty-state.
   const error = propError || queryError || dataError;
 
   // Returns a CellRenderer onLinkClick handler bound to a specific row, so
@@ -107,7 +145,9 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
     };
 
   if (error) {
-    return <ErrorState message="Error loading data" />;
+    const message =
+      error instanceof Error && error.message ? error.message : "Error loading data";
+    return <ErrorState message={message} />;
   }
 
   const renderEmptyState = () => (
@@ -164,8 +204,14 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
             isScrollable ? "overflow-auto overflow-x-auto" : "overflow-hidden"
           )}
         >
-          {/* Toolbar */}
-          <div className="flex items-center justify-end px-3 py-2 border-b gap-2">
+          {/* Toolbar — title on the left, actions + export on the right */}
+          <div className="flex items-center justify-between px-3 py-2 border-b gap-2">
+            {title ? (
+              <h3 className="text-sm font-semibold text-foreground truncate">{title}</h3>
+            ) : (
+              <div aria-hidden="true" />
+            )}
+            <div className="flex items-center gap-2">
             {headerActions?.map((action: ActionConfig) => (
               <ActionRenderer key={action.id} action={action} />
             ))}
@@ -218,6 +264,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
 
           {/* Mobile card view — rendered only when viewport < md (768px). */}
@@ -269,7 +316,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                             <dd className="min-w-0 flex-1 text-right text-sm text-foreground">
                               <CellRenderer
                                 column={col}
-                                value={rowData[col.accessorKey]}
+                                value={resolveColumnValue(rowData, col)}
                                 rowId={rowId}
                                 onLinkClick={buildLinkHandler(rowData)}
                               />
@@ -448,7 +495,7 @@ export const DataTable: React.FC<DataTableProps> = ({ config }) => {
                           >
                             <CellRenderer
                               column={col}
-                              value={rowData[col.accessorKey]}
+                              value={resolveColumnValue(rowData, col)}
                               rowId={rowId}
                               onLinkClick={buildLinkHandler(rowData)}
                             />
