@@ -318,18 +318,19 @@ export function isDslCovered(endpoint: string): boolean {
   return DSL_COVERED_PREFIXES.some((pre) => p.startsWith(pre));
 }
 
-// ── UI state-map.ts parsing ────────────────────────────────────────────────────
-// Reads the shipped `src/components/widgets/state/state-map.ts` WITHOUT importing
-// it (importing pulls in the React/badge dependency chain). We only need the set
-// of state keys each entity map declares, so we parse the
-// `const X_STATES: Record<...> = { KEY: {...}, ... }` object literals.
+// ── UI state-map parsing ──────────────────────────────────────────────────────
+// Per #57's framework↔domain seam, `state-map.ts` is the generic empty registry
+// and each domain ships a `state-map.<domain>.ts` module that self-registers
+// its data. The GP entity maps live in `src/lib/state-maps/group-pas.ts`.
+// We parse that file WITHOUT importing it (importing pulls in the React/badge
+// dependency chain), grabbing the `const X_STATES: Record<...> = { KEY: {...} }`
+// object literals to compare the UI state vocab against the DSL enums.
 export const STATE_MAP_PATH = path.join(
   REPO_ROOT,
   'src',
-  'components',
-  'widgets',
-  'state',
-  'state-map.ts',
+  'lib',
+  'state-maps',
+  'group-pas.ts',
 );
 
 // Map of the `const NAME_STATES` identifier in state-map.ts → the EntityKind it

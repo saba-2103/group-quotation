@@ -1,209 +1,106 @@
-// Canonical label + colour-variant map for every entity state and reason
-// across the Group PAS V1 modules. Single source of truth so list cells,
-// detail headers, ActionBar tooltips, and ReasonBanner all share copy.
-//
-// Variant convention:
-//   success      — terminal positive (FINALIZED, ACTIVE, ADDED, APPROVED)
-//   info         — in-progress / mid-flight
-//   warning      — awaiting input / approval
-//   destructive  — terminal rejection / cancellation
-//   secondary    — pre-flight (DRAFT, CREATED)
-//   grey         — archived / withdrawn / expired
+// Generic registry for entity-state labels + badge variants. Consumers register
+// their domain's state map at module-load time (e.g. via a state-map.<domain>.ts
+// file imported once at app boot); StateBadge / ReasonBanner / column cells
+// read from the registry without knowing the underlying enum.
 
 import type { BadgeProps } from '@/components/ui/badge';
-import type {
-  CensusSubmissionStatus,
-  PolicyMemberState,
-  ProposalState,
-} from '@/types/group-pas/issuance';
-import type {
-  MemberPendingReason,
-  MemberState,
-  MemberVoidReason,
-  PolicyPendingReason,
-  PolicyState,
-} from '@/types/group-pas/policy-admin';
-import type { MemberQuoteStatus, QuoteStatus } from '@/types/group-pas/quotation';
 
 export type Variant = NonNullable<BadgeProps['variant']>;
 
-export type EntityKind =
-  | 'quote'
-  | 'memberQuote'
-  | 'proposal'
-  | 'policyMember'
-  | 'policy'
-  | 'member'
-  | 'censusSubmission';
+export type EntityKind = string;
 
 export interface StateMeta {
   label: string;
   variant: Variant;
 }
 
-const MEMBER_QUOTE_STATES: Record<MemberQuoteStatus, StateMeta> = {
-  DRAFT: { label: 'Draft', variant: 'secondary' },
-  SUBMITTED: { label: 'Submitted', variant: 'info' },
-  FINALIZED: { label: 'Finalized', variant: 'success' },
-};
-
-const QUOTE_STATES: Record<QuoteStatus, StateMeta> = {
-  DRAFT: { label: 'Draft', variant: 'secondary' },
-  SUBMITTED: { label: 'Submitted', variant: 'info' },
-  SENT_TO_CLIENT: { label: 'Sent to client', variant: 'info' },
-  ACCEPTED: { label: 'Accepted', variant: 'teal' },
-  REJECTED: { label: 'Rejected', variant: 'destructive' },
-  WITHDRAWN: { label: 'Withdrawn', variant: 'grey' },
-  EXPIRED: { label: 'Expired', variant: 'grey' },
-  FINALIZED: { label: 'Finalized', variant: 'success' },
-};
-
-const PROPOSAL_STATES: Record<ProposalState, StateMeta> = {
-  DRAFT: { label: 'Draft', variant: 'secondary' },
-  SUBMITTED: { label: 'Submitted', variant: 'info' },
-  FINALIZED: { label: 'Finalized', variant: 'teal' },
-  POLICY_CREATED: { label: 'Policy created', variant: 'success' },
-  CANCELLED: { label: 'Cancelled', variant: 'destructive' },
-};
-
-const POLICY_MEMBER_STATES: Record<PolicyMemberState, StateMeta> = {
-  CREATED: { label: 'Created', variant: 'secondary' },
-  PRICED: { label: 'Priced', variant: 'info' },
-  MAF_PENDING: { label: 'MAF pending', variant: 'warning' },
-  MAF_CONFIRMED: { label: 'MAF confirmed', variant: 'teal' },
-  CLASSIFYING: { label: 'Classifying', variant: 'info' },
-  APPROVED: { label: 'Approved', variant: 'teal' },
-  REPAIR_PENDING: { label: 'Repair pending', variant: 'warning' },
-  REFERRED_TO_UW: { label: 'Referred to UW', variant: 'warning' },
-  REJECTED: { label: 'Rejected', variant: 'destructive' },
-  SENT_FOR_ISSUANCE: { label: 'Sent for issuance', variant: 'info' },
-  ADDED: { label: 'Added to policy', variant: 'success' },
-  ARCHIVED: { label: 'Archived', variant: 'grey' },
-};
-
-const POLICY_STATES: Record<PolicyState, StateMeta> = {
-  CREATED: { label: 'Created', variant: 'secondary' },
-  PENDING: { label: 'Pending', variant: 'warning' },
-  ACTIVE: { label: 'Active', variant: 'success' },
-  CANCELLED: { label: 'Cancelled', variant: 'destructive' },
-};
-
-const MEMBER_STATES: Record<MemberState, StateMeta> = {
-  PENDING: { label: 'Pending', variant: 'warning' },
-  ACTIVE: { label: 'Active', variant: 'success' },
-  VOID: { label: 'Void', variant: 'destructive' },
-  CANCELLED: { label: 'Cancelled', variant: 'destructive' },
-};
-
-const CENSUS_SUBMISSION_STATES: Record<CensusSubmissionStatus, StateMeta> = {
-  INITIATED: { label: 'Initiated', variant: 'secondary' },
-  INGESTED: { label: 'Ingested', variant: 'info' },
-  SUBMITTED: { label: 'Submitted', variant: 'info' },
-  COMPLETED: { label: 'Completed', variant: 'success' },
-  FAILED: { label: 'Failed', variant: 'destructive' },
-};
-
-const STATE_MAPS: Record<EntityKind, Record<string, StateMeta>> = {
-  quote: QUOTE_STATES,
-  memberQuote: MEMBER_QUOTE_STATES,
-  proposal: PROPOSAL_STATES,
-  policyMember: POLICY_MEMBER_STATES,
-  policy: POLICY_STATES,
-  member: MEMBER_STATES,
-  censusSubmission: CENSUS_SUBMISSION_STATES,
-};
-
-const FALLBACK: StateMeta = { label: 'Unknown', variant: 'outline' };
-
-export function getStateMeta(entity: EntityKind, state: string): StateMeta {
-  return STATE_MAPS[entity]?.[state] ?? { ...FALLBACK, label: state || FALLBACK.label };
-}
-
-// ── Reasons ──
-
 export interface ReasonMeta {
   label: string;
   variant: Variant;
 }
 
-const POLICY_PENDING_REASON: Record<PolicyPendingReason, ReasonMeta> = {
-  AWAITING_MIN_MEMBERS: {
-    label: 'Awaiting minimum members for activation',
-    variant: 'warning',
-  },
-  AWAITING_COMPLIANCE: {
-    label: 'Awaiting compliance review',
-    variant: 'warning',
-  },
-};
+export type ReasonGroup = string;
 
-const MEMBER_PENDING_REASON: Record<MemberPendingReason, ReasonMeta> = {
-  PENDING_FLOAT_RESERVATION: {
-    label: 'Awaiting float reservation',
-    variant: 'warning',
-  },
-  PENDING_APPROVAL: {
-    label: 'Awaiting approval',
-    variant: 'warning',
-  },
-  PENDING_POLICY_ACTIVATION: {
-    label: 'Awaiting policy activation',
-    variant: 'warning',
-  },
-};
+const STATE_MAPS: Record<EntityKind, Record<string, StateMeta>> = {};
+const REASON_MAPS: Record<ReasonGroup, Record<string, ReasonMeta>> = {};
+const FREE_TEXT_REASON_GROUPS = new Set<ReasonGroup>();
+const REASON_GROUP_RESOLVERS: Array<
+  (entity: EntityKind, state: string, hasFreeText: boolean) => ReasonGroup | undefined
+> = [];
 
-const MEMBER_VOID_REASON: Record<MemberVoidReason, ReasonMeta> = {
-  FLOAT_UNAVAILABLE: { label: 'Float unavailable', variant: 'destructive' },
-  APPROVAL_REJECTED: { label: 'Approval rejected', variant: 'destructive' },
-  POLICY_CANCELLED: { label: 'Policy cancelled', variant: 'destructive' },
-  WITHDRAWN_BY_PROPOSER: {
-    label: 'Withdrawn by proposer',
-    variant: 'destructive',
-  },
-};
+const FALLBACK_STATE: StateMeta = { label: 'Unknown', variant: 'outline' };
+const FALLBACK_REASON: ReasonMeta = { label: 'Unknown reason', variant: 'outline' };
 
-export type ReasonGroup =
-  | 'policyPending'
-  | 'memberPending'
-  | 'memberVoid'
-  | 'memberCancellation';
+export function registerStateMap(
+  entity: EntityKind,
+  map: Record<string, StateMeta>,
+): void {
+  STATE_MAPS[entity] = { ...(STATE_MAPS[entity] ?? {}), ...map };
+}
 
-const REASON_MAPS: Record<
-  Exclude<ReasonGroup, 'memberCancellation'>,
-  Record<string, ReasonMeta>
-> = {
-  policyPending: POLICY_PENDING_REASON,
-  memberPending: MEMBER_PENDING_REASON,
-  memberVoid: MEMBER_VOID_REASON,
-};
-
-export function getReasonMeta(
+export function registerReasonMap(
   group: ReasonGroup,
-  value: string,
-): ReasonMeta {
-  if (group === 'memberCancellation') {
-    // Free-text — caller passes the raw string through as the label.
-    return { label: value, variant: 'destructive' };
-  }
+  map: Record<string, ReasonMeta>,
+  options?: { freeText?: boolean },
+): void {
+  REASON_MAPS[group] = { ...(REASON_MAPS[group] ?? {}), ...map };
+  if (options?.freeText) FREE_TEXT_REASON_GROUPS.add(group);
+}
+
+export function registerReasonGroupResolver(
+  resolver: (
+    entity: EntityKind,
+    state: string,
+    hasFreeText: boolean,
+  ) => ReasonGroup | undefined,
+): void {
+  REASON_GROUP_RESOLVERS.push(resolver);
+}
+
+export function getStateMeta(entity: EntityKind, state: string): StateMeta {
   return (
-    REASON_MAPS[group]?.[value] ?? {
-      label: value || 'Unknown reason',
-      variant: 'outline',
+    STATE_MAPS[entity]?.[state] ?? {
+      ...FALLBACK_STATE,
+      label: state || FALLBACK_STATE.label,
     }
   );
 }
 
-// Convenience: which reason group applies for a given entity + state?
-// Used by ReasonBanner to pick the right map without the schema saying it.
+export function getReasonMeta(group: ReasonGroup, value: string): ReasonMeta {
+  if (FREE_TEXT_REASON_GROUPS.has(group)) {
+    return { label: value, variant: 'destructive' };
+  }
+  return (
+    REASON_MAPS[group]?.[value] ?? {
+      ...FALLBACK_REASON,
+      label: value || FALLBACK_REASON.label,
+    }
+  );
+}
+
 export function reasonGroupFor(
   entity: EntityKind,
   state: string,
   hasCancellationReason: boolean,
 ): ReasonGroup | undefined {
-  if (entity === 'policy' && state === 'PENDING') return 'policyPending';
-  if (entity === 'member' && state === 'PENDING') return 'memberPending';
-  if (entity === 'member' && state === 'VOID') return 'memberVoid';
-  if (entity === 'member' && state === 'CANCELLED' && hasCancellationReason)
-    return 'memberCancellation';
+  for (const resolver of REASON_GROUP_RESOLVERS) {
+    const group = resolver(entity, state, hasCancellationReason);
+    if (group) return group;
+  }
   return undefined;
+}
+
+/**
+ * Wipe all registered state / reason maps and resolvers. Module-level
+ * registries persist across test files in the same Jest worker because Node
+ * caches modules; call this in `afterEach` (e.g. via `jest.setup.ts`) so one
+ * test's `registerStateMap` doesn't bleed into the next.
+ *
+ * @internal — production code should never call this.
+ */
+export function __resetRegistriesForTests(): void {
+  for (const k of Object.keys(STATE_MAPS)) delete STATE_MAPS[k];
+  for (const k of Object.keys(REASON_MAPS)) delete REASON_MAPS[k];
+  FREE_TEXT_REASON_GROUPS.clear();
+  REASON_GROUP_RESOLVERS.length = 0;
 }
