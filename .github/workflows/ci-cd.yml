@@ -54,17 +54,20 @@ jobs:
     secrets: inherit
 
   # ──────────────────────────────────────────────
-  # E2E — deterministic Playwright subset, self-contained.
-  # Starts the app in PURE-MOCK mode (GROUP_PAS_BACKEND_URL unset → the local
-  # mock dispatcher serves /api/*) and runs the backend-light suites:
-  #   • schema-coherence — no server; validates every detail/tab schema's
-  #     role × state × action graph (the schema-driven backbone).
-  #   • smoke — every route loads per role with no console errors, mock
-  #     endpoints reachable.
+  # E2E — Playwright subset run against the REAL dev backend (proxy mode).
+  # GROUP_PAS_BACKEND_URL points /api/{quotation,issuance,policy-admin} at the
+  # live group-pas-dev API, so these tests catch *backend contract drift* — the
+  # frontend's API assumptions vs the actual responses — before a release.
+  # (Mocks would only test the frontend against its own assumptions.)
+  # Read-only suites only, so they don't pollute shared dev data:
+  #   • schema-coherence — backend-independent; validates every detail/tab
+  #     schema's role × state × action graph (the schema-driven backbone).
+  #   • smoke — every route loads per role (no console errors), every backend
+  #     search endpoint reachable through the proxy.
   #   • role-rbac — PROP-0009 6-persona menu filtering + switcher.
-  # No external backend / DNS dependency, so it's a reliable PR gate. The
-  # heavier narrative/seed walkthroughs stay manual (they need a seeded live
-  # backend) — run them with `npx playwright test` against the dev deploy.
+  #   • list-pages — every list renders real backend rows + row→detail nav.
+  # Mutating suites (seed-portal, narrative create-quote walkthroughs) stay
+  # manual — run them with `npx playwright test` against a disposable backend.
   # ──────────────────────────────────────────────
   e2e:
     needs: pre-commit
@@ -78,9 +81,11 @@ jobs:
       - run: npm ci
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
-      - name: Start app (pure mock) and run deterministic e2e subset
+      - name: Start app (real dev backend) and run read-only e2e subset
         env:
-          GROUP_PAS_BACKEND_URL: ""
+          # Real dev backend → catches contract drift. Override with the
+          # GROUP_PAS_BACKEND_URL_DEV repo variable; falls back to the dev URL.
+          GROUP_PAS_BACKEND_URL: ${{ vars.GROUP_PAS_BACKEND_URL_DEV || 'https://group-pas-dev.anairacloud.com' }}
         run: |
           npm run dev > /tmp/dev.log 2>&1 &
           for i in $(seq 1 60); do
@@ -93,7 +98,8 @@ jobs:
           PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test \
             tests/e2e/schema-coherence.spec.ts \
             tests/e2e/smoke.spec.ts \
-            tests/e2e/role-rbac.spec.ts
+            tests/e2e/role-rbac.spec.ts \
+            tests/e2e/list-pages.spec.ts
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
