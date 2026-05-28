@@ -14,8 +14,14 @@ import {
 } from 'react';
 
 import { ROLES, type Role } from '@/types/group-pas/roles';
+import { useWidgetState } from '@/hooks/useWidgetState';
 
 const STORAGE_KEY = 'group-pas:current-role';
+// Schemas can subscribe via `stateDependencies: ['global:current-role']` and
+// gate on `{ "==": [{ "var": "global:current-role" }, "sales"] }` without each
+// widget having to consume React context directly. Documented in
+// docs/STATE_MANAGEMENT_GUIDE.md + docs/schema-design-reference/07.
+const ROLE_STATE_KEY = 'global:current-role';
 const DEFAULT_ROLE: Role = 'sales';
 
 export interface RoleContextValue {
@@ -40,7 +46,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [role, setRoleState] = useState<Role>(DEFAULT_ROLE);
 
   useEffect(() => {
-    setRoleState(readStoredRole());
+    const stored = readStoredRole();
+    setRoleState(stored);
+    // Publish into useWidgetState so schemas can subscribe via the
+    // `global:current-role` key (see comment by ROLE_STATE_KEY).
+    useWidgetState.getState().setValue(ROLE_STATE_KEY, stored);
   }, []);
 
   const setRole = useCallback((next: Role) => {
@@ -48,6 +58,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(STORAGE_KEY, next);
     }
+    useWidgetState.getState().setValue(ROLE_STATE_KEY, next);
   }, []);
 
   const value = useMemo<RoleContextValue>(() => ({ role, setRole }), [role, setRole]);

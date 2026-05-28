@@ -21,12 +21,13 @@
 //
 // On error, surfaces `errorMessage` so the user isn't left guessing.
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
 import { useWidgetState } from '@/hooks/useWidgetState';
+import { getNested } from '@/lib/objectPath';
 import type { WidgetConfig } from '@/types/widget';
 
 interface PollingBannerProps {
@@ -34,7 +35,8 @@ interface PollingBannerProps {
   successMessage?: string;
   errorMessage?: string;
   // Dotted accessor paths. If every one resolves to a blank value
-  // (null/undefined/0/""), the banner remains in the `pending` state.
+  // (null/undefined/empty string/empty array), the banner remains in the
+  // `pending` state.
   pendingWhenMissing?: string[];
   // Widget-state key consulted to gate the banner. When set, the banner
   // (and its polling) only activates while this key is truthy. The banner
@@ -43,22 +45,13 @@ interface PollingBannerProps {
   stateKey?: string;
 }
 
-function getNested(source: unknown, path: string): unknown {
-  if (source == null || !path) return undefined;
-  return path.split('.').reduce<unknown>(
-    (acc, key) =>
-      acc != null && typeof acc === 'object' && key in (acc as object)
-        ? (acc as Record<string, unknown>)[key]
-        : undefined,
-    source,
-  );
-}
-
 function isMissing(v: unknown): boolean {
   if (v === null || v === undefined) return true;
-  if (v === 0) return true;
   if (typeof v === 'string' && v.length === 0) return true;
   if (Array.isArray(v) && v.length === 0) return true;
+  // NB: `0` is treated as present. Domain fields like `premium=0` or
+  // `memberCount=0` are legitimate non-pending values; previously the banner
+  // would loop forever when an accessor resolved to numeric zero.
   return false;
 }
 
@@ -68,9 +61,16 @@ export const PollingBanner: React.FC<{ config: WidgetConfig }> = ({ config }) =>
     pendingMessage = 'Working…',
     successMessage,
     errorMessage = 'Failed to load status',
-    pendingWhenMissing = [],
+    pendingWhenMissing: rawPendingWhenMissing,
     stateKey,
   } = props;
+
+  // Memoize on a JSON-stable signature so the effect's dep array doesn't
+  // change identity every render when the caller passes a fresh array.
+  const pendingWhenMissing = useMemo<string[]>(
+    () => rawPendingWhenMissing ?? [],
+    [JSON.stringify(rawPendingWhenMissing ?? [])],
+  );
 
   const { values, setValue } = useWidgetState();
   // When a stateKey is declared the banner is opt-in — the triggering action
