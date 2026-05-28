@@ -6,6 +6,8 @@ import { getWidgetComponent } from './WidgetRegistry';
 import { cn } from '@/lib/utils';
 import { useSmartQuery } from '@/hooks/useSmartQuery';
 import { useRole } from '@/hooks/useRole';
+import { useWidgetState } from '@/hooks/useWidgetState';
+import { evaluateCondition } from '@/lib/conditions';
 import { ParentDataSourceContext } from '@/contexts/ParentDataSourceContext';
 
 interface WidgetRendererProps {
@@ -15,6 +17,7 @@ interface WidgetRendererProps {
 export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ config }) => {
     const Component = getWidgetComponent(config.type);
     const { role } = useRole();
+    const { values } = useWidgetState();
 
     // Role-visibility gate evaluated BEFORE useSmartQuery so hidden widgets
     // don't pay fetch / polling cost. An empty `visibleRoles` array means
@@ -42,15 +45,53 @@ export const WidgetRenderer: React.FC<WidgetRendererProps> = ({ config }) => {
         );
     }
 
+    // Generic visibleWhen gate. Evaluated against the shared widget-state
+    // store so any widget can react to siblings/ancestors that publish keys
+    // via `useWidgetState.setValue` (or a `state-publisher` dataSource —
+    // see STATE_MANAGEMENT_GUIDE.md §8.2). Runs BEFORE useSmartQuery so
+    // hidden widgets skip their fetch and polling cost. Skipped entirely
+    // when `visibleRoles` already hid the widget — role wins.
+    //
+    // Context source: if `dataSource.stateDependencies` is set, the eval
+    // context is sliced to just those keys (declarative, cheaper); else
+    // we pass the full snapshot and unbound `var` lookups resolve to
+    // `null` per jsonLogic.
+    //
+    // Error fallback: a predicate that throws (malformed jsonLogic, etc.)
+    // defaults to *visible* with a dev-mode warning. Visible-but-wrong is
+    // debuggable; hidden-and-wrong is silent.
+    let isConditionHidden = false;
+    if (!isRoleHidden && config.visibleWhen) {
+        try {
+            const deps = config.dataSource?.stateDependencies;
+            const context = deps && deps.length > 0
+                ? deps.reduce<Record<string, unknown>>((acc, key) => {
+                    acc[key] = values[key];
+                    return acc;
+                }, {})
+                : values;
+            isConditionHidden = !evaluateCondition(config.visibleWhen, context);
+        } catch (err) {
+            if (process.env.NODE_ENV !== "production") {
+                console.warn(
+                    `WidgetRenderer: visibleWhen evaluation threw for widget "${config.id}" — defaulting to visible.`,
+                    err,
+                );
+            }
+            isConditionHidden = false;
+        }
+    }
+
     // Basic Data Fetching if configured. Pass `undefined` to skip the query
     // entirely when the widget is hidden — useSmartQuery short-circuits with
     // `enabled: false` and never fires.
     const { data, isLoading, error, queryKey } = useSmartQuery(
-        isRoleHidden ? undefined : config.dataSource,
+        isRoleHidden || isConditionHidden ? undefined : config.dataSource,
     );
 
     if (config.layout?.hidden) return null;
     if (isRoleHidden) return null;
+    if (isConditionHidden) return null;
 
     // Enhancing props with data
     const enhancedProps = {
