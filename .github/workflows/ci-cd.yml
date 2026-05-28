@@ -54,6 +54,55 @@ jobs:
     secrets: inherit
 
   # ──────────────────────────────────────────────
+  # E2E — deterministic Playwright subset, self-contained.
+  # Starts the app in PURE-MOCK mode (GROUP_PAS_BACKEND_URL unset → the local
+  # mock dispatcher serves /api/*) and runs the backend-light suites:
+  #   • schema-coherence — no server; validates every detail/tab schema's
+  #     role × state × action graph (the schema-driven backbone).
+  #   • smoke — every route loads per role with no console errors, mock
+  #     endpoints reachable.
+  #   • role-rbac — PROP-0009 6-persona menu filtering + switcher.
+  # No external backend / DNS dependency, so it's a reliable PR gate. The
+  # heavier narrative/seed walkthroughs stay manual (they need a seeded live
+  # backend) — run them with `npx playwright test` against the dev deploy.
+  # ──────────────────────────────────────────────
+  e2e:
+    needs: pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Start app (pure mock) and run deterministic e2e subset
+        env:
+          GROUP_PAS_BACKEND_URL: ""
+        run: |
+          npm run dev > /tmp/dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000/ >/dev/null 2>&1 && break
+            sleep 2
+          done
+          if ! curl -sf http://localhost:3000/ >/dev/null 2>&1; then
+            echo "::error::dev server failed to start"; cat /tmp/dev.log; exit 1
+          fi
+          PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test \
+            tests/e2e/schema-coherence.spec.ts \
+            tests/e2e/smoke.spec.ts \
+            tests/e2e/role-rbac.spec.ts
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────
   # Deploy to Dev — only on push to dev/develop
   # ──────────────────────────────────────────────
   deploy-dev:
