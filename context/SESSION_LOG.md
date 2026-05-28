@@ -2182,3 +2182,22 @@ User flagged the Add plan modal in quote detail as too cramped for comfortable e
 - **Commit:** `fb7bde8c docs(new-module): correctness + completeness pass against feat/new-buisiness` (+340 / −126, 1 file). Pushed to `origin/docs/schema-design-reference`.
 - **Tests:** N/A (docs only).
 - **Next:** branch is ready to roll into PR #72's wake; `NEW_MODULE_IMPLEMENTATION_GUIDE.md` is now aligned with the `schema-design-reference/` companion docs.
+
+### 2026-05-27 → 05-28 — feat/new-buisiness → main integration (PR #56) + deploy fix + e2e CI gate
+
+- **Goal:** land PR #56 (`feat/new-buisiness` → `main`). `main` had diverged (+73 commits) and had piecemeal-extracted the framework out of NB (#57 schema-engine, #72 core-arch, #58 nav, #59/#71 deploy/CI), so a raw merge re-conflicted on all of it.
+- **Integration merge** (resolved on throwaway `merge/nb-to-main`, then fast-forward-pushed to `feat/new-buisiness`): merged `origin/main` into NB, resolved **113 conflicts**. Merge commit `88685c46`.
+  - **Resolution rules (load-bearing for future merges):**
+    - Framework engine (`useSmartQuery`, `useDataTable`, `useActionHandler`, `WidgetRenderer`, `OverlayProvider`, `schemaResolver`, `lib/api/client`) + infra (helm / Docker / CI / `next.config`) → **take main** (reviewed/hardened port).
+    - Domain (schemas, mocks, pages, plan/form widgets) → **take NB**. `FieldRenderer` **unioned** (main's a11y pass + NB's `file` / `dmn-rules-editor` / `json-textarea` field types).
+    - **Role system + state-map → take NB (domain-populated). GOTCHA:** main's generic `registerStateMap` / `RoleContext` registries are **never registered** anywhere, so taking them renders raw enum strings and breaks the 6-persona role type. NB's inlined `state-map.ts` + `roles.ts` (6 personas) are the working versions. Unit + e2e tests catch this.
+    - Type files (`widget.ts`, `DataTable/types.ts`) → **union** both sides. Renamed 2 `api.del()` callers → `.delete()` (main's client uses `delete`). Phase-0 teardown deletions (legacy quotations) → kept deleted.
+  - **Verified:** `tsc` clean, `next build` clean, `jest` 176/176, dev smoke + full Playwright suite **185 pass / 0 fail / 20 skip** (against the live `group-pas-dev` backend via local proxy).
+- **Follow-up commits (FF-pushed to feat/new-buisiness):**
+  - `451019ce` — satisfy main's `pre-commit` gate: deduped a duplicate `"typecheck"` key in `package.json` (check-json), trailing-whitespace/EOF on pre-existing NB files.
+  - `281eca9f` — `fix(helm)`: release-scope the ServiceAccount name. `values.yaml` hardcoded `serviceAccount.name: keystone-ui`, overriding the per-release `fullname`; per-PR preview releases collided on SA ownership in the shared `dev` namespace (this was the `deploy-preview` failure). Empty name → `fullname` (canonical SA unchanged, previews isolated). deploy-preview now passes.
+  - `6ac74e59` — `ci`: new **`e2e` job** — pure-mock, self-contained: `schema-coherence` + `smoke` + `role-rbac` (88 tests, no external backend). Verified locally in pure-mock (52 schema + 36 smoke/rbac pass).
+- **PRs:** closed **#49** (`feature/new-business`, April first-gen, superseded by #56 — 116/117 unique files gone from main). **#32** left open (stale copilot-instructions).
+- **Test audit:** source of truth = `docs/planning/DEMO_NARRATIVE_GTL_GCL.md` (⚠️ **cited by README/specs/roles.ts but NEVER committed to the repo**) + `docs/planning/` specs + the DSL schemas. e2e wasn't in CI (now partly fixed by `6ac74e59`). `schemas` jest project is empty (structural Zod validation would arrive via #63/#64).
+- **STATUS:** #56 **MERGEABLE**, all functional CI green (pre-commit, build, unit, deploy-preview, e2e), **BLOCKED only on the required review** (ruleset "Copilot review for default branch", `reviewDecision: REVIEW_REQUIRED` — cannot self-approve, do not `--admin`-bypass). Scanner checks (Trivy / Checkov / OWASP-DC / SonarQube / default-CodeQL) fail but are **non-required** (no required status checks configured) — pre-existing security/quality findings.
+- **NEXT:** (1) user approves + merges #56. (2) rebase follow-ons onto the new main: motor-claims stack (#76/#70/#69/#68/#67, retarget #77), then #61, then #63/#64/#54/#75. (3) hardening: mark `e2e` required in branch protection, land #63/#64 (Zod schema validation in CI), commit the missing `DEMO_NARRATIVE_GTL_GCL.md`, triage scanner findings, confirm the dev-deploy path (no `dev`/`develop` branch exists, so the pipeline's `deploy-dev` never fires).
