@@ -1735,12 +1735,12 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
               [
                 { key: 'subsidiaries', label: 'Subsidiaries', icon: Building, count: bundle.subsidiaries.length || null },
                 { key: 'members', label: 'Member Mapping', icon: Users, count: bundle.members.length || null },
-                { key: 'claims', label: 'Claims', icon: Activity },
+                { key: 'claims', label: 'Claims', icon: Activity, count: null },
                 { key: 'plans', label: 'Plans', icon: Layers, count: plans.filter((p) => p.quoteVersionId === versionId).length || null },
                 { key: 'pricing', label: 'Pricing', icon: BarChart3, count: plans.filter((p) => p.quoteVersionId === versionId).length || null },
-                { key: 'scenarios', label: 'Scenarios', icon: FlaskConical },
+                { key: 'scenarios', label: 'Scenarios', icon: FlaskConical, count: null },
                 { key: 'negotiation', label: 'Negotiation', icon: Scale, count: bundle.negotiationLog.filter((r) => r.versionId === versionId).length || null },
-              ] as const
+              ] as Array<{ key: string; label: string; icon: React.ElementType; count: number | null }>
             ).map(({ key, label, icon: Icon, count }) => (
               <button
                 key={key}
@@ -1754,7 +1754,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
               >
                 <Icon className="size-3" />
                 {label}
-                {'count' in { key, label, icon: Icon, count } && count != null && count > 0 && (
+                {count != null && count > 0 && (
                   <span className={cn(
                     'inline-flex items-center justify-center h-4 min-w-4 rounded-full text-[9px] font-bold px-1',
                     journeyTab === key ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground',
