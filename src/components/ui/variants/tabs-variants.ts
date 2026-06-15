@@ -3,8 +3,9 @@ import { cva } from "class-variance-authority";
 export const tabsListVariants = cva("flex items-center text-muted-foreground", {
     variants: {
         variant: {
-            default: "h-10 rounded-md bg-muted p-1 justify-start",
+            default: "w-fit rounded-xl bg-muted p-1 justify-start",
             case: "flex-nowrap border-b-0",
+            underline: "flex-nowrap border-b-0",
         },
     },
     defaultVariants: {
@@ -18,8 +19,9 @@ export const tabsTriggerVariants = cva(
         variants: {
             variant: {
                 default:
-                    "rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+                    "rounded-[10px] px-[10px] py-[5.5px] text-sm font-medium gap-2 text-muted-foreground ring-offset-background data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
                 case: "relative px-3 py-3 text-sm font-medium gap-2 text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground border-b-2 border-transparent data-[state=active]:text-primary data-[state=active]:border-primary",
+                underline: "relative px-3 py-3 text-sm font-medium gap-2 text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground border-b-2 border-transparent data-[state=active]:text-primary data-[state=active]:border-primary",
             },
         },
         defaultVariants: {

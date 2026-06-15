@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import type { AppConfig } from "@shared/types";
 import { Loader2 } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
@@ -39,9 +39,13 @@ export function AppContextProvider({
             return res.json() as Promise<AppConfig>;
         },
         staleTime: Infinity, // Configuration rarely changes during a session
+        placeholderData: keepPreviousData, // keep previous role's config visible while new one loads
     });
 
-    if (isLoading) {
+    // Only block rendering on the very first load (no data at all yet).
+    // On role-switch re-fetches, keepPreviousData keeps the old config visible
+    // so the sidebar (and its role-switcher button) stays mounted.
+    if (isLoading && !config) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-2 text-muted-foreground">

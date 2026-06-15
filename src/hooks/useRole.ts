@@ -11,12 +11,12 @@ import { RoleContext, type RoleContextValue } from '@/contexts/RoleContext';
 // it. Throwing here would crash the whole modal — we'd rather degrade
 // gracefully to a default identity that hides role-gated content.
 const FALLBACK: RoleContextValue = {
-  role: 'sales',
-  setRole: () => {
-    // No-op: a portal-mounted widget has no business mutating the active
-    // role. The real provider's setRole is reachable through useRole calls
-    // that happen inside the provider tree (which is the 99% case).
-  },
+  role: 'SALES',
+  setRole: () => {},
+  currentRole: 'SALES',
+  salesLevel: 0,
+  userId: 'fallback',
+  userName: 'Unknown',
 };
 
 export function useRole(): RoleContextValue {

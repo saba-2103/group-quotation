@@ -14,6 +14,11 @@ export interface NavigationItem {
      * Server-side filtering matches the post-auth posture (JWT → menu).
      */
     allowedRoles?: Role[];
+    /**
+     * Optional URL prefix — item is also highlighted as active when the
+     * current pathname starts with this string (e.g. '/rfq2/rfq-').
+     */
+    activePrefix?: string;
 }
 
 export interface AppConfig {

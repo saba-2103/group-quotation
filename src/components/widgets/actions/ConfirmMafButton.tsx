@@ -63,7 +63,7 @@ export const ConfirmMafButton: React.FC<ConfirmMafButtonProps> = ({ config }) =>
     },
   });
 
-  if (role !== 'member') return null;
+  if ((role as string) !== 'member') return null;
 
   const state = (member as { state?: string } | undefined)?.state;
   const stateOk = state === 'MAF_PENDING';

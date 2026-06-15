@@ -24,7 +24,7 @@ const config = {
     {
       ...sharedConfig,
       displayName: 'unit',
-      testMatch: ['<rootDir>/src/tests/unit/**/*.test.tsx'],
+      testMatch: ['<rootDir>/src/tests/unit/**/*.test.tsx', '<rootDir>/src/tests/unit/**/*.test.ts'],
     },
     {
       ...sharedConfig,

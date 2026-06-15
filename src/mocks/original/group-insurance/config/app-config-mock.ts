@@ -1,24 +1,18 @@
 import type { AppConfig } from "@shared/types";
 
 /**
- * Mock App Config for Group Insurance Portal.
+ * Group PAS app config — new-business revamp.
  *
- * Rail items follow the V1 spec modules from docs/group-pas-v1-plan.md Task 0.2
- * (Quotation, Issuance, Policy Admin) plus Home, plus Accounting (reference module).
- * Submenu items are flat (no `group` set) for now — grouping is deferred until
- * we decide how module-detail tabs should appear in the submenu panel.
- *
- * `allowedRoles` per item drives the role-aware menu filter wired in
- * `/api/config/app` (PROP-0009). Items without `allowedRoles` are visible to
- * every role. The values are the first cut from the proposal — refinable when
- * the demo script is walked end-to-end.
+ * Primary rail: Home | Policy | Policy 2
+ * Policy submenu: Dashboard, My Desk, RFQs, Plan Templates, Sales Cockpit
+ * Policy 2 submenu: Dashboard, Workbench, RFQ2
  */
 export const groupInsuranceAppConfig: AppConfig = {
-  title: "Group Insurance Portal",
-  description: "Manage your group insurance claims efficiently",
+  title: "Group PAS",
+  description: "Group Policy Administration System",
   logo: {
-    icon: "Users",
-    size: 32
+    icon: "Shield",
+    size: 32,
   },
   navigation: {
     menuItems: [
@@ -26,94 +20,178 @@ export const groupInsuranceAppConfig: AppConfig = {
         id: "home",
         label: "Home",
         url: "/",
-        icon: "LayoutDashboard"
-        // allowedRoles omitted → visible to every role
+        icon: "House",
       },
+      // ── Policy ────────────────────────────────────────────────────────────
       {
-        id: "quotation",
-        label: "Quotation",
-        url: "/quotation",
-        icon: "FileText",
-        allowedRoles: ["sales", "partner_agent", "mph"],
+        id: "policy",
+        label: "Policy",
+        url: "/rfqs",
+        icon: "FileSearch",
+        allowedRoles: ["SALES", "UNDERWRITER", "ACTUARY", "ACTUARIAL", "OPS", "ADMIN"],
         subMenuItems: [
           {
-            id: "quotation-list",
-            label: "Quotations",
-            url: "/quotation",
-            icon: "FileText",
-            allowedRoles: ["sales", "partner_agent", "mph"]
+            id: "policy-dashboard",
+            label: "Dashboard",
+            url: "/dashboard",
+            icon: "LayoutDashboard",
+            group: "MANAGE",
           },
           {
-            id: "member-quotes",
+            id: "my-desk",
+            label: "My Desk",
+            url: "/my-desk",
+            icon: "MonitorCheck",
+            group: "MANAGE",
+            allowedRoles: ["SALES", "UNDERWRITER", "ACTUARY", "ACTUARIAL", "OPS", "ADMIN"],
+          },
+          {
+            id: "rfqs-list",
+            label: "RFQs",
+            url: "/rfqs",
+            icon: "List",
+            group: "MANAGE",
+          },
+          {
+            id: "rfqs-new",
+            label: "New RFQ",
+            url: "/rfqs/new",
+            icon: "Plus",
+            group: "MANAGE",
+            allowedRoles: ["SALES", "ADMIN"],
+          },
+          {
+            id: "plan-templates",
+            label: "Plan Templates",
+            url: "/plan-templates",
+            icon: "LayoutTemplate",
+            group: "CONFIGURE",
+            allowedRoles: ["SALES", "UNDERWRITER", "ACTUARY", "ACTUARIAL", "OPS", "ADMIN"],
+          },
+          {
+            id: "sales-cockpit",
+            label: "Sales Cockpit",
+            url: "/sales-cockpit",
+            icon: "Gauge",
+            group: "CONFIGURE",
+            allowedRoles: ["ADMIN"],
+          },
+        ],
+      },
+      // ── Policy 2 (exploration canvas) ─────────────────────────────────────
+      {
+        id: "policy2",
+        label: "Policy 2",
+        url: "/rfq2",
+        icon: "FlaskConical",
+        allowedRoles: ["SALES", "UNDERWRITER", "ACTUARY", "ACTUARIAL", "OPS", "ADMIN"],
+        subMenuItems: [
+          // ── HOME ──────────────────────────────────────────────────────────
+          {
+            id: "policy2-dashboard",
+            label: "Dashboard",
+            url: "/rfq2/dashboard",
+            icon: "LayoutDashboard",
+            group: "HOME",
+          },
+          {
+            id: "policy2-workbench",
+            label: "Workbench",
+            url: "/rfq2/workbench",
+            icon: "ClipboardList",
+            group: "HOME",
+          },
+          {
+            id: "policy2-approvals",
+            label: "Approvals",
+            url: "/rfq2/approvals",
+            icon: "Stamp",
+            group: "HOME",
+          },
+          {
+            id: "policy2-referrals",
+            label: "Referrals",
+            url: "/rfq2/referrals",
+            icon: "UserRoundCog",
+            group: "HOME",
+          },
+          // ── POLICY ────────────────────────────────────────────────────────
+          {
+            id: "policy2-quotes",
+            label: "Quotes",
+            url: "/rfq2/quotes",
+            icon: "FileText",
+            group: "POLICY",
+            activePrefix: "/rfq2/rfq-",
+          },
+          {
+            id: "policy2-member-quotes",
             label: "Member Quotes",
-            url: "/quotation/member-quotes",
-            icon: "Users",
-            allowedRoles: ["sales"]
-          }
-        ]
-      },
-      {
-        id: "issuance",
-        label: "Issuance",
-        url: "/issuance/proposals",
-        icon: "ShieldCheck",
-        allowedRoles: ["sales", "mph", "uw"],
-        subMenuItems: [
+            url: "/rfq2/member-quotes",
+            icon: "FileUser",
+            group: "POLICY",
+          },
           {
-            id: "issuance-proposals",
-            label: "Proposals",
-            url: "/issuance/proposals",
+            id: "policy2-issuance",
+            label: "Issuance",
+            url: "/rfq2/issuance",
             icon: "ShieldCheck",
-            allowedRoles: ["sales", "mph", "uw"]
-          }
-        ]
-      },
-      {
-        id: "policy-admin",
-        label: "Policy Admin",
-        url: "/policy-admin/policies",
-        icon: "Building2",
-        allowedRoles: ["sales", "partner_agent", "member", "ops"],
-        subMenuItems: [
+            group: "POLICY",
+          },
           {
-            id: "policy-admin-clients",
+            id: "policy2-documents",
+            label: "Documents",
+            url: "/rfq2/documents",
+            icon: "Folder",
+            group: "POLICY",
+          },
+          // ── INSIGHTS ──────────────────────────────────────────────────────
+          {
+            id: "policy2-analytics",
+            label: "Analytics",
+            url: "/rfq2/analytics",
+            icon: "ChartNoAxesCombined",
+            group: "INSIGHTS",
+          },
+          {
+            id: "policy2-reports",
+            label: "Reports",
+            url: "/rfq2/reports",
+            icon: "FileChartColumn",
+            group: "INSIGHTS",
+          },
+          {
+            id: "policy2-health",
+            label: "Health",
+            url: "/rfq2/health",
+            icon: "HeartPulse",
+            group: "INSIGHTS",
+          },
+          // ── CONFIGURE ─────────────────────────────────────────────────────
+          {
+            id: "policy2-clients",
             label: "Clients",
-            url: "/policy-admin/clients",
-            icon: "Users",
-            allowedRoles: ["sales", "partner_agent"]
+            url: "/rfq2/clients",
+            icon: "BookUser",
+            group: "CONFIGURE",
           },
           {
-            id: "policy-admin-policies",
-            label: "Policies",
-            url: "/policy-admin/policies",
-            icon: "FileText",
-            allowedRoles: ["sales", "partner_agent", "member", "ops"]
-          }
-        ]
+            id: "policy2-products",
+            label: "Products",
+            url: "/rfq2/products",
+            icon: "Box",
+            group: "CONFIGURE",
+          },
+          {
+            id: "policy2-plan-templates",
+            label: "Plan Templates",
+            url: "/rfq2/plan-templates",
+            icon: "FileBox",
+            group: "CONFIGURE",
+          },
+        ],
       },
-      {
-        id: "accounting",
-        label: "Accounting",
-        url: "/accounting",
-        icon: "Calculator",
-        allowedRoles: ["sales"],
-        subMenuItems: [
-          {
-            id: "accounting-list",
-            label: "Accounting",
-            url: "/accounting",
-            icon: "Calculator",
-            allowedRoles: ["sales"]
-          },
-          {
-            id: "payout",
-            label: "Payout",
-            url: "/payout",
-            icon: "Banknote",
-            allowedRoles: ["sales"]
-          }
-        ]
-      }
-    ]
-  }
+    ],
+  },
 };
+

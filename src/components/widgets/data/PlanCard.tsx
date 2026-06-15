@@ -154,7 +154,7 @@ export const PlanCard: React.FC<PlanCardProps & { config?: { props?: PlanCardPro
   }
 
   const isDraft = parent?.status === "DRAFT";
-  const canEditPlans = role === "sales";
+  const canEditPlans = (role as string) === "sales";
   const fileFormatSet = hasCensusFileFormat(parent);
   const editEnabled = isDraft && canEditPlans && fileFormatSet;
   const editDisabledReason = !isDraft

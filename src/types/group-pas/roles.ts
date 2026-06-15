@@ -1,33 +1,66 @@
-// V1 demo role context. Backend has no auth in V1; the role is a UI-only switcher
-// per docs/group-pas-v1-plan.md → Task 1.9 + context/CORE_MEMORY.md scope-locks.
-//
-// The 6 personas come from docs/planning/DEMO_NARRATIVE_GTL_GCL.md.
-// Stopgap posture (PROP-0009): all 6 are selectable inside this portal until
-// each gets its own portal (PROP-0010..PROP-0013); the role itself stays in
-// the enum after each portal lands.
+// Group PAS roles — new-business revamp.
+// UserRole drives the AuthContext / useAuth system and the nav visibility rules.
+// The legacy V1 lowercase roles are kept as an alias so existing pages
+// (Issuance, Policy Admin, Accounting) continue to compile without changes.
 
-export type Role =
-  | 'sales'
-  | 'partner_agent'
-  | 'mph'
-  | 'member'
-  | 'uw'
-  | 'ops';
+export type UserRole =
+  | 'SALES'
+  | 'UNDERWRITER'
+  | 'ACTUARY'
+  | 'ACTUARIAL'    // alias to ACTUARY used in new Group Quotation module
+  | 'OPS'
+  | 'ADMIN'
+  | 'BROKER'
+  | 'MPH'
+  | 'REINSURER'
+  | 'PARTNER_AGENT';
 
-export const ROLES: Role[] = [
-  'sales',
-  'partner_agent',
-  'mph',
-  'member',
-  'uw',
-  'ops',
+export const USER_ROLES: UserRole[] = [
+  'SALES',
+  'UNDERWRITER',
+  'ACTUARY',
+  'ACTUARIAL',
+  'OPS',
+  'ADMIN',
+  'BROKER',
+  'MPH',
+  'REINSURER',
+  'PARTNER_AGENT',
 ];
+
+/** Sales seniority ladder — only meaningful when role === 'SALES'. */
+export type SalesLevel = 0 | 1 | 2 | 3 | 4 | 5;
+
+/** Combined persona used in the role switcher and permission checks. */
+export interface RoleSwitcherPersona {
+  id: string;
+  role: UserRole;
+  salesLevel?: SalesLevel;
+  label: string;
+  name: string;
+  email: string;
+}
+
+/** All personas available in the dev role switcher. */
+export const ROLE_SWITCHER_PERSONAS: RoleSwitcherPersona[] = [
+  { id: 'sales-l0', role: 'SALES', salesLevel: 0, label: 'Sales L0', name: 'Casey Sales', email: 'casey.l0@ins.com' },
+  { id: 'sales-l1', role: 'SALES', salesLevel: 1, label: 'Sales L1', name: 'Alex Carter', email: 'alex.carter@ins.com' },
+  { id: 'sales-l2', role: 'SALES', salesLevel: 2, label: 'Sales L2', name: 'Jordan Sales', email: 'jordan.l2@ins.com' },
+  { id: 'sales-l3', role: 'SALES', salesLevel: 3, label: 'Sales L3', name: 'Morgan Sales', email: 'morgan.l3@ins.com' },
+  { id: 'sales-l4', role: 'SALES', salesLevel: 4, label: 'Sales L4 (Supervisor)', name: 'Sam Supervisor', email: 'sam.l4@ins.com' },
+  { id: 'sales-l5', role: 'SALES', salesLevel: 5, label: 'Sales L5 (Head)', name: 'Arjun Head', email: 'arjun.l5@ins.com' },
+  { id: 'uw', role: 'UNDERWRITER', label: 'Underwriter', name: 'Jordan Lee', email: 'jordan.lee@ins.com' },
+  { id: 'actuarial', role: 'ACTUARIAL', label: 'Actuarial', name: 'Sam Patel', email: 'sam.patel@ins.com' },
+  { id: 'ops', role: 'OPS', label: 'Ops', name: 'Riley Ops', email: 'riley.ops@ins.com' },
+  { id: 'admin', role: 'ADMIN', label: 'Admin', name: 'Chris Admin', email: 'chris.admin@ins.com' },
+];
+
+// Legacy alias — kept so existing code that imports `Role` continues to work.
+export type Role = UserRole;
+export const ROLES: Role[] = USER_ROLES;
 
 export interface RoleContext {
   currentRole: Role;
-  // Reserved for the post-V1 auth integration. Carries the user identity that
-  // would otherwise come from a Keycloak token, so role-aware code already has
-  // a slot to read once auth lands.
   userId?: string;
   displayName?: string;
 }

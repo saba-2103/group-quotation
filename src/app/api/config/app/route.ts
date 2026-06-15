@@ -21,6 +21,8 @@ function filterMenuByRole(items: NavigationItem[], role: Role): NavigationItem[]
 
 function applyRoleFilter(config: AppConfig, role: Role | null): AppConfig {
     if (!role) return config;
+    // SALES L5 (Head) handled client-side via salesLevel; the config role is still 'SALES'
+    // so Sales Cockpit visibility is managed by withRouteGuard on the client.
     return {
         ...config,
         navigation: {

@@ -43,8 +43,10 @@
     "@tanstack/react-table": "^8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
     "json-logic-js": "^2.0.5",
     "lucide-react": "^0.575.0",
+    "msw": "^2.14.6",
     "next": "16.1.5",
     "pdfmake": "^0.3.6",
     "radix-ui": "^1.4.3",
@@ -96,5 +98,10 @@
     "vite": "^7.3.1",
     "vitest": "^4.0.18",
     "wrangler": "^4.66.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

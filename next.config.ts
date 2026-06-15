@@ -1,7 +1,25 @@
 import type { NextConfig } from "next";
+import path from "path";
+
+const TWP = path.resolve(__dirname, "node_modules/tailwindcss");
 
 const nextConfig: NextConfig = {
 	output: "standalone",
+	// Workaround: spaces in the project folder path cause enhanced-resolve to
+	// skip the project's node_modules when resolving "tailwindcss" during CSS
+	// compilation. Aliasing to the absolute path fixes both webpack and Turbopack.
+	webpack: (config) => {
+		config.resolve.alias = {
+			...config.resolve.alias,
+			tailwindcss: TWP,
+		};
+		return config;
+	},
+	turbopack: {
+		resolveAlias: {
+			tailwindcss: TWP,
+		},
+	},
 };
 
 export default nextConfig;

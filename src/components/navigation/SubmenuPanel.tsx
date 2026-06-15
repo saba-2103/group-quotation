@@ -9,60 +9,73 @@ import { isActive, resolveIcon } from "./navHelpers";
 interface SubmenuPanelProps {
     parent: NavigationItem;
     pathname: string;
+    orgName?: string;
     /** When true, ignore the desktop-only `hidden md:flex` — rendered inside a mobile Sheet. */
     forceVisible?: boolean;
     onItemClick?: () => void;
 }
 
-export function SubmenuPanel({ parent, pathname, forceVisible = false, onItemClick }: SubmenuPanelProps) {
+export function SubmenuPanel({ parent, pathname, orgName, forceVisible = false, onItemClick }: SubmenuPanelProps) {
     const groups = groupSubItems(parent.subMenuItems ?? []);
+    const headerName = orgName ?? parent.label;
 
     return (
         <aside
             className={cn(
-                "w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
+                "w-60 shrink-0 flex-col bg-sidebar",
                 forceVisible ? "flex" : "hidden md:flex",
             )}
         >
-            <div className="h-14 flex items-center px-4 border-b border-sidebar-border">
-                <h2 className="text-sm font-semibold truncate">{parent.label}</h2>
+            {/* Header — org/space name */}
+            <div className="flex h-[52px] items-center px-3 shrink-0">
+                <span className="text-lg font-semibold text-foreground truncate">
+                    {headerName}
+                </span>
             </div>
 
-            <nav className="flex-1 overflow-y-auto py-3">
-                {groups.map((group, idx) => (
-                    <div key={group.group ?? `__ungrouped_${idx}`} className="mb-3">
-                        {group.group && (
-                            <div className="px-3 pb-1 text-[11px] font-medium text-sidebar-foreground/70 uppercase tracking-wider">
-                                {group.group}
-                            </div>
-                        )}
-                        <ul className="flex flex-col gap-0.5 px-2">
-                            {group.items.map((item) => {
-                                const ItemIcon = resolveIcon(item.icon);
-                                const active = isActive(pathname, item.url);
-                                return (
-                                    <li key={item.id}>
-                                        <Link
-                                            href={item.url ?? "#"}
-                                            aria-current={active ? "page" : undefined}
-                                            onClick={onItemClick}
-                                            className={cn(
-                                                "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-                                                "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                                                active &&
-                                                    "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
-                                            )}
-                                        >
-                                            <ItemIcon className="size-4 shrink-0" />
-                                            <span className="truncate">{item.label}</span>
-                                        </Link>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </div>
-                ))}
+            {/* Nav groups */}
+            <nav className="flex-1 overflow-y-auto px-3 pt-4 pb-3">
+                <div className="flex flex-col gap-6">
+                    {groups.map((group, idx) => (
+                        <div key={group.group ?? `__ungrouped_${idx}`} className="flex flex-col gap-2">
+                            {/* Section label */}
+                            {group.group && (
+                                <p className="px-3 text-xs font-normal uppercase tracking-wide text-muted-foreground">
+                                    {group.group}
+                                </p>
+                            )}
+
+                            {/* Items */}
+                            <ul className="flex flex-col gap-1">
+                                {group.items.map((item) => {
+                                    const ItemIcon = resolveIcon(item.icon);
+                                    const active = isActive(pathname, item.url)
+                                        || (!!item.activePrefix && pathname.startsWith(item.activePrefix));
+                                    return (
+                                        <li key={item.id}>
+                                            <Link
+                                                href={item.url ?? "#"}
+                                                aria-current={active ? "page" : undefined}
+                                                onClick={onItemClick}
+                                                className={cn(
+                                                    "flex items-center gap-2 px-3 py-2 rounded-sm text-xs transition-colors",
+                                                    active
+                                                        ? "bg-border text-foreground font-medium"
+                                                        : "text-foreground/60 hover:bg-sidebar-accent hover:text-foreground",
+                                                )}
+                                            >
+                                                <ItemIcon className="size-4 shrink-0" />
+                                                <span className="truncate">{item.label}</span>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
             </nav>
         </aside>
     );
 }
+

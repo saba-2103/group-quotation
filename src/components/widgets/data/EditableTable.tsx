@@ -237,7 +237,7 @@ export const EditableTable: React.FC<EditableTableProps & { config?: EditableTab
 
   const currentState = data && typeof data === "object" ? String((data as Record<string, unknown>)[stateField] ?? "") : "";
   const stateAllowsEdit = editableStates.includes(currentState);
-  const roleAllowsEdit = editableRoles.includes(role);
+  const roleAllowsEdit = (editableRoles as string[]).includes(role as string);
   const canEdit = stateAllowsEdit && roleAllowsEdit;
 
   const isDirty = useMemo(() => {

@@ -37,46 +37,65 @@ interface RoleMeta {
 }
 
 const ROLE_META: Record<Role, RoleMeta> = {
-  sales: {
+  SALES: {
     label: 'Sales',
     description: 'Builds quotes and proposals; submits, sends to client, finalizes.',
     icon: UserRound,
   },
-  partner_agent: {
+  PARTNER_AGENT: {
     label: 'Partner Agent',
     description: 'Onboards members; uploads census; runs the post-issuance Add Member flow.',
     icon: Users,
   },
-  mph: {
-    label: 'MPH',
-    description: 'Master Policyholder — accepts (or rejects) quotes sent by Sales.',
-    icon: Building2,
-  },
-  member: {
-    label: 'Member',
-    description: 'Self-service: confirms enrolment via the MAF link.',
-    icon: UserCog,
-  },
-  uw: {
+  UNDERWRITER: {
     label: 'Underwriter',
     description: 'Reviews referred members and approves or rejects them.',
     icon: Stethoscope,
   },
-  ops: {
+  ACTUARY: {
+    label: 'Actuary',
+    description: 'Reviews pricing referrals and sets rate card overrides.',
+    icon: Building2,
+  },
+  ACTUARIAL: {
+    label: 'Actuarial',
+    description: 'Reviews pricing referrals and sets rate card overrides.',
+    icon: Building2,
+  },
+  OPS: {
     label: 'Ops',
-    description: 'Repairs flagged members and resubmits them to classification.',
+    description: 'Binds and issues policies; applies mid-term corrections.',
+    icon: UserCog,
+  },
+  ADMIN: {
+    label: 'Admin',
+    description: 'System administration and configuration.',
     icon: Wrench,
+  },
+  BROKER: {
+    label: 'Broker',
+    description: 'External broker submitting and tracking RFQs.',
+    icon: Users,
+  },
+  MPH: {
+    label: 'MPH',
+    description: 'Master Policyholder portal user.',
+    icon: Building2,
+  },
+  REINSURER: {
+    label: 'Reinsurer',
+    description: 'Reinsurance partner with read-only treaty view.',
+    icon: Building2,
   },
 };
 
-// Order = canonical demo walkthrough order from DEMO_NARRATIVE_GTL_GCL.md.
+// Order = canonical demo walkthrough order.
 const ROLE_ORDER: Role[] = [
-  'sales',
-  'partner_agent',
-  'mph',
-  'member',
-  'uw',
-  'ops',
+  'SALES',
+  'PARTNER_AGENT',
+  'UNDERWRITER',
+  'ACTUARY',
+  'ADMIN',
 ];
 
 export function RoleSwitcher() {

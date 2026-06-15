@@ -3,6 +3,7 @@
 
 export * from './quotation/quotes';
 export * from './quotation/member-quotes';
+export * from './quotation/data';
 export * from './issuance/proposals';
 export * from './issuance/policy-members';
 export * from './issuance/census';

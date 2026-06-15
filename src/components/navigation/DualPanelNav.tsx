@@ -19,10 +19,14 @@ export function DualPanelNav() {
     const pathname = usePathname();
     const { isMobile, openMobile, setOpenMobile } = useSidebar();
 
-    if (!config) return null;
-
-    const { navigation, title, logo } = config;
-    const items = navigation.menuItems;
+    // While config is loading (first paint), render the IconRail with empty items
+    // so the sidebar chrome — including the role-switcher button — is always visible.
+    const items = config?.navigation.menuItems ?? [];
+    const title = config?.title;
+    const logo = config?.logo;
+    // Use the app title as the secondary sidebar org name (e.g. "Group PAS")
+    // Once a tenant/org API exists, swap this with the org name.
+    const orgName = config?.title;
 
     const activeItem =
         items.find((item) => itemMatchesPathname(pathname, item)) ?? null;
@@ -53,6 +57,7 @@ export function DualPanelNav() {
                         <SubmenuPanel
                             parent={activeItem}
                             pathname={pathname}
+                            orgName={orgName}
                             forceVisible
                             onItemClick={closeOnNav}
                         />
@@ -71,7 +76,7 @@ export function DualPanelNav() {
                 logoIconName={logo?.icon}
             />
             {showSubmenu && activeItem && (
-                <SubmenuPanel parent={activeItem} pathname={pathname} />
+                <SubmenuPanel parent={activeItem} pathname={pathname} orgName={orgName} />
             )}
         </>
     );
