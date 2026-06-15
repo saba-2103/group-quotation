@@ -1740,7 +1740,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
                 { key: 'pricing', label: 'Pricing', icon: BarChart3, count: plans.filter((p) => p.quoteVersionId === versionId).length || null },
                 { key: 'scenarios', label: 'Scenarios', icon: FlaskConical, count: null },
                 { key: 'negotiation', label: 'Negotiation', icon: Scale, count: bundle.negotiationLog.filter((r) => r.versionId === versionId).length || null },
-              ] as Array<{ key: string; label: string; icon: React.ElementType; count: number | null }>
+              ] as Array<{ key: typeof journeyTab; label: string; icon: React.ElementType; count: number | null }>
             ).map(({ key, label, icon: Icon, count }) => (
               <button
                 key={key}
