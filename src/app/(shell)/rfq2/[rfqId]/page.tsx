@@ -50,6 +50,7 @@ import {
   MilestoneState,
   CensusQuality,
   PlanHandoffStatus,
+  SchemeType,
 } from '@/lib/types';
 import type { QuoteVersion, RfqBundle, Document } from '@/lib/types';
 import { DocumentType, DocumentStatus } from '@/lib/types';
