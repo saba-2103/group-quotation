@@ -7,8 +7,11 @@ export function MswProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (process.env.NODE_ENV !== 'development') return;
-    import('@/mocks/browser').then(({ worker }) => {
-      worker.start({ onUnhandledRequest: 'bypass' }).then(() => setReady(true));
+    import('@/mocks/browser').then(async ({ worker }) => {
+      await worker.start({ onUnhandledRequest: 'bypass' });
+      // Ensure the service worker is actually controlling this page
+      await navigator.serviceWorker.ready;
+      setReady(true);
     });
   }, []);
 
