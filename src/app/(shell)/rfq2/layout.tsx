@@ -6,7 +6,7 @@ import { useBreadcrumbStore } from '@/stores/breadcrumbStore';
 
 /** Sub-pages that live directly under /rfq2/ and are NOT rfq detail pages. */
 const KNOWN_SUBPAGES = new Set([
-  'quotes', 'dashboard', 'workbench', 'approvals', 'referrals',
+  'quotes', 'quotes2', 'explore', 'dashboard', 'workbench', 'approvals', 'referrals',
   'member-quotes', 'proposals', 'issuance', 'documents',
   'analytics', 'reports', 'health', 'clients', 'products', 'plan-templates',
 ]);

@@ -125,6 +125,14 @@ export const groupInsuranceAppConfig: AppConfig = {
             activePrefix: "/rfq2/rfq-",
           },
           {
+            id: "policy2-quotes2",
+            label: "Quotes 2",
+            url: "/rfq2/quotes2",
+            icon: "FlaskConical",
+            group: "POLICY",
+            activePrefix: "/rfq2/explore",
+          },
+          {
             id: "policy2-member-quotes",
             label: "Member Quotes",
             url: "/rfq2/member-quotes",
