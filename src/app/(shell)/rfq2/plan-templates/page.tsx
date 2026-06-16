@@ -142,14 +142,14 @@ export default function PlanTemplatesPage() {
       const bundles = await Promise.all(
         rfqs.map((r) =>
           fetch(`/api/rfqs/${r.rfqId}/bundle`)
-            .then((res) => res.json())
+            .then((res) => res.json() as Promise<Record<string, unknown>>)
             .catch(() => null),
         ),
       );
       const collected: PlanRow[] = [];
       bundles.forEach((bundle, i) => {
-        if (!bundle?.plans) return;
-        (bundle.plans as Plan[]).forEach((plan) => {
+        if (!bundle?.['plans']) return;
+        (bundle['plans'] as Plan[]).forEach((plan) => {
           const version = rfqs[i].quoteVersions?.find((v: { id: string }) => v.id === plan.quoteVersionId);
           collected.push({
             ...plan,

@@ -132,7 +132,7 @@ export default function ReferralsPage() {
       const rfqs: RfqBase[] = await getRfqs();
       const bundles = await Promise.all(
         rfqs.map((r) =>
-          fetch(`/api/rfqs/${r.rfqId}/bundle`).then((res) => res.json()).catch(() => null),
+          fetch(`/api/rfqs/${r.rfqId}/bundle`).then((res) => res.json() as Promise<Record<string, unknown>>).catch(() => null),
         ),
       );
       const meta = new Map<string, { employerName: string; plans: Record<string, string>; versions: Record<string, string> }>();
@@ -140,7 +140,7 @@ export default function ReferralsPage() {
         const bundle = bundles[i];
         const plans: Record<string, string> = {};
         const versions: Record<string, string> = {};
-        (bundle?.plans ?? []).forEach((p: { planId: string; name: string }) => { plans[p.planId] = p.name; });
+        ((bundle?.['plans'] ?? []) as Array<{ planId: string; name: string }>).forEach((p) => { plans[p.planId] = p.name; });
         (rfq.quoteVersions ?? []).forEach((v: { id: string; name: string }) => { versions[v.id] = v.name; });
         meta.set(rfq.rfqId, { employerName: rfq.employerName, plans, versions });
       });
