@@ -187,10 +187,10 @@ function EscalationChart({ data }: EscalationChartProps) {
             fontSize: '12px',
           }}
           itemStyle={{ color: 'var(--foreground)' }}
-          formatter={(value: number | string, name: string): [string, string] => [
-            name === 'Escalation %' ? `${value}%` : String(value),
+          formatter={((value: number | string | undefined, name: string): [string, string] => [
+            name === 'Escalation %' ? `${value ?? ''}%` : String(value ?? ''),
             name,
-          ]}
+          ]) as never}
         />
         <Legend
           wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }}
