@@ -197,6 +197,23 @@ export const groupInsuranceAppConfig: AppConfig = {
             icon: "FileBox",
             group: "CONFIGURE",
           },
+          // ── EXPLORE ───────────────────────────────────────────────────────
+          {
+            id: "policy2-explore-quote",
+            label: "Quote Detail",
+            url: "/rfq2/explore/GTL-2024-00142",
+            icon: "Compass",
+            group: "EXPLORE",
+            badge: "BETA",
+          },
+          {
+            id: "policy2-explore-version",
+            label: "Version Detail",
+            url: "/rfq2/explore/version-detail",
+            icon: "Compass",
+            group: "EXPLORE",
+            badge: "BETA",
+          },
         ],
       },
     ],
