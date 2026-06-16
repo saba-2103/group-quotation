@@ -49,7 +49,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="absolute left-12 top-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="Anaira" className="h-8 w-auto" />
+          <img src="/anaira-logo.svg" alt="Anaira" className="h-8 w-auto" />
         </div>
 
         {/* Centred form */}
