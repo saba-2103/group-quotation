@@ -123,14 +123,14 @@ export default function DocumentsPage() {
       const bundles = await Promise.all(
         rfqs.map((r) =>
           fetch(`/api/rfqs/${r.rfqId}/bundle`)
-            .then((res) => res.json())
+            .then((res) => res.json() as Promise<Record<string, unknown>>)
             .catch(() => null),
         ),
       );
       const collected: DocRow[] = [];
       bundles.forEach((bundle, i) => {
-        if (!bundle?.documents) return;
-        (bundle.documents as RfqDocument[]).forEach((doc) => {
+        if (!bundle?.['documents']) return;
+        (bundle['documents'] as RfqDocument[]).forEach((doc) => {
           collected.push({ ...doc, employerName: rfqs[i].employerName });
         });
       });
