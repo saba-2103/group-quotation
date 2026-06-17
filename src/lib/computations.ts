@@ -202,8 +202,17 @@ export function computePlanRoutingStatus(
   // If no appetite or completeness below 80, it needs pricing setup
   if (!plan.productCode || !plan.rateCardRef || !plan.uwMethod) return 'NEEDS_PRICING';
 
-  // If appetite exists and plan looks complete, it can go STP
-  if (appetite && plan.completeness >= 80) return 'STP';
+  // STP requires BOTH: pre-approved card AND sales-level UW authority
+  if (appetite && plan.completeness >= 80) {
+    const cardMatch = plan.rateCardRef === appetite.preapprovedCardRef;
+    const hasSalesAuthority = appetite.uwAuthorityBand === 'sales' || appetite.uwAuthorityBand === 'auto';
+
+    if (cardMatch && hasSalesAuthority) return 'STP';
+
+    // One condition met but not both → still needs UW/pricing
+    if (!cardMatch) return 'NEEDS_UW';  // rate card mismatch
+    if (!hasSalesAuthority) return 'NEEDS_UW';  // UW authority requires referral
+  }
 
   return 'NEEDS_PRICING';
 }

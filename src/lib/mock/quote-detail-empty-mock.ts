@@ -1,4 +1,10 @@
-// Mock data for a freshly created quote — empty/initial state.
+// Mock data for a freshly created quote — initial state.
+// Reflects data already captured during the 4-step RFQ creation wizard:
+//   Step 1: Client & Segment (clientName, industry, segment, broker, channel)
+//   Step 2: Business Type (businessType, priorPolicy if renewal/takeover)
+//   Step 3: Dates & Basis (effectiveDate, policyPeriodEnd, pricingBasis)
+//   Step 4: Plan Structure (planStructure, sumAssuredBasis, gradeMapping)
+//   Fixed: LoB=GTL, Scheme=EMPLOYER_OBLIGATORY, Cover=LEVEL, Lives=MEMBER_ONLY
 
 import type { QuoteDetailMock } from './quote-detail-mock';
 
@@ -14,15 +20,15 @@ export const mockQuoteEmpty: QuoteDetailMock = {
     { label: 'Finalized', status: 'pending' },
   ],
   dealProfile: {
-    policyType: 'Group Personal Accident',
-    inceptionDate: '—',
-    period: '—',
-    renewalType: '—',
-    broker: '—',
+    policyType: 'Group Term Life',
+    inceptionDate: '01 Aug 2025',
+    period: '01 Aug 2025 — 31 Jul 2026',
+    renewalType: 'New Business',
+    broker: 'Marsh India Insurance Brokers',
     brokerContact: '—',
     brokerEmail: '—',
-    brokerCode: '—',
-    source: 'Direct',
+    brokerCode: 'BRK-0472',
+    source: 'Broker',
     salesOwner: 'Priya Sharma (L2)',
     currentStage: 'DATA_PENDING',
     versions: '1 (1 draft, 0 frozen)',
@@ -32,16 +38,16 @@ export const mockQuoteEmpty: QuoteDetailMock = {
   },
   keyData: {
     cin: '—',
-    industry: '—',
+    industry: 'Information Technology',
     naics: '—',
     address: '—',
     incorporationYear: 0,
-    groupType: '—',
+    groupType: 'Employer Obligatory',
     pan: '—',
   },
   mphCategorization: {
     tier: '—',
-    segment: '—',
+    segment: 'Large',
     riskCategory: '—',
     mphRating: '—',
     uwTrack: '—',

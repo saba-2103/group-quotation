@@ -1,4 +1,7 @@
-// Mock data for a freshly created version — empty/initial state.
+// Mock data for a freshly created version — initial state.
+// Inherits creation-time data from the parent RFQ:
+//   Plan structure: Single Plan, SA basis: Flat, Pricing basis: Manual
+//   These are known at creation but plans have not been configured yet.
 
 import type { VersionDetailMock } from './version-detail-mock';
 
@@ -8,7 +11,7 @@ export const mockVersionEmpty: VersionDetailMock = {
   label: 'Draft',
   status: 'DRAFT',
   basedOn: '',
-  basedOnLabel: '—',
+  basedOnLabel: 'Initial version',
   createdAt: '16 Jun 2025',
   createdBy: { name: 'Priya Sharma', role: 'SALES', level: 'L2' },
   rfqId: 'GTL-2025-00198',

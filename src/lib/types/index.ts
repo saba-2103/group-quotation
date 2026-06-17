@@ -171,6 +171,66 @@ export enum DocumentStatus {
   APPROVED = 'APPROVED',
 }
 
+// ─── Evidence pack tiers (GTL) ────────────────────────────────────────────────
+export enum EvidencePack {
+  WITHIN_FCL_MINIMAL = 'WITHIN_FCL_MINIMAL',
+  EOI_STANDARD = 'EOI_STANDARD',
+  EOI_FULL = 'EOI_FULL',
+  EOI_JUMBO = 'EOI_JUMBO',
+}
+
+// ─── UW methods ───────────────────────────────────────────────────────────────
+export enum UwMethod {
+  STP = 'STP',
+  NSTP = 'NSTP',
+  FULL_MEDICAL = 'FULL_MEDICAL',
+  TELE_UW = 'TELE_UW',
+}
+
+// ─── Product sales status (filed layer) ──────────────────────────────────────
+export enum ProductSalesStatus {
+  OPEN_TO_NEW_BUSINESS = 'OPEN_TO_NEW_BUSINESS',
+  CLOSED_TO_NEW_BUSINESS = 'CLOSED_TO_NEW_BUSINESS',
+  WITHDRAWN = 'WITHDRAWN',
+  IN_REVIEW = 'IN_REVIEW',
+}
+
+// ─── Product artifact status ──────────────────────────────────────────────────
+export enum ProductArtifactStatus {
+  DRAFT = 'DRAFT',
+  IN_REVIEW = 'IN_REVIEW',
+  PUBLISHED = 'PUBLISHED',
+  RETIRED = 'RETIRED',
+}
+
+// ─── Deviation scope ──────────────────────────────────────────────────────────
+export enum DeviationScope {
+  WHOLE_PLAN = 'WHOLE_PLAN',
+  NAMED_MEMBERS = 'NAMED_MEMBERS',
+  GRADES = 'GRADES',
+  FREE_FORM = 'FREE_FORM',
+}
+
+// ─── Deviation kind ───────────────────────────────────────────────────────────
+export enum DeviationKind {
+  ELIGIBILITY_OVERRIDE = 'ELIGIBILITY_OVERRIDE',
+  BENEFIT = 'BENEFIT',
+  EXCLUSION = 'EXCLUSION',
+  SI_CAP = 'SI_CAP',
+  WAITING_PERIOD = 'WAITING_PERIOD',
+  PRICING = 'PRICING',
+  OTHER = 'OTHER',
+}
+
+// ─── Deviation approval stage ─────────────────────────────────────────────────
+export enum DeviationApprovalStage {
+  DRAFT = 'DRAFT',
+  PENDING_UW = 'PENDING_UW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  WITHDRAWN = 'WITHDRAWN',
+}
+
 export enum CensusQuality {
   G = 'Good',
   A = 'Average',
@@ -397,15 +457,41 @@ export interface Plan {
   planId: string;
   rfqId: string;
   quoteVersionId: string;
+  // Identity (Step 1)
+  planNumber?: string;
   name: string;
   productCode?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  subsidiaryScope?: 'WHOLE_GROUP' | string;
+  // Coverage (Step 2)
   sumAssuredBasis: SumAssuredBasis;
   coverPattern: CoverPattern;
-  eligibilityCriteria?: string;
-  uwMethod?: string;
-  rateCardRef?: string;
+  flatSi?: number;
+  salaryMultiple?: number;
+  gradeSlabs?: Array<{ gradeId: string; grade: string; si: number }>;
+  coversGrades?: string[];
   benefits: string[];
+  excludedBenefits?: string[];
   excludedClauses: ExcludedClause[];
+  riders?: PlanRider[];
+  // Eligibility (Step 3)
+  minEntryAge?: number;
+  maxEntryAge?: number;
+  cessationAge?: number;
+  allowedEmploymentTypes?: string[];
+  livesCovered?: LivesCovered;
+  minGroupSize?: number;
+  eligibilityCriteria?: string;
+  // UW (Step 4)
+  uwMethod?: UwMethod | string;
+  fclPatternOverride?: FclPattern;
+  fclInherited?: boolean;
+  evidencePack?: EvidencePack;
+  reinsuranceTreatyOverride?: string;
+  // Rate card (Step 5)
+  rateCardRef?: string;
+  // Meta
   handoffStatus: PlanHandoffStatus;
   handoffTaskId?: string;
   completeness: number;
@@ -536,4 +622,117 @@ export interface RfqBundle extends RfqBase {
   documents: Document[];
   claimsExperience?: ClaimsExperience;
   policyFlags?: PolicyFlag[];
+  deviations?: Deviation[];
+}
+
+// ─── New interfaces for Plan Wizard ──────────────────────────────────────────
+
+export interface FiledEnvelope {
+  minEntryAge: number;
+  maxEntryAge: number;
+  ageBasis: 'ALB' | 'ANB' | 'NEAREST';
+  maxMaturityAge: number;
+  minSumAssured: number;
+  maxSumAssured: number;
+  minGroupSize: number;
+  maxGroupSize?: number;
+  minTenureMonths?: number;
+  maxRiskTermYears?: number;
+}
+
+export interface ClauseLibraryItem {
+  code: string;
+  label: string;
+  bucket: 'BENEFIT' | 'EXCLUSION' | 'RIDER';
+  trigger?: string;
+  mandatory: boolean;
+  defaultIncluded: boolean;
+  isRider: boolean;
+  fundingOptions?: Array<'EMPLOYER_PAID' | 'EMPLOYEE_BUY_UP'>;
+  defaultFunding?: 'EMPLOYER_PAID' | 'EMPLOYEE_BUY_UP';
+  riderSaBasis?: SumAssuredBasis;
+  riderSaPct?: number;
+}
+
+export interface PlanRider {
+  code: string;
+  label: string;
+  trigger: string;
+  funding: 'EMPLOYER_PAID' | 'EMPLOYEE_BUY_UP';
+  saBasis: SumAssuredBasis;
+  flatSi?: number;
+  saPct?: number;
+}
+
+export interface FiledProduct {
+  productCode: string;
+  name: string;
+  description: string;
+  lob: LobType;
+  subFamily: string;
+  coverPattern: CoverPattern[];
+  allowedSaBases: SumAssuredBasis[];
+  allowedUwMethods: UwMethod[];
+  allowedFclModes: FclPattern[];
+  allowedUsages: SchemeUsage[];
+  allowedEmploymentTypes: string[];
+  allowedLivesCovered: LivesCovered[];
+  defaultEvidencePack: EvidencePack;
+  allowedEvidencePacks: EvidencePack[];
+  filedEnvelope: FiledEnvelope;
+  artifactStatus: ProductArtifactStatus;
+  salesStatus: ProductSalesStatus;
+  contentHash: string;
+  uin: string;
+  benefitCodes: string[];
+  exclusionCodes: string[];
+  riderCodes: string[];
+  reinsurancePosture: 'TREATY' | 'FACULTATIVE_PER_GROUP' | 'NONE_WITHIN_RETENTION';
+}
+
+export interface RateCard {
+  ref: string;
+  productCode: string;
+  name: string;
+  approvalState: 'APPROVED' | 'PENDING_APPROVAL' | 'RETIRED';
+  effectiveFrom: string;
+  effectiveTo?: string;
+  version: string;
+  author: string;
+  premiumMethodKind: 'PERMILLE_OF_SA' | 'FLAT_PER_LIFE' | 'AGE_BANDED';
+  dimensions: string[];
+  isPreApproved: boolean;
+}
+
+export interface FclScheduleEntry {
+  pattern: FclPattern;
+  limits: Array<{ dimension: string; value: number; currency: string }>;
+}
+
+export interface DeviationHistoryEntry {
+  stage: DeviationApprovalStage;
+  by: string;
+  at: string;
+  note: string;
+}
+
+export interface Deviation {
+  id: string;
+  rfqId: string;
+  planId: string;
+  scope: DeviationScope;
+  scopeDetail?: string;
+  kind: DeviationKind;
+  itemRef?: string;
+  itemLabel: string;
+  baselineValue: string;
+  negotiatedValue: string;
+  reason: string;
+  estimatedPremiumDelta?: number;
+  estimatedLrDelta?: number;
+  approvalStage: DeviationApprovalStage;
+  approvalHistory: DeviationHistoryEntry[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -1537,7 +1537,6 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
   const { bundle } = useRfqBundle();
   const router = useRouter();
   const [sortAsc, setSortAsc] = useState(false);
-  const [journeyTab, setJourneyTab] = useState<'subsidiaries' | 'members' | 'claims' | 'plans' | 'pricing' | 'scenarios' | 'negotiation'>('subsidiaries');
   const setLabel = useBreadcrumbStore((s) => s.setLabel);
   const versionsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -1565,8 +1564,10 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
   );
 
   const activeVersion = quoteVersions.find((v) => v.id === versionId);
+  const versionPlans = plans.filter((p) => p.quoteVersionId === versionId);
+  const priceRun = bundle.actuaryPricing?.byVersion?.[versionId] ?? null;
 
-  // Enrich BreadcrumbBar: rfqId with employer name, versionId with version name
+  // Enrich BreadcrumbBar
   useEffect(() => {
     setLabel(rfqId, `${rfqId.toUpperCase()} · ${employerName}`);
     if (activeVersion) {
@@ -1574,7 +1575,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
     }
   }, [rfqId, employerName, versionId, activeVersion, setLabel]);
 
-  // Restore scroll position saved when navigating from rfq detail or switching versions
+  // Restore scroll position
   useEffect(() => {
     const saved = sessionStorage.getItem(`rfq2-vs-scroll-${rfqId}`);
     if (saved && versionsScrollRef.current) {
@@ -1584,17 +1585,21 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* ── Header ── */}
+      {/* ── Header — same as quote detail ── */}
       <div className="border-b border-border/60 bg-background shrink-0">
-        {/* Title block */}
+        {/* Title block: MPH name + quote number */}
         <div className="flex items-center gap-2 px-4 py-3">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground whitespace-nowrap">
-              {activeVersion
-                ? `V${activeVersion.versionNo} — ${activeVersion.name}`
-                : versionId}
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              {employerName}
             </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{rfqId.toUpperCase()}</p>
           </div>
+          {activeVersion && (
+            <Badge variant="outline" className="text-xs font-semibold shrink-0">
+              V{activeVersion.versionNo} — {activeVersion.name}
+            </Badge>
+          )}
           <Button
             variant="outline"
             size="icon"
@@ -1605,7 +1610,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
         </div>
 
         {/* Governance meta row */}
-        <div className="flex items-start gap-5 flex-wrap px-4 pb-2 pt-1 border-b border-border/40">
+        <div className="flex items-start gap-5 flex-wrap px-4 pb-2 pt-1">
           <GovernancePill icon={Building2} label="Client" value={employerName} />
           {effectiveDate && (
             <GovernancePill icon={Calendar} label="Effective Date" value={formatDate(effectiveDate)} />
@@ -1622,12 +1627,6 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
             />
           )}
         </div>
-
-        {/* Milestones strip — temporarily hidden
-        <div className="px-4 pt-3 pb-3">
-          <MilestonesStrip milestones={milestones} />
-        </div>
-        */}
       </div>
 
       {/* ── Three-column body ── */}
@@ -1682,164 +1681,207 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
           </div>
         </div>
 
-        {/* Middle — Journey panels */}
-        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        {/* Middle — Plan cards only */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-y-auto px-5 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-foreground">
+              Plans ({versionPlans.length})
+            </h2>
+            <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1">
+              <Plus className="size-3" /> Add Plan
+            </Button>
+          </div>
 
-          {/* Quote Intent card */}
-          <div className="shrink-0 border-b border-border/60 px-4 pt-3 pb-2">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-foreground">Quote Intent</span>
-              <button className="flex items-center justify-center size-7 rounded-lg hover:bg-muted transition-colors">
-                <Pencil className="size-3.5 text-muted-foreground" />
-              </button>
+          {versionPlans.length === 0 ? (
+            <EmptyState icon={Layers} message="No plans in this version yet." />
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {versionPlans.map((plan) => {
+                const meta = HANDOFF_META[plan.handoffStatus];
+                return (
+                  <div key={plan.planId} className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
+                    {/* Plan header */}
+                    <div className="flex items-start gap-2">
+                      <Layers className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{plan.name}</p>
+                        {plan.productCode && (
+                          <p className="text-[10px] font-mono text-muted-foreground">{plan.productCode}</p>
+                        )}
+                      </div>
+                      <span className={cn('shrink-0 text-[10px] font-medium border rounded-full px-2 py-0.5', meta.className)}>
+                        {meta.label}
+                      </span>
+                    </div>
+
+                    {/* Key details */}
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-muted-foreground">SA Basis</span>
+                        <span className="text-[11px] font-medium">{plan.sumAssuredBasis.replace(/_/g, ' ')}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-muted-foreground">Cover</span>
+                        <span className="text-[11px] font-medium">{plan.coverPattern}</span>
+                      </div>
+                      {plan.eligibilityCriteria && (
+                        <div className="flex flex-col col-span-2">
+                          <span className="text-[9px] text-muted-foreground">Eligibility</span>
+                          <span className="text-[11px] font-medium truncate">{plan.eligibilityCriteria}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Benefits */}
+                    {plan.benefits.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {plan.benefits.slice(0, 4).map((b) => (
+                          <span key={b} className="text-[10px] bg-muted text-muted-foreground rounded px-1.5 py-0.5">{b}</span>
+                        ))}
+                        {plan.benefits.length > 4 && (
+                          <span className="text-[10px] text-muted-foreground">+{plan.benefits.length - 4}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Exclusions */}
+                    {plan.excludedClauses.length > 0 && (
+                      <p className="text-[10px] text-amber-600">
+                        {plan.excludedClauses.length} exclusion{plan.excludedClauses.length > 1 ? 's' : ''}
+                      </p>
+                    )}
+
+                    {/* Completeness bar */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-border/30">
+                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn(
+                            'h-full rounded-full',
+                            plan.completeness >= 80 ? 'bg-green-500' : plan.completeness >= 40 ? 'bg-amber-400' : 'bg-red-400',
+                          )}
+                          style={{ width: `${plan.completeness}%` }}
+                        />
+                      </div>
+                      <span className={cn(
+                        'text-[10px] tabular-nums font-medium',
+                        plan.completeness >= 80 ? 'text-green-600' : plan.completeness >= 40 ? 'text-amber-600' : 'text-red-500',
+                      )}>
+                        {plan.completeness}%
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="grid grid-cols-4 gap-x-3 gap-y-2">
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate">LOB</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.lob}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate">Business Type</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.businessType.replace(/_/g, ' ')}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate">Lives Covered</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.livesCovered.replace(/_/g, ' ')}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate">Scheme Type</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.schemeType.replace(/_/g, ' ')}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate">Effective Date</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.effectiveDate ? new Date(bundle.effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate">Policy Year End</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.policyConfig?.policyYearEnd ? new Date(bundle.policyConfig.policyYearEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate">Pricing Basis</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.defaultPlanStructure?.pricingBasis?.replace(/_/g, ' ') ?? '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground truncate">Segment</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.quoteSegment ?? '—'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Tab row */}
-          <div className="shrink-0 border-b border-border/60 px-4 py-2 flex items-center gap-1 overflow-x-auto">
-            {(
-              [
-                { key: 'subsidiaries', label: 'Subsidiaries', icon: Building, count: bundle.subsidiaries.length || null },
-                { key: 'members', label: 'Member Mapping', icon: Users, count: bundle.members.length || null },
-                { key: 'claims', label: 'Claims', icon: Activity, count: null },
-                { key: 'plans', label: 'Plans', icon: Layers, count: plans.filter((p) => p.quoteVersionId === versionId).length || null },
-                { key: 'pricing', label: 'Pricing', icon: BarChart3, count: plans.filter((p) => p.quoteVersionId === versionId).length || null },
-                { key: 'scenarios', label: 'Scenarios', icon: FlaskConical, count: null },
-                { key: 'negotiation', label: 'Negotiation', icon: Scale, count: bundle.negotiationLog.filter((r) => r.versionId === versionId).length || null },
-              ] as Array<{ key: typeof journeyTab; label: string; icon: React.ElementType; count: number | null }>
-            ).map(({ key, label, icon: Icon, count }) => (
-              <button
-                key={key}
-                onClick={() => setJourneyTab(key)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0',
-                  journeyTab === key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-                )}
-              >
-                <Icon className="size-3" />
-                {label}
-                {count != null && count > 0 && (
-                  <span className={cn(
-                    'inline-flex items-center justify-center h-4 min-w-4 rounded-full text-[9px] font-bold px-1',
-                    journeyTab === key ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground',
-                  )}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Panel content */}
-          <div className="flex-1 overflow-y-auto px-4 py-4">
-            {journeyTab === 'subsidiaries' && (
-              <SubsidiariesPanel subsidiaries={bundle.subsidiaries} />
-            )}
-            {journeyTab === 'members' && (
-              <MemberMappingPanel
-                members={bundle.members}
-                censusSummary={bundle.censusSummary}
-                headcountData={bundle.headcountData}
-                gradeAllocations={bundle.gradeAllocations}
-                versionId={versionId}
-                plans={plans.filter((p) => p.quoteVersionId === versionId)}
-              />
-            )}
-            {journeyTab === 'claims' && (
-              <ClaimsPanel claimsExperience={bundle.claimsExperience} />
-            )}
-            {journeyTab === 'plans' && (
-              <PlansPanel plans={plans.filter((p) => p.quoteVersionId === versionId)} />
-            )}
-            {journeyTab === 'pricing' && (
-              <PricingPanel
-                plans={plans.filter((p) => p.quoteVersionId === versionId)}
-                priceRun={bundle.actuaryPricing?.byVersion?.[versionId] ?? null}
-                finalRateCard={bundle.finalRateCard}
-                mphAppetite={bundle.mphAppetite}
-                fclPolicy={bundle.fclPolicy}
-                versionId={versionId}
-              />
-            )}
-            {journeyTab === 'scenarios' && (
-              <ScenariosPanel
-                versions={quoteVersions}
-                actuaryPricing={bundle.actuaryPricing}
-                activeVersionId={versionId}
-              />
-            )}
-            {journeyTab === 'negotiation' && (
-              <NegotiationPanel rounds={bundle.negotiationLog.filter((r) => r.versionId === versionId)} />
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Right — Version Journey / Lifecycle */}
+        {/* Right — Commercial Rate Card */}
         <div className="w-60 shrink-0 border-l border-border/60 flex flex-col overflow-hidden">
-          <Tabs defaultValue="journey" className="flex flex-col h-full">
-            <div className="px-3 pt-3 shrink-0">
-              <TabsList className="w-full">
-                <TabsTrigger value="journey" className="flex-1 text-xs">
-                  Journey
-                </TabsTrigger>
-                <TabsTrigger value="lifecycle" className="flex-1 text-xs">
-                  Audit Trail
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent value="journey" className="flex-1 overflow-y-auto mt-0">
-              <VersionJourney
-                version={activeVersion ?? null}
-                priceRun={bundle.actuaryPricing?.byVersion?.[versionId] ?? null}
-                negotiationRounds={bundle.negotiationLog.filter((r) => r.versionId === versionId)}
-                plans={plans.filter((p) => p.quoteVersionId === versionId)}
-              />
-            </TabsContent>
-            <TabsContent value="lifecycle" className="flex-1 overflow-y-auto mt-0">
-              <VersionLifecycle
-                version={activeVersion ?? null}
-                priceRun={bundle.actuaryPricing?.byVersion?.[versionId] ?? null}
-                negotiationRounds={bundle.negotiationLog.filter((r) => r.versionId === versionId)}
-                plans={plans.filter((p) => p.quoteVersionId === versionId)}
-              />
-            </TabsContent>
-          </Tabs>
+          <div className="px-3 pt-3 pb-2 shrink-0 border-b border-border/40">
+            <p className="text-sm font-semibold text-foreground">Rate Card</p>
+          </div>
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            {!priceRun ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+                <BarChart3 className="size-8 text-muted-foreground/40" />
+                <p className="text-[11px] text-muted-foreground">No pricing run published for this version.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {/* Key pricing metrics */}
+                <div className="rounded-lg border border-border bg-card overflow-hidden">
+                  {([
+                    { label: 'Technical Premium', value: fmtINR(priceRun.technicalPremium) },
+                    { label: 'Break-even Floor', value: fmtINR(priceRun.breakEvenFloor) },
+                    { label: 'Negotiated', value: fmtINR(priceRun.negotiatedPremium) },
+                    { label: 'Final (incl. GST)', value: fmtINR(priceRun.finalPremiumInclGst), highlight: true },
+                    { label: 'Per Life', value: fmtINR(priceRun.perLifePremium) },
+                    { label: 'Loss Ratio', value: `${(priceRun.modelFactor * 100).toFixed(1)}%` },
+                    { label: 'Lives', value: priceRun.lives.toLocaleString('en-IN') },
+                  ] as const).map((row) => (
+                    <div
+                      key={row.label}
+                      className={cn(
+                        'flex items-center justify-between px-3 py-1.5 text-[11px] border-b border-border/30 last:border-0',
+                        'highlight' in row && row.highlight && 'bg-indigo-50/60 font-semibold text-indigo-700',
+                      )}
+                    >
+                      <span className="text-muted-foreground">{row.label}</span>
+                      <span className="font-medium tabular-nums">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* By Plan breakdown */}
+                {Object.keys(priceRun.byPlan).length > 0 && (
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">By Plan</p>
+                    <div className="rounded-lg border border-border bg-card overflow-hidden">
+                      {Object.entries(priceRun.byPlan).map(([planId, entry]) => {
+                        const planName = versionPlans.find((p) => p.planId === planId)?.name ?? planId;
+                        return (
+                          <div key={planId} className="flex flex-col px-3 py-1.5 border-b border-border/30 last:border-0">
+                            <span className="text-[10px] font-medium truncate">{planName}</span>
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                              <span>{entry.lives} lives</span>
+                              <span className="font-medium text-foreground tabular-nums">{fmtINR(entry.premium)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* FCL */}
+                {(() => {
+                  const vFcl = bundle.fclPolicy.byVersion[versionId] ?? bundle.fclPolicy.quoteDefault;
+                  return (
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">FCL Policy</p>
+                      <div className="rounded-lg border border-border bg-card px-3 py-2 text-[11px]">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Pattern</span>
+                          <span className="font-medium">{vFcl}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Final rate card */}
+                {bundle.finalRateCard && (
+                  <div>
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Final Rate Card</p>
+                    <div className="rounded-lg border border-border bg-card overflow-hidden">
+                      <div className="flex justify-between px-3 py-1.5 text-[11px] border-b border-border/30">
+                        <span className="text-muted-foreground">Ref</span>
+                        <span className="font-medium font-mono">{bundle.finalRateCard.ref}</span>
+                      </div>
+                      <div className="flex justify-between px-3 py-1.5 text-[11px] border-b border-border/30">
+                        <span className="text-muted-foreground">Blended Rate</span>
+                        <span className="font-medium tabular-nums">{bundle.finalRateCard.blendedRatePermille.toFixed(2)}‰</span>
+                      </div>
+                      <div className="flex justify-between px-3 py-1.5 text-[11px] border-b border-border/30">
+                        <span className="text-muted-foreground">Gross-up</span>
+                        <span className="font-medium tabular-nums">{bundle.finalRateCard.grossUpFactor.toFixed(3)}</span>
+                      </div>
+                      <div className="flex justify-between px-3 py-1.5 text-[11px]">
+                        <span className="text-muted-foreground">GST</span>
+                        <span className="font-medium tabular-nums">{bundle.finalRateCard.gstPct}%</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Priced date */}
+                <p className="text-[9px] text-muted-foreground text-center mt-1">
+                  Priced {new Date(priceRun.pricedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

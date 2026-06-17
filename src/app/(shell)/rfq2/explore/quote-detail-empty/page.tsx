@@ -3,8 +3,7 @@
 import { useRouter } from 'next/navigation';
 import {
   Download, Send, Plus, Lock, Circle, Check, Clock,
-  FileText, Eye, Replace, Trash2, Upload, Building2, Users,
-  Inbox, FolderOpen,
+  Upload, Building2, Users, Inbox, FolderOpen,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -74,6 +73,18 @@ function ProfileRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function DataRow({ label, value, placeholder }: { label: string; value: string; placeholder?: string }) {
+  const isEmpty = !value || value === '—' || value === '0';
+  return (
+    <div className="flex items-baseline justify-between gap-2 py-1 border-b border-border/20 last:border-0">
+      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+      <span className={cn('text-xs font-medium text-right', isEmpty ? 'text-muted-foreground/60 italic' : 'text-foreground')}>
+        {isEmpty ? (placeholder ?? '—') : value}
+      </span>
+    </div>
+  );
+}
+
 function HighlightRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between">
@@ -84,17 +95,32 @@ function HighlightRow({ label, value }: { label: string; value: string }) {
 }
 
 function KeyDataPanel() {
+  const kd = mockQuoteEmpty.keyData;
   return (
     <Card title="Key Data">
-      <EmptyPlaceholder icon={FileText} message="No key data captured yet" action={<Button variant="outline" size="sm" className="text-xs h-7">Add Key Data</Button>} />
+      <div className="flex flex-col gap-1.5">
+        <DataRow label="Industry" value={kd.industry} />
+        <DataRow label="Group Type" value={kd.groupType} />
+        <DataRow label="CIN" value={kd.cin} placeholder="Not provided" />
+        <DataRow label="PAN" value={kd.pan} placeholder="Not provided" />
+        <DataRow label="Address" value={kd.address} placeholder="Not provided" />
+      </div>
     </Card>
   );
 }
 
 function MphCategorizationCard() {
+  const mph = mockQuoteEmpty.mphCategorization;
   return (
     <Card title="MPH Categorization">
-      <EmptyPlaceholder icon={Users} message="Categorization pending — requires census upload" />
+      <div className="flex flex-col gap-1.5">
+        <DataRow label="Segment" value={mph.segment} />
+        <DataRow label="Tier" value={mph.tier} placeholder="Pending — requires census" />
+        <DataRow label="Risk Category" value={mph.riskCategory} placeholder="Pending — requires census" />
+        <DataRow label="MPH Rating" value={mph.mphRating} placeholder="Pending — requires census" />
+        <DataRow label="UW Track" value={mph.uwTrack} placeholder="Pending" />
+        <DataRow label="Account Manager" value={mph.accountManager} placeholder="Pending" />
+      </div>
     </Card>
   );
 }
@@ -148,7 +174,14 @@ function QuoteVersionsSection() {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-foreground">Quote Versions ({versions.length})</h3>
+        <div className="flex items-center gap-4">
+          <h3 className="text-base font-semibold text-foreground">Quote Versions ({versions.length})</h3>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="px-2 py-0.5 rounded bg-muted border border-border/40">Single Plan</span>
+            <span className="px-2 py-0.5 rounded bg-muted border border-border/40">SA: Flat</span>
+            <span className="px-2 py-0.5 rounded bg-muted border border-border/40">Pricing: Manual</span>
+          </div>
+        </div>
         <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8" disabled>
           <Plus className="size-3.5" /> Create New Version
         </Button>

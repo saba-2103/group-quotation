@@ -62,7 +62,13 @@ export default function ExploreVersionDetailEmptyPage() {
                 </div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-muted-foreground">Based on:</span>
-                  <span className="text-xs text-muted-foreground italic">First version — no baseline</span>
+                  <span className="text-xs text-muted-foreground italic">{data.basedOnLabel}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/60 border border-[#D6DCE8] text-[#1B2B5E] font-medium">Single Plan</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/60 border border-[#D6DCE8] text-[#1B2B5E] font-medium">SA: Flat</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/60 border border-[#D6DCE8] text-[#1B2B5E] font-medium">Pricing: Manual</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/60 border border-[#D6DCE8] text-[#1B2B5E] font-medium">Lives: Member Only</span>
                 </div>
               </div>
 
@@ -99,8 +105,8 @@ export default function ExploreVersionDetailEmptyPage() {
               <Card title="Plans (0)" action={<Button variant="outline" size="sm" className="gap-1 text-xs h-7"><Plus className="size-3" /> Add Plan</Button>}>
                 <EmptyPlaceholder
                   icon={Layers}
-                  message="No plans configured yet. Add your first plan to define benefits and cover structure."
-                  action={<Button size="sm" className="text-xs h-7 gap-1"><Plus className="size-3" /> Add First Plan</Button>}
+                  message="Single Plan structure selected. Add your plan to define GTL benefits, sum assured (Flat), and cover terms."
+                  action={<Button size="sm" className="text-xs h-7 gap-1"><Plus className="size-3" /> Add Plan</Button>}
                 />
               </Card>
             </div>

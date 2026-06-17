@@ -9,7 +9,15 @@ import type {
   Member,
   CensusSummary,
   ClaimsExperience,
+  Deviation,
+  DeviationHistoryEntry,
 } from '@/lib/types';
+import {
+  DeviationApprovalStage,
+  DeviationKind,
+  DeviationScope,
+} from '@/lib/types';
+import { CLAUSE_LIBRARY, FCL_LIMIT_SCHEDULE, RATE_CARDS } from '@/lib/constants';
 import {
   RfqStatus,
   BusinessType,
@@ -610,6 +618,79 @@ const documents: Record<string, RfqDocument[]> = {
 
 const handoffs: Record<string, HandoffTask> = {};
 
+const deviations: Record<string, Deviation[]> = {
+  'rfq-001': [],
+  'rfq-002': [
+    {
+      id: 'dev-001',
+      rfqId: 'rfq-002',
+      planId: 'plan-003',
+      scope: DeviationScope.GRADES,
+      scopeDetail: 'G3',
+      kind: DeviationKind.EXCLUSION,
+      itemRef: 'PRE_EXISTING_EXCLUSION',
+      itemLabel: 'Pre-existing Conditions',
+      baselineValue: '12-month exclusion',
+      negotiatedValue: '6-month exclusion',
+      reason: 'Client negotiated reduced exclusion period based on prior claims history',
+      estimatedPremiumDelta: 60000,
+      estimatedLrDelta: 0.02,
+      approvalStage: DeviationApprovalStage.PENDING_UW,
+      approvalHistory: [
+        {
+          stage: DeviationApprovalStage.DRAFT,
+          by: 'priya.sharma@insurer.com',
+          at: '2026-06-09T10:00:00Z',
+          note: 'Submitted for UW review',
+        },
+      ],
+      createdBy: 'priya.sharma@insurer.com',
+      createdAt: '2026-06-09T10:00:00Z',
+      updatedAt: '2026-06-09T10:00:00Z',
+    },
+  ],
+  'rfq-003': [],
+  'rfq-004': [
+    {
+      id: 'dev-002',
+      rfqId: 'rfq-004',
+      planId: 'plan-006',
+      scope: DeviationScope.WHOLE_PLAN,
+      kind: DeviationKind.SI_CAP,
+      itemLabel: 'Sum Insured Cap Override',
+      baselineValue: '₹1,00,00,000',
+      negotiatedValue: '₹2,00,00,000',
+      reason: 'Senior executive grade requires higher SI cap beyond standard treaty limit',
+      estimatedPremiumDelta: 280000,
+      estimatedLrDelta: 0.04,
+      approvalStage: DeviationApprovalStage.APPROVED,
+      approvalHistory: [
+        {
+          stage: DeviationApprovalStage.DRAFT,
+          by: 'karan.malhotra@insurer.com',
+          at: '2026-05-20T09:00:00Z',
+          note: 'Deviation raised for exec grade SA cap',
+        },
+        {
+          stage: DeviationApprovalStage.PENDING_UW,
+          by: 'karan.malhotra@insurer.com',
+          at: '2026-05-21T11:00:00Z',
+          note: 'Escalated to UW desk',
+        },
+        {
+          stage: DeviationApprovalStage.APPROVED,
+          by: 'uw.head@insurer.com',
+          at: '2026-05-23T14:00:00Z',
+          note: 'Approved with standard reinsurance referral above ₹1.5Cr per life',
+        },
+      ],
+      createdBy: 'karan.malhotra@insurer.com',
+      createdAt: '2026-05-20T09:00:00Z',
+      updatedAt: '2026-05-23T14:00:00Z',
+    },
+  ],
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function uid(): string {
@@ -1116,5 +1197,86 @@ export const handlers = [
     arr.splice(idx, 1);
     rfqs[rfqId].updatedAt = now();
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  // ─── Clause library ────────────────────────────────────────────────────────
+
+  // GET /api/library/clauses?bucket=&riders=
+  http.get('/api/library/clauses', ({ request }) => {
+    const url = new URL(request.url);
+    const bucket = url.searchParams.get('bucket');
+    const includeRiders = url.searchParams.get('riders') === 'true';
+    let items = CLAUSE_LIBRARY;
+    if (bucket) items = items.filter((c) => c.bucket === bucket || (includeRiders && c.isRider));
+    return HttpResponse.json(items);
+  }),
+
+  // ─── Rate cards ────────────────────────────────────────────────────────────
+
+  // GET /api/rate-cards?productCode=
+  http.get('/api/rate-cards', ({ request }) => {
+    const url = new URL(request.url);
+    const code = url.searchParams.get('productCode');
+    return HttpResponse.json(code ? RATE_CARDS.filter((rc) => rc.productCode === code) : RATE_CARDS);
+  }),
+
+  // ─── FCL schedule ──────────────────────────────────────────────────────────
+
+  // GET /api/fcl-schedule?pattern=
+  http.get('/api/fcl-schedule', ({ request }) => {
+    const url = new URL(request.url);
+    const pattern = url.searchParams.get('pattern') as keyof typeof FCL_LIMIT_SCHEDULE | null;
+    if (pattern && FCL_LIMIT_SCHEDULE[pattern]) return HttpResponse.json(FCL_LIMIT_SCHEDULE[pattern]);
+    return HttpResponse.json(FCL_LIMIT_SCHEDULE);
+  }),
+
+  // ─── Deviations ────────────────────────────────────────────────────────────
+
+  // GET /api/rfqs/:rfqId/deviations
+  http.get('/api/rfqs/:rfqId/deviations', ({ params }) => {
+    const { rfqId } = params as { rfqId: string };
+    if (!rfqs[rfqId]) return HttpResponse.json({ error: 'Not found' }, { status: 404 });
+    return HttpResponse.json(deviations[rfqId] ?? []);
+  }),
+
+  // POST /api/rfqs/:rfqId/deviations — create or update by id
+  http.post('/api/rfqs/:rfqId/deviations', async ({ params, request }) => {
+    const { rfqId } = params as { rfqId: string };
+    if (!rfqs[rfqId]) return HttpResponse.json({ error: 'Not found' }, { status: 404 });
+    const payload = (await request.json()) as Omit<Deviation, 'createdAt' | 'updatedAt'>;
+    const timestamp = now();
+    if (!deviations[rfqId]) deviations[rfqId] = [];
+    const existing = deviations[rfqId].find((d) => d.id === payload.id);
+    if (existing) {
+      Object.assign(existing, { ...payload, updatedAt: timestamp });
+      return HttpResponse.json(existing);
+    }
+    const deviation: Deviation = {
+      ...payload,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    deviations[rfqId].push(deviation);
+    return HttpResponse.json(deviation, { status: 201 });
+  }),
+
+  // PUT /api/rfqs/:rfqId/deviations/:deviationId — update approval stage
+  http.put('/api/rfqs/:rfqId/deviations/:deviationId', async ({ params, request }) => {
+    const { rfqId, deviationId } = params as { rfqId: string; deviationId: string };
+    if (!rfqs[rfqId]) return HttpResponse.json({ error: 'Not found' }, { status: 404 });
+    const arr = deviations[rfqId] ?? [];
+    const dev = arr.find((d) => d.id === deviationId);
+    if (!dev) return HttpResponse.json({ error: 'Deviation not found' }, { status: 404 });
+    const { stage, note, by } = (await request.json()) as { stage: DeviationApprovalStage; note: string; by?: string };
+    const histEntry: DeviationHistoryEntry = {
+      stage,
+      by: by ?? 'system',
+      at: now(),
+      note,
+    };
+    dev.approvalStage = stage;
+    dev.approvalHistory = [...(dev.approvalHistory ?? []), histEntry];
+    dev.updatedAt = now();
+    return HttpResponse.json(dev);
   }),
 ];

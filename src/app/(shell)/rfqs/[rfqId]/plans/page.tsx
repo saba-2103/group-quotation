@@ -7,7 +7,7 @@ import { useRfqBundle } from '@/context/RfqBundleContext';
 import { useHandoffStore } from '@/stores/handoffStore';
 import { useRole } from '@/hooks/useRole';
 import { computeGradeAllocationSummary, computePlanRoutingStatus } from '@/lib/computations';
-import { PLAN_TEMPLATES } from '@/lib/constants';
+import { getMergedTemplates } from '@/lib/constants';
 import { updateRfq, updatePlan, runPricingMacro } from '@/lib/api/quotation-client';
 import { canDispatch } from '@/lib/permissions';
 import {
@@ -145,6 +145,8 @@ export default function PlansPage() {
 
   const canPriceWithActuary = role === 'SALES' || role === 'ACTUARIAL' || role === 'ACTUARY';
   const canRequestPricing = canDispatch(role, salesLevel);
+  const templates = getMergedTemplates();
+  const hasCensus = bundle.members.length > 0 || !!bundle.headcountData?.grades?.length;
 
   async function handlePriceWithActuary() {
     setPricing(true);
@@ -296,17 +298,21 @@ export default function PlansPage() {
                     <td className="px-4 py-2.5 tabular-nums">{fmt(row.avgSumAssured)}</td>
                     <td className="px-4 py-2.5 tabular-nums">{fmt(row.totalSI)}</td>
                     <td className="px-4 py-2.5">
-                      <select
-                        className="text-xs border border-border rounded-md px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
-                        value={allocations[row.grade] ?? ''}
-                        disabled={allocLoading[row.grade]}
-                        onChange={(e) => handleAllocation(row.grade, e.target.value)}
-                      >
-                        <option value="">Unallocated</option>
-                        {activePlans.map((p) => (
-                          <option key={p.planId} value={p.planId}>{p.name}</option>
-                        ))}
-                      </select>
+                      {activePlans.length === 0 ? (
+                        <span className="text-[10px] text-muted-foreground italic">Create a plan to allocate</span>
+                      ) : (
+                        <select
+                          className="text-xs border border-border rounded-md px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
+                          value={allocations[row.grade] ?? ''}
+                          disabled={allocLoading[row.grade]}
+                          onChange={(e) => handleAllocation(row.grade, e.target.value)}
+                        >
+                          <option value="">Unallocated</option>
+                          {activePlans.map((p) => (
+                            <option key={p.planId} value={p.planId}>{p.name}</option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -319,8 +325,8 @@ export default function PlansPage() {
       {/* P-LAUNCHPAD — Template picker */}
       <div className="rounded-xl border border-border bg-card px-5 py-4">
         <h2 className="text-sm font-semibold mb-3">Quick-start Templates</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {PLAN_TEMPLATES.map((tmpl) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {templates.map((tmpl) => (
             <button
               key={tmpl.id}
               className="text-left rounded-lg border border-border bg-background hover:bg-muted/40 hover:border-primary/40 transition-colors p-3"
@@ -328,11 +334,18 @@ export default function PlansPage() {
             >
               <div className="flex items-start justify-between mb-1.5 gap-2">
                 <p className="text-xs font-semibold leading-tight">{tmpl.name}</p>
-                {tmpl.censusAware && (
-                  <span className="shrink-0 text-[9px] bg-green-50 border border-green-200 text-green-700 rounded-full px-1.5 py-0.5">
-                    Uses census
-                  </span>
-                )}
+                <div className="flex gap-1 shrink-0">
+                  {tmpl.censusAware && hasCensus && (
+                    <span className="text-[9px] bg-green-50 border border-green-200 text-green-700 rounded-full px-1.5 py-0.5">
+                      Uses your census
+                    </span>
+                  )}
+                  {tmpl.isCustom && (
+                    <span className="text-[9px] bg-violet-50 border border-violet-200 text-violet-700 rounded-full px-1.5 py-0.5">
+                      Custom
+                    </span>
+                  )}
+                </div>
               </div>
               <p className="text-[10px] text-muted-foreground leading-snug mb-2">{tmpl.description}</p>
               <div className="flex flex-wrap gap-1">
@@ -404,6 +417,14 @@ export default function PlansPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1 min-w-[150px]">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-[10px] h-6 px-2"
+                            onClick={() => router.push(`/rfqs/${rfqId}/plans/${plan.planId}`)}
+                          >
+                            Open detail
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"

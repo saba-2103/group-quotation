@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { PLAN_TEMPLATES, type PlanTemplateData } from '@/lib/constants';
+import { BUILTIN_PLAN_TEMPLATES, type PlanTemplateData } from '@/lib/constants';
 
 // In-memory template store — no backend persistence.
 // Seeded from lib/constants PLAN_TEMPLATES at first access.
@@ -16,7 +16,7 @@ function templateId(): string {
 }
 
 export const useTemplateStore = create<TemplateState>((set) => ({
-  templates: PLAN_TEMPLATES,
+  templates: BUILTIN_PLAN_TEMPLATES,
 
   add: (t) =>
     set((s) => ({

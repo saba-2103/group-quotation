@@ -50,42 +50,40 @@ const INITIAL: WizardState = {
 
 const STEPS = ['Client & Segment', 'Business Type', 'Dates & Basis', 'Plan Structure'];
 
-// ─── Step indicator ───────────────────────────────────────────────────────────
+// ─── Vertical stepper ─────────────────────────────────────────────────────────
 
-function StepIndicator({ current }: { current: number }) {
+function VerticalStepper({ current, onStep }: { current: number; onStep: (idx: number) => void }) {
   return (
-    <div className="flex items-center">
+    <nav className="flex flex-col gap-1">
       {STEPS.map((label, idx) => {
         const done = idx < current;
         const active = idx === current;
-        const isLast = idx === STEPS.length - 1;
         return (
-          <div key={idx} className="flex items-center">
-            {/* Badge + label */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold transition-colors ${
-                done ? 'bg-primary text-primary-foreground' :
-                active ? 'border border-primary text-primary bg-primary/10' :
-                'bg-muted text-muted-foreground/50'
-              }`}>
-                {done ? <Check className="size-3" /> : idx + 1}
-              </div>
-              <span className={`text-[11px] whitespace-nowrap transition-colors ${
-                active ? 'font-semibold text-foreground' :
-                done ? 'text-muted-foreground' :
-                'text-muted-foreground/40'
-              }`}>
-                {label}
-              </span>
+          <button
+            key={idx}
+            type="button"
+            onClick={() => idx <= current && onStep(idx)}
+            disabled={idx > current}
+            className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors ${
+              active ? 'bg-primary/10 text-foreground' :
+              done ? 'hover:bg-muted/60 text-muted-foreground' :
+              'text-muted-foreground/40 cursor-not-allowed'
+            }`}
+          >
+            <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold shrink-0 transition-colors ${
+              done ? 'bg-primary text-primary-foreground' :
+              active ? 'border-2 border-primary text-primary' :
+              'bg-muted text-muted-foreground/50'
+            }`}>
+              {done ? <Check className="size-3" /> : idx + 1}
             </div>
-            {/* Separator */}
-            {!isLast && (
-              <div className={`w-8 h-px mx-3 transition-colors ${done ? 'bg-primary/60' : 'bg-border'}`} />
-            )}
-          </div>
+            <span className={`text-[11px] whitespace-nowrap ${active ? 'font-semibold' : ''}`}>
+              {label}
+            </span>
+          </button>
         );
       })}
-    </div>
+    </nav>
   );
 }
 
@@ -104,12 +102,17 @@ function Field({ label, required, children }: { label: string; required?: boolea
 
 // ─── Live summary panel ───────────────────────────────────────────────────────
 
-function SummaryRow({ label, value }: { label: string; value: string | undefined }) {
-  if (!value) return null;
+function SummaryRow({ label, value, required }: { label: string; value: string | undefined; required?: boolean }) {
   return (
     <div className="flex justify-between gap-2 py-1 border-b border-border/30 last:border-0">
-      <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
-      <span className="text-[11px] font-medium text-right truncate max-w-[55%]">{value}</span>
+      <span className="text-[11px] text-muted-foreground shrink-0">
+        {label}{required && !value ? <span className="text-destructive/60"> *</span> : ''}
+      </span>
+      {value ? (
+        <span className="text-[11px] font-medium text-right truncate max-w-[55%]">{value}</span>
+      ) : (
+        <span className="text-[11px] text-muted-foreground/40 italic">—</span>
+      )}
     </div>
   );
 }
@@ -130,12 +133,6 @@ function SummaryCard({ title, children }: { title: string; children: React.React
 }
 
 function LiveSummary({ form }: { form: WizardState }) {
-  const hasClient = form.clientName || form.industry || form.quoteSegment || form.brokerName || form.channel;
-  const hasBusiness = form.businessType;
-  const hasDates = form.effectiveDate || form.policyPeriodEnd || form.pricingBasis;
-  const hasPlan = form.planStructure || form.sumAssuredBasis;
-  const isEmpty = !hasClient && !hasBusiness && !hasDates && !hasPlan;
-
   return (
     <div className="flex flex-col">
       {/* Panel header */}
@@ -144,91 +141,75 @@ function LiveSummary({ form }: { form: WizardState }) {
         <p className="text-xs text-muted-foreground mt-0.5">Updates as you fill in the form</p>
       </div>
 
-      {isEmpty ? (
-        <div className="flex items-center justify-center py-16">
-          <p className="text-xs text-muted-foreground/50 text-center px-6">
-            Start filling in the form to see a summary here.
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
 
-          {/* Client card — shown as an identity header */}
-          {form.clientName && (
-            <div className="rounded-xl border border-border bg-card px-3 py-3">
-              <div className="flex items-start justify-between gap-2 mb-1.5">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate leading-tight">
-                    {form.clientName}
-                  </p>
-                  {form.industry && (
-                    <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{form.industry}</p>
-                  )}
-                </div>
-                {form.quoteSegment && (
-                  <span className="text-[10px] bg-muted border border-border rounded-full px-2 py-0.5 shrink-0 font-medium">
-                    {form.quoteSegment}
-                  </span>
-                )}
-              </div>
-              {(form.brokerName || form.channel) && (
-                <div className="flex items-center gap-2 flex-wrap mt-1.5 pt-1.5 border-t border-border/40">
-                  {form.brokerName && (
-                    <span className="text-[10px] bg-muted border border-border rounded px-1.5 py-0.5 truncate max-w-full">
-                      {form.brokerName}{form.brokerCode ? ` · ${form.brokerCode}` : ''}
-                    </span>
-                  )}
-                  {form.channel && (
-                    <span className="text-[10px] bg-muted border border-border rounded px-1.5 py-0.5">
-                      {form.channel}
-                    </span>
-                  )}
-                </div>
+        {/* Client card — always visible */}
+        <div className="rounded-xl border border-border bg-card px-3 py-3">
+          <div className="flex items-start justify-between gap-2 mb-1.5">
+            <div className="min-w-0">
+              <p className={`text-sm font-semibold truncate leading-tight ${form.clientName ? 'text-foreground' : 'text-muted-foreground/40 italic'}`}>
+                {form.clientName || 'Client name'}
+              </p>
+              {form.industry && (
+                <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{form.industry}</p>
+              )}
+            </div>
+            {form.quoteSegment && (
+              <span className="text-[10px] bg-muted border border-border rounded-full px-2 py-0.5 shrink-0 font-medium">
+                {form.quoteSegment}
+              </span>
+            )}
+          </div>
+          {(form.brokerName || form.channel) && (
+            <div className="flex items-center gap-2 flex-wrap mt-1.5 pt-1.5 border-t border-border/40">
+              {form.brokerName && (
+                <span className="text-[10px] bg-muted border border-border rounded px-1.5 py-0.5 truncate max-w-full">
+                  {form.brokerName}{form.brokerCode ? ` · ${form.brokerCode}` : ''}
+                </span>
+              )}
+              {form.channel && (
+                <span className="text-[10px] bg-muted border border-border rounded px-1.5 py-0.5">
+                  {form.channel}
+                </span>
               )}
             </div>
           )}
-
-          {/* Business card */}
-          {hasBusiness && (
-            <SummaryCard title="Business">
-              <SummaryRow label="Type" value={form.businessType || undefined} />
-              <SummaryRow label="Prior insurer" value={form.priorInsurer} />
-              <SummaryRow label="Prior premium" value={form.priorPremium ? `₹${Number(form.priorPremium).toLocaleString()}` : undefined} />
-              <SummaryRow label="Prior loss ratio" value={form.priorLossRatio} />
-            </SummaryCard>
-          )}
-
-          {/* Dates & pricing card */}
-          {hasDates && (
-            <SummaryCard title="Dates & Pricing">
-              <SummaryRow label="Effective date" value={form.effectiveDate} />
-              <SummaryRow label="Period end" value={form.policyPeriodEnd} />
-              <SummaryRow label="Pricing basis" value={form.pricingBasis || undefined} />
-            </SummaryCard>
-          )}
-
-          {/* Plan structure card */}
-          {hasPlan && (
-            <SummaryCard title="Plan Structure">
-              <SummaryRow label="Structure" value={form.planStructure || undefined} />
-              <SummaryRow label="SA basis" value={form.sumAssuredBasis || undefined} />
-              <SummaryRow label="Grade mapping" value={form.gradeMapping ? 'Yes' : 'No'} />
-              {form.planStructure === PlanStructure.MULTI_PLAN && (
-                <SummaryRow label="Plan count" value={form.defaultPlanCount} />
-              )}
-            </SummaryCard>
-          )}
-
-          {/* Fixed seeds card — always visible once user starts */}
-          <SummaryCard title="Fixed">
-            <SummaryRow label="LoB" value="GTL" />
-            <SummaryRow label="Scheme" value="EMPLOYER_OBLIGATORY" />
-            <SummaryRow label="Cover" value="LEVEL" />
-            <SummaryRow label="Lives" value="MEMBER_ONLY" />
-          </SummaryCard>
-
         </div>
-      )}
+
+        {/* Business card — always visible */}
+        <SummaryCard title="Business">
+          <SummaryRow label="Type" value={form.businessType || undefined} required />
+          <SummaryRow label="Prior insurer" value={form.priorInsurer} />
+          <SummaryRow label="Prior premium" value={form.priorPremium ? `₹${Number(form.priorPremium).toLocaleString()}` : undefined} />
+          <SummaryRow label="Prior loss ratio" value={form.priorLossRatio} />
+        </SummaryCard>
+
+        {/* Dates & pricing card — always visible */}
+        <SummaryCard title="Dates & Pricing">
+          <SummaryRow label="Effective date" value={form.effectiveDate} required />
+          <SummaryRow label="Period end" value={form.policyPeriodEnd} required />
+          <SummaryRow label="Pricing basis" value={form.pricingBasis || undefined} />
+        </SummaryCard>
+
+        {/* Plan structure card — always visible */}
+        <SummaryCard title="Plan Structure">
+          <SummaryRow label="Structure" value={form.planStructure || undefined} required />
+          <SummaryRow label="SA basis" value={form.sumAssuredBasis || undefined} required />
+          <SummaryRow label="Grade mapping" value={form.gradeMapping ? 'Yes' : 'No'} />
+          {form.planStructure === PlanStructure.MULTI_PLAN && (
+            <SummaryRow label="Plan count" value={form.defaultPlanCount} />
+          )}
+        </SummaryCard>
+
+        {/* Fixed seeds card — always visible */}
+        <SummaryCard title="Fixed">
+          <SummaryRow label="LoB" value="GTL" />
+          <SummaryRow label="Scheme" value="EMPLOYER_OBLIGATORY" />
+          <SummaryRow label="Cover" value="LEVEL" />
+          <SummaryRow label="Lives" value="MEMBER_ONLY" />
+        </SummaryCard>
+
+      </div>
     </div>
   );
 }
@@ -326,35 +307,34 @@ export default function NewRfqPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-6 py-4 border-b border-border/40">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-semibold">Create RFQ</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">New group quotation request</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => router.push('/rfq2/quotes')}>Cancel</Button>
-            <Button
-              size="sm"
-              onClick={() => handleSubmit(false)}
-              disabled={!allRequiredFilled || submitting}
-              className="gap-1.5"
-            >
-              {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-              Create RFQ
-            </Button>
-          </div>
+      <div className="shrink-0 px-6 py-3 border-b border-border/40 flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-semibold">Create RFQ</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">New group quotation request</p>
         </div>
-        <div className="mt-4">
-          <StepIndicator current={step} />
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/rfq2/quotes')}>Cancel</Button>
+          <Button
+            size="sm"
+            onClick={() => handleSubmit(false)}
+            disabled={!allRequiredFilled || submitting}
+            className="gap-1.5"
+          >
+            {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+            Create RFQ
+          </Button>
         </div>
       </div>
 
-      {/* Body — 60/40 split */}
+      {/* 3-column body */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Left — vertical stepper */}
+        <div className="w-52 shrink-0 border-r border-border/40 px-3 py-4 overflow-y-auto">
+          <VerticalStepper current={step} onStep={setStep} />
+        </div>
 
-        {/* Left — form (60%) */}
-        <div className="flex flex-col" style={{ flex: '0 0 60%' }}>
+        {/* Center — form + footer */}
+        <div className="flex-1 min-w-0 flex flex-col">
           <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
             {step === 0 && (
               <div className="flex flex-col gap-4">
@@ -500,55 +480,52 @@ export default function NewRfqPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Right — live summary (40%) */}
-        <div className="flex-1 min-w-0 border-l border-border/40 bg-muted/10 overflow-hidden">
-          <div className="h-full overflow-y-auto px-6 py-5">
-            <LiveSummary form={form} />
+          {/* Footer actions — confined to form column */}
+          <div className="shrink-0 flex items-center justify-between px-6 py-3.5 border-t border-border/40 bg-muted/20">
+            <Button
+              variant="outline" size="sm"
+              onClick={() => setStep((s) => s - 1)}
+              disabled={step === 0 || submitting}
+              className="gap-1.5"
+            >
+              <ChevronLeft className="size-3.5" /> Previous
+            </Button>
+            <div className="flex items-center gap-2">
+              {!isLastStep ? (
+                <Button size="sm" onClick={() => setStep((s) => s + 1)} disabled={!canNext()} className="gap-1.5">
+                  Next <ChevronRight className="size-3.5" />
+                </Button>
+              ) : (
+                <>
+                  {submitError && (
+                    <div className="flex items-center gap-1.5 text-destructive text-xs">
+                      <AlertCircle className="size-3.5 shrink-0" />
+                      {submitError}
+                    </div>
+                  )}
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => handleSubmit(true)}
+                    disabled={submitting || !allRequiredFilled}
+                    className="gap-1.5"
+                  >
+                    {submitting ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                    Create &amp; Seed Demo Data
+                  </Button>
+                  <Button size="sm" disabled className="gap-1.5">
+                    Next <ChevronRight className="size-3.5" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-      </div>
-
-      {/* Footer actions — full width */}
-      <div className="shrink-0 flex items-center justify-between px-6 py-3.5 border-t border-border/40 bg-muted/20">
-        <Button
-          variant="outline" size="sm"
-          onClick={() => setStep((s) => s - 1)}
-          disabled={step === 0 || submitting}
-          className="gap-1.5"
-        >
-          <ChevronLeft className="size-3.5" /> Previous
-        </Button>
-        <div className="flex items-center gap-2">
-          {!isLastStep ? (
-            <Button size="sm" onClick={() => setStep((s) => s + 1)} disabled={!canNext()} className="gap-1.5">
-              Next <ChevronRight className="size-3.5" />
-            </Button>
-          ) : (
-            <>
-              {submitError && (
-                <div className="flex items-center gap-1.5 text-destructive text-xs">
-                  <AlertCircle className="size-3.5 shrink-0" />
-                  {submitError}
-                </div>
-              )}
-              <Button
-                variant="outline" size="sm"
-                onClick={() => handleSubmit(true)}
-                disabled={submitting || !allRequiredFilled}
-                className="gap-1.5"
-              >
-                {submitting ? <Loader2 className="size-3.5 animate-spin" /> : null}
-                Create &amp; Seed Demo Data
-              </Button>
-              <Button size="sm" disabled className="gap-1.5">
-                Next <ChevronRight className="size-3.5" />
-              </Button>
-            </>
-          )}
+        {/* Right — live summary */}
+        <div className="w-72 shrink-0 border-l border-border/40 bg-muted/10 overflow-y-auto px-4 py-5">
+          <LiveSummary form={form} />
         </div>
+
       </div>
     </div>
   );

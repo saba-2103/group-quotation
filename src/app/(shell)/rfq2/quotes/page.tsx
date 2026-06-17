@@ -7,6 +7,7 @@ import {
   CirclePlus, FolderOpen, AlertCircle, RefreshCw,
   LayoutList, FilePen, FileText, FileCheck2, FileX2,
   Search, ArrowUpDown, ArrowRight, Ellipsis, ChevronLeft, ChevronRight,
+  Columns3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -117,6 +118,105 @@ function RelativeTime({ iso }: { iso: string }) {
   }
 }
 
+// ─── Kanban board columns (lifecycle order) ───────────────────────────────────
+
+const KANBAN_COLUMNS: { status: RfqStatus; label: string; color: string }[] = [
+  { status: RfqStatus.DATA_PENDING, label: 'Data Pending', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.CENSUS_CLEANED, label: 'Census Cleaned', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.BENEFITS_READY, label: 'Benefits Ready', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.PRICING, label: 'Pricing', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.UW_REVIEW, label: 'UW Review', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.QUOTE_GENERATED, label: 'Quote Generated', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.SHARED, label: 'Shared', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.NEGOTIATION, label: 'Negotiation', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.FINAL, label: 'Final', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.ISSUED, label: 'Issued', color: 'bg-muted/40 border-border/40' },
+  { status: RfqStatus.REJECTED, label: 'Rejected', color: 'bg-muted/40 border-border/40' },
+];
+
+function KanbanBoard({ rfqs, onCardClick }: { rfqs: RfqBase[]; onCardClick: (rfqId: string) => void }) {
+  const grouped = useMemo(() => {
+    const map = new Map<RfqStatus, RfqBase[]>();
+    for (const col of KANBAN_COLUMNS) map.set(col.status, []);
+    for (const rfq of rfqs) {
+      const list = map.get(rfq.statusStage);
+      if (list) list.push(rfq);
+      else {
+        // Statuses not in columns (e.g. EXPERIENCE_NORMALIZED, PRICING_IN_PROGRESS) → map to nearest
+        if (rfq.statusStage === RfqStatus.EXPERIENCE_NORMALIZED) map.get(RfqStatus.CENSUS_CLEANED)!.push(rfq);
+        else if (rfq.statusStage === RfqStatus.PRICING_IN_PROGRESS) map.get(RfqStatus.PRICING)!.push(rfq);
+        else map.get(RfqStatus.DATA_PENDING)!.push(rfq);
+      }
+    }
+    return map;
+  }, [rfqs]);
+
+  // Show primary lifecycle stages always + any other columns with cards
+  const primaryStatuses = new Set([
+    RfqStatus.DATA_PENDING, RfqStatus.PRICING, RfqStatus.UW_REVIEW,
+    RfqStatus.QUOTE_GENERATED, RfqStatus.NEGOTIATION, RfqStatus.FINAL,
+  ]);
+  const columns = KANBAN_COLUMNS.filter(
+    (col) => primaryStatuses.has(col.status) || (grouped.get(col.status)?.length ?? 0) > 0,
+  );
+
+  return (
+    <div className="h-full overflow-x-auto overflow-y-hidden">
+      <div className="flex gap-3 h-full pb-2" style={{ minWidth: `${columns.length * 260}px` }}>
+        {columns.map((col) => {
+          const cards = grouped.get(col.status) ?? [];
+          return (
+            <div
+              key={col.status}
+              className={cn('flex flex-col w-[250px] shrink-0 rounded-xl border p-2', col.color)}
+            >
+              {/* Column header */}
+              <div className="flex items-center justify-between px-2 py-1.5 mb-2">
+                <span className="text-xs font-semibold text-foreground">{col.label}</span>
+                <span className="text-[10px] font-medium text-muted-foreground bg-white/70 rounded-full px-1.5 py-0.5 border border-border/30">
+                  {cards.length}
+                </span>
+              </div>
+              {/* Cards */}
+              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2">
+                {cards.map((rfq) => (
+                  <button
+                    key={rfq.rfqId}
+                    onClick={() => onCardClick(rfq.rfqId)}
+                    className="w-full text-left bg-white rounded-lg border border-border/40 p-3 shadow-[0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-border transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-1 mb-1.5">
+                      <span className="text-[10px] font-mono text-muted-foreground truncate">{rfq.rfqId}</span>
+                      <Badge variant={STATUS_VARIANT[rfq.statusStage]} className="text-[9px] px-1.5 py-0 h-4 shrink-0">
+                        {STATUS_LABELS[rfq.statusStage]}
+                      </Badge>
+                    </div>
+                    <p className="text-sm font-medium text-foreground truncate leading-tight">{rfq.employerName}</p>
+                    {rfq.industry && (
+                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">{rfq.industry}</p>
+                    )}
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
+                      <span className="text-[10px] text-muted-foreground">
+                        {rfq.censusSummary?.totalLives ? `${rfq.censusSummary.totalLives.toLocaleString()} lives` : '—'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">{rfq.salesOwner?.name ?? '—'}</span>
+                    </div>
+                  </button>
+                ))}
+                {cards.length === 0 && (
+                  <div className="flex items-center justify-center py-6 text-xs text-muted-foreground/60 italic">
+                    No quotes
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Rfq2ListPage() {
   const router = useRouter();
   const { currentRole, salesLevel, userId } = useRole();
@@ -131,6 +231,7 @@ export default function Rfq2ListPage() {
   const [stageFilter, setStageFilter] = useState<'ALL' | RfqStatus>('ALL');
   const [assignedToMe, setAssignedToMe] = useState(false);
   const [page, setPage] = useState(1);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -266,6 +367,28 @@ export default function Rfq2ListPage() {
               ))}
             </SelectContent>
           </Select>
+          <div className="flex items-center border border-border rounded-lg p-0.5 ml-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn(
+                'flex items-center justify-center size-7 rounded-md transition-colors',
+                viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+              )}
+              title="List view"
+            >
+              <LayoutList className="size-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={cn(
+                'flex items-center justify-center size-7 rounded-md transition-colors',
+                viewMode === 'kanban' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+              )}
+              title="Kanban view"
+            >
+              <Columns3 className="size-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -280,7 +403,7 @@ export default function Rfq2ListPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Content — List or Kanban */}
       <div className="flex-1 min-h-0 overflow-hidden px-4 pb-4">
         {loading ? (
           <div className="flex flex-col gap-2 pt-4">
@@ -293,6 +416,8 @@ export default function Rfq2ListPage() {
             <FolderOpen className="size-6" />
             No RFQs match the current filters.
           </div>
+        ) : viewMode === 'kanban' ? (
+          <KanbanBoard rfqs={filtered} onCardClick={(rfqId) => router.push(`/rfq2/${rfqId}`)} />
         ) : (
           <div className="h-full flex flex-col rounded-2xl border border-border/20 bg-background overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
             {/* Fixed header */}

@@ -689,6 +689,85 @@ function FieldValue({ label, value }: { label: string; value: string }) {
   );
 }
 
+function MetaCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col min-w-0">
+      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-foreground truncate">{value}</span>
+    </div>
+  );
+}
+
+function StatusRow({ label, value, pass }: { label: string; value: string; pass?: boolean }) {
+  return (
+    <div className="flex justify-between items-center py-0.5">
+      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <span className={cn('text-[10px] font-medium', pass === true ? 'text-green-600' : pass === false ? 'text-destructive' : 'text-foreground')}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function MilestonesSidebar({ milestones }: { milestones: Milestone[] }) {
+  const PIM_BOUNDARY = 10;
+  return (
+    <div className="flex flex-col">
+      {milestones.map((m, idx) => {
+        const isBoundary = m.milestoneNo === PIM_BOUNDARY;
+        const isLast = idx === milestones.length - 1;
+        const connectorDone = m.state === MilestoneState.DONE;
+        const isNow = m.state === MilestoneState.IN_PROGRESS;
+        const isDone = m.state === MilestoneState.DONE;
+        const isWarning = m.state === MilestoneState.WARNING;
+        const isBlocked = m.state === MilestoneState.BLOCKED;
+        return (
+          <div key={m.milestoneNo}>
+            {isBoundary && (
+              <div className="flex items-center gap-1.5 my-2">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[9px] text-muted-foreground whitespace-nowrap">Post-Issuance</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+            )}
+            <div className="flex items-start gap-2 py-1">
+              {/* Dot + connector */}
+              <div className="flex flex-col items-center mt-1 shrink-0">
+                <MilestoneDot state={m.state} />
+                {!isLast && (
+                  <div className={cn('w-px flex-1 min-h-[14px]', connectorDone ? 'bg-primary/40' : 'bg-border')} />
+                )}
+              </div>
+              {/* Content */}
+              <div className="flex flex-col min-w-0 flex-1 pb-1">
+                <div className="flex items-center gap-1.5">
+                  <span className={cn(
+                    'text-[11px] truncate',
+                    isDone ? 'text-foreground' :
+                    isNow ? 'text-foreground font-semibold' :
+                    'text-muted-foreground'
+                  )}>
+                    {m.label}
+                  </span>
+                  {isNow && (
+                    <Badge variant="default" className="text-[8px] h-3.5 px-1 shrink-0">Now</Badge>
+                  )}
+                  {isWarning && (
+                    <Badge variant="outline" className="text-[8px] h-3.5 px-1 shrink-0 text-amber-600 border-amber-300">Warn</Badge>
+                  )}
+                  {isBlocked && (
+                    <Badge variant="outline" className="text-[8px] h-3.5 px-1 shrink-0 text-destructive border-destructive/30">Blocked</Badge>
+                  )}
+                </div>
+                <span className="text-[9px] text-muted-foreground mt-0.5">M{m.milestoneNo}</span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Inner page (needs bundle context) ────────────────────────────────────────
 
@@ -698,6 +777,7 @@ function Rfq2DetailInner() {
   const [sortAsc, setSortAsc] = useState(false);
   const setLabel = useBreadcrumbStore((s) => s.setLabel);
   const versionsScrollRef = useRef<HTMLDivElement>(null);
+  const [middleTab, setMiddleTab] = useState<'versions' | 'mph' | 'subsidiaries' | 'claims' | 'census' | 'negotiation'>('versions');
 
   if (!bundle) return null;
 
@@ -739,16 +819,27 @@ function Rfq2DetailInner() {
     setLabel(rfqId, `${rfqId.toUpperCase()} · ${employerName}`);
   }, [rfqId, employerName, setLabel]);
 
+  // Middle tab button group config
+  const MIDDLE_TABS: { key: typeof middleTab; label: string }[] = [
+    { key: 'versions', label: 'Versions' },
+    { key: 'mph', label: 'MPH Profile' },
+    { key: 'subsidiaries', label: 'Subsidiaries' },
+    { key: 'claims', label: 'Claims Experience' },
+    { key: 'census', label: 'Census / Headcount' },
+    { key: 'negotiation', label: 'Negotiation' },
+  ];
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* ── Header area ── */}
       <div className="border-b border-border/60 bg-background shrink-0">
-        {/* Title block */}
+        {/* Title block — MPH name as title, quote number as description */}
         <div className="flex items-center gap-2 px-4 py-3">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground whitespace-nowrap">
-              {rfqId.toUpperCase()}
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              {employerName}
             </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{rfqId.toUpperCase()}</p>
           </div>
           <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
             Quote Pack
@@ -771,254 +862,135 @@ function Rfq2DetailInner() {
           </Button>
         </div>
 
-        {/* Governance meta row */}
-        <div className="flex items-start gap-5 flex-wrap px-4 pb-2 pt-1 border-b border-border/40">
-          <GovernancePill
-            icon={Building2}
-            label="Client"
-            value={employerName}
-          />
-          {effectiveDate && (
-            <GovernancePill
-              icon={Calendar}
-              label="Effective Date"
-              value={formatDate(effectiveDate)}
-            />
-          )}
-          {salesOwner && (
-            <GovernancePill
-              icon={User}
-              label="Owner"
-              value={salesOwner.name}
-            />
-          )}
-          <GovernancePill
-            icon={Tag}
-            label="Status"
-            value={statusStage.replace(/_/g, ' ')}
-          />
-          {(brokerName ?? channel) && (
-            <GovernancePill
-              icon={Building2}
-              label={brokerName ? 'Broker' : 'Channel'}
-              value={(brokerName ?? channel) as string}
-            />
-          )}
-        </div>
+        {/* Quote metadata row (full width) with status summary on right */}
+        <div className="flex items-start px-4 pb-3 pt-1 gap-4">
+          {/* Left — metadata grid */}
+          <div className="flex-1 min-w-0 grid grid-cols-4 gap-x-4 gap-y-2">
+            <MetaCell label="Business Type" value={bundle.businessType?.replace(/_/g, ' ') ?? '—'} />
+            <MetaCell label="Scheme Type" value={schemeType?.replace(/_/g, ' ') ?? '—'} />
+            <MetaCell label="Lives Covered" value={bundle.livesCovered?.replace(/_/g, ' ') ?? '—'} />
+            <MetaCell label="LOB" value={bundle.lob ?? '—'} />
+            <MetaCell label="Effective Date" value={effectiveDate ? new Date(effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
+            <MetaCell label="Policy Year End" value={bundle.policyConfig?.policyYearEnd ? new Date(bundle.policyConfig.policyYearEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
+            <MetaCell label="Pricing Basis" value={bundle.defaultPlanStructure?.pricingBasis?.replace(/_/g, ' ') ?? '—'} />
+            <MetaCell label="Segment" value={quoteSegment ?? '—'} />
+            <MetaCell label="Broker" value={brokerName ?? '—'} />
+            <MetaCell label="Channel" value={channel ?? '—'} />
+            <MetaCell label="Owner" value={salesOwner?.name ?? '—'} />
+            <MetaCell label="Industry" value={industry ?? '—'} />
+          </div>
 
-        {/* Milestones strip — temporarily hidden
-        <div className="px-4 pt-3 pb-3">
-          <MilestonesStrip milestones={milestones} />
+          {/* Right — Status summary card (aligned with readiness column width) */}
+          <div className="w-60 shrink-0 rounded-xl border border-border bg-card p-3 flex flex-col gap-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status Summary</p>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs font-semibold">{statusStage.replace(/_/g, ' ')}</Badge>
+            </div>
+            <div className="flex flex-col gap-1 mt-1">
+              <StatusRow label="Versions" value={`${quoteVersions.length} (${quoteVersions.filter(v => v.status === VersionStatus.FROZEN).length} frozen)`} />
+              <StatusRow label="Plans" value={`${plans.length} defined`} />
+              <StatusRow label="Members" value={censusSummary ? `${censusSummary.totalLives.toLocaleString()} lives` : 'Not loaded'} />
+              <StatusRow label="Readiness" value={readiness.failingCount === 0 ? 'All passing' : `${readiness.failingCount} failing`} pass={readiness.failingCount === 0} />
+              <StatusRow label="Documents" value={`${documents.length} uploaded`} />
+            </div>
+          </div>
         </div>
-        */}
       </div>
 
       {/* ── Three-column body ── */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Left — Versions */}
+        {/* Left — Milestones */}
         <div className="w-60 shrink-0 border-r border-border/60 flex flex-col overflow-hidden">
-          {/* Versions header */}
           <div className="flex items-center gap-2 px-3 py-2.5 shrink-0">
             <span className="flex-1 text-sm font-semibold text-foreground truncate">
-              Versions
+              Milestones
             </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-7 px-2 text-xs gap-1 shrink-0"
-            >
-              <Plus className="size-3" />
-              New
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-7 shrink-0"
-              onClick={() => setSortAsc((prev) => !prev)}
-              title={sortAsc ? 'Sorted oldest first — click for newest first' : 'Sorted newest first — click for oldest first'}
-            >
-              {sortAsc ? (
-                <ArrowDown01 className="size-3.5" />
-              ) : (
-                <ArrowDown10 className="size-3.5" />
-              )}
-            </Button>
           </div>
-
-          {/* Version cards */}
-          <div ref={versionsScrollRef} className="flex-1 overflow-y-auto px-3 pb-4 flex flex-col gap-2">
-            {sortedVersions.map((v) => {
-              const priceEntry = profitability.pricedVersions.find(
-                (p) => p.versionId === v.id
-              );
-              const planNames = plans
-                .filter((p) => p.quoteVersionId === v.id)
-                .map((p) => p.name);
-              return (
-                <CompactVersionCard
-                  key={v.id}
-                  version={v}
-                  isActive={false}
-                  priceEntry={priceEntry}
-                  planNames={planNames}
-                  isMostCompetitive={
-                    profitability.mostCompetitiveVersionId === v.id &&
-                    profitability.pricedVersions.length >= 2
-                  }
-                  isMostProfitable={
-                    profitability.mostProfitableVersionId === v.id &&
-                    profitability.pricedVersions.length >= 2
-                  }
-                  onSwitch={() => {
-                    if (versionsScrollRef.current) {
-                      sessionStorage.setItem(`rfq2-vs-scroll-${rfqId}`, String(versionsScrollRef.current.scrollTop));
-                    }
-                    router.push(`/rfq2/${rfqId}/${v.id}`);
-                  }}
-                />
-              );
-            })}
+          <div className="flex-1 overflow-y-auto px-3 pb-4">
+            <MilestonesSidebar milestones={milestones} />
           </div>
         </div>
 
-        {/* Middle — Main content */}
-        <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
-
-          {/* ── Quote Intake ── */}
-          <div className="px-5 pt-4 pb-3 border-b border-border/60 shrink-0">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Quote Intake
-              </h2>
-            </div>
-            <div className="grid grid-cols-4 gap-x-4 gap-y-2.5">
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted-foreground">Business Type</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.businessType?.replace(/_/g, ' ') ?? '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted-foreground">Scheme Type</span>
-                <span className="text-xs font-medium text-foreground truncate">{schemeType?.replace(/_/g, ' ') ?? '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted-foreground">Lives Covered</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.livesCovered?.replace(/_/g, ' ') ?? '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted-foreground">LOB</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.lob ?? '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted-foreground">Effective Date</span>
-                <span className="text-xs font-medium text-foreground truncate">{effectiveDate ? new Date(effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted-foreground">Policy Year End</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.policyConfig?.policyYearEnd ? new Date(bundle.policyConfig.policyYearEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted-foreground">Pricing Basis</span>
-                <span className="text-xs font-medium text-foreground truncate">{bundle.defaultPlanStructure?.pricingBasis?.replace(/_/g, ' ') ?? '—'}</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-muted-foreground">Segment</span>
-                <span className="text-xs font-medium text-foreground truncate">{quoteSegment ?? '—'}</span>
-              </div>
+        {/* Middle — Tabbed content area */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          {/* Button group row */}
+          <div className="shrink-0 px-4 pt-3 pb-2 border-b border-border/40">
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1 overflow-x-auto">
+              {MIDDLE_TABS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setMiddleTab(key)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-all',
+                    middleTab === key
+                      ? 'bg-background shadow-sm text-foreground'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {label}
+                  {key === 'versions' && (
+                    <span className="ml-1.5 text-[10px] text-muted-foreground">{quoteVersions.length}</span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* ── Workbench ── */}
-          <div className="px-5 py-4 border-b border-border/60 shrink-0">
-            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-              Workbench
-            </h2>
-            <div className="grid grid-cols-5 gap-2">
-              {LAUNCHPAD_TILES.map(({ label, route, bucketNo, icon: Icon, countKey }) => {
-                const bucket = readiness.buckets.find((b) => b.bucketNo === bucketNo);
-                const passing = bucket
-                  ? bucket.gates.filter((g) => g.status === GateStatus.PASS).length
-                  : 0;
-                const total = bucket?.gates.length ?? 1;
-                const pct = Math.round((passing / total) * 100);
-                const tone = tileTone(pct);
-                const toneLabel = tileToneLabel(pct);
-                const count =
-                  countKey === 'versions'  ? quoteVersions.length :
-                  countKey === 'members'   ? members.length :
-                  countKey === 'plans'     ? plans.length :
-                  countKey === 'documents' ? documents.length : null;
-                return (
-                  <Link
-                    key={route}
-                    href={`/rfqs/${rfqId}/${route}`}
-                    className={cn(
-                      'flex flex-col gap-1.5 rounded-xl border p-3 hover:shadow-sm transition-shadow',
-                      tone
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <Icon className="size-3.5 opacity-70" />
-                      <span className="text-[9px] font-medium opacity-70">{toneLabel}</span>
-                    </div>
-                    <p className="text-[11px] font-semibold leading-tight">{label}</p>
-                    <div className="flex items-center gap-1 mt-auto">
-                      <div className="h-1 flex-1 bg-black/10 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-current opacity-60 rounded-full transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] font-mono opacity-70">{pct}%</span>
-                    </div>
-                    {count !== null && (
-                      <span className="text-[9px] opacity-60">
-                        {count} {countKey}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
+          {/* Tab content */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
+            {middleTab === 'versions' && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-foreground">Versions ({quoteVersions.length})</h3>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => setSortAsc((prev) => !prev)}
+                      title={sortAsc ? 'Oldest first' : 'Newest first'}
+                    >
+                      {sortAsc ? <ArrowDown01 className="size-3.5" /> : <ArrowDown10 className="size-3.5" />}
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1">
+                      <Plus className="size-3" /> New Version
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {sortedVersions.map((v) => {
+                    const priceEntry = profitability.pricedVersions.find(
+                      (p) => p.versionId === v.id
+                    );
+                    const planNames = plans
+                      .filter((p) => p.quoteVersionId === v.id)
+                      .map((p) => p.name);
+                    return (
+                      <CompactVersionCard
+                        key={v.id}
+                        version={v}
+                        isActive={v.id === activeVersionId}
+                        priceEntry={priceEntry}
+                        planNames={planNames}
+                        isMostCompetitive={
+                          profitability.mostCompetitiveVersionId === v.id &&
+                          profitability.pricedVersions.length >= 2
+                        }
+                        isMostProfitable={
+                          profitability.mostProfitableVersionId === v.id &&
+                          profitability.pricedVersions.length >= 2
+                        }
+                        onSwitch={() => {
+                          router.push(`/rfq2/${rfqId}/${v.id}`);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-          {/* ── Deal Profile ── */}
-          <div className="px-5 py-4 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Deal Profile
-              </h2>
-              <Link
-                href={`/rfqs/${rfqId}/profile`}
-                className="text-[10px] text-primary hover:underline"
-              >
-                Full profile →
-              </Link>
-            </div>
-
-            {/* ── Row 1 ── Key Data (left) | MPH Profile + Appetite Envelope stacked (right) */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Key Data */}
-              <ProfileSection title="Key Data" className="h-full">
-                <ProfileRow label="Business Type" value={bundle.businessType} />
-                <ProfileRow label="Scheme Type" value={bundle.schemeType} />
-                <ProfileRow label="Participation" value={bundle.participationType} />
-                <ProfileRow label="Effective Date" value={formatDate(effectiveDate)} />
-                <ProfileRow label="Intermediary" value={bundle.intermediaryType} />
-                <ProfileRow label="Broker" value={brokerName} />
-                <ProfileRow label="Broker Code" value={bundle.brokerCode} />
-                {bundle.priorPolicy && (
-                  <>
-                    <ProfileRow label="Prior Insurer" value={bundle.priorPolicy.insurer} />
-                    <ProfileRow label="Prior MPN" value={bundle.priorPolicy.masterPolicyNumber} />
-                    <ProfileRow
-                      label="Prior Premium"
-                      value={bundle.priorPolicy.premium != null ? `₹${bundle.priorPolicy.premium.toLocaleString()}` : undefined}
-                    />
-                  </>
-                )}
-              </ProfileSection>
-
-              {/* MPH Profile + Appetite Envelope — stacked vertically */}
+            {middleTab === 'mph' && (
               <div className="flex flex-col gap-4">
                 <ProfileSection title="MPH Profile">
                   <ProfileRow label="Employer" value={employerName} />
@@ -1028,7 +1000,6 @@ function Rfq2DetailInner() {
                   <ProfileRow label="Employees" value={censusSummary?.totalLives?.toLocaleString()} />
                   <ProfileRow label="Scheme Type" value={schemeType} />
                 </ProfileSection>
-
                 <ProfileSection title="Appetite Envelope">
                   {mphAppetite ? (
                     <>
@@ -1044,80 +1015,100 @@ function Rfq2DetailInner() {
                   )}
                 </ProfileSection>
               </div>
-            </div>
+            )}
 
-            {/* ── Row 2 ── Census Summary / Claims Summary / Plan Summary — 3-column */}
-            <div className="grid grid-cols-3 gap-4">
-              <ProfileSection title="Census Summary">
-                {censusSummary ? (
-                  <>
-                    <div className="flex justify-between py-1 border-b border-border/20">
-                      <span className="text-[10px] text-muted-foreground shrink-0">Quality</span>
-                      <QualityChip q={censusSummary.quality.trafficLight} />
+            {middleTab === 'subsidiaries' && (
+              <div className="flex flex-col gap-3">
+                <ProfileSection title="Subsidiaries">
+                  {bundle.subsidiaries && bundle.subsidiaries.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {bundle.subsidiaries.map((sub: { name: string; lives?: number }, idx: number) => (
+                        <div key={idx} className="flex justify-between py-1 border-b border-border/20 last:border-0">
+                          <span className="text-[11px] font-medium">{sub.name}</span>
+                          <span className="text-[10px] text-muted-foreground">{sub.lives ?? '—'} lives</span>
+                        </div>
+                      ))}
                     </div>
-                    <ProfileRow label="Total lives" value={censusSummary.totalLives.toLocaleString()} />
-                    <ProfileRow
-                      label="Roster"
-                      value={members.length > 0 ? `${members.length} members` : 'Aggregate only'}
-                    />
-                  </>
-                ) : (
-                  <div className="flex items-start gap-1.5 rounded-lg bg-muted/30 border border-border px-2.5 py-2">
-                    <Info className="size-3 shrink-0 mt-0.5 text-muted-foreground" />
-                    <span className="text-[10px] text-muted-foreground">Census not yet loaded.</span>
-                  </div>
-                )}
-              </ProfileSection>
+                  ) : (
+                    <div className="flex items-start gap-1.5 rounded-lg bg-muted/30 border border-border px-2.5 py-2">
+                      <Info className="size-3 shrink-0 mt-0.5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">No subsidiaries configured.</span>
+                    </div>
+                  )}
+                </ProfileSection>
+              </div>
+            )}
 
-              <ProfileSection title="Claims Summary">
-                {claimsExperience ? (
-                  <>
-                    <ProfileRow label="Years of data" value={claimsExperience.years.length} />
-                    {claimsExperience.years.length > 0 && (
-                      <ProfileRow
-                        label="Latest loss ratio"
-                        value={`${(claimsExperience.years[claimsExperience.years.length - 1].lossRatio * 100).toFixed(1)}%`}
-                      />
-                    )}
-                    <ProfileRow label="Large losses" value={claimsExperience.largeLosses.length} />
-                  </>
-                ) : (
-                  <div className="flex items-start gap-1.5 rounded-lg bg-muted/30 border border-border px-2.5 py-2">
-                    <Info className="size-3 shrink-0 mt-0.5 text-muted-foreground" />
-                    <span className="text-[10px] text-muted-foreground">No claims experience data.</span>
-                  </div>
-                )}
-              </ProfileSection>
+            {middleTab === 'claims' && (
+              <div className="flex flex-col gap-3">
+                <ProfileSection title="Claims Experience">
+                  {claimsExperience ? (
+                    <>
+                      <ProfileRow label="Years of data" value={claimsExperience.years.length} />
+                      {claimsExperience.years.map((yr: { year: number; lossRatio: number; premium: number; claims: number }, idx: number) => (
+                        <ProfileRow key={idx} label={`FY ${yr.year}`} value={`LR: ${(yr.lossRatio * 100).toFixed(1)}% | Prem: ₹${yr.premium.toLocaleString()} | Claims: ₹${yr.claims.toLocaleString()}`} />
+                      ))}
+                      <ProfileRow label="Large losses" value={claimsExperience.largeLosses.length} />
+                    </>
+                  ) : (
+                    <div className="flex items-start gap-1.5 rounded-lg bg-muted/30 border border-border px-2.5 py-2">
+                      <Info className="size-3 shrink-0 mt-0.5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">No claims experience data loaded.</span>
+                    </div>
+                  )}
+                </ProfileSection>
+              </div>
+            )}
 
-              <ProfileSection title="Plan Summary">
-                {plans.length > 0 ? (
-                  <>
-                    <ProfileRow label="Plans" value={plans.length} />
-                    <ProfileRow
-                      label="Products"
-                      value={[...new Set(plans.map((p) => p.productCode ?? '—'))].join(', ')}
-                    />
-                    <ProfileRow
-                      label="UW status"
-                      value={
-                        plans.some((p) => p.handoffStatus === PlanHandoffStatus.UW_REFERRED)
-                          ? 'In UW review'
-                          : plans.every((p) => p.handoffStatus === PlanHandoffStatus.PRICED)
-                          ? 'All priced'
-                          : 'In progress'
-                      }
-                    />
-                  </>
-                ) : (
-                  <div className="flex items-start gap-1.5 rounded-lg bg-muted/30 border border-border px-2.5 py-2">
-                    <Info className="size-3 shrink-0 mt-0.5 text-muted-foreground" />
-                    <span className="text-[10px] text-muted-foreground">No plans defined yet.</span>
-                  </div>
-                )}
-              </ProfileSection>
-            </div>
+            {middleTab === 'census' && (
+              <div className="flex flex-col gap-3">
+                <ProfileSection title="Census / Headcount">
+                  {censusSummary ? (
+                    <>
+                      <div className="flex justify-between py-1 border-b border-border/20">
+                        <span className="text-[10px] text-muted-foreground">Quality</span>
+                        <QualityChip q={censusSummary.quality.trafficLight} />
+                      </div>
+                      <ProfileRow label="Total lives" value={censusSummary.totalLives.toLocaleString()} />
+                      <ProfileRow label="Roster" value={members.length > 0 ? `${members.length} members` : 'Aggregate only'} />
+                      <ProfileRow label="Headcount Mode" value={bundle.headcountData ? 'Detailed headcount uploaded' : 'Census summary only'} />
+                      <ProfileRow label="Grade Mapping" value={Object.keys(bundle.gradeAllocations ?? {}).length > 0 ? 'Available' : 'Pending'} />
+                    </>
+                  ) : (
+                    <div className="flex items-start gap-1.5 rounded-lg bg-muted/30 border border-border px-2.5 py-2">
+                      <Info className="size-3 shrink-0 mt-0.5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Census not yet loaded.</span>
+                    </div>
+                  )}
+                </ProfileSection>
+              </div>
+            )}
+
+            {middleTab === 'negotiation' && (
+              <div className="flex flex-col gap-3">
+                <ProfileSection title="Negotiation">
+                  {bundle.negotiationLog && bundle.negotiationLog.length > 0 ? (
+                    <div className="flex flex-col gap-1">
+                      {bundle.negotiationLog.map((entry, idx) => (
+                        <div key={idx} className="flex flex-col py-1.5 border-b border-border/20 last:border-0">
+                          <div className="flex justify-between">
+                            <span className="text-[10px] font-medium">{entry.by}</span>
+                            <span className="text-[9px] text-muted-foreground">{new Date(entry.at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">{entry.note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-1.5 rounded-lg bg-muted/30 border border-border px-2.5 py-2">
+                      <Info className="size-3 shrink-0 mt-0.5 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">No negotiation rounds recorded yet.</span>
+                    </div>
+                  )}
+                </ProfileSection>
+              </div>
+            )}
           </div>
-
         </div>
 
         {/* Right — Readiness / Documents */}
