@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { MswProvider } from "@/components/providers/MswProvider";
 import { RoleProvider } from "@/contexts/RoleContext";
 import { Toaster } from "@/components/ui/toast";
+import { ScrollbarController } from "@/components/ScrollbarController";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default function RootLayout({
 						<RoleProvider>
 							{children}
 							<Toaster />
+							<ScrollbarController />
 						</RoleProvider>
 					</Providers>
 				</MswProvider>

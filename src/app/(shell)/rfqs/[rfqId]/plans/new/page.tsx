@@ -316,18 +316,23 @@ function Stepper({ state, dispatch }: { state: WizardState; dispatch: React.Disp
 function RecapSidebar({ state }: { state: WizardState }) {
   function Row({ label, value }: { label: string; value?: string | null }) {
     return (
-      <div className="flex justify-between items-baseline gap-2 py-0.5">
-        <span className="text-[10px] text-muted-foreground shrink-0">{label}</span>
-        <span className="text-[10px] font-medium text-right truncate max-w-[50%]">{value ?? '—'}</span>
+      <div className="flex justify-between gap-2 py-1 border-b border-border/30 last:border-0">
+        <span className="text-[11px] text-muted-foreground shrink-0">{label}</span>
+        {value
+          ? <span className="text-[11px] font-medium text-right truncate min-w-0">{value}</span>
+          : <span className="text-[11px] text-muted-foreground/40 italic">—</span>
+        }
       </div>
     );
   }
 
-  function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  function Card({ title, children }: { title: string; children: React.ReactNode }) {
     return (
-      <div className="mb-3">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{title}</p>
-        {children}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-3 pt-2.5 pb-1.5 border-b border-border/50">
+          <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+        </div>
+        <div className="px-3 py-1.5">{children}</div>
       </div>
     );
   }
@@ -335,42 +340,75 @@ function RecapSidebar({ state }: { state: WizardState }) {
   const totalCoveredLives = state.coversGrades.length === 0 ? '(all grades)' : `${state.coversGrades.length} grade(s)`;
 
   return (
-    <div className="w-52 shrink-0 flex flex-col">
-      <p className="text-sm font-semibold text-foreground mb-3">Plan summary</p>
-      <div className="flex flex-col overflow-y-auto text-xs">
-          <Group title="Identity">
-            <Row label="LoB" value={state.selectedProduct?.lob ?? null} />
-            <Row label="Product" value={state.selectedProduct?.name ?? null} />
-            <Row label="Plan #" value={state.planNumber || null} />
-            <Row label="Plan name" value={state.planName || null} />
-            <Row label="From" value={state.effectiveFrom || null} />
-            <Row label="To" value={state.effectiveTo || null} />
-          </Group>
-          <Group title="Coverage">
-            <Row label="SA basis" value={state.sumAssuredBasis} />
-            <Row label="Cover" value={state.coverPattern} />
-            <Row label="Covered" value={totalCoveredLives} />
-            <Row label="Flat SI" value={state.flatSi !== null ? fmtINR(state.flatSi) : null} />
-            <Row label="Salary ×" value={state.salaryMultiple !== null ? `${state.salaryMultiple}×` : null} />
-            <Row label="Benefits" value={state.benefits.length > 0 ? `${state.benefits.length} selected` : null} />
-            <Row label="Riders" value={state.riders.length > 0 ? `${state.riders.length}` : null} />
-            <Row label="Carve-outs" value={state.excludedClauses.length > 0 ? `${state.excludedClauses.length}` : null} />
-          </Group>
-          <Group title="Eligibility">
-            <Row label="Ages" value={state.minEntryAge !== null && state.maxEntryAge !== null ? `${state.minEntryAge}–${state.maxEntryAge}` : null} />
-            <Row label="Cessation" value={state.cessationAge !== null ? String(state.cessationAge) : null} />
-            <Row label="Lives covered" value={state.livesCovered} />
-            <Row label="Min group" value={state.minGroupSize !== null ? String(state.minGroupSize) : null} />
-          </Group>
-          <Group title="UW">
-            <Row label="UW method" value={state.uwMethod} />
-            <Row label="FCL mode" value={state.fclInherited ? 'Inherited' : (state.fclPatternOverride ?? null)} />
-            <Row label="Evidence" value={state.evidencePack} />
-          </Group>
-          <Group title="Pricing">
-            <Row label="Rate card" value={state.rateCardRef} />
-          </Group>
+    <div className="w-full flex flex-col">
+      <div className="pb-3 mb-3 border-b border-border/30">
+        <p className="text-sm font-semibold text-foreground">Plan summary</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Updates as you fill in the form</p>
+      </div>
+      <div className="flex flex-col gap-3">
+        {/* Identity card */}
+        <div className="rounded-xl border border-border bg-card px-3 py-3">
+          <div className="flex items-start justify-between gap-2 mb-1.5">
+            <div className="min-w-0">
+              <p className={`text-sm font-semibold truncate leading-tight ${state.planName ? 'text-foreground' : 'text-muted-foreground/40 italic'}`}>
+                {state.planName || 'Plan name'}
+              </p>
+              {state.planNumber && (
+                <p className="text-[11px] text-muted-foreground mt-0.5 truncate">#{state.planNumber}</p>
+              )}
+            </div>
+            {state.selectedProduct?.lob && (
+              <span className="text-[10px] bg-muted border border-border rounded-full px-2 py-0.5 shrink-0 font-medium">
+                {state.selectedProduct.lob}
+              </span>
+            )}
+          </div>
+          {state.selectedProduct?.name && (
+            <p className="text-[11px] text-muted-foreground truncate mt-1 pt-1.5 border-t border-border/40">
+              {state.selectedProduct.name}
+            </p>
+          )}
+          {(state.effectiveFrom || state.effectiveTo) && (
+            <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-border/40 flex-wrap">
+              {state.effectiveFrom && (
+                <span className="text-[10px] bg-muted border border-border rounded px-1.5 py-0.5">{state.effectiveFrom}</span>
+              )}
+              {state.effectiveFrom && state.effectiveTo && <span className="text-[10px] text-muted-foreground">→</span>}
+              {state.effectiveTo && (
+                <span className="text-[10px] bg-muted border border-border rounded px-1.5 py-0.5">{state.effectiveTo}</span>
+              )}
+            </div>
+          )}
         </div>
+
+        <Card title="Coverage">
+          <Row label="SA basis" value={state.sumAssuredBasis} />
+          <Row label="Cover pattern" value={state.coverPattern} />
+          <Row label="Grades" value={totalCoveredLives} />
+          <Row label="Flat SI" value={state.flatSi !== null ? fmtINR(state.flatSi) : null} />
+          <Row label="Salary ×" value={state.salaryMultiple !== null ? `${state.salaryMultiple}×` : null} />
+          <Row label="Benefits" value={state.benefits.length > 0 ? `${state.benefits.length} selected` : null} />
+          <Row label="Riders" value={state.riders.length > 0 ? `${state.riders.length}` : null} />
+          <Row label="Carve-outs" value={state.excludedClauses.length > 0 ? `${state.excludedClauses.length}` : null} />
+        </Card>
+
+        <Card title="Eligibility">
+          <Row label="Ages" value={state.minEntryAge !== null && state.maxEntryAge !== null ? `${state.minEntryAge}–${state.maxEntryAge}` : null} />
+          <Row label="Cessation" value={state.cessationAge !== null ? String(state.cessationAge) : null} />
+          <Row label="Lives covered" value={state.livesCovered} />
+          <Row label="Min group" value={state.minGroupSize !== null ? String(state.minGroupSize) : null} />
+        </Card>
+
+        <Card title="Underwriting">
+          <Row label="UW method" value={state.uwMethod} />
+          <Row label="FCL mode" value={state.fclInherited ? 'Inherited' : (state.fclPatternOverride ?? null)} />
+          <Row label="Evidence" value={state.evidencePack} />
+        </Card>
+
+        <Card title="Pricing">
+          <Row label="Rate card" value={state.rateCardRef} />
+        </Card>
+      </div>
     </div>
   );
 }
@@ -1340,7 +1378,7 @@ function PlanWizardInner() {
             </Button>
           </div>
         </div>
-        <div className="w-56 shrink-0 border-l border-border/40 px-3 py-4 overflow-y-auto">
+        <div className="w-72 shrink-0 border-l border-border/40 px-3 py-4 overflow-y-auto">
           <RecapSidebar state={state} />
         </div>
       </div>

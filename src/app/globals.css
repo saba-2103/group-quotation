@@ -195,11 +195,19 @@ body {
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
-  /* ── Improved scrollbar styling ── */
+  /* ── Scrollbar — hidden by default, appears on scroll with smooth fade ── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 100px;
+    transition: background-color 0.8s ease;
+  }
+  .is-scrolling::-webkit-scrollbar-thumb { background: var(--border); }
+  .is-scrolling::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+  /* Firefox */
+  * { scrollbar-width: none; }
+  .is-scrolling { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 }
 
 /* ── Utility animations ── */

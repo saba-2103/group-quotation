@@ -16,6 +16,7 @@ import {
 } from '@/lib/types';
 import { useRole } from '@/hooks/useRole';
 import { canCreateRfq } from '@/lib/permissions';
+import { cn } from '@/lib/utils';
 
 // ─── Wizard state ─────────────────────────────────────────────────────────────
 
@@ -50,40 +51,63 @@ const INITIAL: WizardState = {
 
 const STEPS = ['Client & Segment', 'Business Type', 'Dates & Basis', 'Plan Structure'];
 
-// ─── Vertical stepper ─────────────────────────────────────────────────────────
+// ─── Stepper ──────────────────────────────────────────────────────────────────
 
-function VerticalStepper({ current, onStep }: { current: number; onStep: (idx: number) => void }) {
+function isStepComplete(form: WizardState, stepIdx: number): boolean {
+  switch (stepIdx) {
+    case 0: return form.clientName.trim().length > 0;
+    case 1: return form.businessType !== '';
+    case 2: return form.effectiveDate !== '' && form.policyPeriodEnd !== '';
+    case 3: return form.planStructure !== '' && form.sumAssuredBasis !== '';
+    default: return false;
+  }
+}
+
+function Stepper({ current, visitedSteps, form, onStep }: {
+  current: number;
+  visitedSteps: number[];
+  form: WizardState;
+  onStep: (idx: number) => void;
+}) {
+  const doneCount = STEPS.filter((_, idx) =>
+    isStepComplete(form, idx) && idx !== current && visitedSteps.includes(idx)
+  ).length;
+
   return (
-    <nav className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1">
+      <div className="text-[10px] text-muted-foreground mb-2 font-medium">
+        {doneCount} / {STEPS.length} steps done
+      </div>
       {STEPS.map((label, idx) => {
-        const done = idx < current;
-        const active = idx === current;
+        const isCurrent = idx === current;
+        const isDone = isStepComplete(form, idx) && !isCurrent && visitedSteps.includes(idx);
+        const isClickable = isDone || isCurrent || visitedSteps.includes(idx);
         return (
           <button
             key={idx}
             type="button"
-            onClick={() => idx <= current && onStep(idx)}
-            disabled={idx > current}
-            className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors ${
-              active ? 'bg-primary/10 text-foreground' :
-              done ? 'hover:bg-muted/60 text-muted-foreground' :
-              'text-muted-foreground/40 cursor-not-allowed'
-            }`}
+            disabled={!isClickable}
+            onClick={() => isClickable && onStep(idx)}
+            className={cn(
+              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-colors',
+              isCurrent ? 'bg-primary/10 text-foreground font-semibold' :
+              isDone ? 'text-foreground hover:bg-muted cursor-pointer' :
+              isClickable ? 'text-muted-foreground hover:bg-muted cursor-pointer' :
+              'text-muted-foreground/40 cursor-not-allowed',
+            )}
           >
-            <div className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold shrink-0 transition-colors ${
-              done ? 'bg-primary text-primary-foreground' :
-              active ? 'border-2 border-primary text-primary' :
-              'bg-muted text-muted-foreground/50'
-            }`}>
-              {done ? <Check className="size-3" /> : idx + 1}
-            </div>
-            <span className={`text-[11px] whitespace-nowrap ${active ? 'font-semibold' : ''}`}>
-              {label}
+            <span className={cn(
+              'flex size-5 items-center justify-center rounded-full text-[10px] font-bold shrink-0',
+              isCurrent ? 'bg-primary/15 text-foreground' :
+              isDone ? 'bg-primary/20 text-primary' : 'bg-muted/30 text-muted-foreground/40',
+            )}>
+              {isDone ? <Check className="size-3" /> : idx + 1}
             </span>
+            {label}
           </button>
         );
       })}
-    </nav>
+    </div>
   );
 }
 
@@ -220,6 +244,7 @@ export default function NewRfqPage() {
   const router = useRouter();
   const { role } = useRole();
   const [step, setStep] = useState(0);
+  const [visitedSteps, setVisitedSteps] = useState<number[]>([0]);
   const [form, setForm] = useState<WizardState>(INITIAL);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -330,7 +355,7 @@ export default function NewRfqPage() {
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Left — vertical stepper */}
         <div className="w-52 shrink-0 border-r border-border/40 px-3 py-4 overflow-y-auto">
-          <VerticalStepper current={step} onStep={setStep} />
+          <Stepper current={step} visitedSteps={visitedSteps} form={form} onStep={setStep} />
         </div>
 
         {/* Center — form + footer */}
@@ -492,7 +517,11 @@ export default function NewRfqPage() {
             </Button>
             <div className="flex items-center gap-2">
               {!isLastStep ? (
-                <Button size="sm" onClick={() => setStep((s) => s + 1)} disabled={!canNext()} className="gap-1.5">
+                <Button size="sm" onClick={() => {
+                  const next = step + 1;
+                  setStep(next);
+                  setVisitedSteps((v) => v.includes(next) ? v : [...v, next]);
+                }} disabled={!canNext()} className="gap-1.5">
                   Next <ChevronRight className="size-3.5" />
                 </Button>
               ) : (
