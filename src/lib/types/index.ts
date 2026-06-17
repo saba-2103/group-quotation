@@ -457,6 +457,7 @@ export interface Plan {
   planId: string;
   rfqId: string;
   quoteVersionId: string;
+  status?: string;
   // Identity (Step 1)
   planNumber?: string;
   name: string;

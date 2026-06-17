@@ -17,7 +17,7 @@ import {
   DeviationKind,
   DeviationScope,
 } from '@/lib/types';
-import { CLAUSE_LIBRARY, FCL_LIMIT_SCHEDULE, RATE_CARDS } from '@/lib/constants';
+import { CLAUSE_LIBRARY, FCL_LIMIT_SCHEDULE, PLAN_RATE_CARDS } from '@/lib/constants';
 import {
   RfqStatus,
   BusinessType,
@@ -1217,7 +1217,7 @@ export const handlers = [
   http.get('/api/rate-cards', ({ request }) => {
     const url = new URL(request.url);
     const code = url.searchParams.get('productCode');
-    return HttpResponse.json(code ? RATE_CARDS.filter((rc) => rc.productCode === code) : RATE_CARDS);
+    return HttpResponse.json(code ? PLAN_RATE_CARDS.filter((rc) => rc.productCode === code) : PLAN_RATE_CARDS);
   }),
 
   // ─── FCL schedule ──────────────────────────────────────────────────────────

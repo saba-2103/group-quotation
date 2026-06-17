@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     items = items.filter((c) => c.bucket === bucket);
   }
   if (!riders) {
-    items = items.filter((c) => c.bucket !== 'rider');
+    items = items.filter((c) => c.bucket !== 'RIDER');
   }
 
   return NextResponse.json(items);

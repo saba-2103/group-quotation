@@ -19,6 +19,7 @@ export interface NavigationItem {
      * current pathname starts with this string (e.g. '/rfq2/rfq-').
      */
     activePrefix?: string;
+    badge?: string | number;
 }
 
 export interface AppConfig {

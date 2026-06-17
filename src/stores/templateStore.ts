@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { BUILTIN_PLAN_TEMPLATES, type PlanTemplateData } from '@/lib/constants';
+import type { PlanTemplate } from '@/lib/types';
 
 // In-memory template store — no backend persistence.
 // Seeded from lib/constants PLAN_TEMPLATES at first access.
 
 interface TemplateState {
-  templates: PlanTemplateData[];
+  templates: (PlanTemplate | PlanTemplateData)[];
   add: (t: Omit<PlanTemplateData, 'id'>) => void;
   update: (id: string, patch: Partial<Omit<PlanTemplateData, 'id'>>) => void;
   remove: (id: string) => void;
@@ -16,7 +17,7 @@ function templateId(): string {
 }
 
 export const useTemplateStore = create<TemplateState>((set) => ({
-  templates: BUILTIN_PLAN_TEMPLATES,
+  templates: BUILTIN_PLAN_TEMPLATES as (PlanTemplate | PlanTemplateData)[],
 
   add: (t) =>
     set((s) => ({

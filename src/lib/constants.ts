@@ -8,7 +8,9 @@ import type {
   PlanTemplate,
   RateCard,
 } from '@/lib/types';
-import { FclPattern, LobType } from '@/lib/types';
+import { CoverPattern, SumAssuredBasis, UwMethod, FclPattern, LobType, LivesCovered, EvidencePack, SchemeUsage, ProductArtifactStatus, ProductSalesStatus } from '@/lib/types';
+
+
 
 // ── Filed product static catalogue (GTL only, 3 open + 1 closed) ─────────────
 
@@ -19,15 +21,15 @@ export const FILED_PRODUCTS: FiledProduct[] = [
     description: 'Standard employer-obligatory GTL cover for all employment grades.',
     lob: LobType.GTL,
     subFamily: 'GROUP_TERM',
-    coverPattern: ['LEVEL'],
-    allowedSaBases: ['FLAT', 'SALARY_MULTIPLE', 'GRADE_SLAB'],
-    allowedUwMethods: ['STP', 'NSTP', 'FULL_MEDICAL'],
-    allowedFclModes: ['NONE', 'OVERALL', 'BY_GRADE', 'BY_AGE_BAND'],
-    allowedUsages: ['Employer–employee'],
+    coverPattern: [CoverPattern.LEVEL],
+    allowedSaBases: [SumAssuredBasis.FLAT, SumAssuredBasis.SALARY_MULTIPLE, SumAssuredBasis.GRADE_SLAB],
+    allowedUwMethods: [UwMethod.STP, UwMethod.NSTP, UwMethod.FULL_MEDICAL],
+    allowedFclModes: [FclPattern.NONE, FclPattern.OVERALL, FclPattern.BY_GRADE, FclPattern.BY_AGE_BAND],
+    allowedUsages: [SchemeUsage.EMPLOYER_EMPLOYEE],
     allowedEmploymentTypes: ['FULL_TIME', 'PART_TIME', 'CONTRACT'],
-    allowedLivesCovered: ['MEMBER_ONLY', 'MEMBER_SPOUSE'],
-    defaultEvidencePack: 'WITHIN_FCL_MINIMAL',
-    allowedEvidencePacks: ['WITHIN_FCL_MINIMAL', 'EOI_STANDARD', 'EOI_FULL', 'EOI_JUMBO'],
+    allowedLivesCovered: [LivesCovered.MEMBER_ONLY, LivesCovered.MEMBER_SPOUSE],
+    defaultEvidencePack: EvidencePack.WITHIN_FCL_MINIMAL,
+    allowedEvidencePacks: [EvidencePack.WITHIN_FCL_MINIMAL, EvidencePack.EOI_STANDARD, EvidencePack.EOI_FULL, EvidencePack.EOI_JUMBO],
     filedEnvelope: {
       minEntryAge: 18,
       maxEntryAge: 65,
@@ -38,8 +40,8 @@ export const FILED_PRODUCTS: FiledProduct[] = [
       minGroupSize: 25,
       maxRiskTermYears: 1,
     },
-    artifactStatus: 'PUBLISHED',
-    salesStatus: 'OPEN_TO_NEW_BUSINESS',
+    artifactStatus: ProductArtifactStatus.PUBLISHED,
+    salesStatus: ProductSalesStatus.OPEN_TO_NEW_BUSINESS,
     contentHash: 'sha256-gtl-std-001-v3',
     uin: 'IRDAI/GTL/STD/001/2024',
     benefitCodes: ['DEATH_BENEFIT', 'NATURAL_DEATH', 'ACCIDENTAL_DEATH'],
@@ -53,15 +55,15 @@ export const FILED_PRODUCTS: FiledProduct[] = [
     description: 'High-sum-assured GTL for senior and executive grades with salary-multiple cover.',
     lob: LobType.GTL,
     subFamily: 'GROUP_TERM',
-    coverPattern: ['LEVEL', 'REDUCING'],
-    allowedSaBases: ['SALARY_MULTIPLE', 'GRADE_SLAB'],
-    allowedUwMethods: ['NSTP', 'FULL_MEDICAL', 'TELE_UW'],
-    allowedFclModes: ['OVERALL', 'BY_GRADE', 'BY_CATEGORY'],
-    allowedUsages: ['Employer–employee'],
+    coverPattern: [CoverPattern.LEVEL, CoverPattern.REDUCING],
+    allowedSaBases: [SumAssuredBasis.SALARY_MULTIPLE, SumAssuredBasis.GRADE_SLAB],
+    allowedUwMethods: [UwMethod.NSTP, UwMethod.FULL_MEDICAL, UwMethod.TELE_UW],
+    allowedFclModes: [FclPattern.OVERALL, FclPattern.BY_GRADE, FclPattern.BY_AGE_BAND],
+    allowedUsages: [SchemeUsage.EMPLOYER_EMPLOYEE],
     allowedEmploymentTypes: ['FULL_TIME'],
-    allowedLivesCovered: ['MEMBER_ONLY', 'MEMBER_SPOUSE', 'FAMILY_VARIANTS'],
-    defaultEvidencePack: 'EOI_STANDARD',
-    allowedEvidencePacks: ['EOI_STANDARD', 'EOI_FULL', 'EOI_JUMBO'],
+    allowedLivesCovered: [LivesCovered.MEMBER_ONLY, LivesCovered.MEMBER_SPOUSE, LivesCovered.FAMILY_VARIANTS],
+    defaultEvidencePack: EvidencePack.EOI_STANDARD,
+    allowedEvidencePacks: [EvidencePack.EOI_STANDARD, EvidencePack.EOI_FULL, EvidencePack.EOI_JUMBO],
     filedEnvelope: {
       minEntryAge: 21,
       maxEntryAge: 60,
@@ -72,8 +74,8 @@ export const FILED_PRODUCTS: FiledProduct[] = [
       minGroupSize: 10,
       maxRiskTermYears: 1,
     },
-    artifactStatus: 'PUBLISHED',
-    salesStatus: 'OPEN_TO_NEW_BUSINESS',
+    artifactStatus: ProductArtifactStatus.PUBLISHED,
+    salesStatus: ProductSalesStatus.OPEN_TO_NEW_BUSINESS,
     contentHash: 'sha256-gtl-exec-002-v2',
     uin: 'IRDAI/GTL/EXEC/002/2024',
     benefitCodes: ['DEATH_BENEFIT', 'NATURAL_DEATH', 'ACCIDENTAL_DEATH', 'TPD_BENEFIT'],
@@ -87,15 +89,15 @@ export const FILED_PRODUCTS: FiledProduct[] = [
     description: 'Non employer–employee affinity cover for associations and member groups.',
     lob: LobType.GTL,
     subFamily: 'GROUP_TERM',
-    coverPattern: ['LEVEL'],
-    allowedSaBases: ['FLAT'],
-    allowedUwMethods: ['STP', 'NSTP'],
-    allowedFclModes: ['NONE', 'OVERALL'],
-    allowedUsages: ['Non employer–employee'],
+    coverPattern: [CoverPattern.LEVEL],
+    allowedSaBases: [SumAssuredBasis.FLAT],
+    allowedUwMethods: [UwMethod.STP, UwMethod.NSTP],
+    allowedFclModes: [FclPattern.NONE, FclPattern.OVERALL],
+    allowedUsages: [SchemeUsage.NON_EMPLOYER_EMPLOYEE],
     allowedEmploymentTypes: ['FULL_TIME', 'PART_TIME', 'CONTRACT', 'SELF_EMPLOYED'],
-    allowedLivesCovered: ['MEMBER_ONLY'],
-    defaultEvidencePack: 'WITHIN_FCL_MINIMAL',
-    allowedEvidencePacks: ['WITHIN_FCL_MINIMAL', 'EOI_STANDARD'],
+    allowedLivesCovered: [LivesCovered.MEMBER_ONLY],
+    defaultEvidencePack: EvidencePack.WITHIN_FCL_MINIMAL,
+    allowedEvidencePacks: [EvidencePack.WITHIN_FCL_MINIMAL, EvidencePack.EOI_STANDARD],
     filedEnvelope: {
       minEntryAge: 18,
       maxEntryAge: 70,
@@ -106,8 +108,8 @@ export const FILED_PRODUCTS: FiledProduct[] = [
       minGroupSize: 50,
       maxRiskTermYears: 1,
     },
-    artifactStatus: 'PUBLISHED',
-    salesStatus: 'OPEN_TO_NEW_BUSINESS',
+    artifactStatus: ProductArtifactStatus.PUBLISHED,
+    salesStatus: ProductSalesStatus.OPEN_TO_NEW_BUSINESS,
     contentHash: 'sha256-gtl-aff-003-v1',
     uin: 'IRDAI/GTL/AFF/003/2024',
     benefitCodes: ['DEATH_BENEFIT', 'NATURAL_DEATH', 'ACCIDENTAL_DEATH'],
@@ -122,15 +124,15 @@ export const FILED_PRODUCTS: FiledProduct[] = [
     description: 'Legacy GTL product closed to new business. No new plans can be created on this product.',
     lob: LobType.GTL,
     subFamily: 'GROUP_TERM',
-    coverPattern: ['LEVEL'],
-    allowedSaBases: ['FLAT', 'SALARY_MULTIPLE'],
-    allowedUwMethods: ['STP', 'NSTP'],
-    allowedFclModes: ['NONE', 'OVERALL'],
-    allowedUsages: ['Employer–employee'],
+    coverPattern: [CoverPattern.LEVEL],
+    allowedSaBases: [SumAssuredBasis.FLAT, SumAssuredBasis.SALARY_MULTIPLE],
+    allowedUwMethods: [UwMethod.STP, UwMethod.NSTP],
+    allowedFclModes: [FclPattern.NONE, FclPattern.OVERALL],
+    allowedUsages: [SchemeUsage.EMPLOYER_EMPLOYEE],
     allowedEmploymentTypes: ['FULL_TIME', 'PART_TIME'],
-    allowedLivesCovered: ['MEMBER_ONLY'],
-    defaultEvidencePack: 'WITHIN_FCL_MINIMAL',
-    allowedEvidencePacks: ['WITHIN_FCL_MINIMAL'],
+    allowedLivesCovered: [LivesCovered.MEMBER_ONLY],
+    defaultEvidencePack: EvidencePack.WITHIN_FCL_MINIMAL,
+    allowedEvidencePacks: [EvidencePack.WITHIN_FCL_MINIMAL],
     filedEnvelope: {
       minEntryAge: 18,
       maxEntryAge: 65,
@@ -141,8 +143,8 @@ export const FILED_PRODUCTS: FiledProduct[] = [
       minGroupSize: 25,
       maxRiskTermYears: 1,
     },
-    artifactStatus: 'PUBLISHED',
-    salesStatus: 'CLOSED_TO_NEW_BUSINESS',
+    artifactStatus: ProductArtifactStatus.PUBLISHED,
+    salesStatus: ProductSalesStatus.CLOSED_TO_NEW_BUSINESS,
     contentHash: 'sha256-gtl-legacy-004-v1',
     uin: 'IRDAI/GTL/LGC/004/2018',
     benefitCodes: ['DEATH_BENEFIT', 'NATURAL_DEATH'],
@@ -172,7 +174,7 @@ export const CLAUSE_LIBRARY: ClauseLibraryItem[] = [
     trigger: 'Death by accident',
     fundingOptions: ['EMPLOYER_PAID', 'EMPLOYEE_BUY_UP'],
     defaultFunding: 'EMPLOYER_PAID',
-    riderSaBasis: 'FLAT',
+    riderSaBasis: SumAssuredBasis.FLAT,
   },
   {
     code: 'PTD_RIDER',
@@ -184,7 +186,7 @@ export const CLAUSE_LIBRARY: ClauseLibraryItem[] = [
     trigger: 'PTD as per policy definition',
     fundingOptions: ['EMPLOYER_PAID', 'EMPLOYEE_BUY_UP'],
     defaultFunding: 'EMPLOYER_PAID',
-    riderSaBasis: 'FLAT',
+    riderSaBasis: SumAssuredBasis.FLAT,
   },
   {
     code: 'CI_WAIVER_RIDER',
@@ -196,7 +198,7 @@ export const CLAUSE_LIBRARY: ClauseLibraryItem[] = [
     trigger: 'Diagnosis of listed critical illness',
     fundingOptions: ['EMPLOYER_PAID'],
     defaultFunding: 'EMPLOYER_PAID',
-    riderSaBasis: 'FLAT',
+    riderSaBasis: SumAssuredBasis.FLAT,
   },
   {
     code: 'PREMIUM_WAIVER_RIDER',
@@ -208,13 +210,13 @@ export const CLAUSE_LIBRARY: ClauseLibraryItem[] = [
     trigger: 'Total disability of member',
     fundingOptions: ['EMPLOYER_PAID', 'EMPLOYEE_BUY_UP'],
     defaultFunding: 'EMPLOYER_PAID',
-    riderSaBasis: 'FLAT',
+    riderSaBasis: SumAssuredBasis.FLAT,
   },
 ];
 
 // ── Rate cards (product-wired) ────────────────────────────────────────────────
 
-export const RATE_CARDS: RateCard[] = [
+export const PLAN_RATE_CARDS: RateCard[] = [
   {
     ref: 'RC-GTL-STD-001-A',
     productCode: 'GTL-STD-001',
@@ -306,3 +308,6 @@ export function getMergedTemplates(): PlanTemplate[] {
   const customs: PlanTemplate[] = raw ? (JSON.parse(raw) as PlanTemplate[]) : [];
   return [...BUILTIN_PLAN_TEMPLATES, ...customs];
 }
+
+// Re-export all constants from the original constants/index barrel
+export * from './constants/index';

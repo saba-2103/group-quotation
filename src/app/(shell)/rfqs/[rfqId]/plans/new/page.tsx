@@ -24,7 +24,7 @@ import {
 import {
   CoverPattern, SumAssuredBasis, LivesCovered,
   FclPattern, PlanHandoffStatus, EvidencePack, UwMethod,
-  DeviationApprovalStage, DeviationScope, DeviationKind,
+  DeviationApprovalStage, DeviationScope, DeviationKind, SchemeUsage,
 } from '@/lib/types';
 import type {
   ClauseLibraryItem, Deviation, ExcludedClause,
@@ -381,7 +381,7 @@ function Step1({ state, dispatch, planCount, schemeUsage }: {
   state: WizardState;
   dispatch: React.Dispatch<WizardAction>;
   planCount: number;
-  schemeUsage?: string;
+  schemeUsage?: SchemeUsage;
 }) {
   const gtlProducts = FILED_PRODUCTS.filter((p) => p.lob === 'GTL');
 
@@ -1259,7 +1259,7 @@ function PlanWizardInner() {
     if (state.envelopeViolations.length > 0) { setSaveError(`${state.envelopeViolations.length} envelope violation(s) must be resolved before saving.`); return; }
     setSaving(true); setSaveError(null);
     try {
-      const planPayload: Partial<Plan> = { quoteVersionId: bundle.activeVersionId, planNumber: state.planNumber || undefined, name: state.planName || state.selectedProduct?.name || 'New Plan', productCode: state.productCode ?? undefined, effectiveFrom: state.effectiveFrom || undefined, effectiveTo: state.effectiveTo || undefined, subsidiaryScope: state.subsidiaryScope, sumAssuredBasis: state.sumAssuredBasis!, coverPattern: state.coverPattern!, flatSi: state.flatSi ?? undefined, salaryMultiple: state.salaryMultiple ?? undefined, gradeSlabs: state.gradeSlabs.length > 0 ? state.gradeSlabs : undefined, coversGrades: state.coversGrades.length > 0 ? state.coversGrades : undefined, benefits: state.benefits, excludedBenefits: state.excludedBenefits.length > 0 ? state.excludedBenefits : undefined, excludedClauses: state.excludedClauses, riders: state.riders, minEntryAge: state.minEntryAge ?? undefined, maxEntryAge: state.maxEntryAge ?? undefined, cessationAge: state.cessationAge ?? undefined, allowedEmploymentTypes: state.allowedEmploymentTypes.length > 0 ? state.allowedEmploymentTypes : undefined, livesCovered: state.livesCovered ?? undefined, minGroupSize: state.minGroupSize ?? undefined, uwMethod: state.uwMethod ?? undefined, fclInherited: state.fclInherited, fclPatternOverride: state.fclPatternOverride ?? undefined, evidencePack: state.evidencePack ?? undefined, reinsuranceTreatyOverride: state.reinsuranceTreatyOverride ?? undefined, rateCardRef: state.rateCardRef ?? undefined, handoffStatus: PlanHandoffStatus.DRAFT, completeness: 0 };
+      const planPayload: Partial<Plan> = { quoteVersionId: bundle!.activeVersionId, planNumber: state.planNumber || undefined, name: state.planName || state.selectedProduct?.name || 'New Plan', productCode: state.productCode ?? undefined, effectiveFrom: state.effectiveFrom || undefined, effectiveTo: state.effectiveTo || undefined, subsidiaryScope: state.subsidiaryScope, sumAssuredBasis: state.sumAssuredBasis!, coverPattern: state.coverPattern!, flatSi: state.flatSi ?? undefined, salaryMultiple: state.salaryMultiple ?? undefined, gradeSlabs: state.gradeSlabs.length > 0 ? state.gradeSlabs : undefined, coversGrades: state.coversGrades.length > 0 ? state.coversGrades : undefined, benefits: state.benefits, excludedBenefits: state.excludedBenefits.length > 0 ? state.excludedBenefits : undefined, excludedClauses: state.excludedClauses, riders: state.riders, minEntryAge: state.minEntryAge ?? undefined, maxEntryAge: state.maxEntryAge ?? undefined, cessationAge: state.cessationAge ?? undefined, allowedEmploymentTypes: state.allowedEmploymentTypes.length > 0 ? state.allowedEmploymentTypes : undefined, livesCovered: state.livesCovered ?? undefined, minGroupSize: state.minGroupSize ?? undefined, uwMethod: state.uwMethod ?? undefined, fclInherited: state.fclInherited, fclPatternOverride: state.fclPatternOverride ?? undefined, evidencePack: state.evidencePack ?? undefined, reinsuranceTreatyOverride: state.reinsuranceTreatyOverride ?? undefined, rateCardRef: state.rateCardRef ?? undefined, handoffStatus: PlanHandoffStatus.DRAFT, completeness: 0 };
       let savedPlanId = editPlanId;
       if (!editPlanId) {
         const created = await createPlan(rfqId, planPayload);
@@ -1269,10 +1269,10 @@ function PlanWizardInner() {
         await updatePlan(rfqId, editPlanId, { ...planPayload, completeness: computePlanCompleteness({ ...planPayload, planId: editPlanId, rfqId } as Plan) });
       }
       if (state.coversGrades.length > 0 && savedPlanId) {
-        const existing = bundle.gradeAllocations[bundle.activeVersionId] ?? {};
+        const existing = bundle!.gradeAllocations[bundle!.activeVersionId] ?? {};
         const patch: Record<string, string> = { ...existing };
         for (const grade of state.coversGrades) { if (!patch[grade]) patch[grade] = savedPlanId; }
-        await updateRfq(rfqId, { gradeAllocations: { ...bundle.gradeAllocations, [bundle.activeVersionId]: patch } });
+        await updateRfq(rfqId, { gradeAllocations: { ...bundle!.gradeAllocations, [bundle!.activeVersionId]: patch } });
       }
       updateBundle({});
       router.push(`/rfqs/${rfqId}/plans`);
