@@ -400,7 +400,7 @@ export default function NewPlanTemplatePage() {
     router.push('/rfq2/plan-templates');
   }
 
-  const canCreate = name.trim().length > 0;
+  const allStepsComplete = name.trim().length > 0 && visitedSteps.length === STEPS.length;
   const isLastStep = step === STEPS.length - 1;
 
   function goNext() {
@@ -425,7 +425,7 @@ export default function NewPlanTemplatePage() {
           <Button variant="ghost" size="sm" onClick={() => router.push('/rfq2/plan-templates')}>
             Cancel
           </Button>
-          <Button size="sm" onClick={handleCreate} disabled={!canCreate} className="gap-1.5">
+          <Button size="sm" onClick={handleCreate} disabled={!allStepsComplete} className="gap-1.5">
             <Check className="size-3.5" />
             Create template
           </Button>
@@ -673,15 +673,9 @@ export default function NewPlanTemplatePage() {
               disabled={step === 0} className="gap-1.5">
               <ChevronLeft className="size-3.5" /> Previous
             </Button>
-            {!isLastStep ? (
-              <Button size="sm" onClick={goNext} className="gap-1.5">
-                Next <ChevronRight className="size-3.5" />
-              </Button>
-            ) : (
-              <Button size="sm" onClick={handleCreate} disabled={!canCreate} className="gap-1.5">
-                <Check className="size-3.5" /> Create template
-              </Button>
-            )}
+            <Button size="sm" onClick={isLastStep ? undefined : goNext} disabled={isLastStep} className="gap-1.5">
+              Next <ChevronRight className="size-3.5" />
+            </Button>
           </div>
         </div>
 
