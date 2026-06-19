@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, Banknote, Check, ChevronLeft, ChevronRight, Info, LayoutList, TrendingUp, X } from 'lucide-react';
+import { Banknote, Check, ChevronLeft, ChevronRight, Info, LayoutList, TrendingUp, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import {
 } from '@/lib/templateRegistry';
 import { useRole } from '@/hooks/useRole';
 import { canAuthorTemplate } from '@/lib/permissions';
+import { usePlanTemplateVersion } from '@/stores/planTemplateVersionStore';
 
 // ─── Field wrapper ─────────────────────────────────────────────────────────────
 
@@ -73,7 +74,208 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-function LiveSummary({
+// ─── Key-value row helper ───────────────────────────────────────────────────
+
+function KVRow({ label, value, mono }: { label: string; value?: string; mono?: boolean }) {
+  return (
+    <div className="flex gap-3 py-1.5 border-b border-border/30 last:border-0">
+      <span className="text-[10px] text-muted-foreground w-24 shrink-0 leading-[1.6]">{label}</span>
+      <span className={cn('text-[11px] text-foreground flex-1 leading-[1.6]', mono && 'font-mono')}>{value || '—'}</span>
+    </div>
+  );
+}
+
+// ─── Summary V1 — flat key-value ───────────────────────────────────────────
+
+function LiveSummaryV1({
+  name, description, tags, productCode, sumAssuredBasis,
+  flatSi, salaryMultiple, fclThreshold, evidencePackRef, visitedSteps,
+}: {
+  name: string; description: string; tags: string[]; productCode: string;
+  sumAssuredBasis: SumAssuredBasis; flatSi: number; salaryMultiple: number;
+  fclThreshold: number; evidencePackRef: EvidencePack; visitedSteps: number[];
+}) {
+  const censusAware = sumAssuredBasis === SumAssuredBasis.GRADE_SLAB;
+  const basisMeta = SA_BASIS_META[sumAssuredBasis];
+  const basisValue =
+    sumAssuredBasis === SumAssuredBasis.FLAT
+      ? `₹${flatSi.toLocaleString('en-IN')}`
+      : sumAssuredBasis === SumAssuredBasis.SALARY_MULTIPLE
+      ? `${salaryMultiple}× salary`
+      : 'Census-seeded';
+  const step1Done = visitedSteps.includes(1);
+  const step2Done = visitedSteps.includes(2);
+
+  return (
+    <div className="text-xs">
+      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">
+        Template details
+      </p>
+      <div>
+        <KVRow label="Name" value={name} />
+        {description && <KVRow label="Description" value={description} />}
+        {productCode && <KVRow label="Product code" value={productCode} mono />}
+        {tags.length > 0 && <KVRow label="Tags" value={tags.join(', ')} />}
+      </div>
+      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mt-4 mb-1.5">Plan shape</p>
+      <div>
+        <KVRow label="SA basis" value={step1Done ? basisMeta.label : undefined} />
+        <KVRow label="Default cover" value={step1Done ? basisValue : undefined} />
+      </div>
+      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mt-4 mb-1.5">UW seeds</p>
+      <div>
+        <KVRow label="FCL threshold" value={step2Done ? `₹${fclThreshold.toLocaleString('en-IN')}` : undefined} />
+        <KVRow label="FCL mode" value={step2Done ? (censusAware ? 'BY_GRADE' : 'BY_PLAN') : undefined} />
+        <KVRow label="Evidence pack" value={step2Done ? EVIDENCE_SHORT[evidencePackRef] : undefined} />
+        <KVRow label="UW method" value={step2Done ? 'STP' : undefined} />
+      </div>
+      <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/50 mt-4 mb-1.5">Eligibility</p>
+      <div>
+        <KVRow label="Entry age" value={step2Done ? '18–65' : undefined} />
+        <KVRow label="Cessation age" value={step2Done ? '70' : undefined} />
+        <KVRow label="Employment" value={step2Done ? 'Full-time' : undefined} />
+        <KVRow label="Lives covered" value={step2Done ? 'Member only' : undefined} />
+        <KVRow label="Min group" value={step2Done ? '25 lives' : undefined} />
+        <KVRow label="UW method" value={step2Done ? 'STP' : undefined} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Summary V2 — pushed design ───────────────────────────────────────────
+
+function LiveSummaryV2({
+  name, description, tags, productCode, sumAssuredBasis,
+  flatSi, salaryMultiple, fclThreshold, evidencePackRef, visitedSteps,
+}: {
+  name: string; description: string; tags: string[]; productCode: string;
+  sumAssuredBasis: SumAssuredBasis; flatSi: number; salaryMultiple: number;
+  fclThreshold: number; evidencePackRef: EvidencePack; visitedSteps: number[];
+}) {
+  const censusAware = sumAssuredBasis === SumAssuredBasis.GRADE_SLAB;
+  const basisMeta = SA_BASIS_META[sumAssuredBasis];
+  const BasisIcon = basisMeta.icon;
+  const basisValue =
+    sumAssuredBasis === SumAssuredBasis.FLAT
+      ? `₹${flatSi.toLocaleString('en-IN')}`
+      : sumAssuredBasis === SumAssuredBasis.SALARY_MULTIPLE
+      ? `${salaryMultiple}×`
+      : null;
+  const step1Done = visitedSteps.includes(1);
+  const step2Done = visitedSteps.includes(2);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">Live preview</p>
+        <div className="space-y-1.5">
+          {name ? (
+            <h2 className="text-base font-bold leading-tight text-foreground break-words">{name}</h2>
+          ) : (
+            <h2 className="text-base font-bold leading-tight text-muted-foreground/30 italic">Template name</h2>
+          )}
+          {description && (
+            <p className="text-xs text-muted-foreground leading-snug">{description}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            {productCode && (
+              <span className="inline-flex items-center rounded-md border bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                {productCode}
+              </span>
+            )}
+            {tags.map((t) => (
+              <Badge key={t} variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">{t}</Badge>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <SectionDivider label="Plan shape" />
+
+      {step1Done ? (
+        <div className="rounded-xl border bg-muted/20 p-3 flex items-start gap-3">
+          <div className="mt-0.5 rounded-lg bg-background border p-2 shrink-0">
+            <BasisIcon className="size-4 text-foreground" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-foreground leading-tight">{basisMeta.label}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{basisMeta.sub}</p>
+            {basisValue && (
+              <p className="text-lg font-bold text-foreground mt-1.5 leading-none tabular-nums">
+                {basisValue}
+                {sumAssuredBasis === SumAssuredBasis.SALARY_MULTIPLE && (
+                  <span className="text-xs font-normal text-muted-foreground ml-1">× salary</span>
+                )}
+              </p>
+            )}
+            {censusAware && (
+              <p className="text-[10px] text-muted-foreground/70 mt-1.5 italic">Slab list seeded at wizard use</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground/40">—</p>
+      )}
+
+      <SectionDivider label="UW seeds" />
+
+      {step2Done ? (
+        <div className="space-y-2.5">
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">FCL threshold</p>
+            <p className="text-sm font-semibold tabular-nums">
+              ₹{fclThreshold.toLocaleString('en-IN')}
+              <span className="text-[10px] font-normal text-muted-foreground ml-1.5">
+                · {censusAware ? 'BY_GRADE' : 'BY_PLAN'}
+              </span>
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Evidence pack</p>
+            <p className="text-sm font-semibold">{EVIDENCE_SHORT[evidencePackRef]}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">UW method</p>
+            <p className="text-sm font-semibold">STP</p>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground/40">—</p>
+      )}
+
+      <SectionDivider label="Eligibility — stamped" />
+
+      {step2Done ? (
+        <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-3 py-2.5">
+          <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-1.5">
+            GTL standard defaults
+          </p>
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+            {([
+              ['Entry age', '18–65'],
+              ['Cessation', '70'],
+              ['Employment', 'Full-time'],
+              ['Lives', 'Member only'],
+              ['Min group', '25 lives'],
+              ['UW method', 'STP'],
+            ] as const).map(([k, v]) => (
+              <div key={k}>
+                <p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider">{k}</p>
+                <p className="text-[11px] font-medium text-muted-foreground">{v}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground/40">—</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Summary V3 — interactive card (current) ────────────────────────────────
+
+function LiveSummaryV3({
   name,
   description,
   tags,
@@ -83,6 +285,8 @@ function LiveSummary({
   salaryMultiple,
   fclThreshold,
   evidencePackRef,
+  allComplete,
+  visitedSteps,
 }: {
   name: string;
   description: string;
@@ -93,10 +297,14 @@ function LiveSummary({
   salaryMultiple: number;
   fclThreshold: number;
   evidencePackRef: EvidencePack;
+  allComplete: boolean;
+  visitedSteps: number[];
 }) {
   const censusAware = sumAssuredBasis === SumAssuredBasis.GRADE_SLAB;
   const basisMeta = SA_BASIS_META[sumAssuredBasis];
   const BasisIcon = basisMeta.icon;
+  const step1Done = visitedSteps.includes(1);
+  const step2Done = visitedSteps.includes(2);
 
   const basisValue =
     sumAssuredBasis === SumAssuredBasis.FLAT
@@ -106,116 +314,151 @@ function LiveSummary({
       : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={cn("rounded-2xl border bg-card shadow-md overflow-hidden transition-colors duration-500", allComplete ? "border-emerald-600/30" : "border-border/70")}>
 
-      {/* Header */}
-      <div>
-        <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-2">
-          Live preview
-        </p>
+      {/* ── Identity ─────────────────────────────────── */}
+      <div className={cn("px-5 pt-5 pb-4 bg-gradient-to-b transition-colors duration-500", allComplete ? "from-emerald-50/70 to-transparent" : name.trim() ? "from-primary/[0.06] to-transparent" : "from-muted/40 to-transparent")}>
 
-        {/* Identity hero */}
-        <div className="space-y-1.5">
-          {name ? (
-            <h2 className="text-base font-bold leading-tight text-foreground break-words">
-              {name}
-            </h2>
-          ) : (
-            <h2 className="text-base font-bold leading-tight text-muted-foreground/30 italic">
-              Template name
-            </h2>
-          )}
+        {name ? (
+          <h2 className="text-lg font-bold leading-snug text-foreground break-words">
+            {name}
+          </h2>
+        ) : (
+          <h2 className="text-lg font-bold leading-snug text-muted-foreground/40 italic select-none">
+            Untitled template
+          </h2>
+        )}
 
-          {description && (
-            <p className="text-xs text-muted-foreground leading-snug">{description}</p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-            {productCode && (
-              <span className="inline-flex items-center rounded-md border bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-                {productCode}
-              </span>
-            )}
-            {tags.map((t) => (
-              <Badge key={t} variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
-                {t}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <SectionDivider label="Plan shape" />
-
-      {/* SA basis — visual block */}
-      <div className="rounded-xl border bg-muted/20 p-3 flex items-start gap-3">
-        <div className="mt-0.5 rounded-lg bg-background border p-2 shrink-0">
-          <BasisIcon className="size-4 text-foreground" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-foreground leading-tight">{basisMeta.label}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">{basisMeta.sub}</p>
-          {basisValue && (
-            <p className="text-lg font-bold text-foreground mt-1.5 leading-none tabular-nums">
-              {basisValue}
-              {sumAssuredBasis === SumAssuredBasis.SALARY_MULTIPLE && (
-                <span className="text-xs font-normal text-muted-foreground ml-1">× salary</span>
-              )}
-            </p>
-          )}
-          {censusAware && (
-            <p className="text-[10px] text-muted-foreground/70 mt-1.5 italic">
-              Slab list seeded at wizard use
-            </p>
-          )}
-        </div>
-      </div>
-
-      <SectionDivider label="UW seeds" />
-
-      {/* UW configuration */}
-      <div className="space-y-2.5">
-        <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">FCL threshold</p>
-          <p className="text-sm font-semibold tabular-nums">
-            ₹{fclThreshold.toLocaleString('en-IN')}
-            <span className="text-[10px] font-normal text-muted-foreground ml-1.5">
-              · {censusAware ? 'BY_GRADE' : 'BY_PLAN'}
-            </span>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            {description}
           </p>
-        </div>
-        <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Evidence pack</p>
-          <p className="text-sm font-semibold">{EVIDENCE_SHORT[evidencePackRef]}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">UW method</p>
-          <p className="text-sm font-semibold">STP</p>
+        )}
+
+        <div className="flex flex-wrap items-center gap-1.5 mt-3">
+          {productCode && (
+            <span className="inline-flex items-center rounded border bg-background px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground/80">
+              {productCode}
+            </span>
+          )}
+          {tags.map((t) => (
+            <Badge key={t} variant="secondary" className="text-[10px] px-2 py-0 font-normal rounded-full">
+              {t}
+            </Badge>
+          ))}
+          {!productCode && tags.length === 0 && (
+            <span className="text-[10px] text-muted-foreground/50 italic">No tags yet</span>
+          )}
         </div>
       </div>
 
-      <SectionDivider label="Eligibility — stamped" />
+      <div className="h-px bg-border/40" />
 
-      {/* Eligibility stamp */}
-      <div className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-3 py-2.5 space-y-1">
-        <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-1.5">
-          GTL standard defaults
+      {/* ── Plan shape ─────────────────────────────── */}
+      <div className="px-5 py-4">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/70 mb-3">
+          Plan shape
         </p>
-        <div className="grid grid-cols-2 gap-x-2 gap-y-1">
-          {[
-            ['Entry age', '18–65'],
-            ['Cessation', '70'],
-            ['Employment', 'Full-time'],
-            ['Lives', 'Member only'],
-            ['Min group', '25 lives'],
-            ['UW method', 'STP'],
-          ].map(([k, v]) => (
-            <div key={k}>
-              <p className="text-[9px] text-muted-foreground/60 uppercase tracking-wider">{k}</p>
-              <p className="text-[11px] font-medium text-muted-foreground">{v}</p>
+
+        {step1Done ? (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl border bg-muted/30 p-2.5 shrink-0">
+                <BasisIcon className="size-5 text-foreground/70" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground">{basisMeta.label}</p>
+                <p className="text-[10px] text-muted-foreground leading-snug">{basisMeta.sub}</p>
+              </div>
             </div>
-          ))}
-        </div>
+
+            {basisValue && (
+              <div className="mt-4 rounded-xl bg-muted/30 px-4 py-3">
+                <p className="text-[9px] uppercase tracking-widest text-muted-foreground/70 mb-0.5">
+                  {sumAssuredBasis === SumAssuredBasis.FLAT ? 'Default cover' : 'Salary multiple'}
+                </p>
+                <p className="text-3xl font-bold tabular-nums tracking-tight text-foreground leading-none">
+                  {basisValue}
+                  {sumAssuredBasis === SumAssuredBasis.SALARY_MULTIPLE && (
+                    <span className="text-base font-normal text-muted-foreground ml-1.5">salary</span>
+                  )}
+                </p>
+              </div>
+            )}
+
+            {censusAware && (
+              <div className="mt-4 rounded-xl bg-muted/30 px-4 py-3">
+                <p className="text-[9px] uppercase tracking-widest text-muted-foreground/70 mb-0.5">Slab list</p>
+                <p className="text-xs text-muted-foreground italic">Seeded from census at wizard use</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground/40">—</p>
+        )}
+      </div>
+
+      <div className="h-px bg-border/40" />
+
+      {/* ── UW seeds ────────────────────────────────── */}
+      <div className="px-5 py-4">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/70 mb-3">
+          UW seeds
+        </p>
+        {step2Done ? (
+          <div className="space-y-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-[10px] text-muted-foreground shrink-0">FCL threshold</p>
+              <p className="text-xs font-semibold tabular-nums text-right">
+                ₹{fclThreshold.toLocaleString('en-IN')}
+              </p>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-[10px] text-muted-foreground shrink-0">FCL mode</p>
+              <p className="text-xs font-semibold">{censusAware ? 'BY_GRADE' : 'BY_PLAN'}</p>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-[10px] text-muted-foreground shrink-0">Evidence pack</p>
+              <p className="text-xs font-semibold text-right">{EVIDENCE_SHORT[evidencePackRef]}</p>
+            </div>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-[10px] text-muted-foreground shrink-0">UW method</p>
+              <p className="text-xs font-semibold">STP</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground/40">—</p>
+        )}
+      </div>
+
+      <div className="h-px bg-border/40" />
+
+      {/* ── Eligibility stamp ─────────────────────────── */}
+      <div className="px-5 py-4">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/70 mb-3">
+          Eligibility — auto-stamped
+        </p>
+        {step2Done ? (
+          <div className="rounded-xl border border-dashed border-border/60 bg-muted/25 p-3">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+              {([
+                ['Entry age',  '18–65'],
+                ['Cessation',  '70'],
+                ['Employment', 'Full-time'],
+                ['Lives',      'Member only'],
+                ['Min group',  '25 lives'],
+                ['UW method',  'STP'],
+              ] as const).map(([k, v]) => (
+                <div key={k}>
+                  <p className="text-[9px] uppercase tracking-wider text-muted-foreground/60">{k}</p>
+                  <p className="text-[11px] font-medium text-muted-foreground">{v}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground/40">—</p>
+        )}
       </div>
 
     </div>
@@ -297,6 +540,7 @@ function Stepper({
 export default function NewPlanTemplatePage() {
   const router = useRouter();
   const { role, salesLevel } = useRole();
+  const { version } = usePlanTemplateVersion();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -543,64 +787,109 @@ export default function NewPlanTemplatePage() {
                     <p className="text-xs text-muted-foreground mt-0.5">Choose the sum-assured structure for this template.</p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    {([
-                      { value: SumAssuredBasis.FLAT,            icon: Banknote,    label: 'Flat sum insured',  desc: 'Same cover for every member regardless of grade' },
-                      { value: SumAssuredBasis.SALARY_MULTIPLE, icon: TrendingUp,  label: 'Salary multiple',   desc: 'Cover = N× annual salary, scales with pay' },
-                      { value: SumAssuredBasis.GRADE_SLAB,      icon: LayoutList,  label: 'Grade slab',        desc: 'Per-grade SI table seeded from census at use' },
-                    ] as const).map(({ value, icon: Icon, label, desc }) => {
-                      const selected = sumAssuredBasis === value;
-                      return (
-                        <button key={value} type="button" onClick={() => setSumAssuredBasis(value)}
-                          className={cn(
-                            'flex flex-col gap-2.5 rounded-xl border-2 p-4 text-left transition-all',
-                            selected ? 'border-foreground/50 bg-muted/60 shadow-sm' : 'border-border bg-card hover:border-foreground/20 hover:bg-muted/40',
-                          )}
+                  {version === 1 ? (
+                    <>
+                      <Field label="Sum assured basis">
+                        <select
+                          value={sumAssuredBasis}
+                          onChange={(e) => setSumAssuredBasis(e.target.value as SumAssuredBasis)}
+                          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                         >
-                          <Icon className={cn('size-5', selected ? 'text-foreground' : 'text-muted-foreground')} />
-                          <div>
-                            <p className="text-xs font-semibold text-foreground">{label}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{desc}</p>
+                          <option value={SumAssuredBasis.FLAT}>Flat sum insured</option>
+                          <option value={SumAssuredBasis.SALARY_MULTIPLE}>Salary multiple</option>
+                          <option value={SumAssuredBasis.GRADE_SLAB}>Grade slab</option>
+                        </select>
+                      </Field>
+                      {sumAssuredBasis === SumAssuredBasis.FLAT && (
+                        <Field label="Default flat sum insured">
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">₹</span>
+                            <Input type="number" min={0} step={100_000} placeholder="1000000" value={flatSi}
+                              onChange={(e) => setFlatSi(Number(e.target.value))} className="pl-7 text-sm" />
                           </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {sumAssuredBasis === SumAssuredBasis.FLAT && (
-                    <div className="rounded-xl border bg-muted/30 p-4">
-                      <Field label="Default flat sum insured">
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">₹</span>
-                          <Input type="number" min={0} step={100_000} placeholder="1000000" value={flatSi}
-                            onChange={(e) => setFlatSi(Number(e.target.value))} className="pl-7 text-sm" />
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">= ₹{flatSi.toLocaleString('en-IN')}</p>
-                      </Field>
-                    </div>
-                  )}
-
-                  {sumAssuredBasis === SumAssuredBasis.SALARY_MULTIPLE && (
-                    <div className="rounded-xl border bg-muted/30 p-4">
-                      <Field label="Default salary multiple">
-                        <div className="relative">
-                          <Input type="number" min={1} step={0.5} placeholder="3" value={salaryMultiple}
-                            onChange={(e) => setSalaryMultiple(Number(e.target.value))} className="pr-[4.5rem] text-sm" />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">× salary</span>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground">Member cover = {salaryMultiple}× annual salary</p>
-                      </Field>
-                    </div>
-                  )}
-
-                  {sumAssuredBasis === SumAssuredBasis.GRADE_SLAB && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 flex items-start gap-2">
-                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
-                      <div>
-                        <p>Ships with an empty slab list — the plan wizard seeds the table from the RFQ&apos;s census grades at use.</p>
-                        <p className="mt-1 font-medium">FCL mode will be stamped as BY_GRADE.</p>
+                          <p className="text-[10px] text-muted-foreground">= ₹{flatSi.toLocaleString('en-IN')}</p>
+                        </Field>
+                      )}
+                      {sumAssuredBasis === SumAssuredBasis.SALARY_MULTIPLE && (
+                        <Field label="Default salary multiple">
+                          <div className="relative">
+                            <Input type="number" min={1} step={0.5} placeholder="3" value={salaryMultiple}
+                              onChange={(e) => setSalaryMultiple(Number(e.target.value))} className="pr-[4.5rem] text-sm" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">× salary</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">Member cover = {salaryMultiple}× annual salary</p>
+                        </Field>
+                      )}
+                      {sumAssuredBasis === SumAssuredBasis.GRADE_SLAB && (
+                        <Field label="Grade slab" note="Ships with an empty slab list — seeded from the RFQ’s census grades at wizard use.">
+                          <div className="h-8 rounded-md border border-border/40 bg-muted/30 px-3 flex items-center">
+                            <span className="text-xs text-muted-foreground">FCL mode: BY_GRADE · census-seeded</span>
+                          </div>
+                        </Field>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-3 gap-3">
+                        {([
+                          { value: SumAssuredBasis.FLAT,            icon: Banknote,    label: 'Flat sum insured',  desc: 'Same cover for every member regardless of grade' },
+                          { value: SumAssuredBasis.SALARY_MULTIPLE, icon: TrendingUp,  label: 'Salary multiple',   desc: 'Cover = N× annual salary, scales with pay' },
+                          { value: SumAssuredBasis.GRADE_SLAB,      icon: LayoutList,  label: 'Grade slab',        desc: 'Per-grade SI table seeded from census at use' },
+                        ] as const).map(({ value, icon: Icon, label, desc }) => {
+                          const selected = sumAssuredBasis === value;
+                          return (
+                            <button key={value} type="button" onClick={() => setSumAssuredBasis(value)}
+                              className={cn(
+                                'flex flex-col gap-2.5 rounded-xl border-2 p-4 text-left transition-all',
+                                selected ? 'border-foreground/50 bg-muted/60 shadow-sm' : 'border-border bg-card hover:border-foreground/20 hover:bg-muted/40',
+                              )}
+                            >
+                              <Icon className={cn('size-5', selected ? 'text-foreground' : 'text-muted-foreground')} />
+                              <div>
+                                <p className="text-xs font-semibold text-foreground">{label}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{desc}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                    </div>
+
+                      {sumAssuredBasis === SumAssuredBasis.FLAT && (
+                        <div className="rounded-xl border bg-muted/30 p-4">
+                          <Field label="Default flat sum insured">
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">₹</span>
+                              <Input type="number" min={0} step={100_000} placeholder="1000000" value={flatSi}
+                                onChange={(e) => setFlatSi(Number(e.target.value))} className="pl-7 text-sm" />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">= ₹{flatSi.toLocaleString('en-IN')}</p>
+                          </Field>
+                        </div>
+                      )}
+
+                      {sumAssuredBasis === SumAssuredBasis.SALARY_MULTIPLE && (
+                        <div className="rounded-xl border bg-muted/30 p-4">
+                          <Field label="Default salary multiple">
+                            <div className="relative">
+                              <Input type="number" min={1} step={0.5} placeholder="3" value={salaryMultiple}
+                                onChange={(e) => setSalaryMultiple(Number(e.target.value))} className="pr-[4.5rem] text-sm" />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground select-none">× salary</span>
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">Member cover = {salaryMultiple}× annual salary</p>
+                          </Field>
+                        </div>
+                      )}
+
+                      {sumAssuredBasis === SumAssuredBasis.GRADE_SLAB && (
+                        <div className="rounded-xl border border-border/50 bg-muted/30 p-4 text-xs text-muted-foreground flex items-start gap-2">
+                          <Info className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/60" />
+                          <div>
+                            <p>Ships with an empty slab list — the plan wizard seeds the table from the RFQ&apos;s census grades at use.</p>
+                            <p className="mt-1 font-medium text-foreground/70">FCL mode will be stamped as BY_GRADE.</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -613,18 +902,29 @@ export default function NewPlanTemplatePage() {
                     <p className="text-xs text-muted-foreground mt-0.5">Set advisory UW seed values. The wizard will override from treaty schedules.</p>
                   </div>
 
-                  {/* Defaults note */}
-                  <div className="rounded-md border border-amber-300 bg-amber-50 p-3">
-                    <div className="flex items-start gap-2">
-                      <Info className="mt-0.5 size-4 shrink-0 text-amber-600" />
-                      <div className="space-y-1 text-xs text-amber-900">
-                        <p className="font-medium">Stamped automatically — no entry needed:</p>
-                        <ul className="ml-3 list-disc space-y-0.5 text-amber-800">
-                          <li>Eligibility: age 18–65, cessation 70, full-time, member-only, min 25 lives</li>
-                          <li>UW method: STP · Cover pattern: LEVEL</li>
-                          <li>FCL mode: BY_PLAN (BY_GRADE for grade-slab shapes)</li>
-                        </ul>
-                      </div>
+                  {/* Auto-stamped read-only fields */}
+                  <div className="rounded-xl border border-dashed border-border/50 bg-muted/20 p-4 space-y-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+                      Auto-stamped
+                    </p>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+                      {[
+                        { label: 'UW method',     value: 'STP'                          },
+                        { label: 'Cover pattern', value: 'LEVEL'                        },
+                        { label: 'FCL mode',      value: sumAssuredBasis === SumAssuredBasis.GRADE_SLAB ? 'BY_GRADE' : 'BY_PLAN' },
+                        { label: 'Entry age',     value: '18–65'                        },
+                        { label: 'Cessation',     value: '70'                           },
+                        { label: 'Employment',    value: 'Full-time'                    },
+                        { label: 'Lives',         value: 'Member only'                  },
+                        { label: 'Min group',     value: '25 lives'                     },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex flex-col gap-1">
+                          <span className="text-[10px] font-medium text-muted-foreground/70">{label}</span>
+                          <div className="h-8 rounded-md border border-border/40 bg-muted/30 px-3 flex items-center">
+                            <span className="text-xs text-muted-foreground font-medium">{value}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
@@ -637,30 +937,45 @@ export default function NewPlanTemplatePage() {
                     <p className="text-[10px] text-muted-foreground">= ₹{fclThreshold.toLocaleString('en-IN')}</p>
                   </Field>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium">Evidence pack</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {([
-                        { value: EvidencePack.WITHIN_FCL_MINIMAL, label: 'Within-FCL Minimal', desc: 'Default · no extra docs needed' },
-                        { value: EvidencePack.EOI_STANDARD,       label: 'EOI Standard',       desc: 'Evidence of Insurability' },
-                        { value: EvidencePack.EOI_FULL,           label: 'EOI Full',            desc: 'Full medical evidence pack' },
-                        { value: EvidencePack.EOI_JUMBO,          label: 'EOI Jumbo',           desc: 'For very large sum insured' },
-                      ] as const).map(({ value, label, desc }) => {
-                        const selected = evidencePackRef === value;
-                        return (
-                          <button key={value} type="button" onClick={() => setEvidencePackRef(value)}
-                            className={cn(
-                              'flex flex-col gap-0.5 rounded-lg border-2 p-3 text-left transition-all',
-                              selected ? 'border-foreground/50 bg-muted/60' : 'border-border bg-card hover:border-foreground/20 hover:bg-muted/30',
-                            )}
-                          >
-                            <p className="text-xs font-semibold text-foreground">{label}</p>
-                            <p className="text-[10px] text-muted-foreground leading-snug">{desc}</p>
-                          </button>
-                        );
-                      })}
+                  {version === 1 ? (
+                    <Field label="Evidence pack">
+                      <select
+                        value={evidencePackRef}
+                        onChange={(e) => setEvidencePackRef(e.target.value as EvidencePack)}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <option value={EvidencePack.WITHIN_FCL_MINIMAL}>Within-FCL Minimal</option>
+                        <option value={EvidencePack.EOI_STANDARD}>EOI Standard</option>
+                        <option value={EvidencePack.EOI_FULL}>EOI Full</option>
+                        <option value={EvidencePack.EOI_JUMBO}>EOI Jumbo</option>
+                      </select>
+                    </Field>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">Evidence pack</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {([
+                          { value: EvidencePack.WITHIN_FCL_MINIMAL, label: 'Within-FCL Minimal', desc: 'Default · no extra docs needed' },
+                          { value: EvidencePack.EOI_STANDARD,       label: 'EOI Standard',       desc: 'Evidence of Insurability' },
+                          { value: EvidencePack.EOI_FULL,           label: 'EOI Full',            desc: 'Full medical evidence pack' },
+                          { value: EvidencePack.EOI_JUMBO,          label: 'EOI Jumbo',           desc: 'For very large sum insured' },
+                        ] as const).map(({ value, label, desc }) => {
+                          const selected = evidencePackRef === value;
+                          return (
+                            <button key={value} type="button" onClick={() => setEvidencePackRef(value)}
+                              className={cn(
+                                'flex flex-col gap-0.5 rounded-lg border-2 p-3 text-left transition-all',
+                                selected ? 'border-foreground/50 bg-muted/60' : 'border-border bg-card hover:border-foreground/20 hover:bg-muted/30',
+                              )}
+                            >
+                              <p className="text-xs font-semibold text-foreground">{label}</p>
+                              <p className="text-[10px] text-muted-foreground leading-snug">{desc}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -668,7 +983,7 @@ export default function NewPlanTemplatePage() {
           </div>
 
           {/* Step footer */}
-          <div className="shrink-0 flex items-center justify-between px-6 py-3.5 border-t border-border/40 bg-muted/20">
+          <div className="shrink-0 flex items-center justify-between px-6 py-3.5 border-t border-border/40">
             <Button variant="outline" size="sm" onClick={() => setStep((s) => s - 1)}
               disabled={step === 0} className="gap-1.5">
               <ChevronLeft className="size-3.5" /> Previous
@@ -680,18 +995,50 @@ export default function NewPlanTemplatePage() {
         </div>
 
         {/* Right — live summary */}
-        <div className="w-72 shrink-0 border-l border-border/40 bg-muted/10 overflow-y-auto px-4 py-5">
-          <LiveSummary
-            name={name}
-            description={description}
-            tags={tags}
-            productCode={productCode}
-            sumAssuredBasis={sumAssuredBasis}
-            flatSi={flatSi}
-            salaryMultiple={salaryMultiple}
-            fclThreshold={fclThreshold}
-            evidencePackRef={evidencePackRef}
-          />
+        <div className="w-72 shrink-0 border-l border-border/40 bg-muted/5 overflow-y-auto px-3 py-4">
+          {version === 1 && (
+            <LiveSummaryV1
+              name={name}
+              description={description}
+              tags={tags}
+              productCode={productCode}
+              sumAssuredBasis={sumAssuredBasis}
+              flatSi={flatSi}
+              salaryMultiple={salaryMultiple}
+              fclThreshold={fclThreshold}
+              evidencePackRef={evidencePackRef}
+              visitedSteps={visitedSteps}
+            />
+          )}
+          {version === 2 && (
+            <LiveSummaryV2
+              name={name}
+              description={description}
+              tags={tags}
+              productCode={productCode}
+              sumAssuredBasis={sumAssuredBasis}
+              flatSi={flatSi}
+              salaryMultiple={salaryMultiple}
+              fclThreshold={fclThreshold}
+              evidencePackRef={evidencePackRef}
+              visitedSteps={visitedSteps}
+            />
+          )}
+          {version === 3 && (
+            <LiveSummaryV3
+              name={name}
+              description={description}
+              tags={tags}
+              productCode={productCode}
+              sumAssuredBasis={sumAssuredBasis}
+              flatSi={flatSi}
+              salaryMultiple={salaryMultiple}
+              fclThreshold={fclThreshold}
+              evidencePackRef={evidencePackRef}
+              allComplete={allStepsComplete}
+              visitedSteps={visitedSteps}
+            />
+          )}
         </div>
 
       </div>

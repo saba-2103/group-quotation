@@ -1,13 +1,19 @@
 "use client";
 
+import { usePathname } from 'next/navigation';
 import { BellDot, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
+import { cn } from "@/lib/utils";
 import { useModKey } from "@/hooks/useModKey";
+import { usePlanTemplateVersion } from "@/stores/planTemplateVersionStore";
 
 export function GlobalHeader() {
     const mod = useModKey();
+    const pathname = usePathname();
+    const { version, setVersion } = usePlanTemplateVersion();
+    const showVersionTabs = pathname === '/rfq2/plan-templates/new';
 
     return (
         <header className="flex h-12 shrink-0 items-center justify-between bg-sidebar pr-4">
@@ -25,10 +31,31 @@ export function GlobalHeader() {
                 </div>
             </div>
 
-            {/* RHS — bell icon */}
-            <Button variant="ghost" size="icon-sm" aria-label="Notifications">
-                <BellDot className="size-4" />
-            </Button>
+            {/* RHS — version tabs (conditional) + bell */}
+            <div className="flex items-center gap-2">
+                {showVersionTabs && (
+                    <div className="flex items-center rounded-md border border-border/50 bg-muted/40 p-0.5 gap-0.5">
+                        {([1, 2, 3] as const).map((v) => (
+                            <button
+                                key={v}
+                                type="button"
+                                onClick={() => setVersion(v)}
+                                className={cn(
+                                    'rounded px-2.5 py-1 text-[11px] font-semibold transition-colors leading-none',
+                                    version === v
+                                        ? 'bg-background text-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground',
+                                )}
+                            >
+                                V{v}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                <Button variant="ghost" size="icon-sm" aria-label="Notifications">
+                    <BellDot className="size-4" />
+                </Button>
+            </div>
         </header>
     );
 }
