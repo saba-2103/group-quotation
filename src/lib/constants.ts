@@ -293,13 +293,100 @@ export const FCL_LIMIT_SCHEDULE: Record<FclPattern, FclScheduleEntry> = {
 
 // ── Built-in plan templates (6 built-ins per spec) ────────────────────────────
 
+const _STD_ELIGIBILITY = {
+  minEntryAge: 18,
+  maxEntryAge: 65,
+  cessationAge: 70,
+  allowedEmploymentTypes: ['FULL_TIME'],
+  livesCovered: LivesCovered.MEMBER_ONLY,
+  minGroupSize: 25,
+};
+
+const _STD_UW_BY_PLAN = {
+  fclThreshold: 5_000_000,
+  fclMode: FclPattern.BY_GRADE, // overridden per template below
+  evidencePackRef: EvidencePack.WITHIN_FCL_MINIMAL,
+  uwMethod: UwMethod.STP,
+};
+
 export const BUILTIN_PLAN_TEMPLATES: PlanTemplate[] = [
-  { id: 'builtin-flat-10l',     name: 'Flat ₹10 L',           description: 'Uniform ₹10 lakh cover for all grades.',                    tags: ['flat', 'standard'],            isCustom: false, censusAware: false },
-  { id: 'builtin-3x-salary',    name: '3× Salary',             description: 'Sum assured = 3× annual salary for every member.',           tags: ['salary-multiple', 'standard'], isCustom: false, censusAware: false },
-  { id: 'builtin-5x-exec',      name: '5× Salary Executive',   description: 'Premium salary-multiple cover for senior grades.',           tags: ['salary-multiple', 'executive'], isCustom: false, censusAware: false },
-  { id: 'builtin-grade-slab',   name: 'Grade Slab',            description: 'Per-grade SI table seeded from your census grades.',          tags: ['grade-slab', 'census'],        isCustom: false, censusAware: true  },
-  { id: 'builtin-family-flat',  name: 'Family Flat ₹5 L',      description: 'Flat ₹5 lakh covering member + spouse.',                    tags: ['flat', 'family'],              isCustom: false, censusAware: false },
-  { id: 'builtin-voluntary-tu', name: 'Voluntary Top-up',      description: 'Employee-funded voluntary top-up cover over the base plan.', tags: ['voluntary', 'top-up'],         isCustom: false, censusAware: false },
+  {
+    id: 'builtin-flat-10l',
+    name: 'Flat ₹10 L',
+    description: 'Uniform ₹10 lakh cover for all grades.',
+    tags: ['flat', 'standard'],
+    isCustom: false,
+    censusAware: false,
+    sumAssuredBasis: SumAssuredBasis.FLAT,
+    productCode: 'GTL-STD-001',
+    defaultSumInsured: 1_000_000,
+    uw: { ..._STD_UW_BY_PLAN, fclMode: FclPattern.BY_GRADE },
+    eligibility: _STD_ELIGIBILITY,
+  },
+  {
+    id: 'builtin-3x-salary',
+    name: '3× Salary',
+    description: 'Sum assured = 3× annual salary for every member.',
+    tags: ['salary-multiple', 'standard'],
+    isCustom: false,
+    censusAware: false,
+    sumAssuredBasis: SumAssuredBasis.SALARY_MULTIPLE,
+    productCode: 'GTL-STD-001',
+    salaryMultiple: 3,
+    uw: { ..._STD_UW_BY_PLAN, fclMode: FclPattern.BY_GRADE },
+    eligibility: _STD_ELIGIBILITY,
+  },
+  {
+    id: 'builtin-5x-exec',
+    name: '5× Salary Executive',
+    description: 'Premium salary-multiple cover for senior grades.',
+    tags: ['salary-multiple', 'executive'],
+    isCustom: false,
+    censusAware: false,
+    sumAssuredBasis: SumAssuredBasis.SALARY_MULTIPLE,
+    productCode: 'GTL-EXE-001',
+    salaryMultiple: 5,
+    uw: { ..._STD_UW_BY_PLAN, fclThreshold: 10_000_000, fclMode: FclPattern.BY_GRADE },
+    eligibility: { ..._STD_ELIGIBILITY, minGroupSize: 10 },
+  },
+  {
+    id: 'builtin-grade-slab',
+    name: 'Grade Slab',
+    description: 'Per-grade SI table seeded from your census grades.',
+    tags: ['grade-slab', 'census'],
+    isCustom: false,
+    censusAware: true,
+    sumAssuredBasis: SumAssuredBasis.GRADE_SLAB,
+    productCode: 'GTL-STD-001',
+    uw: { ..._STD_UW_BY_PLAN, fclMode: FclPattern.BY_GRADE },
+    eligibility: _STD_ELIGIBILITY,
+  },
+  {
+    id: 'builtin-family-flat',
+    name: 'Family Flat ₹5 L',
+    description: 'Flat ₹5 lakh covering member + spouse.',
+    tags: ['flat', 'family'],
+    isCustom: false,
+    censusAware: false,
+    sumAssuredBasis: SumAssuredBasis.FLAT,
+    productCode: 'GTL-FAM-001',
+    defaultSumInsured: 500_000,
+    uw: { ..._STD_UW_BY_PLAN, fclMode: FclPattern.BY_GRADE },
+    eligibility: { ..._STD_ELIGIBILITY, livesCovered: LivesCovered.MEMBER_SPOUSE },
+  },
+  {
+    id: 'builtin-voluntary-tu',
+    name: 'Voluntary Top-up',
+    description: 'Employee-funded voluntary top-up cover over the base plan.',
+    tags: ['voluntary', 'top-up'],
+    isCustom: false,
+    censusAware: false,
+    sumAssuredBasis: SumAssuredBasis.FLAT,
+    productCode: 'GTL-VOL-001',
+    defaultSumInsured: 500_000,
+    uw: { ..._STD_UW_BY_PLAN, fclMode: FclPattern.BY_GRADE },
+    eligibility: _STD_ELIGIBILITY,
+  },
 ];
 
 // Returns built-ins merged with any FE-owned custom templates persisted in localStorage.

@@ -607,6 +607,22 @@ export interface Escalation {
   decisionNote?: string;
 }
 
+export interface PlanTemplateUwSeed {
+  fclThreshold?: number;
+  fclMode: FclPattern;
+  evidencePackRef: EvidencePack | string;
+  uwMethod: UwMethod;
+}
+
+export interface PlanTemplateEligibilitySeed {
+  minEntryAge: number;
+  maxEntryAge: number;
+  cessationAge: number;
+  allowedEmploymentTypes: string[];
+  livesCovered: LivesCovered;
+  minGroupSize: number;
+}
+
 export interface PlanTemplate {
   id: string;
   name: string;
@@ -614,6 +630,13 @@ export interface PlanTemplate {
   tags: string[];
   isCustom: boolean;
   censusAware: boolean;
+  sumAssuredBasis: SumAssuredBasis;
+  productCode?: string;
+  defaultSumInsured?: number;   // only when sumAssuredBasis === FLAT
+  salaryMultiple?: number;      // only when sumAssuredBasis === SALARY_MULTIPLE
+  // gradeSlabs intentionally absent — seeded from census at wizard use-time
+  uw: PlanTemplateUwSeed;
+  eligibility: PlanTemplateEligibilitySeed;
 }
 
 export interface RfqBundle extends RfqBase {

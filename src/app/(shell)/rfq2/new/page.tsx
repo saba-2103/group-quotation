@@ -89,7 +89,7 @@ function Stepper({ current, visitedSteps, form, onStep }: {
             disabled={!isClickable}
             onClick={() => isClickable && onStep(idx)}
             className={cn(
-              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-colors',
+              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-colors w-full min-w-0',
               isCurrent ? 'bg-primary/10 text-foreground font-semibold' :
               isDone ? 'text-foreground hover:bg-muted cursor-pointer' :
               isClickable ? 'text-muted-foreground hover:bg-muted cursor-pointer' :
@@ -103,7 +103,7 @@ function Stepper({ current, visitedSteps, form, onStep }: {
             )}>
               {isDone ? <Check className="size-3" /> : idx + 1}
             </span>
-            {label}
+            <span className="truncate min-w-0">{label}</span>
           </button>
         );
       })}
@@ -354,7 +354,7 @@ export default function NewRfqPage() {
       {/* 3-column body */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Left — vertical stepper */}
-        <div className="w-52 shrink-0 border-r border-border/40 px-3 py-4 overflow-y-auto">
+        <div className="w-52 shrink-0 border-r border-border/40 px-3 py-4 overflow-y-auto overflow-x-hidden">
           <Stepper current={step} visitedSteps={visitedSteps} form={form} onStep={setStep} />
         </div>
 

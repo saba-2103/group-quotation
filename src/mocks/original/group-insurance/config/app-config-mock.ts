@@ -224,6 +224,44 @@ export const groupInsuranceAppConfig: AppConfig = {
           },
         ],
       },
+      // ── Sales (exploration canvas) ────────────────────────────────────────
+      {
+        id: "sales",
+        label: "Sales",
+        url: "/sales/home",
+        icon: "TrendingUp",
+        allowedRoles: ["SALES", "ADMIN"],
+        subMenuItems: [
+          {
+            id: "sales-home",
+            label: "Dashboard",
+            url: "/sales/home",
+            icon: "LayoutDashboard",
+            group: "HOME",
+          },
+          {
+            id: "sales-quotes",
+            label: "Quotes",
+            url: "/sales/quotes",
+            icon: "FileText",
+            group: "HOME",
+          },
+          {
+            id: "sales-quote-detail",
+            label: "Quote Detail",
+            url: "/sales/quote-detail",
+            icon: "FileSearch",
+            group: "HOME",
+          },
+          {
+            id: "sales-version-workspace",
+            label: "Version Workspace",
+            url: "/sales/version-workspace",
+            icon: "Layers",
+            group: "HOME",
+          },
+        ],
+      },
     ],
   },
 };

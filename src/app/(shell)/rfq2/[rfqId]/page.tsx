@@ -28,6 +28,11 @@ import {
   Upload,
   Cpu,
   Check,
+  ShieldUser,
+  GitPullRequest,
+  Briefcase,
+  Clock4,
+  Clock,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -163,81 +168,83 @@ function ReadinessPanel({
   const base = `/rfqs/${rfqId}`;
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Summary row */}
-      <div className="flex items-center justify-between">
-        {report.failingCount > 0 ? (
-          <span className="text-[11px] font-medium text-destructive">
-            {report.failingCount} bucket{report.failingCount !== 1 ? 's' : ''} failing
-          </span>
-        ) : (
-          <span className="text-[11px] font-medium text-green-600 flex items-center gap-1">
-            <CheckCircle2 className="size-3" /> All gates passing
-          </span>
-        )}
-        {report.issuanceReady && (
-          <span className="text-[9px] bg-green-50 text-green-700 border border-green-200 rounded-full px-1.5 py-0.5">
-            Ready to issue
-          </span>
-        )}
+    <div className="flex flex-col gap-3 p-4">
+      {/* Header */}
+      <div className="flex flex-col gap-1">
+        <p className="text-base font-semibold text-foreground">Readiness Checklist</p>
+        <div className="flex items-center gap-1.5">
+          {report.failingCount > 0 ? (
+            <>
+              <AlertTriangle className="size-3.5 text-amber-500 shrink-0" />
+              <span className="text-xs font-medium text-amber-600">
+                {report.failingCount} bucket{report.failingCount !== 1 ? 's' : ''} failing
+              </span>
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="size-3.5 text-green-600 shrink-0" />
+              <span className="text-xs font-medium text-green-600">All gates passing</span>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Buckets */}
-      {report.buckets.map((bucket) => {
-        const fixRoute = `${base}/${BUCKET_FIX_ROUTES[bucket.bucketNo] ?? 'key-data'}`;
-        return (
-          <div key={bucket.bucketNo} className="flex flex-col gap-1">
-            {/* Bucket header */}
-            <div className="flex items-center gap-1.5">
-              <GateIcon status={bucket.overall} />
-              <span className="text-[11px] font-semibold text-foreground flex-1">
-                {bucket.label}
-              </span>
-              <Link
-                href={fixRoute}
-                className="text-[10px] text-primary hover:underline shrink-0"
-              >
-                Open →
-              </Link>
-            </div>
-            {/* Gates */}
-            <div className="flex flex-col gap-0.5 pl-4">
-              {bucket.gates.map((g) => (
-                <div key={g.key} className="flex items-start gap-1.5">
-                  <GateIcon status={g.status} />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-start gap-1">
-                      <span
-                        className={cn(
-                          'text-[10px] leading-4 flex-1',
-                          g.status === GateStatus.PASS
-                            ? 'text-muted-foreground'
-                            : 'text-foreground'
-                        )}
-                      >
-                        {g.label}
-                      </span>
-                      {g.status === GateStatus.FAIL && (
+      {/* Bucket cards */}
+      <div className="flex flex-col gap-2">
+        {report.buckets.map((bucket) => {
+          const fixRoute = `${base}/${BUCKET_FIX_ROUTES[bucket.bucketNo] ?? 'key-data'}`;
+          const isPass = bucket.overall === GateStatus.PASS;
+          const isFail = bucket.overall === GateStatus.FAIL;
+          const BucketIcon = isPass ? CheckCircle2 : isFail ? XCircle : AlertTriangle;
+          const bucketIconCls = isPass ? 'text-green-600' : isFail ? 'text-destructive' : 'text-amber-500';
+          return (
+            <div key={bucket.bucketNo} className="rounded-xl border border-border overflow-hidden">
+              {/* Bucket header */}
+              <div className="flex items-center justify-between pl-3 pr-2 py-2 border-b border-border/50">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <BucketIcon className={cn('size-3.5 shrink-0', bucketIconCls)} />
+                  <span className="text-[11px] font-medium text-foreground uppercase tracking-wide truncate">
+                    {bucket.label}
+                  </span>
+                </div>
+                <Link href={fixRoute} className="p-1 rounded hover:bg-muted shrink-0">
+                  <ChevronRight className="size-3.5 text-muted-foreground" />
+                </Link>
+              </div>
+              {/* Gate items */}
+              <div className="flex flex-col gap-2 pl-3 pr-2 py-2">
+                {bucket.gates.map((g) => {
+                  const isGatePass = g.status === GateStatus.PASS;
+                  const isGateFail = g.status === GateStatus.FAIL;
+                  const GIcon = isGatePass ? CheckCircle2 : isGateFail ? XCircle : AlertTriangle;
+                  const gIconCls = isGatePass ? 'text-green-600' : isGateFail ? 'text-destructive' : 'text-amber-500';
+                  return (
+                    <div key={g.key} className="flex items-start justify-between gap-2 pl-2">
+                      <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                        <GIcon className={cn('size-3.5 shrink-0 mt-px', gIconCls)} />
+                        <span className={cn(
+                          'text-[11px] leading-4',
+                          isGatePass ? 'text-muted-foreground' : 'text-foreground',
+                        )}>
+                          {g.label}
+                        </span>
+                      </div>
+                      {isGateFail && (
                         <Link
                           href={fixRoute}
-                          className="text-[10px] text-primary hover:underline shrink-0 leading-4"
+                          className="text-[11px] font-medium text-foreground hover:underline shrink-0 leading-4"
                         >
                           Fix
                         </Link>
                       )}
                     </div>
-                    {g.status !== GateStatus.PASS && g.detail && (
-                      <span className="text-[9px] text-muted-foreground">
-                        {g.detail}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -524,11 +531,11 @@ function QualityChip({ q }: { q: CensusQuality }) {
 // ─── Version card helpers ────────────────────────────────────────────────────
 
 const STATUS_META: Record<VersionStatus, { label: string; className: string }> = {
-  [VersionStatus.DRAFT]:    { label: 'Draft',    className: 'bg-slate-100 text-slate-700 border-slate-200' },
-  [VersionStatus.SHARED]:   { label: 'Shared',   className: 'bg-blue-50 text-blue-700 border-blue-200' },
-  [VersionStatus.SELECTED]: { label: 'Selected', className: 'bg-amber-50 text-amber-700 border-amber-200' },
-  [VersionStatus.FROZEN]:   { label: 'Frozen',   className: 'bg-violet-50 text-violet-700 border-violet-200' },
-  [VersionStatus.ARCHIVED]: { label: 'Archived', className: 'bg-gray-100 text-gray-500 border-gray-200' },
+  [VersionStatus.DRAFT]:    { label: 'Draft',    className: 'bg-neutral-600 text-white' },
+  [VersionStatus.SHARED]:   { label: 'Shared',   className: 'bg-blue-600 text-white' },
+  [VersionStatus.SELECTED]: { label: 'Selected', className: 'bg-amber-500 text-white' },
+  [VersionStatus.FROZEN]:   { label: 'Active',   className: 'bg-emerald-600 text-white' },
+  [VersionStatus.ARCHIVED]: { label: 'Archived', className: 'bg-gray-400 text-white' },
 };
 
 function fmtINR(n: number) {
@@ -558,100 +565,97 @@ function CompactVersionCard({
 }) {
   const meta = STATUS_META[version.status];
   const isFrozen = version.status === VersionStatus.FROZEN;
-  const visiblePlans = planNames.slice(0, 3);
-  const overflow = planNames.length - 3;
+  const visiblePlans = planNames.slice(0, 4);
+  const overflow = planNames.length - 4;
 
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-card flex flex-col transition-shadow hover:shadow-sm cursor-pointer',
-        isActive && 'bg-muted/60 border-primary'
+        'rounded-xl border overflow-hidden flex flex-col cursor-pointer transition-shadow hover:shadow-sm',
+        isActive ? 'bg-accent border-border' : 'bg-card border-border',
       )}
       onClick={onSwitch}
     >
       {/* ── Identity ── */}
-      <div className="px-3 pt-3 pb-2 border-b border-border/50">
-        <div className="flex items-center gap-1.5 min-w-0 mb-1">
-          <span className="text-[10px] font-mono font-semibold text-muted-foreground shrink-0">
+      <div className="px-2 pt-2">
+        {/* Badge row */}
+        <div className="flex items-center justify-between px-1 pt-1 pb-0.5">
+          <span className={cn(
+            'inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-[11px] font-semibold',
+            isActive ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground',
+          )}>
             V{version.versionNo}
           </span>
-          <span className="text-xs font-semibold text-foreground truncate flex-1">
-            {version.name}
-          </span>
-          {isActive && (
-            <Badge className="shrink-0 text-[9px] px-1.5 py-0 h-4 bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-              Active
-            </Badge>
+          <div className="flex items-center gap-1.5">
+            <span className={cn('inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-[11px] font-semibold', meta.className)}>
+              {meta.label}
+            </span>
+            {isFrozen && <Lock className="size-3 text-violet-500 shrink-0" />}
+            <button
+              type="button"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center justify-center size-6 rounded hover:bg-muted"
+            >
+              <EllipsisVertical className="size-3.5 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+        {/* Name + note */}
+        <div className="flex flex-col gap-1 px-1 py-2">
+          <p className="text-sm font-semibold text-foreground leading-tight truncate">{version.name}</p>
+          {version.note && (
+            <p className="text-xs text-muted-foreground line-clamp-1">{version.note}</p>
           )}
-          {isFrozen && (
-            <Lock className="size-3 text-violet-500 shrink-0" />
+          {(isMostCompetitive || isMostProfitable) && (
+            <div className="flex gap-1 flex-wrap mt-0.5">
+              {isMostCompetitive && (
+                <span className="text-[10px] bg-green-50 border border-green-200 text-green-700 rounded-md px-1.5 py-0.5">Competitive</span>
+              )}
+              {isMostProfitable && (
+                <span className="text-[10px] bg-blue-50 border border-blue-200 text-blue-700 rounded-md px-1.5 py-0.5">Profitable</span>
+              )}
+            </div>
           )}
         </div>
-
-        {/* Status + quality badges */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={cn('text-[10px] font-medium border rounded-full px-2 py-0.5', meta.className)}>
-            {meta.label}
-          </span>
-          {isMostCompetitive && (
-            <span className="text-[9px] bg-green-50 border border-green-200 text-green-700 rounded-full px-1.5 py-0.5">
-              Competitive
-            </span>
-          )}
-          {isMostProfitable && (
-            <span className="text-[9px] bg-blue-50 border border-blue-200 text-blue-700 rounded-full px-1.5 py-0.5">
-              Profitable
-            </span>
-          )}
-        </div>
-
-        {version.note && (
-          <p className="text-[11px] text-muted-foreground mt-1.5 line-clamp-1">
-            {version.note}
-          </p>
-        )}
       </div>
+
+      <div className="border-t border-border/50 mx-2" />
 
       {/* ── Pricing ── */}
-      <div className="px-3 py-2 border-b border-border/50">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-          Pricing
-        </p>
+      <div className="flex flex-col gap-2 p-3">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Pricing</p>
         {priceEntry ? (
-          <div className="space-y-0.5">
-            <div className="flex justify-between text-[11px]">
-              <span className="text-muted-foreground">Premium (GST)</span>
-              <span className="font-medium tabular-nums">{fmtINR(priceEntry.finalPremiumInclGst)}</span>
+          <>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Premium (GST)</span>
+              <span className="text-xs font-semibold text-foreground tabular-nums">{fmtINR(priceEntry.finalPremiumInclGst)}</span>
             </div>
-            <div className="flex justify-between text-[11px]">
-              <span className="text-muted-foreground">Loss ratio</span>
-              <span className="font-medium tabular-nums">{(priceEntry.modelFactor * 100).toFixed(1)}%</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Loss ratio</span>
+              <span className="text-xs font-semibold text-foreground tabular-nums">{(priceEntry.modelFactor * 100).toFixed(1)}%</span>
             </div>
-          </div>
+          </>
         ) : (
-          <p className="text-[11px] text-muted-foreground italic">Not priced yet</p>
+          <p className="text-xs text-muted-foreground italic">Not priced yet</p>
         )}
       </div>
 
+      <div className="border-t border-border/50 mx-2" />
+
       {/* ── Plans ── */}
-      <div className="px-3 py-2">
-        <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-          Plans
-        </p>
+      <div className="flex flex-col gap-2 p-3">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Plans</p>
         {visiblePlans.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground italic">No plans yet</p>
+          <p className="text-xs text-muted-foreground italic">No plans yet</p>
         ) : (
           <div className="flex flex-wrap gap-1">
             {visiblePlans.map((name) => (
-              <span
-                key={name}
-                className="text-[10px] bg-muted border border-border rounded px-1.5 py-0.5 max-w-full truncate"
-              >
+              <span key={name} className="text-[11px] border border-border rounded-lg px-2 py-0.5 truncate max-w-full">
                 {name}
               </span>
             ))}
             {overflow > 0 && (
-              <span className="text-[10px] text-muted-foreground">+{overflow} more</span>
+              <span className="text-[11px] text-muted-foreground px-1 py-0.5">+{overflow}</span>
             )}
           </div>
         )}
@@ -694,6 +698,16 @@ function MetaCell({ label, value }: { label: string; value: string }) {
     <div className="flex flex-col min-w-0">
       <span className="text-[10px] text-muted-foreground">{label}</span>
       <span className="text-xs font-medium text-foreground truncate">{value}</span>
+    </div>
+  );
+}
+
+function MetaInline({ icon: Icon, label, value }: { icon: React.FC<{ className?: string }>; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Icon className="size-3.5 text-muted-foreground shrink-0" />
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-foreground">{value}</span>
     </div>
   );
 }
@@ -862,37 +876,18 @@ function Rfq2DetailInner() {
           </Button>
         </div>
 
-        {/* Quote metadata row (full width) with status summary on right */}
-        <div className="flex items-start px-4 pb-3 pt-1 gap-4">
-          {/* Left — metadata grid */}
-          <div className="flex-1 min-w-0 grid grid-cols-4 gap-x-4 gap-y-2">
-            <MetaCell label="Business Type" value={bundle.businessType?.replace(/_/g, ' ') ?? '—'} />
-            <MetaCell label="Scheme Type" value={schemeType?.replace(/_/g, ' ') ?? '—'} />
-            <MetaCell label="Lives Covered" value={bundle.livesCovered?.replace(/_/g, ' ') ?? '—'} />
-            <MetaCell label="LOB" value={bundle.lob ?? '—'} />
-            <MetaCell label="Effective Date" value={effectiveDate ? new Date(effectiveDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
-            <MetaCell label="Policy Year End" value={bundle.policyConfig?.policyYearEnd ? new Date(bundle.policyConfig.policyYearEnd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
-            <MetaCell label="Pricing Basis" value={bundle.defaultPlanStructure?.pricingBasis?.replace(/_/g, ' ') ?? '—'} />
-            <MetaCell label="Segment" value={quoteSegment ?? '—'} />
-            <MetaCell label="Broker" value={brokerName ?? '—'} />
-            <MetaCell label="Channel" value={channel ?? '—'} />
-            <MetaCell label="Owner" value={salesOwner?.name ?? '—'} />
-            <MetaCell label="Industry" value={industry ?? '—'} />
+        {/* Compact meta row */}
+        <div className="flex items-center justify-between px-4 pb-3 gap-4 border-b border-border/60">
+          <div className="flex items-center gap-5">
+            <MetaInline icon={ShieldUser} label="Owner" value={salesOwner?.name ?? '—'} />
+            <MetaInline icon={User} label="Broker" value={brokerName ?? '—'} />
+            <MetaInline icon={GitPullRequest} label="Versions" value={String(quoteVersions.length)} />
+            <MetaInline icon={Briefcase} label="Plans" value={String(plans.length)} />
           </div>
-
-          {/* Right — Status summary card (aligned with readiness column width) */}
-          <div className="w-60 shrink-0 rounded-xl border border-border bg-card p-3 flex flex-col gap-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Status Summary</p>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs font-semibold">{statusStage.replace(/_/g, ' ')}</Badge>
-            </div>
-            <div className="flex flex-col gap-1 mt-1">
-              <StatusRow label="Versions" value={`${quoteVersions.length} (${quoteVersions.filter(v => v.status === VersionStatus.FROZEN).length} frozen)`} />
-              <StatusRow label="Plans" value={`${plans.length} defined`} />
-              <StatusRow label="Members" value={censusSummary ? `${censusSummary.totalLives.toLocaleString()} lives` : 'Not loaded'} />
-              <StatusRow label="Readiness" value={readiness.failingCount === 0 ? 'All passing' : `${readiness.failingCount} failing`} pass={readiness.failingCount === 0} />
-              <StatusRow label="Documents" value={`${documents.length} uploaded`} />
-            </div>
+          <div className="flex items-center gap-5">
+            <MetaInline icon={Calendar} label="Inception" value={bundle.createdAt ? new Date(bundle.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'} />
+            <MetaInline icon={Clock4} label="TTL" value={effectiveDate ? (() => { const d = Math.ceil((new Date(effectiveDate).getTime() - Date.now()) / 86400000); return d > 0 ? `${d}d left` : 'Expired'; })() : '—'} />
+            <MetaInline icon={Clock} label="Updated" value={bundle.updatedAt ? (() => { const s = Math.floor((Date.now() - new Date(bundle.updatedAt).getTime()) / 1000); if (s < 60) return 'just now'; if (s < 3600) return `${Math.floor(s/60)}m ago`; if (s < 86400) return `${Math.floor(s/3600)}h ago`; return `${Math.floor(s/86400)}d ago`; })() : '—'} />
           </div>
         </div>
       </div>
@@ -915,7 +910,7 @@ function Rfq2DetailInner() {
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
           {/* Button group row */}
           <div className="shrink-0 px-4 pt-3 pb-2 border-b border-border/40">
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1 overflow-x-auto">
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1 overflow-x-auto scrollbar-none">
               {MIDDLE_TABS.map(({ key, label }) => (
                 <button
                   key={key}
@@ -957,7 +952,7 @@ function Rfq2DetailInner() {
                     </Button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {sortedVersions.map((v) => {
                     const priceEntry = profitability.pricedVersions.find(
                       (p) => p.versionId === v.id
@@ -1111,45 +1106,12 @@ function Rfq2DetailInner() {
           </div>
         </div>
 
-        {/* Right — Readiness / Documents */}
-        <div className="w-60 shrink-0 border-l border-border/60 flex flex-col overflow-hidden">
-          <Tabs defaultValue="readiness" className="flex flex-col h-full">
-            <div className="px-3 pt-3 shrink-0">
-              <TabsList className="w-full">
-                <TabsTrigger value="readiness" className="flex-1 text-xs">
-                  Readiness
-                  {readiness.failingCount > 0 && (
-                    <span className="ml-1 inline-flex items-center justify-center size-4 rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
-                      {readiness.failingCount}
-                    </span>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="documents" className="flex-1 text-xs">
-                  Documents
-                  {documents.length > 0 && (
-                    <span className="ml-1 inline-flex items-center justify-center size-4 rounded-full bg-muted text-[9px] font-bold text-muted-foreground">
-                      {documents.length}
-                    </span>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent
-              value="readiness"
-              className="flex-1 overflow-y-auto p-3 mt-0"
-            >
-              <ReadinessPanel report={readiness} rfqId={rfqId} />
-            </TabsContent>
-
-            <TabsContent
-              value="documents"
-              className="flex-1 overflow-y-auto p-3 mt-0"
-            >
-              <DocumentsPanel documents={documents} />
-            </TabsContent>
-          </Tabs>
-        </div>
+        {/* Right — Readiness */}
+        {/* <div className="w-72 shrink-0 border-l border-border/60 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <ReadinessPanel report={readiness} rfqId={rfqId} />
+          </div>
+        </div> */}
       </div>
     </div>
   );

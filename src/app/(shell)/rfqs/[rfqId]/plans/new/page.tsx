@@ -275,7 +275,7 @@ function Stepper({ state, dispatch }: { state: WizardState; dispatch: React.Disp
   const doneCount = steps.filter(({ stepNo }) => isStepComplete(state, stepNo) && stepNo !== state.currentStep && state.visitedSteps.includes(stepNo)).length;
 
   return (
-    <div className="flex flex-col gap-1 w-52 shrink-0">
+    <div className="flex flex-col gap-1 w-full">
       <div className="text-[10px] text-muted-foreground mb-2 font-medium">
         {doneCount} / {steps.length} steps done
       </div>
@@ -289,7 +289,7 @@ function Stepper({ state, dispatch }: { state: WizardState; dispatch: React.Disp
             disabled={!isClickable}
             onClick={() => isClickable && dispatch({ type: 'GO_STEP', step: stepNo })}
             className={cn(
-              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-colors',
+              'flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-xs transition-colors w-full min-w-0',
               isCurrent ? 'bg-primary/10 text-foreground font-semibold' :
               isDone ? 'text-foreground hover:bg-muted cursor-pointer' :
               isClickable ? 'text-muted-foreground hover:bg-muted cursor-pointer' :
@@ -303,7 +303,7 @@ function Stepper({ state, dispatch }: { state: WizardState; dispatch: React.Disp
             )}>
               {isDone ? <Check className="size-3" /> : stepNo}
             </span>
-            {label}
+            <span className="truncate min-w-0">{label}</span>
           </button>
         );
       })}
@@ -1272,7 +1272,25 @@ function PlanWizardInner() {
       }
     } else if (templateId) {
       const tmpl = getMergedTemplates().find((t) => t.id === templateId);
-      if (tmpl) initial = { planName: tmpl.name };
+      if (tmpl) {
+        initial = {
+          planName:               tmpl.name,
+          sumAssuredBasis:        tmpl.sumAssuredBasis,
+          flatSi:                 tmpl.defaultSumInsured ?? null,
+          salaryMultiple:         tmpl.salaryMultiple ?? null,
+          gradeSlabs:             [],
+          productCode:            tmpl.productCode ?? null,
+          uwMethod:               (tmpl.uw.uwMethod as UwMethod) ?? null,
+          evidencePack:           (tmpl.uw.evidencePackRef as EvidencePack) ?? null,
+          fclInherited:           true,
+          minEntryAge:            tmpl.eligibility.minEntryAge,
+          maxEntryAge:            tmpl.eligibility.maxEntryAge,
+          cessationAge:           tmpl.eligibility.cessationAge,
+          allowedEmploymentTypes: tmpl.eligibility.allowedEmploymentTypes,
+          livesCovered:           tmpl.eligibility.livesCovered,
+          minGroupSize:           tmpl.eligibility.minGroupSize,
+        };
+      }
     }
     const targetStep = stepKey ? stepKeyToIndex(stepKey) : 1;
     dispatch({ type: 'PATCH', payload: { ...initial, currentStep: targetStep, visitedSteps: Array.from({ length: targetStep }, (_, i) => i + 1) } });
@@ -1353,7 +1371,7 @@ function PlanWizardInner() {
         </div>
       </div>
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <div className="w-56 shrink-0 border-r border-border/40 px-3 py-4 overflow-y-auto">
+        <div className="w-52 shrink-0 border-r border-border/40 px-3 py-4 overflow-y-auto overflow-x-hidden">
           <Stepper state={state} dispatch={dispatch} />
         </div>
         <div className="flex-1 min-w-0 flex flex-col">

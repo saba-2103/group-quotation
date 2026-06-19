@@ -71,9 +71,14 @@ export function canRePasPatch(role: UserRole): boolean {
   return role === 'OPS';
 }
 
-/** Author / publish a plan template: ADMIN only. */
-export function canAuthorTemplate(role: UserRole): boolean {
-  return role === 'ADMIN';
+/** Author / publish a plan template: ADMIN, or SALES at level 4 (Supervisor).
+ *  L5 (Sales Head) is explicitly excluded — head monitors, supervisor configures.
+ */
+export function canAuthorTemplate(role: UserRole, level?: number): boolean {
+  if (role === 'ADMIN') return true;
+  if (role === 'SALES' && level === 4) return true;
+  // L5 (head) explicitly excluded
+  return false;
 }
 
 /**
