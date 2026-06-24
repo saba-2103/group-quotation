@@ -950,7 +950,7 @@ function PlansPanel({
   return (
     <div className="flex flex-col h-full overflow-y-auto">
 
-      <div className="flex flex-col gap-5 px-5 py-5">
+      <div className="flex flex-col gap-5 p-4">
 
         {/* ── Panel B: Census Exposure ──────────────────────────────────────── */}
         <div style={{ order: 2 }}>
@@ -2064,7 +2064,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
 
   function OverviewTab() {
     return (
-      <div className="flex gap-5 px-5 py-5 overflow-auto">
+      <div className="flex gap-5 p-4 overflow-auto">
         {/* Left: version journey */}
         <div className="w-56 shrink-0">
           <VersionJourney
@@ -2222,7 +2222,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
     }
 
     return (
-      <div className="px-5 py-5 flex flex-col gap-5 overflow-auto">
+      <div className="p-4 flex flex-col gap-5 overflow-auto">
         {versionPlans.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
             <ShieldCheck className="size-8 text-muted-foreground/30" />
@@ -2293,7 +2293,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
     }
 
     return (
-      <div className="px-5 py-5 flex flex-col gap-5 overflow-auto">
+      <div className="p-4 flex flex-col gap-5 overflow-auto">
         {/* Hero premium */}
         <div className="rounded-xl border bg-card p-5">
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Final Premium (incl. GST)</p>
@@ -2367,7 +2367,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
     }
 
     return (
-      <div className="px-5 py-5 flex flex-col gap-3 overflow-auto">
+      <div className="p-4 flex flex-col gap-3 overflow-auto">
         {[...versionNegRounds].sort((a, b) => b.roundNo - a.roundNo).map((r) => {
           const isBroker = r.party === NegotiationParty.BROKER;
           const isAccept = r.kind === NegotiationKind.ACCEPT;
@@ -2437,7 +2437,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
     };
 
     return (
-      <div className="px-5 py-5 flex flex-col gap-3 overflow-auto">
+      <div className="p-4 flex flex-col gap-3 overflow-auto">
         <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
         {allDocs.map((doc) => (
           <div key={doc.documentId} className="rounded-xl border border-border bg-card px-4 py-3">
@@ -2517,7 +2517,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
       <div className="flex h-full overflow-hidden">
 
         {/* ── Main content ───────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 min-w-0 overflow-y-auto p-4 space-y-4">
 
           {/* Premium — subtle card */}
           {priceRun ? (
