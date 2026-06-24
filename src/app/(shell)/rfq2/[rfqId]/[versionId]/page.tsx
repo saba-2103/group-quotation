@@ -2958,8 +2958,8 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
 
         {/* Left: version switcher */}
         <div className="w-52 shrink-0 border-r border-border/60 flex flex-col overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2.5 shrink-0 border-b border-border/40">
-            <span className="flex-1 text-xs font-semibold text-foreground">Versions</span>
+          <div className="flex items-center justify-between px-3 py-2.5 shrink-0 border-b border-border/40">
+            <h3 className="text-sm font-semibold text-foreground">Versions</h3>
             <Button
               variant="ghost"
               size="icon"
