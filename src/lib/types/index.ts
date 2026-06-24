@@ -27,6 +27,7 @@ export enum SchemeType {
   EMPLOYER_VOLUNTARY = 'EMPLOYER_VOLUNTARY',
   AFFINITY = 'AFFINITY',
   MICRO = 'MICRO',
+  LENDER_BORROWER = 'LENDER_BORROWER',
 }
 
 export enum SchemeUsage {
@@ -97,11 +98,18 @@ export enum PlanStructure {
 }
 
 export enum VersionStatus {
-  DRAFT = 'DRAFT',
-  SHARED = 'SHARED',
-  SELECTED = 'SELECTED',
-  FROZEN = 'FROZEN',
-  ARCHIVED = 'ARCHIVED',
+  DRAFT             = 'DRAFT',
+  UW_REFERRED       = 'UW_REFERRED',
+  EVALUATED         = 'EVALUATED',
+  PRICING_REQUESTED = 'PRICING_REQUESTED',
+  RATED             = 'RATED',
+  SUBMITTED         = 'SUBMITTED',
+  SHARED            = 'SHARED',        // legacy — treated as Sent to Client
+  SENT_TO_CLIENT    = 'SENT_TO_CLIENT',
+  SELECTED          = 'SELECTED',
+  FROZEN            = 'FROZEN',
+  ARCHIVED          = 'ARCHIVED',
+  WITHDRAWN         = 'WITHDRAWN',
 }
 
 export enum HandoffKind {
@@ -264,7 +272,6 @@ export interface PriorPolicy {
   insurer?: string;
   masterPolicyNumber?: string;
   premium?: number;
-  lossRatio?: number;
   experienceAvailable?: boolean;
   experienceYears?: number;
   fclBasis?: string;
@@ -277,6 +284,7 @@ export interface PolicyConfig {
   billingFrequency: string;
   collectionMethod: string;
   subsidiariesEnabled: boolean;
+  separateBillPerSubsidiary?: boolean;
 }
 
 export interface DefaultPlanStructure {
@@ -292,11 +300,25 @@ export interface CensusSummary {
   quality: { trafficLight: CensusQuality };
 }
 
+export interface MphProfile {
+  industry: string;
+  lives: number;
+  whiteCollarPct: number;
+  blueCollarPct: number;
+  zones: number;
+  hazardClass: 'LOW' | 'MEDIUM' | 'HIGH' | 'SPECIAL';
+  hazardousRoles: boolean;
+  businessType: string;
+  segmentBand: 'SME' | 'MID_CORPORATE' | 'CORPORATE';
+}
+
 export interface MphAppetite {
   category: string;
   maxDiscountPct: number;
   uwAuthorityBand: string;
   preapprovedCardRef?: string;
+  source: 'engine-server' | 'local-mirror';
+  evaluatedAt: string;
 }
 
 export interface FclPolicy {
@@ -324,6 +346,7 @@ export interface QuoteVersion {
   status: VersionStatus;
   fclPatternOverride?: FclPattern;
   validationReceipt?: ValidationReceipt;
+  expiryDate?: string;
   createdAt: string;
 }
 
@@ -397,7 +420,7 @@ export interface RfqBase {
   schemeUsage: SchemeUsage;
   intermediaryType?: IntermediaryType;
   brokerName?: string;
-  brokerCode?: string;
+  intermediaryCode?: string;
   channel?: string;
   quoteSegment?: QuoteSegment;
   effectiveDate?: string;
@@ -415,6 +438,7 @@ export interface RfqBase {
   gradeAllocations: Record<string, Record<string, string>>;
   actuaryPricing: ActuaryPricing;
   mphAppetite?: MphAppetite;
+  mphProfile?: MphProfile;
   fclPolicy: FclPolicy;
   finalRateCard?: FinalRateCard;
   salesOwner?: SalesOwner;
@@ -521,9 +545,13 @@ export interface Member {
 export interface Subsidiary {
   subsidiaryId: string;
   rfqId: string;
+  code: string;
   name: string;
-  registrationNumber?: string;
-  lives: number;
+  locationMapping?: string;
+  billingSplitRule: 'HEADCOUNT' | 'SI' | 'PREMIUM';
+  startDate: string;
+  endDate: string;
+  status: 'ACTIVE' | 'LAPSED' | 'TERMINATED';
 }
 
 export interface ClaimsYear {

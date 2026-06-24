@@ -101,7 +101,7 @@ function getActionNeeded(q: SalesPipelineQuote): ActionNeeded | null {
     return { label: 'Finalise', chipClass: 'bg-emerald-600 text-white', buttonClass: 'bg-emerald-600 hover:bg-emerald-700 text-white', priority: 1 };
   }
   if (q.pipelineStatus === 'RATED') {
-    return { label: 'Submit', chipClass: 'bg-indigo-600 text-white', buttonClass: 'bg-indigo-600 hover:bg-indigo-700 text-white', priority: 2 };
+    return { label: 'Submit', chipClass: 'bg-blue-600 text-white', buttonClass: 'bg-blue-600 hover:bg-blue-700 text-white', priority: 2 };
   }
   if (q.pipelineStatus === 'SUBMITTED') {
     return { label: 'Send to Client', chipClass: 'bg-blue-600 text-white', buttonClass: 'bg-blue-600 hover:bg-blue-700 text-white', priority: 3 };

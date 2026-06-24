@@ -20,6 +20,13 @@ export interface NavigationItem {
      */
     activePrefix?: string;
     badge?: string | number;
+    /**
+     * When true, this item renders in the fixed bottom section of the primary
+     * rail (above Settings) instead of the main scrollable nav area.
+     */
+    bottomRail?: boolean;
+    /** When true, the item is visible but non-navigable (coming soon / access restricted). */
+    disabled?: boolean;
 }
 
 export interface AppConfig {

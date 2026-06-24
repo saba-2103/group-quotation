@@ -50,7 +50,7 @@ export default function DeleteSubsidiaryPage({ params }: { params: Promise<{ rfq
         <div>
           <p className="text-sm font-semibold">Delete &ldquo;{sub.name}&rdquo;?</p>
           <p className="text-xs text-muted-foreground mt-1">
-            This will permanently remove the subsidiary record ({sub.lives.toLocaleString()} lives)
+            This will permanently remove the subsidiary record
             from this RFQ. The parent policy structure and census data will not be affected,
             but this action cannot be undone.
           </p>
@@ -58,9 +58,9 @@ export default function DeleteSubsidiaryPage({ params }: { params: Promise<{ rfq
       </div>
 
       <div className="rounded-lg bg-muted/30 border border-border px-4 py-3 text-xs text-muted-foreground mb-5">
-        <span className="font-medium">Registration:</span> {sub.registrationNumber ?? '—'}
+        <span className="font-medium">Code:</span> {sub.code}
         &nbsp;·&nbsp;
-        <span className="font-medium">Lives:</span> {sub.lives.toLocaleString()}
+        <span className="font-medium">Status:</span> {sub.status}
       </div>
 
       {error && <p className="mb-3 text-xs text-destructive">{error}</p>}

@@ -22,6 +22,7 @@ import {
 import { useRole } from '@/hooks/useRole';
 import { canAuthorTemplate } from '@/lib/permissions';
 import { usePlanTemplateVersion } from '@/stores/planTemplateVersionStore';
+import { PageHeader } from '@/components/layout/PageHeader';
 
 // ─── Field wrapper ─────────────────────────────────────────────────────────────
 
@@ -286,6 +287,7 @@ function LiveSummaryV3({
   fclThreshold,
   evidencePackRef,
   allComplete,
+  stepsDone,
   visitedSteps,
 }: {
   name: string;
@@ -298,6 +300,7 @@ function LiveSummaryV3({
   fclThreshold: number;
   evidencePackRef: EvidencePack;
   allComplete: boolean;
+  stepsDone: number;
   visitedSteps: number[];
 }) {
   const censusAware = sumAssuredBasis === SumAssuredBasis.GRADE_SLAB;
@@ -314,10 +317,10 @@ function LiveSummaryV3({
       : null;
 
   return (
-    <div className={cn("rounded-2xl border bg-card shadow-md overflow-hidden transition-colors duration-500", allComplete ? "border-emerald-600/30" : "border-border/70")}>
+    <div className={cn("rounded-2xl border bg-card shadow-md overflow-hidden transition-colors duration-500", allComplete ? "border-emerald-600/30" : stepsDone >= 1 ? "border-amber-400/40" : "border-border/70")}>
 
       {/* ── Identity ─────────────────────────────────── */}
-      <div className={cn("px-5 pt-5 pb-4 bg-gradient-to-b transition-colors duration-500", allComplete ? "from-emerald-50/70 to-transparent" : name.trim() ? "from-primary/[0.06] to-transparent" : "from-muted/40 to-transparent")}>
+      <div className={cn("px-5 pt-5 pb-4 bg-gradient-to-b transition-colors duration-500", allComplete ? "from-emerald-50/70 to-transparent" : stepsDone >= 1 ? "from-amber-50/50 to-transparent" : name.trim() ? "from-primary/[0.06] to-transparent" : "from-muted/40 to-transparent")}>
 
         {name ? (
           <h2 className="text-lg font-bold leading-snug text-foreground break-words">
@@ -645,6 +648,7 @@ export default function NewPlanTemplatePage() {
   }
 
   const allStepsComplete = name.trim().length > 0 && visitedSteps.length === STEPS.length;
+  const stepsDoneCount = STEPS.filter((_, idx) => isStepComplete(idx, name) && visitedSteps.includes(idx)).length;
   const isLastStep = step === STEPS.length - 1;
 
   function goNext() {
@@ -658,22 +662,22 @@ export default function NewPlanTemplatePage() {
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* Header bar */}
-      <div className="shrink-0 px-6 py-3 border-b border-border/40 flex items-center justify-between">
-        <div>
-          <h1 className="text-base font-semibold">New plan template</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Define a reusable plan shape for the RFQ wizard
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/rfq2/plan-templates')}>
-            Cancel
-          </Button>
-          <Button size="sm" onClick={handleCreate} disabled={!allStepsComplete} className="gap-1.5">
-            <Check className="size-3.5" />
-            Create template
-          </Button>
-        </div>
+      <div className="shrink-0 border-b border-border/40">
+        <PageHeader
+          title="New plan template"
+          subtitle="Define a reusable plan shape for the RFQ wizard"
+          actions={
+            <>
+              <Button variant="ghost" size="sm" onClick={() => router.push('/rfq2/plan-templates')}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleCreate} disabled={!allStepsComplete} className="gap-1.5">
+                <Check className="size-3.5" />
+                Create template
+              </Button>
+            </>
+          }
+        />
       </div>
 
       {/* 3-column body */}
@@ -1036,6 +1040,7 @@ export default function NewPlanTemplatePage() {
               fclThreshold={fclThreshold}
               evidencePackRef={evidencePackRef}
               allComplete={allStepsComplete}
+              stepsDone={stepsDoneCount}
               visitedSteps={visitedSteps}
             />
           )}

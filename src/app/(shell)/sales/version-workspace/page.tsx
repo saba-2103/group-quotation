@@ -114,7 +114,7 @@ function getStatusHeadline(v: SalesVersionWorkspace): { text: string; color: str
 function getHeaderCTA(v: SalesVersionWorkspace): { label: string; cls: string; show: boolean; isLocked?: boolean } {
   if (isReferred(v.status)) {
     const who = v.status === 'REFERRED_UW' ? 'Underwriter' : 'Actuary';
-    return { label: `v${v.versionNo} with ${who}`, cls: 'bg-amber-100 text-amber-800 border border-amber-300 cursor-default', show: true, isLocked: true };
+    return { label: `V${v.versionNo} with ${who}`, cls: 'bg-amber-100 text-amber-800 border border-amber-300 cursor-default', show: true, isLocked: true };
   }
   if (isTerminal(v.status)) {
     return { label: 'Clone Version', cls: 'border border-border text-foreground hover:bg-muted', show: true };
@@ -122,13 +122,13 @@ function getHeaderCTA(v: SalesVersionWorkspace): { label: string; cls: string; s
   switch (v.status) {
     case 'DRAFT':
     case 'IN_PROGRESS':
-      return { label: 'Run UW Check', cls: 'bg-indigo-600 hover:bg-indigo-700 text-white', show: true };
+      return { label: 'Run UW Check', cls: 'bg-blue-600 hover:bg-blue-700 text-white', show: true };
     case 'EVALUATED':
-      return { label: 'Request Pricing', cls: 'bg-indigo-600 hover:bg-indigo-700 text-white', show: true };
+      return { label: 'Request Pricing', cls: 'bg-blue-600 hover:bg-blue-700 text-white', show: true };
     case 'RATED':
       return v.premium.calculated
-        ? { label: 'Submit Version', cls: 'bg-indigo-600 hover:bg-indigo-700 text-white', show: true }
-        : { label: 'Calculate Premium', cls: 'bg-indigo-600 hover:bg-indigo-700 text-white', show: true };
+        ? { label: 'Submit Version', cls: 'bg-blue-600 hover:bg-blue-700 text-white', show: true }
+        : { label: 'Calculate Premium', cls: 'bg-blue-600 hover:bg-blue-700 text-white', show: true };
     case 'SUBMITTED':
       return { label: 'Send to Client', cls: 'bg-blue-600 hover:bg-blue-700 text-white', show: true };
     case 'SENT_TO_CLIENT':
@@ -242,39 +242,39 @@ export default function SalesVersionWorkspacePage() {
           <ChevronRight className="size-3" />
           <Link href="/sales/quote-detail" className="hover:text-foreground">{v.clientName}</Link>
           <ChevronRight className="size-3" />
-          <span className="text-foreground">{v.quoteNo}</span>
+          <span className="text-muted-foreground">{v.quoteNo}</span>
           <ChevronRight className="size-3" />
-          <span className="text-foreground">v{v.versionNo}</span>
+          <span className="text-foreground font-medium">V{v.versionNo}</span>
         </div>
 
         {/* Header row */}
         <div className="flex items-start justify-between px-5 pt-1 pb-3 gap-4">
           {/* Left */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="font-mono text-2xl font-black text-foreground leading-none">v{v.versionNo}</span>
-              <span className="text-sm font-medium text-foreground">{v.versionLabel}</span>
-              <span className={cn('text-xs font-semibold rounded-full px-3 py-1', badge.cls)}>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="font-mono text-2xl font-black text-foreground leading-none">V{v.versionNo}</span>
+              <span className="text-sm font-semibold text-foreground">{v.versionLabel}</span>
+              <span className={cn('text-xs font-semibold rounded-full px-2.5 py-0.5', badge.cls)}>
                 {badge.label}
               </span>
             </div>
             <p className={cn('text-sm font-medium mt-1.5', headline.color)}>{headline.text}</p>
           </div>
 
-          {/* Right: premium + CTA */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          {/* Right: premium chip + CTA stacked */}
+          <div className="shrink-0 flex flex-col items-end gap-2 pt-0.5">
             {v.premium.calculated && v.premium.amount && !isTerminal(v.status) && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-center">
-                <p className="text-base font-bold text-emerald-700 tabular-nums leading-tight">
+              <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 px-3 py-1.5 text-center">
+                <p className="text-xl font-bold text-emerald-700 tabular-nums leading-none">
                   {fmtINR(v.premium.amount)}
                 </p>
-                <p className="text-[10px] text-emerald-600">/ yr incl. GST</p>
+                <p className="text-[10px] text-emerald-600 mt-0.5">/ yr · incl. GST</p>
               </div>
             )}
             {cta.show && (
               <button
                 className={cn(
-                  'h-9 px-5 rounded-lg text-sm font-semibold transition-colors',
+                  'h-8 px-4 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap',
                   v.status === 'ACCEPTED' && 'animate-pulse',
                   cta.cls,
                 )}
@@ -283,7 +283,7 @@ export default function SalesVersionWorkspacePage() {
               </button>
             )}
             {v.status === 'SENT_TO_CLIENT' && (
-              <button className="h-8 px-3 rounded-lg text-xs font-medium border border-red-300 text-red-600 hover:bg-red-50 transition-colors">
+              <button className="h-7 px-3 rounded-lg text-xs font-medium border border-red-300 text-red-600 hover:bg-red-50 transition-colors">
                 Mark Rejected
               </button>
             )}
@@ -308,13 +308,13 @@ export default function SalesVersionWorkspacePage() {
         {/* Progress bar */}
         {showProgressBar && (
           <div className="px-5 pb-3 pt-1">
-            <div className="flex items-center gap-0">
+            <div className="flex items-center">
               {PROGRESS_STEPS.map((step, idx) => {
                 const past = idx < currentStep;
                 const current = idx === currentStep;
                 return (
                   <React.Fragment key={step.key}>
-                    <div className="flex flex-col items-center gap-1">
+                    <div className="flex flex-col items-center gap-1 shrink-0">
                       <div className={cn(
                         'flex items-center justify-center rounded-full border-2 transition-all',
                         past    ? 'size-5 bg-primary border-primary' :
@@ -325,13 +325,13 @@ export default function SalesVersionWorkspacePage() {
                       </div>
                       <span className={cn(
                         'text-[9px] whitespace-nowrap',
-                        current ? 'font-semibold text-primary' : past ? 'text-muted-foreground' : 'text-muted-foreground/50',
+                        current ? 'font-bold text-primary' : past ? 'text-foreground/60' : 'text-muted-foreground/40',
                       )}>
                         {step.label}
                       </span>
                     </div>
                     {idx < PROGRESS_STEPS.length - 1 && (
-                      <div className={cn('h-0.5 flex-1 mx-0.5 mb-4', past ? 'bg-primary' : 'bg-border/50')} />
+                      <div className={cn('h-0.5 flex-1 mx-1 mb-4', past ? 'bg-primary' : 'bg-border/50')} />
                     )}
                   </React.Fragment>
                 );
@@ -477,20 +477,26 @@ export default function SalesVersionWorkspacePage() {
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
                   Version Readiness
                 </p>
-                <div className="flex items-center gap-4 flex-wrap">
+                <div className="grid grid-cols-3 gap-2">
                   {readiness.map((item) => (
-                    <div key={item.label} className="flex items-center gap-1.5">
+                    <div
+                      key={item.label}
+                      className={cn(
+                        'flex items-center gap-2 rounded-lg border px-3 py-2',
+                        item.ok ? 'border-emerald-200 bg-emerald-50/60' : 'border-red-200 bg-red-50/60',
+                      )}
+                    >
                       {item.ok ? (
-                        <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                        <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
                       ) : (
-                        <XCircle className="size-4 text-red-400 shrink-0" />
+                        <XCircle className="size-3.5 text-red-400 shrink-0" />
                       )}
                       {item.ok ? (
                         <span className="text-xs text-foreground">{item.label}</span>
                       ) : (
                         <button
                           onClick={() => setActiveTab(item.tab)}
-                          className="text-xs text-red-600 hover:underline"
+                          className="text-xs text-red-600 hover:underline text-left"
                         >
                           {item.label} →
                         </button>
@@ -575,7 +581,7 @@ function CockpitCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
+    <div className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3 shadow-sm">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
         {link && onLink && (
@@ -732,11 +738,11 @@ function CockpitCTA({ version: v }: { version: SalesVersionWorkspace }) {
 
   const CTAs: Partial<Record<VWStatus, { label: string; cls: string }>> = {
     ACCEPTED:       { label: 'Finalise Version', cls: 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse' },
-    RATED:          { label: v.premium.calculated ? 'Submit Version' : 'Calculate Premium', cls: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
+    RATED:          { label: v.premium.calculated ? 'Submit Version' : 'Calculate Premium', cls: 'bg-blue-600 hover:bg-blue-700 text-white' },
     SUBMITTED:      { label: 'Send to Client', cls: 'bg-blue-600 hover:bg-blue-700 text-white' },
-    EVALUATED:      { label: 'Request Pricing', cls: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
-    DRAFT:          { label: 'Run UW Check', cls: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
-    IN_PROGRESS:    { label: 'Run UW Check', cls: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
+    EVALUATED:      { label: 'Request Pricing', cls: 'bg-blue-600 hover:bg-blue-700 text-white' },
+    DRAFT:          { label: 'Run UW Check', cls: 'bg-blue-600 hover:bg-blue-700 text-white' },
+    IN_PROGRESS:    { label: 'Run UW Check', cls: 'bg-blue-600 hover:bg-blue-700 text-white' },
   };
 
   const action = CTAs[v.status];
@@ -844,28 +850,43 @@ function PricingTab({ v }: { v: SalesVersionWorkspace }) {
 // ─── Round Log Tab ────────────────────────────────────────────────────────────
 function RoundLogTab({ v }: { v: SalesVersionWorkspace }) {
   return (
-    <div className="max-w-2xl space-y-3">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="max-w-2xl">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-4">
         {v.roundLog.length} round{v.roundLog.length !== 1 ? 's' : ''}
       </p>
-      {v.roundLog.map((entry, i) => (
-        <div key={i} className="rounded-xl border border-border bg-card px-4 py-3 flex items-start gap-3">
-          <span className={cn(
-            'text-[10px] font-bold rounded px-1.5 py-0.5 shrink-0 mt-0.5',
-            entry.type === 'UW' ? 'bg-indigo-50 text-indigo-700' : 'bg-teal-50 text-teal-700',
-          )}>
-            {entry.type} R{entry.roundNo}
-          </span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">{entry.status}</span>
-              <span className="text-xs text-muted-foreground">by {entry.by}</span>
+      <div className="space-y-0">
+        {v.roundLog.map((entry, i) => (
+          <div key={i} className="flex gap-3 pb-5">
+            {/* Timeline dot + line */}
+            <div className="flex flex-col items-center shrink-0 pt-1">
+              <span className={cn(
+                'size-2.5 rounded-full shrink-0',
+                entry.type === 'UW' ? 'bg-indigo-500' : 'bg-teal-500',
+              )} />
+              {i < v.roundLog.length - 1 && (
+                <div className="w-px flex-1 bg-border/50 mt-1.5" />
+              )}
             </div>
-            {entry.note && <p className="text-xs text-muted-foreground mt-0.5">{entry.note}</p>}
+            {/* Content */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={cn(
+                  'text-[10px] font-bold rounded-md px-1.5 py-0.5 shrink-0',
+                  entry.type === 'UW' ? 'bg-indigo-50 text-indigo-700' : 'bg-teal-50 text-teal-700',
+                )}>
+                  {entry.type} R{entry.roundNo}
+                </span>
+                <span className="text-sm font-semibold text-foreground">{entry.status}</span>
+                <span className="text-xs text-muted-foreground">by {entry.by}</span>
+                <span className="text-xs text-muted-foreground ml-auto">{fmtDate(entry.at)}</span>
+              </div>
+              {entry.note && (
+                <p className="text-xs text-muted-foreground mt-1 border-l-2 border-border/50 pl-2">{entry.note}</p>
+              )}
+            </div>
           </div>
-          <span className="text-xs text-muted-foreground shrink-0">{fmtDate(entry.at)}</span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -883,9 +904,9 @@ function PlaceholderTab({ title, description }: { title: string; description: st
 // ─── Inline helpers ───────────────────────────────────────────────────────────
 function InfoRow({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <span className="text-xs text-muted-foreground w-32 shrink-0">{label}</span>
-      <span className={cn('text-sm text-foreground', valueClass)}>{value}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={cn('text-sm font-medium text-foreground text-right', valueClass)}>{value}</span>
     </div>
   );
 }

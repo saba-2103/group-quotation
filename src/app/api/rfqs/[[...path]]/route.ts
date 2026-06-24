@@ -5,6 +5,8 @@ import type {
   ClaimsExperience,
   Document,
   Member,
+  MphAppetite,
+  MphProfile,
   Plan,
   RfqBase,
   RfqStatus,
@@ -247,9 +249,13 @@ async function handlePost(req: NextRequest, path: string[]) {
     const subsidiary: Subsidiary = {
       subsidiaryId: `sub-${uid()}`,
       rfqId,
+      code: (body.code ?? 'NEW').toUpperCase(),
       name: body.name ?? 'Unnamed',
-      registrationNumber: body.registrationNumber,
-      lives: body.lives ?? 0,
+      locationMapping: body.locationMapping,
+      billingSplitRule: body.billingSplitRule ?? 'HEADCOUNT',
+      startDate: body.startDate ?? new Date().toISOString().split('T')[0],
+      endDate: body.endDate ?? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      status: body.status ?? 'ACTIVE',
     };
     if (!rfqMockStore.subsidiaries[rfqId]) rfqMockStore.subsidiaries[rfqId] = [];
     rfqMockStore.subsidiaries[rfqId].push(subsidiary);
@@ -266,7 +272,39 @@ async function handlePut(req: NextRequest, path: string[]) {
   if (!rfq) return notFound();
 
   if (path.length === 1) {
-    const patch = await readJson<Partial<RfqBase>>(req);
+    const patch = await readJson<Partial<RfqBase> & { mphProfile?: MphProfile }>(req);
+    // If mphProfile is provided, derive and stamp mphAppetite server-side
+    if (patch.mphProfile) {
+      const p = patch.mphProfile;
+      const wc = p.whiteCollarPct ?? 100;
+      const lives = p.lives ?? 0;
+      const zones = p.zones ?? 1;
+      const hc = p.hazardClass ?? 'LOW';
+      const hr = p.hazardousRoles ?? false;
+      const bt = p.businessType ?? '';
+      const reasons: string[] = [];
+      if (hc === 'HIGH' || hc === 'SPECIAL') reasons.push('High or special hazard class');
+      if (hr) reasons.push('Hazardous roles present');
+      if (lives > 500) reasons.push('Lives exceed 500');
+      if (zones > 5) reasons.push('More than 5 zones');
+      if (bt === 'TAKEOVER') reasons.push('Takeover review required');
+      if (wc < 50) reasons.push('Blue-collar majority');
+      const band = lives < 100 ? 'SME' : lives <= 500 ? 'MID_CORPORATE' : 'CORPORATE';
+      const cat = reasons.length > 0 ? 'Special \u2014 refer' : band === 'SME' ? 'SME \u00b7 straight-through' : band === 'MID_CORPORATE' ? 'Mid-market' : 'Large group';
+      const disc = reasons.length > 0 ? 0 : band === 'SME' ? 8 : band === 'MID_CORPORATE' ? 10 : 12;
+      let uwBand = 'Underwriting L1';
+      if (hc === 'HIGH' || hc === 'SPECIAL') uwBand = 'Underwriting L2 (senior)';
+      else if (hr) uwBand = 'Actuary referral';
+      else if (reasons.length === 0 && band === 'SME') uwBand = 'Sales (straight-through)';
+      patch.mphAppetite = {
+        category: cat,
+        maxDiscountPct: disc,
+        uwAuthorityBand: uwBand,
+        preapprovedCardRef: rfq.mphAppetite?.preapprovedCardRef,
+        source: 'engine-server',
+        evaluatedAt: now(),
+      } as MphAppetite;
+    }
     const merged = { ...rfq, ...patch, rfqId, updatedAt: now() };
     rfqMockStore.rfqs[rfqId] = merged;
     if (patch.headcountData) {

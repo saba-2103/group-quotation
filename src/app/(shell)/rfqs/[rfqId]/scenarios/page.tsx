@@ -15,11 +15,18 @@ function fmt(n: number) {
 }
 
 const VERSION_STATUS_COLORS: Record<VersionStatus, string> = {
-  [VersionStatus.DRAFT]:    'bg-slate-100 text-slate-700 border-slate-200',
-  [VersionStatus.SHARED]:   'bg-blue-50 text-blue-700 border-blue-200',
-  [VersionStatus.SELECTED]: 'bg-amber-50 text-amber-700 border-amber-200',
-  [VersionStatus.FROZEN]:   'bg-violet-50 text-violet-700 border-violet-200',
-  [VersionStatus.ARCHIVED]: 'bg-gray-50 text-gray-500 border-gray-200',
+  [VersionStatus.DRAFT]:             'bg-slate-100 text-slate-700 border-slate-200',
+  [VersionStatus.UW_REFERRED]:       'bg-amber-50 text-amber-700 border-amber-200',
+  [VersionStatus.EVALUATED]:         'bg-blue-50 text-blue-700 border-blue-200',
+  [VersionStatus.PRICING_REQUESTED]: 'bg-amber-50 text-amber-700 border-amber-200',
+  [VersionStatus.RATED]:             'bg-blue-50 text-blue-700 border-blue-200',
+  [VersionStatus.SUBMITTED]:         'bg-blue-50 text-blue-700 border-blue-200',
+  [VersionStatus.SHARED]:            'bg-blue-50 text-blue-700 border-blue-200',
+  [VersionStatus.SENT_TO_CLIENT]:    'bg-blue-50 text-blue-700 border-blue-200',
+  [VersionStatus.SELECTED]:          'bg-amber-50 text-amber-700 border-amber-200',
+  [VersionStatus.FROZEN]:            'bg-violet-50 text-violet-700 border-violet-200',
+  [VersionStatus.ARCHIVED]:          'bg-gray-50 text-gray-500 border-gray-200',
+  [VersionStatus.WITHDRAWN]:         'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 export default function ScenariosPage() {

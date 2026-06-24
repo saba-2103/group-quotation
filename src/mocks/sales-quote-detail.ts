@@ -186,7 +186,7 @@ export const SALES_QUOTE_DETAIL: SalesQuoteDetail = {
     {
       id: 'evt-001',
       eventType: 'STATUS_CHANGE',
-      description: 'v3 status changed to Accepted by Tata Motors Ltd',
+      description: 'V3 status changed to Accepted by Tata Motors Ltd',
       by: 'Client Portal',
       at: '2026-06-16T10:30:00Z',
       isNew: true,
@@ -194,7 +194,7 @@ export const SALES_QUOTE_DETAIL: SalesQuoteDetail = {
     {
       id: 'evt-002',
       eventType: 'STATUS_CHANGE',
-      description: 'v3 sent to client — quote slip dispatched via broker',
+      description: 'V3 sent to client — quote slip dispatched via broker',
       by: 'Arjun Sharma',
       at: '2026-06-15T14:00:00Z',
       isNew: true,
@@ -202,7 +202,7 @@ export const SALES_QUOTE_DETAIL: SalesQuoteDetail = {
     {
       id: 'evt-003',
       eventType: 'VERSION',
-      description: 'v3 created — "Broker Submission — Final"',
+      description: 'V3 created — "Broker Submission — Final"',
       by: 'Arjun Sharma',
       at: '2026-06-10T09:00:00Z',
       isNew: false,
@@ -218,7 +218,7 @@ export const SALES_QUOTE_DETAIL: SalesQuoteDetail = {
     {
       id: 'evt-005',
       eventType: 'UW_PRICING',
-      description: 'v3 auto-priced at ₹42,18,000 incl. GST (model factor 0.92)',
+      description: 'V3 auto-priced at ₹42,18,000 incl. GST (model factor 0.92)',
       by: 'Pricing Engine',
       at: '2026-06-10T09:45:00Z',
       isNew: false,
@@ -242,7 +242,7 @@ export const SALES_QUOTE_DETAIL: SalesQuoteDetail = {
     {
       id: 'evt-008',
       eventType: 'STATUS_CHANGE',
-      description: 'v2 sent to client',
+      description: 'V2 sent to client',
       by: 'Arjun Sharma',
       at: '2026-06-08T11:00:00Z',
       isNew: false,
@@ -250,7 +250,7 @@ export const SALES_QUOTE_DETAIL: SalesQuoteDetail = {
     {
       id: 'evt-009',
       eventType: 'VERSION',
-      description: 'v2 created — "Revised Submission"',
+      description: 'V2 created — "Revised Submission"',
       by: 'Arjun Sharma',
       at: '2026-06-03T09:00:00Z',
       isNew: false,
@@ -258,7 +258,7 @@ export const SALES_QUOTE_DETAIL: SalesQuoteDetail = {
     {
       id: 'evt-010',
       eventType: 'STATUS_CHANGE',
-      description: 'v1 withdrawn — superseded by v2',
+      description: 'V1 withdrawn — superseded by V2',
       by: 'Arjun Sharma',
       at: '2026-06-03T09:00:00Z',
       isNew: false,
@@ -266,7 +266,7 @@ export const SALES_QUOTE_DETAIL: SalesQuoteDetail = {
     {
       id: 'evt-011',
       eventType: 'VERSION',
-      description: 'v1 created — "Initial Submission"',
+      description: 'V1 created — "Initial Submission"',
       by: 'Arjun Sharma',
       at: '2026-05-20T09:00:00Z',
       isNew: false,

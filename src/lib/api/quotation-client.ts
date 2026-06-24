@@ -22,6 +22,7 @@ async function request<T>(
   init: RequestInit = {}
 ): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
+    cache: 'no-store',
     headers: { 'Content-Type': 'application/json', ...init.headers },
     ...init,
   });

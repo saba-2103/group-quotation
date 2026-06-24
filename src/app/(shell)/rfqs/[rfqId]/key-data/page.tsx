@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { AlertTriangle, Check, Loader2, Info } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, Info, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,15 @@ import {
   CoverPattern, TermBasis, LivesCovered, RiskTermClassification,
   ParticipationType, SchemeUsage,
 } from '@/lib/types';
+
+// Schemes that can be selected in the dropdown — LENDER_BORROWER is recognised
+// but never offered as a choice; if stored, it triggers the amber warning.
+const SELECTABLE_SCHEMES = new Set([
+  SchemeType.EMPLOYER_OBLIGATORY,
+  SchemeType.EMPLOYER_VOLUNTARY,
+  SchemeType.AFFINITY,
+  SchemeType.MICRO,
+]);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,6 +107,7 @@ export default function KeyDataPage() {
   // Per-field save states
   const [saving, setSaving] = useState<Record<string, SaveState>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [createdPriorPolicy, setCreatedPriorPolicy] = useState(false);;
 
   if (!bundle) return null;
 
@@ -127,8 +138,8 @@ export default function KeyDataPage() {
   }, [rfqId, updateBundle]);
 
   const isMicro = bundle.schemeType === SchemeType.MICRO;
-  const isKnownScheme = Object.values(SchemeType).includes(bundle.schemeType as SchemeType);
-  const showPriorPolicy = bundle.businessType === BusinessType.RENEWAL || bundle.businessType === BusinessType.TAKEOVER;
+  const isSelectableScheme = SELECTABLE_SCHEMES.has(bundle.schemeType as SchemeType);
+  const showPriorPolicy = (bundle.businessType === BusinessType.RENEWAL || bundle.businessType === BusinessType.TAKEOVER) && !!bundle.priorPolicy;
 
   const productMix = bundle.plans.length > 0
     ? [...new Set(bundle.plans.map((p) => p.productCode ?? '—'))].join(', ')
@@ -136,10 +147,24 @@ export default function KeyDataPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-5 flex flex-col gap-0">
-      <div className="mb-2">
+      {/* Breadcrumb */}
+      <nav aria-label="breadcrumb" className="mb-3">
+        <ol className="flex items-center gap-1 text-[11px] text-muted-foreground flex-wrap">
+          <li><Link href="/rfqs" className="hover:text-foreground transition-colors">RFQs</Link></li>
+          <li><ChevronRight className="size-3" /></li>
+          <li><Link href={`/rfq2/${rfqId}`} className="hover:text-foreground transition-colors">{bundle.employerName}</Link></li>
+          <li><ChevronRight className="size-3" /></li>
+          <li><span className="text-muted-foreground">Workbench</span></li>
+          <li><ChevronRight className="size-3" /></li>
+          <li><span className="text-foreground font-medium">Quote Key Data</span></li>
+        </ol>
+      </nav>
+      {/* Screen header */}
+      <div className="mb-2 flex items-center gap-2">
         <h1 className="text-base font-semibold">Quote Key Data</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">Step 1 of 21 · Intake</p>
+        <span className="inline-flex items-center rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground tracking-wider">S02</span>
       </div>
+      <p className="text-xs text-muted-foreground -mt-1.5 mb-1">Intake · screen 2 of 21</p>
 
       {/* ── Quote Identity ─────────────────────────────────────────────────── */}
       <SectionHeading>Quote Identity</SectionHeading>
@@ -167,7 +192,16 @@ export default function KeyDataPage() {
           <Select
             disabled={!canWrite}
             defaultValue={bundle.businessType}
-            onValueChange={(v) => persist('businessType', { businessType: v as BusinessType })}
+            onValueChange={async (v) => {
+              const newBt = v as BusinessType;
+              const needsPriorPolicy = (newBt === BusinessType.RENEWAL || newBt === BusinessType.TAKEOVER) && !bundle.priorPolicy;
+              const patch = needsPriorPolicy
+                ? { businessType: newBt, priorPolicy: {} as Record<string, never> }
+                : { businessType: newBt };
+              await persist('businessType', patch);
+              if (needsPriorPolicy) setCreatedPriorPolicy(true);
+              else setCreatedPriorPolicy(false);
+            }}
           >
             <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -176,6 +210,11 @@ export default function KeyDataPage() {
               <SelectItem value={BusinessType.TAKEOVER}>Takeover</SelectItem>
             </SelectContent>
           </Select>
+          {createdPriorPolicy && (
+            <p className="text-[10px] text-green-700 mt-1 flex items-center gap-1">
+              <Check className="size-3" /> A prior policy record has been created — fill in the details below.
+            </p>
+          )}
         </FieldRow>
 
         <div className="flex flex-col gap-1.5">
@@ -184,22 +223,22 @@ export default function KeyDataPage() {
             {saving['schemeType'] === 'saving' && <Loader2 className="size-3 animate-spin text-muted-foreground" />}
             {saving['schemeType'] === 'saved' && <Check className="size-3 text-green-600" />}
           </div>
-          {!isKnownScheme && (
+          {!isSelectableScheme && (
             <div className="flex items-center gap-1.5 text-amber-700 text-[10px] bg-amber-50 border border-amber-200 rounded px-2 py-1">
               <AlertTriangle className="size-3 shrink-0" />
-              Stored value is unrecognised — re-select to canonicalise
+              Stored value &ldquo;{bundle.schemeType}&rdquo; is unrecognised — pick one above to canonicalise it
             </div>
           )}
           <Select
             disabled={!canWrite}
-            defaultValue={bundle.schemeType}
+            value={isSelectableScheme ? bundle.schemeType : ''}
             onValueChange={(v) => {
               const scheme = v as SchemeType;
               const derived = derivedFromScheme(scheme);
               persist('schemeType', { schemeType: scheme, ...derived });
             }}
           >
-            <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="text-sm"><SelectValue placeholder="Select scheme…" /></SelectTrigger>
             <SelectContent>
               <SelectItem value={SchemeType.EMPLOYER_OBLIGATORY}>Employer Obligatory</SelectItem>
               <SelectItem value={SchemeType.EMPLOYER_VOLUNTARY}>Employer Voluntary</SelectItem>
@@ -246,12 +285,12 @@ export default function KeyDataPage() {
           />
         </FieldRow>
 
-        <FieldRow label="Broker code" saveState={saving['brokerCode']} error={errors['brokerCode']}>
+        <FieldRow label="Intermediary code" saveState={saving['intermediaryCode']} error={errors['intermediaryCode']}>
           <Input
-            defaultValue={bundle.brokerCode ?? ''}
+            defaultValue={bundle.intermediaryCode ?? ''}
             disabled={!canWrite}
             className="text-sm"
-            onBlur={(e) => persist('brokerCode', { brokerCode: e.target.value })}
+            onBlur={(e) => persist('intermediaryCode', { intermediaryCode: e.target.value })}
           />
         </FieldRow>
 

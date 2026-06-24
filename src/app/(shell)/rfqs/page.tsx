@@ -144,7 +144,7 @@ export default function RfqsPage() {
     return rfqs.filter((r) => {
       if (q && !r.employerName.toLowerCase().includes(q) &&
           !r.rfqId.toLowerCase().includes(q) &&
-          !(r.brokerCode ?? '').toLowerCase().includes(q)) return false;
+          !(r.intermediaryCode ?? '').toLowerCase().includes(q)) return false;
       if (lobFilter !== 'ALL' && r.lob !== lobFilter) return false;
       if (stageFilter !== 'ALL' && r.statusStage !== stageFilter) return false;
       if (assignedToMe && r.salesOwner?.userId !== userId) return false;
@@ -269,8 +269,8 @@ export default function RfqsPage() {
                   >
                     <TableCell className="text-xs">
                       <span className="font-mono font-medium">{rfq.rfqId}</span>
-                      {rfq.brokerCode && (
-                        <div className="text-muted-foreground text-[10px]">{rfq.brokerCode}</div>
+                      {rfq.intermediaryCode && (
+                        <div className="text-muted-foreground text-[10px]">{rfq.intermediaryCode}</div>
                       )}
                     </TableCell>
                     <TableCell className="text-xs">

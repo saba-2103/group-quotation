@@ -2,13 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, differenceInDays } from 'date-fns';
 import {
   CirclePlus, FolderOpen, AlertCircle, RefreshCw,
-  LayoutList, FilePen, FileText, FileCheck2, FileX2,
-  Search, ArrowUpDown, ArrowRight, Ellipsis, ChevronLeft, ChevronRight,
-  Columns3,
+  LayoutList, FilePen, FileText, FileCheck2, FileX2, FileWarning,
+  Search, ArrowUpDown, ArrowUp, ArrowDown, Ellipsis, ChevronLeft, ChevronRight,
+  Columns3, Copy, Ban, AlertTriangle, Layers,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,10 +26,12 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRole } from '@/hooks/useRole';
 import { canCreateRfq } from '@/lib/permissions';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { getRfqs } from '@/lib/api/quotation-client';
-import { RfqStatus, LobType, type RfqBase, CensusQuality } from '@/lib/types';
+import { RfqStatus, LobType, type RfqBase, type QuoteVersion, CensusQuality, VersionStatus, BusinessType, IntermediaryType } from '@/lib/types';
 
 const STATUS_LABELS: Record<RfqStatus, string> = {
   [RfqStatus.DATA_PENDING]: 'Data Pending',
@@ -70,35 +78,49 @@ const CENSUS_VARIANT: Record<CensusQuality, BadgeVariant> = {
   [CensusQuality.R]: 'destructive',
 };
 
-type QuoteTabFilter = 'ALL' | 'DRAFT' | 'ACTIVE' | 'FINALIZED' | 'WITHDRAWN';
+type QuoteTabFilter = 'ALL' | 'DRAFT' | 'ACTIVE' | 'FINALIZED' | 'EXPIRING' | 'TERMINATED';
 
-const DRAFT_STATUSES = new Set<RfqStatus>([
-  RfqStatus.DATA_PENDING, RfqStatus.CENSUS_CLEANED,
-  RfqStatus.EXPERIENCE_NORMALIZED, RfqStatus.BENEFITS_READY,
+const ACTIVE_VER_STATUSES = new Set<VersionStatus>([
+  VersionStatus.UW_REFERRED, VersionStatus.EVALUATED,
+  VersionStatus.PRICING_REQUESTED, VersionStatus.RATED,
+  VersionStatus.SUBMITTED, VersionStatus.SHARED,
+  VersionStatus.SENT_TO_CLIENT, VersionStatus.SELECTED,
 ]);
-const ACTIVE_STATUSES = new Set<RfqStatus>([
-  RfqStatus.PRICING, RfqStatus.PRICING_IN_PROGRESS, RfqStatus.UW_REVIEW,
-  RfqStatus.QUOTE_GENERATED, RfqStatus.SHARED, RfqStatus.NEGOTIATION,
+const TERMINATED_VER_STATUSES = new Set<VersionStatus>([
+  VersionStatus.WITHDRAWN, VersionStatus.ARCHIVED,
 ]);
-const FINALIZED_STATUSES = new Set<RfqStatus>([RfqStatus.FINAL, RfqStatus.ISSUED]);
-const WITHDRAWN_STATUSES = new Set<RfqStatus>([RfqStatus.REJECTED]);
 
 const QUOTE_TABS: { value: QuoteTabFilter; label: string; Icon: React.FC<{ className?: string }> }[] = [
-  { value: 'ALL',       label: 'All',        Icon: LayoutList  },
-  { value: 'DRAFT',     label: 'Draft',      Icon: FilePen     },
-  { value: 'ACTIVE',    label: 'Active',     Icon: FileText    },
-  { value: 'FINALIZED', label: 'Finalized',  Icon: FileCheck2  },
-  { value: 'WITHDRAWN', label: 'Withdrawn',  Icon: FileX2      },
+  { value: 'ALL',        label: 'All',        Icon: LayoutList   },
+  { value: 'DRAFT',      label: 'Draft',      Icon: FilePen      },
+  { value: 'ACTIVE',     label: 'Active',     Icon: FileText     },
+  { value: 'FINALIZED',  label: 'Finalized',  Icon: FileCheck2   },
+  { value: 'EXPIRING',   label: 'Expiring',   Icon: FileWarning  },
+  { value: 'TERMINATED', label: 'Terminated', Icon: FileX2       },
 ];
 
 const PAGE_SIZE = 10;
 
-function SortableHead({ children }: { children: React.ReactNode }) {
+type SortCol = 'client' | 'rfqId' | 'premium';
+type SortDir = 'asc' | 'desc';
+
+function ColHead({ col, label, sortCol, sortDir, onSort, align = 'left' }: {
+  col: SortCol; label: string; sortCol: SortCol | null; sortDir: SortDir;
+  onSort: (col: SortCol) => void; align?: 'left' | 'right';
+}) {
+  const active = sortCol === col;
+  const Icon = active ? (sortDir === 'desc' ? ArrowDown : ArrowUp) : ArrowUpDown;
   return (
-    <div className="flex items-center gap-1.5 px-2 py-2 text-sm font-medium text-foreground whitespace-nowrap">
-      {children}
-      <ArrowUpDown className="size-3.5 opacity-40 shrink-0" />
-    </div>
+    <button
+      className={cn(
+        'flex items-center gap-1.5 px-2 py-2 text-sm font-medium text-foreground whitespace-nowrap w-full transition-colors',
+        align === 'right' ? 'justify-end' : 'justify-start',
+      )}
+      onClick={() => onSort(col)}
+    >
+      <span>{label}</span>
+      <Icon className={cn('size-3.5 shrink-0', !active && 'opacity-40')} />
+    </button>
   );
 }
 
@@ -116,6 +138,121 @@ function RelativeTime({ iso }: { iso: string }) {
   } catch {
     return <span className="text-muted-foreground text-xs">{iso}</span>;
   }
+}
+
+// ─── Version-level helpers ─────────────────────────────────────────────────────
+
+/** Pipeline order: most-advanced first */
+const VER_PIPELINE = [
+  VersionStatus.FROZEN, VersionStatus.SELECTED,
+  VersionStatus.SENT_TO_CLIENT, VersionStatus.SHARED,
+  VersionStatus.SUBMITTED, VersionStatus.RATED,
+  VersionStatus.PRICING_REQUESTED, VersionStatus.EVALUATED,
+  VersionStatus.UW_REFERRED, VersionStatus.DRAFT,
+  VersionStatus.WITHDRAWN, VersionStatus.ARCHIVED,
+];
+
+const VER_STATUS_LABEL: Partial<Record<VersionStatus, string>> = {
+  [VersionStatus.DRAFT]:             'Draft',
+  [VersionStatus.UW_REFERRED]:       'UW Referred',
+  [VersionStatus.EVALUATED]:         'Evaluated',
+  [VersionStatus.PRICING_REQUESTED]: 'Pricing Req.',
+  [VersionStatus.RATED]:             'Rated',
+  [VersionStatus.SUBMITTED]:         'Submitted',
+  [VersionStatus.SHARED]:            'Sent to Client',
+  [VersionStatus.SENT_TO_CLIENT]:    'Sent to Client',
+  [VersionStatus.SELECTED]:          'Selected',
+  [VersionStatus.FROZEN]:            'Active',
+  [VersionStatus.ARCHIVED]:          'Archived',
+  [VersionStatus.WITHDRAWN]:         'Withdrawn',
+};
+
+const VER_STATUS_VARIANT: Partial<Record<VersionStatus, BadgeVariant>> = {
+  [VersionStatus.DRAFT]:             'grey',
+  [VersionStatus.UW_REFERRED]:       'amber',
+  [VersionStatus.EVALUATED]:         'info',
+  [VersionStatus.PRICING_REQUESTED]: 'amber',
+  [VersionStatus.RATED]:             'info',
+  [VersionStatus.SUBMITTED]:         'info',
+  [VersionStatus.SHARED]:            'info',
+  [VersionStatus.SENT_TO_CLIENT]:    'info',
+  [VersionStatus.SELECTED]:          'success',
+  [VersionStatus.FROZEN]:            'success',
+  [VersionStatus.ARCHIVED]:          'grey',
+  [VersionStatus.WITHDRAWN]:         'destructive',
+};
+
+type ActionDef =
+  | { kind: 'button'; label: string; variant: 'default' | 'secondary' | 'outline'; cls?: string }
+  | { kind: 'time' }
+  | { kind: 'none' };
+
+const ACTION_DEF: Partial<Record<VersionStatus, ActionDef>> = {
+  [VersionStatus.DRAFT]:             { kind: 'none' },
+  [VersionStatus.UW_REFERRED]:       { kind: 'time' },
+  [VersionStatus.EVALUATED]:         { kind: 'button', label: 'Request Pricing', variant: 'secondary' },
+  [VersionStatus.PRICING_REQUESTED]: { kind: 'time' },
+  [VersionStatus.RATED]:             { kind: 'button', label: 'Submit Quote',      variant: 'default' },
+  [VersionStatus.SUBMITTED]:         { kind: 'button', label: 'Send to Client',    variant: 'default' },
+  [VersionStatus.SHARED]:            { kind: 'button', label: 'Follow Up',         variant: 'outline' },
+  [VersionStatus.SENT_TO_CLIENT]:    { kind: 'button', label: 'Follow Up',         variant: 'outline' },
+  [VersionStatus.SELECTED]:          { kind: 'button', label: 'Finalize Version',  variant: 'default', cls: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
+  [VersionStatus.FROZEN]:            { kind: 'button', label: 'Issue Policy',      variant: 'default', cls: 'bg-emerald-600 hover:bg-emerald-700 text-white' },
+  [VersionStatus.ARCHIVED]:          { kind: 'button', label: 'Request Pricing',   variant: 'secondary' },
+  [VersionStatus.WITHDRAWN]:         { kind: 'button', label: 'Follow Up',         variant: 'outline' },
+};
+
+const BIZ_LABEL: Partial<Record<BusinessType, string>> = {
+  [BusinessType.NEW]:      'New',
+  [BusinessType.RENEWAL]:  'Renewal',
+  [BusinessType.TAKEOVER]: 'Takeover',
+};
+
+function getHighestVersion(rfq: RfqBase) {
+  if (!rfq.quoteVersions?.length) return null;
+  return rfq.quoteVersions.reduce((best, v) => {
+    const bi = VER_PIPELINE.indexOf(best.status as VersionStatus);
+    const vi = VER_PIPELINE.indexOf(v.status as VersionStatus);
+    if (vi === -1) return best;
+    if (bi === -1 || vi < bi) return v;
+    // Same pipeline position — pick latest version number
+    if (vi === bi) return (v.versionNo ?? 0) > (best.versionNo ?? 0) ? v : best;
+    return best;
+  });
+}
+
+function getActivePremium(rfq: RfqBase): number | null {
+  if (!rfq.activeVersionId || !rfq.actuaryPricing?.byVersion) return null;
+  return rfq.actuaryPricing.byVersion[rfq.activeVersionId]?.finalPremiumInclGst ?? null;
+}
+
+function fmtINR(n: number): string {
+  if (n >= 10_000_000) return `₹${(n / 10_000_000).toFixed(1)}Cr`;
+  if (n >= 100_000)    return `₹${(n / 100_000).toFixed(1)}L`;
+  return `₹${n.toLocaleString('en-IN')}`;
+}
+
+/** Returns days until expiry for a version, or null if no expiryDate. Negative = already expired. */
+function getExpiryDays(ver: QuoteVersion | null): number | null {
+  if (!ver?.expiryDate) return null;
+  return differenceInDays(new Date(ver.expiryDate), new Date());
+}
+
+/** Compact relative time: "2d ago", "today" */
+function fmtRelative(iso: string): string {
+  const d = differenceInDays(new Date(), new Date(iso));
+  if (d <= 0) return 'today';
+  return `${d}d ago`;
+}
+
+/** Quote needs attention if its highest version has a button action or is expiring within 7 days */
+function hasButtonAction(rfq: RfqBase): boolean {
+  const hv = getHighestVersion(rfq);
+  if (!hv) return false;
+  const def = ACTION_DEF[hv.status as VersionStatus];
+  if (def?.kind === 'button') return true;
+  const expiryDays = getExpiryDays(hv);
+  return expiryDays !== null && expiryDays <= 7;
 }
 
 // ─── Kanban board columns (lifecycle order) ───────────────────────────────────
@@ -228,10 +365,22 @@ export default function Rfq2ListPage() {
   const [search, setSearch] = useState('');
   const [tabFilter, setTabFilter] = useState<QuoteTabFilter>('ALL');
   const [lobFilter, setLobFilter] = useState<'ALL' | LobType>('ALL');
-  const [stageFilter, setStageFilter] = useState<'ALL' | RfqStatus>('ALL');
-  const [assignedToMe, setAssignedToMe] = useState(false);
+  const [bizTypeFilter, setBizTypeFilter] = useState<'ALL' | BusinessType>('ALL');
+  const [needsAttention, setNeedsAttention] = useState(false);
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [sortCol, setSortCol] = useState<SortCol | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  function handleSort(col: SortCol) {
+    if (sortCol === col) {
+      if (sortDir === 'desc') { setSortDir('asc'); }
+      else { setSortCol(null); setSortDir('desc'); }
+    } else {
+      setSortCol(col);
+      setSortDir('desc');
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -248,28 +397,54 @@ export default function Rfq2ListPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  const needsAttentionCount = useMemo(
+    () => rfqs.filter(hasButtonAction).length,
+    [rfqs],
+  );
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return rfqs.filter((r) => {
       if (q && !r.employerName.toLowerCase().includes(q) &&
           !r.rfqId.toLowerCase().includes(q) &&
-          !(r.brokerCode ?? '').toLowerCase().includes(q)) return false;
-      if (tabFilter === 'DRAFT'     && !DRAFT_STATUSES.has(r.statusStage))     return false;
-      if (tabFilter === 'ACTIVE'    && !ACTIVE_STATUSES.has(r.statusStage))    return false;
-      if (tabFilter === 'FINALIZED' && !FINALIZED_STATUSES.has(r.statusStage)) return false;
-      if (tabFilter === 'WITHDRAWN' && !WITHDRAWN_STATUSES.has(r.statusStage)) return false;
+          !(r.intermediaryCode ?? '').toLowerCase().includes(q)) return false;
+      const hv       = getHighestVersion(r);
+      const hvStatus = hv?.status as VersionStatus | undefined;
+      const expDays  = getExpiryDays(hv);
+      if (tabFilter === 'DRAFT'      && hvStatus !== VersionStatus.DRAFT) return false;
+      if (tabFilter === 'ACTIVE'     && (!hvStatus || !ACTIVE_VER_STATUSES.has(hvStatus))) return false;
+      if (tabFilter === 'FINALIZED'  && hvStatus !== VersionStatus.FROZEN) return false;
+      if (tabFilter === 'EXPIRING'   && !(expDays !== null && expDays >= 0 && expDays <= 7)) return false;
+      if (tabFilter === 'TERMINATED' && !TERMINATED_VER_STATUSES.has(hvStatus!) && !(expDays !== null && expDays < 0)) return false;
       if (lobFilter !== 'ALL' && r.lob !== lobFilter) return false;
-      if (stageFilter !== 'ALL' && r.statusStage !== stageFilter) return false;
-      if (assignedToMe && r.salesOwner?.userId !== userId) return false;
+      if (bizTypeFilter !== 'ALL' && r.businessType !== bizTypeFilter) return false;
+      if (needsAttention && !hasButtonAction(r)) return false;
       return true;
     });
-  }, [rfqs, search, tabFilter, lobFilter, stageFilter, assignedToMe, userId]);
+  }, [rfqs, search, tabFilter, lobFilter, bizTypeFilter, needsAttention]);
 
-  // Reset to page 1 whenever filters change
-  useEffect(() => { setPage(1); }, [search, tabFilter, lobFilter, stageFilter, assignedToMe]);
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    const dir = sortDir === 'desc' ? -1 : 1;
+    if (sortCol === null) {
+      return arr.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    }
+    return arr.sort((a, b) => {
+      let cmp = 0;
+      switch (sortCol) {
+        case 'client':  cmp = a.employerName.localeCompare(b.employerName); break;
+        case 'rfqId':   cmp = a.rfqId.localeCompare(b.rfqId); break;
+        case 'premium': cmp = (getActivePremium(a) ?? -1) - (getActivePremium(b) ?? -1); break;
+      }
+      return cmp * dir;
+    });
+  }, [filtered, sortCol, sortDir]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // Reset to page 1 whenever filters or sort column changes
+  useEffect(() => { setPage(1); }, [search, tabFilter, lobFilter, bizTypeFilter, needsAttention, sortCol]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function getPaginationPages(current: number, total: number): (number | '...')[] {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -286,17 +461,17 @@ export default function Rfq2ListPage() {
       {/* Header */}
       <div className="shrink-0 border-b border-border/40">
         {/* Title block */}
-        <div className="flex items-center gap-2 px-4 pt-4 pb-3">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight leading-tight">Quotes</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Manage group insurance quote lifecycle end-to-end.</p>
-          </div>
-          {canCreateRfq(currentRole, salesLevel) && (
-            <Button size="sm" onClick={() => router.push('/rfq2/new')} className="gap-1.5 shrink-0">
-              <CirclePlus className="size-4" /> New Quote
-            </Button>
-          )}
-        </div>
+        <PageHeader
+          title="Quotes"
+          subtitle="Manage group insurance quote lifecycle end-to-end."
+          actions={
+            canCreateRfq(currentRole, salesLevel) ? (
+              <Button size="sm" onClick={() => router.push('/rfq2/new')} className="gap-1.5">
+                <CirclePlus className="size-4" /> New Quote
+              </Button>
+            ) : undefined
+          }
+        />
 
         {/* Tab bar filter */}
         <div className="flex items-center px-4 pb-3">
@@ -322,25 +497,36 @@ export default function Rfq2ListPage() {
 
       {/* Search / Sort / Filter row */}
       <div className="shrink-0 flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0 flex items-center gap-3 mr-2">
           <button
-            onClick={() => setAssignedToMe((p) => !p)}
+            onClick={() => setNeedsAttention((p) => !p)}
             className={cn(
-              'h-8 px-3 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap',
-              assignedToMe
-                ? 'bg-primary text-primary-foreground border-primary'
-                : 'border-border bg-background text-foreground hover:bg-accent',
+              'h-8 px-3 rounded-lg border text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2',
+              needsAttention
+                ? 'bg-amber-50 border-amber-500 text-amber-700'
+                : 'bg-white border-amber-300 text-amber-700 hover:bg-amber-50',
             )}
           >
-            My Quotes
+            <AlertTriangle className="size-3.5 shrink-0" />
+            Needs Attention
+            {needsAttentionCount > 0 && (
+              <span className={cn(
+                'inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[11px] font-semibold px-1 transition-colors',
+                needsAttention
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-amber-100 text-amber-700',
+              )}>
+                {needsAttentionCount}
+              </span>
+            )}
           </button>
-          <div className="relative">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
               placeholder="Search by client name, RFQ ID, or broker code…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-80 pl-8 text-sm"
+              className="h-8 w-full min-w-[140px] pl-8 text-sm"
             />
           </div>
         </div>
@@ -356,39 +542,27 @@ export default function Rfq2ListPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={stageFilter} onValueChange={(v) => setStageFilter(v as typeof stageFilter)}>
-            <SelectTrigger className="h-8 w-44 text-sm">
-              <SelectValue placeholder="Stage" />
+          <Select value={bizTypeFilter} onValueChange={(v) => setBizTypeFilter(v as typeof bizTypeFilter)}>
+            <SelectTrigger className="h-8 w-40 text-sm">
+              <SelectValue placeholder="Business Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All Stages</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([k, label]) => (
-                <SelectItem key={k} value={k}>{label}</SelectItem>
-              ))}
+              <SelectItem value="ALL">All Types</SelectItem>
+              <SelectItem value={BusinessType.NEW}>New Business</SelectItem>
+              <SelectItem value={BusinessType.RENEWAL}>Renewal</SelectItem>
+              <SelectItem value={BusinessType.TAKEOVER}>Takeover</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex items-center border border-border rounded-lg p-0.5 ml-1">
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                'flex items-center justify-center size-7 rounded-md transition-colors',
-                viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-              )}
-              title="List view"
-            >
-              <LayoutList className="size-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={cn(
-                'flex items-center justify-center size-7 rounded-md transition-colors',
-                viewMode === 'kanban' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted',
-              )}
-              title="Kanban view"
-            >
-              <Columns3 className="size-4" />
-            </button>
-          </div>
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'kanban')} className="ml-1">
+            <TabsList variant="default">
+              <TabsTrigger value="list" variant="default" className="w-8 px-0" title="List view">
+                <LayoutList className="size-4" />
+              </TabsTrigger>
+              <TabsTrigger value="kanban" variant="default" className="w-8 px-0" title="Kanban view">
+                <Columns3 className="size-4" />
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
@@ -420,79 +594,136 @@ export default function Rfq2ListPage() {
           <KanbanBoard rfqs={filtered} onCardClick={(rfqId) => router.push(`/rfq2/${rfqId}`)} />
         ) : (
           <div className="h-full flex flex-col rounded-2xl border border-border/20 bg-background overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.05)]">
-            {/* Fixed header */}
-            <div className="shrink-0 flex items-center bg-muted/30 border-b border-border/20 pr-3">
-              <div className="w-36 shrink-0"><SortableHead>RFQ ID</SortableHead></div>
-              <div className="flex-1 min-w-0"><SortableHead>Client</SortableHead></div>
-              <div className="w-28 shrink-0"><SortableHead>Eff. Date</SortableHead></div>
-              <div className="w-16 shrink-0"><PlainHead>LoB</PlainHead></div>
-              <div className="w-20 shrink-0 text-right"><div className="flex justify-end"><SortableHead>Lives</SortableHead></div></div>
-              <div className="w-40 shrink-0"><SortableHead>Stage</SortableHead></div>
-              <div className="w-28 shrink-0"><SortableHead>Owner</SortableHead></div>
-              <div className="w-20 shrink-0"><PlainHead>Census</PlainHead></div>
-              <div className="w-28 shrink-0"><SortableHead>Updated</SortableHead></div>
-              <div className="w-20 shrink-0"><PlainHead>Actions</PlainHead></div>
+            {/* Horizontal scroll — header + rows scroll together; footer stays pinned */}
+            <div className="flex-1 min-h-0 overflow-x-auto">
+            <div className="flex flex-col min-w-[930px] h-full">
+            {/* Header */}
+            <div className="shrink-0 flex items-center bg-muted/30 border-b border-border/20 pr-2">
+              <div className="min-w-[160px] flex-[3]"><ColHead col="client" label="Client" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} /></div>
+              <div className="min-w-[112px] flex-1"><ColHead col="rfqId" label="Quote #" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} /></div>
+              <div className="min-w-[140px] flex-1"><PlainHead>LoB / Type</PlainHead></div>
+              <div className="min-w-[200px] flex-[2]"><PlainHead>Active Version</PlainHead></div>
+              <div className="min-w-[112px] flex-1"><ColHead col="premium" label="Premium" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} align="right" /></div>
+              <div className="min-w-[150px] flex-[2]"><PlainHead>Action Needed</PlainHead></div>
+              <div className="w-14 shrink-0"><PlainHead>Actions</PlainHead></div>
             </div>
 
             {/* Scrollable rows */}
             <div className="flex-1 min-h-0 overflow-y-auto">
               {paged.map((rfq, idx) => {
-                const census = rfq.censusSummary?.quality.trafficLight;
+                const highestVer = getHighestVersion(rfq);
+                const activeVer  = rfq.quoteVersions?.find(v => v.id === rfq.activeVersionId) ?? highestVer;
+                const premium    = getActivePremium(rfq);
+                const expiryDays = getExpiryDays(highestVer);
                 return (
                   <div
                     key={rfq.rfqId}
                     className={cn(
-                      'flex items-center h-[55px] cursor-pointer hover:bg-muted/40 transition-colors pr-3',
+                      'flex items-center min-h-[60px] cursor-pointer hover:bg-muted/40 transition-colors pr-2',
                       idx < paged.length - 1 && 'border-b border-border/20',
                     )}
                     onClick={() => router.push(`/rfq2/${rfq.rfqId}`)}
                   >
-                    <div className="w-36 shrink-0 px-2 text-sm font-mono font-medium truncate">{rfq.rfqId}</div>
-                    <div className="flex-1 min-w-0 px-2">
-                      <div className="text-sm font-medium truncate">{rfq.employerName}</div>
-                      {rfq.industry && <div className="text-xs text-muted-foreground truncate">{rfq.industry}</div>}
+                    {/* Client */}
+                    <div className="min-w-[160px] flex-[3] px-2 py-3">
+                      <div className="text-sm font-medium truncate leading-tight">{rfq.employerName}</div>
+                      <div className="text-xs text-muted-foreground truncate mt-0.5">
+                        {rfq.intermediaryType && rfq.intermediaryType !== IntermediaryType.BROKER
+                          ? rfq.intermediaryType.toUpperCase()
+                          : (rfq.brokerName ?? '—')}
+                      </div>
                     </div>
-                    <div className="w-28 shrink-0 px-2 text-sm text-muted-foreground">{rfq.effectiveDate ?? '—'}</div>
-                    <div className="w-16 shrink-0 px-2">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-lg border border-border bg-secondary text-secondary-foreground text-xs font-medium">{rfq.lob}</span>
+                    {/* Quote # */}
+                    <div className="min-w-[112px] flex-1 px-2 text-xs font-mono text-muted-foreground truncate">{rfq.rfqId}</div>
+                    {/* LoB / Type */}
+                    <div className="min-w-[140px] flex-1 px-2 flex items-center gap-1 flex-wrap">
+                      <Badge variant="secondary" className="text-xs">{rfq.lob}</Badge>
+                      <Badge variant="outline" className="text-xs">{BIZ_LABEL[rfq.businessType as BusinessType] ?? rfq.businessType}</Badge>
                     </div>
-                    <div className="w-20 shrink-0 px-2 text-sm text-muted-foreground text-right">{rfq.censusSummary?.totalLives?.toLocaleString() ?? '—'}</div>
-                    <div className="w-40 shrink-0 px-2">
-                      <Badge variant={STATUS_VARIANT[rfq.statusStage]} className="text-xs whitespace-nowrap">
-                        {STATUS_LABELS[rfq.statusStage]}
+                    {/* Active Version */}
+                    <div className="min-w-[200px] flex-[2] px-2 flex items-center gap-1.5">
+                      <Badge variant="secondary" className="text-xs shrink-0 flex items-center gap-1 px-1.5">
+                        <Layers className="size-3" />
+                        {rfq.quoteVersions?.length ?? 0}
                       </Badge>
+                      {activeVer ? (
+                        <Badge
+                          variant={VER_STATUS_VARIANT[activeVer.status as VersionStatus] ?? 'secondary'}
+                          className="text-xs whitespace-nowrap"
+                        >
+                          V{activeVer.versionNo} — {VER_STATUS_LABEL[activeVer.status as VersionStatus]}
+                        </Badge>
+                      ) : <span className="text-xs text-muted-foreground">—</span>}
                     </div>
-                    <div className="w-28 shrink-0 px-2 text-sm text-muted-foreground truncate">{rfq.salesOwner?.name ?? '—'}</div>
-                    <div className="w-20 shrink-0 px-2">
-                      {census ? (
-                        <Badge variant={CENSUS_VARIANT[census]} className="text-xs">{CENSUS_LABELS[census]}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">—</span>
-                      )}
+                    {/* Premium */}
+                    <div className="min-w-[112px] flex-1 px-2 text-right">
+                      {premium
+                        ? <span className="text-sm font-medium">{fmtINR(premium)}</span>
+                        : <span className="text-muted-foreground text-sm">—</span>}
                     </div>
-                    <div className="w-28 shrink-0 px-2">
-                      <RelativeTime iso={rfq.updatedAt} />
+                    {/* Action Needed */}
+                    <div className="min-w-[150px] flex-[2] px-2 flex flex-col gap-1 items-start" onClick={(e) => e.stopPropagation()}>
+                      {(() => {
+                        if (!highestVer) return <span className="text-muted-foreground text-xs">—</span>;
+                        const def = ACTION_DEF[highestVer.status as VersionStatus] ?? { kind: 'none' as const };
+                        return (
+                          <>
+                            {def.kind === 'button' && expiryDays === null && (
+                              <Button
+                                size="sm"
+                                variant={def.variant}
+                                className={cn('h-7 text-xs px-2.5', def.cls)}
+                              >
+                                {def.label}
+                              </Button>
+                            )}
+                            {def.kind === 'time' && (
+                              <span className="text-xs font-medium text-amber-600">{fmtRelative(rfq.updatedAt)}</span>
+                            )}
+                            {expiryDays !== null && expiryDays <= 7 && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs font-medium bg-red-50 border-red-300 text-red-700 w-fit"
+                              >
+                                {expiryDays <= 0 ? 'Expired' : `Exp. in ${expiryDays}d`}
+                              </Badge>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
-                    <div className="w-20 shrink-0 px-1 flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors"
-                        onClick={() => router.push(`/rfq2/${rfq.rfqId}`)}
-                      >
-                        <ArrowRight className="size-4" />
-                      </button>
-                      <button className="flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors">
-                        <Ellipsis className="size-4" />
-                      </button>
+                    {/* Actions */}
+                    <div className="w-14 shrink-0 px-1 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="size-8 p-0">
+                            <Ellipsis className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36">
+                          <DropdownMenuItem onClick={() => {}}>
+                            <Copy className="size-4 mr-2" /> Clone
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                            onClick={() => {}}
+                          >
+                            <Ban className="size-4 mr-2" /> Withdraw
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 );
               })}
             </div>
+            </div>
+            </div>
 
             {/* Fixed footer — pagination */}
             <div className="shrink-0 flex items-center justify-between border-t border-border/20 px-4 py-3">
               <span className="text-sm text-muted-foreground">
-                Showing {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                Showing {Math.min((page - 1) * PAGE_SIZE + 1, sorted.length)}–{Math.min(page * PAGE_SIZE, sorted.length)} of {sorted.length}
               </span>
               <div className="flex items-center gap-0.5">
                 <button

@@ -13,7 +13,7 @@ export interface QuoteDetailMock {
     broker: string;
     brokerContact: string;
     brokerEmail: string;
-    brokerCode: string;
+    intermediaryCode: string;
     source: string;
     salesOwner: string;
     currentStage: string;
@@ -31,15 +31,26 @@ export interface QuoteDetailMock {
     groupType: string;
     pan: string;
   };
-  mphCategorization: {
-    tier: string;
-    segment: string;
-    riskCategory: string;
-    mphRating: string;
-    uwTrack: string;
-    accountManager: string;
+  mphProfile: {
+    industry: string;
+    lives: number;
+    whiteCollarPct: number;
+    blueCollarPct: number;
+    zones: number;
+    hazardClass: 'LOW' | 'MEDIUM' | 'HIGH' | 'SPECIAL';
+    hazardousRoles: boolean;
+    businessType: string;
+    segmentBand: 'SME' | 'MID_CORPORATE' | 'CORPORATE';
   };
-  subsidiaries: { name: string; lives: number; status: string }[];
+  mphAppetite: {
+    category: string;
+    maxDiscountPct: number;
+    uwAuthorityBand: string;
+    preapprovedCardRef: string;
+    source: 'engine-server' | 'local-mirror';
+    evaluatedAt: string;
+  };
+  subsidiaries: { code: string; name: string; status: string }[];
   census: {
     totalLives: number;
     grades: { name: string; count: number; pct: number }[];
@@ -105,7 +116,7 @@ export const mockQuoteDetail: QuoteDetailMock = {
     broker: 'Marsh India Insurance Brokers',
     brokerContact: 'Kavya Nair',
     brokerEmail: 'kavya@marsh.com',
-    brokerCode: 'BRK-MH-00412',
+    intermediaryCode: 'BRK-MH-00412',
     source: 'Direct Broker',
     salesOwner: 'Rajan Mehta (L3)',
     currentStage: 'NEGOTIATION',
@@ -123,18 +134,29 @@ export const mockQuoteDetail: QuoteDetailMock = {
     groupType: 'Listed Entity',
     pan: 'AAACN1996G',
   },
-  mphCategorization: {
-    tier: 'Tier 1 (>10,000 lives)',
-    segment: 'Large Corporate',
-    riskCategory: 'Standard',
-    mphRating: 'A+ (Internal)',
-    uwTrack: 'Fast Track',
-    accountManager: 'Pooja Krishnan',
+  mphProfile: {
+    industry: 'IT Services',
+    lives: 12400,
+    whiteCollarPct: 88,
+    blueCollarPct: 12,
+    zones: 4,
+    hazardClass: 'LOW',
+    hazardousRoles: false,
+    businessType: 'NEW_BUSINESS',
+    segmentBand: 'CORPORATE',
+  },
+  mphAppetite: {
+    category: 'Large group',
+    maxDiscountPct: 12,
+    uwAuthorityBand: 'Underwriting L1',
+    preapprovedCardRef: 'GTL-CARD-2024-LG-001',
+    source: 'engine-server',
+    evaluatedAt: '2025-01-12T10:34:00Z',
   },
   subsidiaries: [
-    { name: 'TCS BPS Ltd', lives: 1240, status: 'Active' },
-    { name: 'TCS Financial Solutions Ltd', lives: 380, status: 'Active' },
-    { name: 'Diligenta Ltd (UK)', lives: 210, status: 'Pending Inclusion' },
+    { code: 'TCSBPS', name: 'TCS BPS Ltd', status: 'ACTIVE' },
+    { code: 'TCSFS', name: 'TCS Financial Solutions Ltd', status: 'ACTIVE' },
+    { code: 'DILIGEN', name: 'Diligenta Ltd (UK)', status: 'LAPSED' },
   ],
   census: {
     totalLives: 12400,

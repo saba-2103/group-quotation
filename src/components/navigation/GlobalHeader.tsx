@@ -8,12 +8,16 @@ import { Kbd } from "@/components/ui/kbd";
 import { cn } from "@/lib/utils";
 import { useModKey } from "@/hooks/useModKey";
 import { usePlanTemplateVersion } from "@/stores/planTemplateVersionStore";
+import { usePlanWizardVersion } from "@/stores/planWizardVersionStore";
+import { RoleSwitcher } from "@/components/widgets/role/RoleSwitcher";
 
 export function GlobalHeader() {
     const mod = useModKey();
     const pathname = usePathname();
     const { version, setVersion } = usePlanTemplateVersion();
+    const { version: wizardVersion, setVersion: setWizardVersion } = usePlanWizardVersion();
     const showVersionTabs = pathname === '/rfq2/plan-templates/new';
+    const showWizardVersionTabs = /\/(rfqs|rfq2)\/[^/]+\/plans\/new/.test(pathname);
 
     return (
         <header className="flex h-12 shrink-0 items-center justify-between bg-sidebar pr-4">
@@ -52,6 +56,26 @@ export function GlobalHeader() {
                         ))}
                     </div>
                 )}
+                {showWizardVersionTabs && (
+                    <div className="flex items-center rounded-md border border-border/50 bg-muted/40 p-0.5 gap-0.5">
+                        {([1, 2] as const).map((v) => (
+                            <button
+                                key={v}
+                                type="button"
+                                onClick={() => setWizardVersion(v)}
+                                className={cn(
+                                    'rounded px-2.5 py-1 text-[11px] font-semibold transition-colors leading-none',
+                                    wizardVersion === v
+                                        ? 'bg-background text-foreground shadow-sm'
+                                        : 'text-muted-foreground hover:text-foreground',
+                                )}
+                            >
+                                V{v}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                <RoleSwitcher />
                 <Button variant="ghost" size="icon-sm" aria-label="Notifications">
                     <BellDot className="size-4" />
                 </Button>

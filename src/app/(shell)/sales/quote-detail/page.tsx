@@ -60,34 +60,34 @@ function getActiveVersionHeadline(v: QDVersion | undefined): { text: string; col
   const p = v.premiumInclGst ? fmtINR(v.premiumInclGst) : null;
   switch (v.status) {
     case 'ACCEPTED':
-      return { text: `v${v.versionNo} was accepted · Ready to finalise`, color: 'text-emerald-600' };
+      return { text: `V${v.versionNo} was accepted · Ready to finalise`, color: 'text-emerald-600' };
     case 'SENT_TO_CLIENT':
       return {
-        text: `v${v.versionNo} was sent to client ${v.sentAt ? daysDiff(v.sentAt) + ' days ago' : ''} · Awaiting response`,
+        text: `V${v.versionNo} was sent to client ${v.sentAt ? daysDiff(v.sentAt) + ' days ago' : ''} · Awaiting response`,
         color: 'text-blue-600',
       };
     case 'SUBMITTED':
-      return { text: `v${v.versionNo} submitted to insurer · Send to client`, color: 'text-blue-600' };
+      return { text: `V${v.versionNo} submitted to insurer · Send to client`, color: 'text-blue-600' };
     case 'RATED':
       return {
-        text: `v${v.versionNo} is priced${p ? ` at ${p}` : ''} · Ready to submit`,
+        text: `V${v.versionNo} is priced${p ? ` at ${p}` : ''} · Ready to submit`,
         color: 'text-emerald-600',
       };
     case 'REFERRED_UW':
       return {
-        text: `v${v.versionNo} has been with the underwriter for ${v.referredAt ? daysDiff(v.referredAt) : v.daysInCurrentState} days`,
+        text: `V${v.versionNo} has been with the underwriter for ${v.referredAt ? daysDiff(v.referredAt) : v.daysInCurrentState} days`,
         color: 'text-amber-600',
       };
     case 'REFERRED_PRICING':
       return {
-        text: `v${v.versionNo} has been with the actuary for ${v.referredAt ? daysDiff(v.referredAt) : v.daysInCurrentState} days`,
+        text: `V${v.versionNo} has been with the actuary for ${v.referredAt ? daysDiff(v.referredAt) : v.daysInCurrentState} days`,
         color: 'text-amber-600',
       };
     case 'DRAFT':
     case 'IN_PROGRESS':
-      return { text: `v${v.versionNo} is in draft · Configure plans to progress`, color: 'text-muted-foreground' };
+      return { text: `V${v.versionNo} is in draft · Configure plans to progress`, color: 'text-muted-foreground' };
     default:
-      return { text: `v${v.versionNo} · ${v.status}`, color: 'text-muted-foreground' };
+      return { text: `V${v.versionNo} · ${v.status}`, color: 'text-muted-foreground' };
   }
 }
 
@@ -102,7 +102,7 @@ function getPrimaryAction(v: QDVersion | undefined): {
     case 'ACCEPTED':
       return { label: 'Finalise Quote', cls: 'bg-emerald-600 hover:bg-emerald-700 text-white', show: true };
     case 'RATED':
-      return { label: `Submit v${v.versionNo}`, cls: 'bg-indigo-600 hover:bg-indigo-700 text-white', show: true };
+      return { label: `Submit V${v.versionNo}`, cls: 'bg-blue-600 hover:bg-blue-700 text-white', show: true };
     case 'SUBMITTED':
       return { label: 'Send to Client', cls: 'bg-blue-600 hover:bg-blue-700 text-white', show: true };
     case 'SENT_TO_CLIENT':
@@ -111,11 +111,11 @@ function getPrimaryAction(v: QDVersion | undefined): {
     case 'REFERRED_PRICING': {
       const who = v.status === 'REFERRED_UW' ? 'UW' : 'Actuary';
       const d = v.referredAt ? daysDiff(v.referredAt) : v.daysInCurrentState;
-      return { label: `v${v.versionNo} with ${who} · ${d}d`, cls: 'bg-amber-100 text-amber-800 border border-amber-300', show: true, isChip: true };
+      return { label: `V${v.versionNo} with ${who} · ${d}d`, cls: 'bg-amber-100 text-amber-800 border border-amber-300', show: true, isChip: true };
     }
     case 'DRAFT':
     case 'IN_PROGRESS':
-      return { label: `Open v${v.versionNo}`, cls: 'border border-border text-foreground hover:bg-muted', show: true };
+      return { label: `Open V${v.versionNo}`, cls: 'border border-border text-foreground hover:bg-muted', show: true };
     default:
       return { label: '', cls: '', show: false };
   }
@@ -230,59 +230,53 @@ export default function SalesQuoteDetailPage() {
       {/* ── Sticky header ─────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-background border-b border-border/60 shrink-0">
 
-        {/* Row 1 — identity */}
-        <div className="flex items-center justify-between px-5 pt-3 pb-2 gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="font-mono text-base font-bold text-foreground shrink-0">{q.quoteNo}</span>
-            <span className={cn('text-xs font-semibold rounded-full px-2.5 py-0.5', STATUS_CLS[q.status])}>
-              {q.status}
-            </span>
-            <span className={cn('text-[11px] font-semibold border rounded px-2 py-0.5', SCHEME_CLS[q.scheme])}>
-              {q.scheme}
-            </span>
-            <span className={cn('text-[11px] font-medium rounded px-2 py-0.5', BIZ_CLS[q.businessType])}>
-              {q.businessType === 'NEW' ? 'New Business' : q.businessType === 'RENEWAL' ? 'Renewal' : 'Takeover'}
-            </span>
-          </div>
-          {/* Primary action */}
-          {primaryAction.show && (
-            <button
-              className={cn(
-                'h-8 px-4 rounded-lg text-sm font-medium transition-colors shrink-0',
-                primaryAction.isChip ? 'cursor-default' : 'cursor-pointer',
-                primaryAction.cls,
-              )}
-            >
-              {primaryAction.label}
-            </button>
-          )}
-        </div>
-
-        {/* Row 2 — deal headline */}
-        <div className="flex items-center gap-4 px-5 pb-3">
+        <div className="flex items-start justify-between px-5 pt-4 pb-3 gap-4">
+          {/* Left: name → tags → headline */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg font-bold text-foreground">{q.employerName}</span>
-              {q.brokerName && (
-                <span className="text-sm text-muted-foreground">via {q.brokerName}</span>
-              )}
+            <h1 className="text-2xl font-bold text-foreground leading-tight">{q.employerName}</h1>
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              <span className="font-mono text-xs text-muted-foreground shrink-0">{q.quoteNo}</span>
+              <span className="text-muted-foreground/30 text-xs">·</span>
+              <span className={cn('text-xs font-semibold rounded-full px-2.5 py-0.5', STATUS_CLS[q.status])}>
+                {q.status}
+              </span>
+              <span className={cn('text-[11px] font-semibold border rounded-md px-2 py-0.5', SCHEME_CLS[q.scheme])}>
+                {q.scheme}
+              </span>
+              <span className={cn('text-[11px] font-medium rounded-md px-2 py-0.5', BIZ_CLS[q.businessType])}>
+                {q.businessType === 'NEW' ? 'New Business' : q.businessType === 'RENEWAL' ? 'Renewal' : 'Takeover'}
+              </span>
             </div>
-            <p className={cn('text-sm font-medium mt-0.5', headline.color)}>{headline.text}</p>
+            <p className={cn('text-sm font-medium mt-2', headline.color)}>{headline.text}</p>
           </div>
-          {/* Premium chip */}
-          {activeVersion?.premiumInclGst && !isVerTerminal(activeVersion.status) && (
-            <div className="shrink-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-center">
-              <p className="text-base font-bold text-emerald-700 tabular-nums">
-                {fmtINR(activeVersion.premiumInclGst)}
-              </p>
-              <p className="text-[10px] text-emerald-600">/ yr incl. GST</p>
-            </div>
-          )}
+
+          {/* Right: premium chip + action stacked */}
+          <div className="shrink-0 flex flex-col items-end gap-2 pt-0.5">
+            {activeVersion?.premiumInclGst && !isVerTerminal(activeVersion.status) && (
+              <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 px-3 py-1.5 text-center">
+                <p className="text-xl font-bold text-emerald-700 tabular-nums leading-none">
+                  {fmtINR(activeVersion.premiumInclGst)}
+                </p>
+                <p className="text-[10px] text-emerald-600 mt-0.5">/ yr · incl. GST</p>
+              </div>
+            )}
+            {primaryAction.show && (
+              <button
+                className={cn(
+                  'h-8 px-4 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
+                  primaryAction.isChip ? 'cursor-default' : 'cursor-pointer',
+                  primaryAction.cls,
+                )}
+              >
+                {primaryAction.label}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Expiry warning bar */}
         {showExpiryBar && (
-          <div className="flex items-center justify-between px-5 py-2 bg-amber-50 border-t border-amber-200">
+          <div className="flex items-center justify-between px-5 py-2.5 bg-amber-50 border-t border-amber-200">
             <div className="flex items-center gap-2 text-sm text-amber-800">
               <AlertTriangle className="size-4 shrink-0 text-amber-600" />
               <span>
@@ -296,16 +290,19 @@ export default function SalesQuoteDetailPage() {
         )}
       </div>
 
-      {/* ── Metadata row ──────────────────────────────────────────────────── */}
-      <div className="shrink-0 flex items-center gap-3 px-5 py-2 border-b border-border/40 bg-muted/20 flex-wrap text-xs text-muted-foreground">
+      {/* ── Metadata strip ────────────────────────────────────────────────── */}
+      <div className="shrink-0 flex items-center gap-2 px-5 py-2 border-b border-border/40 bg-muted/20 flex-wrap text-xs text-muted-foreground">
+        {q.brokerName && <span>via {q.brokerName}</span>}
+        {q.brokerName && <span className="text-muted-foreground/30">·</span>}
+        <span>{q.groupSize.toLocaleString('en-IN')} lives · {q.industry}</span>
+        <div className="h-3 w-px bg-border/60 mx-0.5" />
         <MetaPill label="Effective" value={fmtDate(q.effectiveDate)} />
-        <MetaPill label="Currency" value={q.currency} />
         <MetaPill label="Channel" value={q.channel} />
         <MetaPill label="Segment" value={q.quoteSegment} />
-        <MetaPill label="Created by" value={q.createdBy} />
-        <MetaPill label="Created" value={fmtDate(q.createdAt)} />
-        <span>·</span>
-        <span>Expires <span className={cn('font-medium', daysLeft <= 14 ? 'text-amber-600' : 'text-foreground')}>{fmtDate(q.expiresAt)}</span></span>
+        <div className="h-3 w-px bg-border/60 mx-0.5" />
+        <span className={cn('font-medium', daysLeft <= 14 ? 'text-amber-600' : '')}>
+          Expires {fmtDate(q.expiresAt)}
+        </span>
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────────────────── */}
@@ -538,27 +535,36 @@ export default function SalesQuoteDetailPage() {
 
         {/* ── Tab: Quote Info ───────────────────────────────────────────── */}
         <TabsContent value="info" className="flex-1 min-h-0 overflow-y-auto mt-0 px-5 py-4">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-1 max-w-2xl">
-            <InfoSection title="Client Details">
-              <InfoField label="Employer" value={q.employerName} />
-              <InfoField label="Industry" value={q.industry} />
-              <InfoField label="Group Size" value={`${q.groupSize.toLocaleString('en-IN')} lives`} />
-              <InfoField label="Broker" value={q.brokerName ?? '—'} />
-              <InfoField label="Channel" value={q.channel} />
-            </InfoSection>
-            <InfoSection title="Scheme Configuration">
-              <InfoField label="Scheme Type" value={q.scheme} />
-              <InfoField label="Business Type" value={q.businessType === 'NEW' ? 'New Business' : q.businessType} />
-              <InfoField label="Effective Date" value={fmtDate(q.effectiveDate)} />
-              <InfoField label="Sum Assured Basis" value={q.sumAssuredBasis} />
-              <InfoField label="Cover Pattern" value={q.coverPattern} />
-              <InfoField label="Lives Covered" value={q.livesCovered} />
-            </InfoSection>
-            <InfoSection title="Underwriting">
-              <InfoField label="UW Method" value={q.uwMethod} />
-              <InfoField label="Participation" value={q.participationType} />
-              <InfoField label="Segment" value={q.quoteSegment} />
-            </InfoSection>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Client Details</p>
+              <div className="space-y-2.5">
+                <InfoRow label="Employer" value={q.employerName} />
+                <InfoRow label="Industry" value={q.industry} />
+                <InfoRow label="Group Size" value={`${q.groupSize.toLocaleString('en-IN')} lives`} />
+                <InfoRow label="Broker" value={q.brokerName ?? '—'} />
+                <InfoRow label="Channel" value={q.channel} />
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Scheme Configuration</p>
+              <div className="space-y-2.5">
+                <InfoRow label="Scheme Type" value={q.scheme} />
+                <InfoRow label="Business Type" value={q.businessType === 'NEW' ? 'New Business' : q.businessType} />
+                <InfoRow label="Effective Date" value={fmtDate(q.effectiveDate)} />
+                <InfoRow label="Sum Assured Basis" value={q.sumAssuredBasis} />
+                <InfoRow label="Cover Pattern" value={q.coverPattern} />
+                <InfoRow label="Lives Covered" value={q.livesCovered} />
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Underwriting</p>
+              <div className="space-y-2.5">
+                <InfoRow label="UW Method" value={q.uwMethod} />
+                <InfoRow label="Participation" value={q.participationType} />
+                <InfoRow label="Segment" value={q.quoteSegment} />
+              </div>
+            </div>
           </div>
           {q.status === 'DRAFT' && (
             <p className="text-xs text-muted-foreground mt-4">This quote is in DRAFT — fields are editable.</p>
@@ -576,10 +582,29 @@ function ActiveVersionCard({ version: v }: { version: QDVersion }) {
   const isReferred = v.status === 'REFERRED_UW' || v.status === 'REFERRED_PRICING';
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+
+      {/* Card header bar */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border/50">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-2xl font-black text-foreground shrink-0">V{v.versionNo}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground leading-tight truncate">{v.label}</p>
+            <span className={cn('text-[11px] font-semibold rounded-md px-2 py-0.5 mt-0.5 inline-block', VER_STATUS_CLS[v.status])}>
+              {VER_STATUS_LABEL[v.status]}
+            </span>
+          </div>
+        </div>
+        {action.show && !action.isChip && (
+          <button className={cn('h-8 px-4 rounded-lg text-sm font-medium transition-colors shrink-0', action.cls)}>
+            {action.label}
+          </button>
+        )}
+      </div>
+
       {/* Referral banner */}
       {isReferred && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 text-sm text-amber-800">
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-sm text-amber-800">
           <AlertTriangle className="size-4 shrink-0 text-amber-600" />
           <span>
             With {v.status === 'REFERRED_UW' ? 'Underwriter' : 'Actuary'} · {v.daysInCurrentState} days elapsed
@@ -589,72 +614,66 @@ function ActiveVersionCard({ version: v }: { version: QDVersion }) {
         </div>
       )}
 
-      <div className="p-4 flex gap-4">
-        {/* Left: identity */}
-        <div className="shrink-0">
-          <div className="text-3xl font-black text-foreground leading-none">v{v.versionNo}</div>
-          <div className="text-xs text-muted-foreground mt-1 max-w-[120px] line-clamp-2">{v.label}</div>
-          <span className={cn('text-[11px] font-semibold rounded-md px-2 py-0.5 mt-2 inline-block', VER_STATUS_CLS[v.status])}>
-            {VER_STATUS_LABEL[v.status]}
-          </span>
-        </div>
-
-        {/* Center: metrics */}
-        <div className="flex-1 min-w-0 grid grid-cols-2 gap-x-6 gap-y-2">
-          <MetricPair label="UW Path" value={v.uwPath === 'NOT_EVALUATED' ? 'Not evaluated' : v.uwPath} />
-          <MetricPair label="Pricing Path" value={v.pricingPath === 'NOT_EVALUATED' ? 'Not evaluated' : v.pricingPath} />
-          {v.premiumInclGst && (
-            <div className="col-span-2">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Premium</p>
-              <p className="text-2xl font-bold text-emerald-600 tabular-nums">{fmtINR(v.premiumInclGst)}<span className="text-sm text-muted-foreground font-normal"> / yr</span></p>
-            </div>
-          )}
-          <MetricPair label="In current state" value={`${v.daysInCurrentState} day${v.daysInCurrentState !== 1 ? 's' : ''}`} />
+      {/* Body */}
+      <div className="p-4 grid grid-cols-[1fr_auto] gap-6 items-start">
+        {/* Left: metrics + plans + note */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <MetricPair label="UW Path" value={v.uwPath === 'NOT_EVALUATED' ? 'Not evaluated' : v.uwPath} />
+            <MetricPair label="Pricing Path" value={v.pricingPath === 'NOT_EVALUATED' ? 'Not evaluated' : v.pricingPath} />
+            <MetricPair label="In current state" value={`${v.daysInCurrentState} day${v.daysInCurrentState !== 1 ? 's' : ''}`} />
+          </div>
           {v.planNames.length > 0 && (
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Plans</p>
-              <div className="flex flex-wrap gap-1">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Plans</p>
+              <div className="flex flex-wrap gap-1.5">
                 {v.planNames.map((n) => (
-                  <span key={n} className="text-[10px] border border-border rounded px-1.5 py-0.5 truncate max-w-[140px]">{n}</span>
+                  <span key={n} className="text-[11px] border border-border bg-muted/30 rounded-lg px-2.5 py-0.5">{n}</span>
                 ))}
               </div>
             </div>
           )}
-        </div>
-
-        {/* Right: action */}
-        <div className="shrink-0 flex flex-col items-end justify-start gap-2">
-          {action.show && !action.isChip && (
-            <button className={cn('h-8 px-4 rounded-lg text-sm font-medium transition-colors', action.cls)}>
-              {action.label}
-            </button>
+          {v.note && (
+            <p className="text-xs text-muted-foreground border-l-2 border-border/60 pl-3 italic">{v.note}</p>
           )}
         </div>
+
+        {/* Right: premium hero */}
+        {v.premiumInclGst && (
+          <div className="text-right shrink-0 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 min-w-[120px]">
+            <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-1">Premium</p>
+            <p className="text-3xl font-bold text-emerald-700 tabular-nums leading-none">{fmtINR(v.premiumInclGst)}</p>
+            <p className="text-[11px] text-emerald-600 mt-1">per year · incl. GST</p>
+          </div>
+        )}
       </div>
 
-      {/* Mini progression bar */}
-      <div className="px-4 pb-3">
-        <div className="flex items-center gap-0">
+      {/* Progress stepper */}
+      <div className="px-4 pb-4 pt-1 border-t border-border/30">
+        <div className="flex items-center">
           {PROGRESS_STEPS.map((step, idx) => {
             const past = idx < currentStep;
             const current = idx === currentStep;
             return (
               <React.Fragment key={step.key}>
-                <div className="flex flex-col items-center gap-1">
+                <div className="flex flex-col items-center gap-1 shrink-0">
                   <div
                     className={cn(
-                      'size-2.5 rounded-full border-2',
+                      'size-2.5 rounded-full border-2 transition-colors',
                       past ? 'bg-primary border-primary' :
                       current ? 'bg-primary border-primary ring-2 ring-primary/30' :
                       'bg-transparent border-border',
                     )}
                   />
-                  <span className={cn('text-[9px] whitespace-nowrap', current ? 'font-semibold text-primary' : 'text-muted-foreground')}>
+                  <span className={cn(
+                    'text-[9px] whitespace-nowrap',
+                    current ? 'font-bold text-primary' : past ? 'text-foreground/60' : 'text-muted-foreground/40',
+                  )}>
                     {step.label}
                   </span>
                 </div>
                 {idx < PROGRESS_STEPS.length - 1 && (
-                  <div className={cn('h-0.5 flex-1 mx-0.5 mb-3', past ? 'bg-primary' : 'bg-border')} />
+                  <div className={cn('h-0.5 flex-1 mx-1 mb-3', past ? 'bg-primary' : 'bg-border/60')} />
                 )}
               </React.Fragment>
             );
@@ -668,20 +687,28 @@ function ActiveVersionCard({ version: v }: { version: QDVersion }) {
 // ─── Secondary version card ───────────────────────────────────────────────────
 function SecondaryVersionCard({ version: v }: { version: QDVersion }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-4 py-3 flex items-center gap-4">
-      <div className="text-xl font-black text-muted-foreground shrink-0">v{v.versionNo}</div>
+    <div className="rounded-xl border border-border bg-card px-4 py-3.5 flex items-start gap-4">
+      <div className="text-xl font-black text-muted-foreground/50 shrink-0 pt-0.5">V{v.versionNo}</div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground truncate">{v.label}</span>
-          <span className={cn('text-[11px] font-semibold rounded px-2 py-0.5', VER_STATUS_CLS[v.status])}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm font-semibold text-foreground">{v.label}</span>
+          <span className={cn('text-[11px] font-semibold rounded-md px-2 py-0.5', VER_STATUS_CLS[v.status])}>
             {VER_STATUS_LABEL[v.status]}
           </span>
         </div>
         {v.premiumInclGst && (
-          <p className="text-xs text-muted-foreground mt-0.5">{fmtINR(v.premiumInclGst)} / yr</p>
+          <p className="text-sm font-medium text-muted-foreground mt-0.5">
+            {fmtINR(v.premiumInclGst)} <span className="text-xs">/ yr</span>
+          </p>
+        )}
+        {v.note && (
+          <p className="text-xs text-muted-foreground italic mt-1 line-clamp-1">{v.note}</p>
         )}
       </div>
-      <div className="text-xs text-muted-foreground shrink-0">{v.daysInCurrentState}d in state</div>
+      <div className="text-xs text-muted-foreground shrink-0 text-right">
+        <p>{v.daysInCurrentState}d in state</p>
+        <p className="mt-0.5 text-muted-foreground/60">{v.planNames.length} plan{v.planNames.length !== 1 ? 's' : ''}</p>
+      </div>
     </div>
   );
 }
@@ -690,7 +717,7 @@ function SecondaryVersionCard({ version: v }: { version: QDVersion }) {
 function TerminalVersionRow({ version: v }: { version: QDVersion }) {
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <span className="text-xs font-mono text-muted-foreground w-6">v{v.versionNo}</span>
+      <span className="text-xs font-mono text-muted-foreground w-6">V{v.versionNo}</span>
       <span className={cn('text-[11px] font-medium rounded px-1.5 py-0.5', VER_STATUS_CLS[v.status])}>
         {VER_STATUS_LABEL[v.status]}
       </span>
@@ -721,8 +748,8 @@ function CompareView({ versions }: { versions: QDVersion[] }) {
     <div className="rounded-xl border border-border overflow-hidden">
       <div className="grid grid-cols-3 border-b border-border bg-muted/40">
         <div className="px-4 py-2 text-[11px] font-medium text-muted-foreground uppercase">Field</div>
-        <div className="px-4 py-2 text-sm font-bold border-l border-border">v{a.versionNo} · {a.label}</div>
-        <div className="px-4 py-2 text-sm font-bold border-l border-border">v{b.versionNo} · {b.label}</div>
+        <div className="px-4 py-2 text-sm font-bold border-l border-border">V{a.versionNo} · {a.label}</div>
+        <div className="px-4 py-2 text-sm font-bold border-l border-border">V{b.versionNo} · {b.label}</div>
       </div>
       {rows.map((row) => {
         const isDiff = differ(row.a, row.b);
@@ -741,8 +768,8 @@ function CompareView({ versions }: { versions: QDVersion[] }) {
 // ─── Small helpers ────────────────────────────────────────────────────────────
 function MetaPill({ label, value }: { label: string; value: string }) {
   return (
-    <span>
-      <span className="text-muted-foreground">{label}: </span>
+    <span className="inline-flex items-center gap-1 text-xs rounded-md bg-muted/60 border border-border/50 px-2 py-0.5">
+      <span className="text-muted-foreground">{label}</span>
       <span className="font-medium text-foreground">{value}</span>
     </span>
   );
@@ -751,8 +778,8 @@ function MetaPill({ label, value }: { label: string; value: string }) {
 function MetricPair({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-      <p className="text-sm font-medium text-foreground">{value}</p>
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }
@@ -775,20 +802,11 @@ function DocCheck({ label, present, required }: { label: string; present: boolea
   );
 }
 
-function InfoSection({ title, children }: { title: string; children: React.ReactNode }) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="col-span-1">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">{title}</p>
-      <div className="space-y-2 mb-6">{children}</div>
-    </div>
-  );
-}
-
-function InfoField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-baseline gap-2">
-      <span className="text-xs text-muted-foreground w-32 shrink-0">{label}</span>
-      <span className="text-sm text-foreground">{value}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+      <span className="text-sm font-medium text-foreground text-right">{value}</span>
     </div>
   );
 }

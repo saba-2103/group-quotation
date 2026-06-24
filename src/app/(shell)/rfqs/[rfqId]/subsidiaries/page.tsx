@@ -39,18 +39,20 @@ export default function SubsidiariesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Code</th>
                 <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Name</th>
-                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Registration No.</th>
-                <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Lives</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Location</th>
+                <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
                 <th className="w-20 px-4 py-2.5" />
               </tr>
             </thead>
             <tbody>
               {subs.map((sub) => (
                 <tr key={sub.subsidiaryId} className="border-b border-border/40 last:border-0 hover:bg-muted/20">
+                  <td className="px-4 py-3 font-mono font-semibold text-sm">{sub.code}</td>
                   <td className="px-4 py-3 font-medium">{sub.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{sub.registrationNumber ?? '—'}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{sub.lives.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{sub.locationMapping ?? '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{sub.status}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-7 w-7" asChild>

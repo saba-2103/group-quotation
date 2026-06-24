@@ -156,7 +156,7 @@ function computeNeedsAction(quotes: SalesPipelineQuote[]): ActionItem[] {
         urgency: 'blue',
         actionLabel: 'Submit',
         actionVariant: 'default',
-        actionColor: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+        actionColor: 'bg-blue-600 hover:bg-blue-700 text-white',
         statusText: q.premiumInclGst
           ? `Priced at ${fmtINR(q.premiumInclGst)} — ready to submit`
           : 'Priced — ready to submit',

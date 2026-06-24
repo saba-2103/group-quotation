@@ -26,7 +26,7 @@ interface WizardState {
   industry: string;
   quoteSegment: QuoteSegment | '';
   brokerName: string;
-  brokerCode: string;
+  intermediaryCode: string;
   channel: string;
   // Step 2
   businessType: BusinessType | '';
@@ -45,7 +45,7 @@ interface WizardState {
 }
 
 const INITIAL: WizardState = {
-  clientName: '', industry: '', quoteSegment: '', brokerName: '', brokerCode: '', channel: '',
+  clientName: '', industry: '', quoteSegment: '', brokerName: '', intermediaryCode: '', channel: '',
   businessType: '', priorInsurer: '', priorPremium: '', priorLossRatio: '',
   effectiveDate: '', policyPeriodEnd: '', pricingBasis: '',
   planStructure: '', sumAssuredBasis: '', gradeMapping: false, defaultPlanCount: '1',
@@ -153,7 +153,7 @@ export default function NewRfqPage() {
         industry: form.industry || undefined,
         quoteSegment: (form.quoteSegment as QuoteSegment) || undefined,
         brokerName: form.brokerName || undefined,
-        brokerCode: form.brokerCode || undefined,
+        intermediaryCode: form.intermediaryCode || undefined,
         channel: form.channel || undefined,
         businessType: form.businessType as BusinessType,
         priorPolicy: (['RENEWAL', 'TAKEOVER'] as BusinessType[]).includes(form.businessType as BusinessType)
@@ -237,7 +237,7 @@ export default function NewRfqPage() {
                 <Input value={form.brokerName} onChange={(e) => set({ brokerName: e.target.value })} placeholder="e.g. Marsh India" className="text-sm" />
               </Field>
               <Field label="Broker code">
-                <Input value={form.brokerCode} onChange={(e) => set({ brokerCode: e.target.value })} placeholder="e.g. BRK-001" className="text-sm" />
+                <Input value={form.intermediaryCode} onChange={(e) => set({ intermediaryCode: e.target.value })} placeholder="e.g. BRK-001" className="text-sm" />
               </Field>
             </div>
             <Field label="Channel">
@@ -366,7 +366,7 @@ export default function NewRfqPage() {
               <SummaryRow label="Industry" value={form.industry} />
               <SummaryRow label="Segment" value={form.quoteSegment || undefined} />
               <SummaryRow label="Broker" value={form.brokerName} />
-              <SummaryRow label="Broker code" value={form.brokerCode} />
+              <SummaryRow label="Broker code" value={form.intermediaryCode} />
               <SummaryRow label="Channel" value={form.channel} />
               <p className="text-xs font-medium text-muted-foreground mb-1 mt-3">Business</p>
               <SummaryRow label="Business type" value={form.businessType || undefined} />

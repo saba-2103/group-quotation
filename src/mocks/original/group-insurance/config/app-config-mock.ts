@@ -19,15 +19,16 @@ export const groupInsuranceAppConfig: AppConfig = {
       {
         id: "home",
         label: "Home",
-        url: "/",
+        url: "/coming-soon/home",
         icon: "House",
       },
-      // ── Policy ────────────────────────────────────────────────────────────
+      // ── Spec (former Policy) ──────────────────────────────────────
       {
         id: "policy",
-        label: "Policy",
+        label: "Spec",
         url: "/rfqs",
         icon: "FileSearch",
+        bottomRail: true,
         allowedRoles: ["SALES", "UNDERWRITER", "ACTUARY", "ACTUARIAL", "OPS", "ADMIN"],
         subMenuItems: [
           {
@@ -76,120 +77,7 @@ export const groupInsuranceAppConfig: AppConfig = {
             group: "CONFIGURE",
             allowedRoles: ["ADMIN"],
           },
-        ],
-      },
-      // ── Policy 2 (exploration canvas) ─────────────────────────────────────
-      {
-        id: "policy2",
-        label: "Policy 2",
-        url: "/rfq2",
-        icon: "FlaskConical",
-        allowedRoles: ["SALES", "UNDERWRITER", "ACTUARY", "ACTUARIAL", "OPS", "ADMIN"],
-        subMenuItems: [
-          // ── HOME ──────────────────────────────────────────────────────────
-          {
-            id: "policy2-dashboard",
-            label: "Dashboard",
-            url: "/rfq2/dashboard",
-            icon: "LayoutDashboard",
-            group: "HOME",
-          },
-          {
-            id: "policy2-workbench",
-            label: "Workbench",
-            url: "/rfq2/workbench",
-            icon: "ClipboardList",
-            group: "HOME",
-          },
-          {
-            id: "policy2-approvals",
-            label: "Approvals",
-            url: "/rfq2/approvals",
-            icon: "Stamp",
-            group: "HOME",
-          },
-          {
-            id: "policy2-referrals",
-            label: "Referrals",
-            url: "/rfq2/referrals",
-            icon: "UserRoundCog",
-            group: "HOME",
-          },
-          // ── POLICY ────────────────────────────────────────────────────────
-          {
-            id: "policy2-quotes",
-            label: "Quotes",
-            url: "/rfq2/quotes",
-            icon: "FileText",
-            group: "POLICY",
-            activePrefix: "/rfq2/rfq-",
-          },
-          {
-            id: "policy2-member-quotes",
-            label: "Member Quotes",
-            url: "/rfq2/member-quotes",
-            icon: "FileUser",
-            group: "POLICY",
-          },
-          {
-            id: "policy2-issuance",
-            label: "Issuance",
-            url: "/rfq2/issuance",
-            icon: "ShieldCheck",
-            group: "POLICY",
-          },
-          {
-            id: "policy2-documents",
-            label: "Documents",
-            url: "/rfq2/documents",
-            icon: "Folder",
-            group: "POLICY",
-          },
-          // ── INSIGHTS ──────────────────────────────────────────────────────
-          {
-            id: "policy2-analytics",
-            label: "Analytics",
-            url: "/rfq2/analytics",
-            icon: "ChartNoAxesCombined",
-            group: "INSIGHTS",
-          },
-          {
-            id: "policy2-reports",
-            label: "Reports",
-            url: "/rfq2/reports",
-            icon: "FileChartColumn",
-            group: "INSIGHTS",
-          },
-          {
-            id: "policy2-health",
-            label: "Health",
-            url: "/rfq2/health",
-            icon: "HeartPulse",
-            group: "INSIGHTS",
-          },
-          // ── CONFIGURE ─────────────────────────────────────────────────────
-          {
-            id: "policy2-clients",
-            label: "Clients",
-            url: "/rfq2/clients",
-            icon: "BookUser",
-            group: "CONFIGURE",
-          },
-          {
-            id: "policy2-products",
-            label: "Products",
-            url: "/rfq2/products",
-            icon: "Box",
-            group: "CONFIGURE",
-          },
-          {
-            id: "policy2-plan-templates",
-            label: "Plan Templates",
-            url: "/rfq2/plan-templates",
-            icon: "FileBox",
-            group: "CONFIGURE",
-          },
-          // ── EXPLORE ───────────────────────────────────────────────────────
+          // ── EXPLORE ───────────────────────────────────────────────
           {
             id: "policy2-explore-quote",
             label: "Quote Detail",
@@ -224,44 +112,98 @@ export const groupInsuranceAppConfig: AppConfig = {
           },
         ],
       },
-      // ── Sales (exploration canvas) ────────────────────────────────────────
+      // ── Policy ─────────────────────────────────────────────────────
       {
-        id: "sales",
-        label: "Sales",
-        url: "/sales/home",
-        icon: "TrendingUp",
-        allowedRoles: ["SALES", "ADMIN"],
+        id: "policy2",
+        label: "Policy",
+        url: "/rfq2",
+        icon: "Shield",
+        allowedRoles: ["SALES", "UNDERWRITER", "ACTUARY", "ACTUARIAL", "OPS", "ADMIN"],
         subMenuItems: [
+          // ── HOME ──────────────────────────────────────────────────────────
           {
-            id: "sales-home",
+            id: "policy2-dashboard",
             label: "Dashboard",
-            url: "/sales/home",
+            url: "/rfq2/dashboard",
             icon: "LayoutDashboard",
             group: "HOME",
           },
           {
-            id: "sales-quotes",
+            id: "policy2-workbench",
+            label: "Workbench",
+            url: "/rfq2/workbench",
+            icon: "ClipboardList",
+            group: "HOME",
+          },
+          {
+            id: "policy2-referrals",
+            label: "Dispatch",
+            url: "/rfq2/referrals",
+            icon: "UserRoundCog",
+            group: "HOME",
+          },
+          // ── POLICY ────────────────────────────────────────────────────────
+          {
+            id: "policy2-quotes",
             label: "Quotes",
-            url: "/sales/quotes",
+            url: "/rfq2/quotes",
             icon: "FileText",
-            group: "HOME",
+            group: "POLICY",
+            activePrefix: "/rfq2/rfq-",
           },
           {
-            id: "sales-quote-detail",
-            label: "Quote Detail",
-            url: "/sales/quote-detail",
-            icon: "FileSearch",
-            group: "HOME",
+            id: "policy2-issuance",
+            label: "Issuance",
+            url: "/rfq2/issuance",
+            icon: "ShieldCheck",
+            group: "POLICY",
+            disabled: true,
+          },
+          // ── INSIGHTS ──────────────────────────────────────────────────────
+          {
+            id: "policy2-analytics",
+            label: "Analytics",
+            url: "/rfq2/analytics",
+            icon: "ChartNoAxesCombined",
+            group: "INSIGHTS",
+            disabled: true,
           },
           {
-            id: "sales-version-workspace",
-            label: "Version Workspace",
-            url: "/sales/version-workspace",
-            icon: "Layers",
-            group: "HOME",
+            id: "policy2-reports",
+            label: "Reports",
+            url: "/rfq2/reports",
+            icon: "FileChartColumn",
+            group: "INSIGHTS",
+            disabled: true,
+          },
+          {
+            id: "policy2-health",
+            label: "Health",
+            url: "/rfq2/health",
+            icon: "HeartPulse",
+            group: "INSIGHTS",
+            disabled: true,
+          },
+          // ── CONFIGURE ─────────────────────────────────────────────────────
+          {
+            id: "policy2-plan-templates",
+            label: "Plan Templates",
+            url: "/rfq2/plan-templates",
+            icon: "FileBox",
+            group: "CONFIGURE",
           },
         ],
       },
+      // ── Claims ────────────────────────────────────────────────────────────
+      { id: "claims", label: "Claims", url: "/coming-soon/claims", icon: "FileText" },
+      // ── Billing ───────────────────────────────────────────────────────────
+      { id: "billing", label: "Billing", url: "/coming-soon/billing", icon: "CreditCard" },
+      // ── Rule Engine ───────────────────────────────────────────────────────
+      { id: "rule-engine", label: "Rule Engine", url: "/coming-soon/rule-engine", icon: "Goal" },
+      // ── Products ──────────────────────────────────────────────────────────
+      { id: "products", label: "Products", url: "/coming-soon/products", icon: "Package" },
+      // ── Party ─────────────────────────────────────────────────────────────
+      { id: "party", label: "Party", url: "/coming-soon/party", icon: "Building2" },
     ],
   },
 };

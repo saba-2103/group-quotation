@@ -17,6 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { getRfqs } from '@/lib/api/quotation-client';
+import { PageHeader } from '@/components/layout/PageHeader';
 import {
   PlanHandoffStatus, SumAssuredBasis, CoverPattern,
   type Plan, type RfqBase,
@@ -194,16 +195,16 @@ export default function PlanTemplatesPage() {
       {/* Header */}
       <div className="shrink-0 border-b border-border/40">
         {/* Title block */}
-        <div className="flex items-center gap-2 px-4 pt-4 pb-3">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight leading-tight">Plan Templates</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">All benefit plans across quotes and versions.</p>
-          </div>
-          <Button size="sm" className="gap-1.5 shrink-0" onClick={() => router.push('/rfq2/plan-templates/new')}>
-            <CirclePlus className="size-4" />
-            New Plan Template
-          </Button>
-        </div>
+        <PageHeader
+          title="Plan Templates"
+          subtitle="All benefit plans across quotes and versions."
+          actions={
+            <Button size="sm" className="gap-1.5" onClick={() => router.push('/rfq2/plan-templates/new')}>
+              <CirclePlus className="size-4" />
+              New Plan Template
+            </Button>
+          }
+        />
 
         {/* Tab bar */}
         <div className="flex items-center px-4 pb-3">

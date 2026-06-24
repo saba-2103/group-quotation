@@ -110,16 +110,15 @@ function KeyDataPanel() {
 }
 
 function MphCategorizationCard() {
-  const mph = mockQuoteEmpty.mphCategorization;
+  const mph = mockQuoteEmpty.mphProfile;
   return (
     <Card title="MPH Categorization">
       <div className="flex flex-col gap-1.5">
-        <DataRow label="Segment" value={mph.segment} />
-        <DataRow label="Tier" value={mph.tier} placeholder="Pending — requires census" />
-        <DataRow label="Risk Category" value={mph.riskCategory} placeholder="Pending — requires census" />
-        <DataRow label="MPH Rating" value={mph.mphRating} placeholder="Pending — requires census" />
-        <DataRow label="UW Track" value={mph.uwTrack} placeholder="Pending" />
-        <DataRow label="Account Manager" value={mph.accountManager} placeholder="Pending" />
+        <DataRow label="Industry" value={mph.industry} />
+        <DataRow label="Business type" value={mph.businessType.replace(/_/g, ' ')} />
+        <DataRow label="Hazard class" value={mph.hazardClass} />
+        <DataRow label="Segment band" value={mph.segmentBand} placeholder="Pending — enter lives" />
+        <DataRow label="Governing envelope" value="" placeholder="Not stamped — save profile to generate" />
       </div>
     </Card>
   );

@@ -51,6 +51,16 @@ export function SubmenuPanel({ parent, pathname, orgName, forceVisible = false, 
                                     const ItemIcon = resolveIcon(item.icon);
                                     const active = isActive(pathname, item.url)
                                         || (!!item.activePrefix && pathname.startsWith(item.activePrefix));
+                                    if (item.disabled) {
+                                        return (
+                                            <li key={item.id}>
+                                                <span className="flex items-center gap-2 px-3 py-2 rounded-sm text-xs text-foreground/30 cursor-not-allowed select-none">
+                                                    <ItemIcon className="size-4 shrink-0" />
+                                                    <span className="truncate">{item.label}</span>
+                                                </span>
+                                            </li>
+                                        );
+                                    }
                                     return (
                                         <li key={item.id}>
                                             <Link

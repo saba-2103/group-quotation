@@ -18,9 +18,9 @@ export default function EditSubsidiaryPage({ params }: { params: Promise<{ rfqId
   const rfqId = bundle.rfqId;
   const sub = (bundle.subsidiaries ?? []).find((s) => s.subsidiaryId === subsidiaryId);
 
+  const [code, setCode] = useState(sub?.code ?? '');
   const [name, setName] = useState(sub?.name ?? '');
-  const [registrationNumber, setRegistrationNumber] = useState(sub?.registrationNumber ?? '');
-  const [lives, setLives] = useState(sub?.lives?.toString() ?? '0');
+  const [location, setLocation] = useState(sub?.locationMapping ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,9 +39,9 @@ export default function EditSubsidiaryPage({ params }: { params: Promise<{ rfqId
     setError(null);
     try {
       const updated = await updateSubsidiary(rfqId, subsidiaryId, {
+        code: code.trim().toUpperCase(),
         name: name.trim(),
-        registrationNumber: registrationNumber || undefined,
-        lives: lives ? Number(lives) : 0,
+        locationMapping: location.trim() || undefined,
       });
       updateBundle({
         subsidiaries: (bundle.subsidiaries ?? []).map((s) =>
@@ -62,16 +62,16 @@ export default function EditSubsidiaryPage({ params }: { params: Promise<{ rfqId
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
+          <Label className="text-xs">Code<span className="text-destructive ml-0.5">*</span></Label>
+          <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="text-sm font-mono" maxLength={12} />
+        </div>
+        <div className="flex flex-col gap-1.5">
           <Label className="text-xs">Name<span className="text-destructive ml-0.5">*</span></Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} className="text-sm" />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs">Registration number</Label>
-          <Input value={registrationNumber} onChange={(e) => setRegistrationNumber(e.target.value)} placeholder="Optional" className="text-sm" />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-xs">Lives</Label>
-          <Input type="number" min="0" value={lives} onChange={(e) => setLives(e.target.value)} className="text-sm" />
+          <Label className="text-xs">Location</Label>
+          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Optional" className="text-sm" />
         </div>
       </div>
 

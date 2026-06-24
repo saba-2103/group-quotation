@@ -4,19 +4,9 @@ import Link from "next/link";
 import { Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/components/ui/sidebar";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type { NavigationItem } from "@shared/types";
 import { firstNavigableUrl, resolveIcon } from "./navHelpers";
 import { useAuth } from "@/hooks/useAuth";
-import { ROLE_SWITCHER_PERSONAS } from "@/types/group-pas/roles";
-import { useRole } from "@/hooks/useRole";
 
 interface IconRailProps {
     items: NavigationItem[];
@@ -28,9 +18,7 @@ interface IconRailProps {
 }
 
 function UserAvatarButton() {
-    const { user, switchPersona } = useAuth();
-    const { currentRole, salesLevel } = useRole();
-
+    const { user } = useAuth();
     const initials = user.name
         .split(" ")
         .map((n) => n[0])
@@ -38,68 +26,19 @@ function UserAvatarButton() {
         .join("")
         .toUpperCase();
 
-    const currentPersonaId = (() => {
-        if (currentRole !== 'SALES') return currentRole.toLowerCase();
-        return `sales-l${salesLevel}`;
-    })();
-
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button
-                    className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-full",
-                        "bg-accent text-foreground text-sm font-semibold",
-                        "hover:ring-2 hover:ring-border transition-all",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    )}
-                    aria-label={`${user.name} — switch role`}
-                >
-                    {initials}
-                </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent side="right" align="end" className="w-64 mb-1">
-                <DropdownMenuLabel className="pb-1">
-                    <p className="font-semibold text-sm">{user.name}</p>
-                    <p className="text-xs font-normal text-muted-foreground">{user.email}</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-[11px] font-medium text-muted-foreground pb-1">
-                    Switch persona
-                </DropdownMenuLabel>
-                {ROLE_SWITCHER_PERSONAS.map((p) => {
-                    const isCurrent = currentPersonaId === p.id;
-                    const initials2 = p.name.split(" ").map((n) => n[0]).slice(0, 2).join("");
-                    return (
-                        <DropdownMenuItem
-                            key={p.id}
-                            onSelect={() => switchPersona(p)}
-                            className={cn(
-                                "flex items-center gap-2 text-sm",
-                                isCurrent && "bg-accent font-medium",
-                            )}
-                        >
-                            <span className={cn(
-                                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
-                                isCurrent
-                                    ? "bg-foreground text-background"
-                                    : "bg-muted text-muted-foreground",
-                            )}>
-                                {initials2}
-                            </span>
-                            <div className="flex flex-col leading-tight">
-                                <span>{p.label}</span>
-                                <span className="text-xs text-muted-foreground font-normal">{p.name}</span>
-                            </div>
-                            {isCurrent && (
-                                <span className="ml-auto text-xs text-primary font-medium">active</span>
-                            )}
-                        </DropdownMenuItem>
-                    );
-                })}
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <Link
+            href="/profile"
+            className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-full",
+                "bg-accent text-foreground text-sm font-semibold",
+                "hover:ring-2 hover:ring-border transition-all",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            )}
+            aria-label={`${user.name} — profile`}
+        >
+            {initials}
+        </Link>
     );
 }
 
@@ -114,6 +53,8 @@ export function IconRail({
     const { state } = useSidebar();
     const collapsed = !forceVisible && state === "collapsed";
     const LogoIcon = resolveIcon(logoIconName);
+    const mainItems = items.filter((i) => !i.bottomRail);
+    const bottomItems = items.filter((i) => i.bottomRail);
 
     return (
         <aside
@@ -134,7 +75,7 @@ export function IconRail({
             {/* Module icons — vertical layout */}
             <nav className="flex-1 overflow-y-auto">
                 <ul className="flex flex-col items-center">
-                    {items.map((item) => {
+                    {mainItems.map((item) => {
                         const ItemIcon = resolveIcon(item.icon);
                         const href = firstNavigableUrl(item) ?? "#";
                         const isActiveItem = item.id === activeItemId;
@@ -161,7 +102,7 @@ export function IconRail({
                                     </div>
                                     {/* Label */}
                                     <span className={cn(
-                                        "text-[11px] leading-none text-center",
+                                        "text-[11px] leading-tight text-center px-1",
                                         isActiveItem
                                             ? "text-foreground font-medium"
                                             : "text-muted-foreground font-normal",
@@ -175,8 +116,47 @@ export function IconRail({
                 </ul>
             </nav>
 
-            {/* Bottom — Settings + Avatar */}
+            {/* Bottom — bottom-rail modules + Settings + Avatar */}
             <div className="flex flex-col items-center shrink-0 pb-3">
+                {bottomItems.length > 0 && (
+                    <>
+                        <div className="w-8 h-px bg-border/40 my-1" />
+                        {bottomItems.map((item) => {
+                            const ItemIcon = resolveIcon(item.icon);
+                            const href = firstNavigableUrl(item) ?? "#";
+                            const isActiveItem = item.id === activeItemId;
+                            return (
+                                <Link
+                                    key={item.id}
+                                    href={href}
+                                    aria-current={isActiveItem ? "page" : undefined}
+                                    onClick={onItemClick}
+                                    className="flex flex-col items-center justify-center gap-1 h-16 w-full"
+                                >
+                                    <div className={cn(
+                                        "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                                        isActiveItem
+                                            ? "bg-foreground text-background"
+                                            : "text-muted-foreground",
+                                    )}>
+                                        <ItemIcon className={cn(
+                                            "shrink-0",
+                                            isActiveItem ? "size-5" : "size-4",
+                                        )} />
+                                    </div>
+                                    <span className={cn(
+                                        "text-[11px] leading-tight text-center px-1",
+                                        isActiveItem
+                                            ? "text-foreground font-medium"
+                                            : "text-muted-foreground font-normal",
+                                    )}>
+                                        {item.label}
+                                    </span>
+                                </Link>
+                            );
+                        })}
+                    </>
+                )}
                 {/* Settings */}
                 <Link
                     href="/config"
@@ -185,7 +165,7 @@ export function IconRail({
                     <div className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground">
                         <Settings className="size-4" />
                     </div>
-                    <span className="text-[11px] text-muted-foreground leading-none text-center">
+                    <span className="text-[11px] text-muted-foreground leading-tight text-center">
                         Settings
                     </span>
                 </Link>
