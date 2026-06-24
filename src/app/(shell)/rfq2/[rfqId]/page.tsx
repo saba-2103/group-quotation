@@ -3617,7 +3617,7 @@ function DocumentsTab() {
                 <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button size="icon" variant="ghost" className="size-6 rounded-md">
+                      <Button size="icon" variant="ghost" className="size-6 rounded-sm">
                         <EllipsisVertical className="size-3 text-muted-foreground" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -3675,7 +3675,7 @@ function DocumentsTab() {
             >
               {/* Download button */}
               <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
-                <Button size="icon" variant="ghost" className="size-6 rounded-md">
+                <Button size="icon" variant="ghost" className="size-6 rounded-sm">
                   <Download className="size-3 text-muted-foreground" />
                 </Button>
               </div>
