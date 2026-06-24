@@ -9,6 +9,7 @@ export interface StoredDoc {
   size: number;
   ext: string;
   source: string;
+  docType: string;
   uploadedAt: string;
 }
 

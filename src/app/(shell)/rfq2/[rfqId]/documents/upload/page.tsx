@@ -147,6 +147,7 @@ export default function DocumentUploadPage() {
       size: file.size,
       ext,
       source: docSource,
+      docType,
       uploadedAt: new Date().toISOString(),
     });
     router.push(`/rfq2/${rfqId}?tab=documents`);

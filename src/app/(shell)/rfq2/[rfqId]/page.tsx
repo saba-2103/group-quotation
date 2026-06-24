@@ -3491,6 +3491,7 @@ interface UploadedDoc {
   size: number;
   ext: string;
   source: string;
+  docType?: string;
   uploadedAt: string;
 }
 
@@ -3610,14 +3611,29 @@ function DocumentsTab() {
             {uploadedDocs.map((doc) => (
               <div
                 key={doc.id}
-                className="relative rounded-xl border border-border p-3 flex flex-col gap-2 group cursor-pointer hover:bg-muted/20 transition-colors"
+                className="relative rounded-xl border border-border p-3 flex flex-col gap-2 cursor-pointer hover:bg-muted/20 transition-colors"
               >
-                <button
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity size-5 rounded-md hover:bg-destructive/10 flex items-center justify-center"
-                  onClick={() => confirmDelete(doc.id, doc.name, false)}
-                >
-                  <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
-                </button>
+                {/* Menu dropdown */}
+                <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="ghost" className="size-6 rounded-md">
+                        <EllipsisVertical className="size-3 text-muted-foreground" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-36">
+                      <DropdownMenuItem className="flex items-center gap-2 text-xs cursor-pointer">
+                        <Download className="size-3.5" /> Download
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="flex items-center gap-2 text-xs cursor-pointer text-destructive focus:text-destructive"
+                        onClick={() => confirmDelete(doc.id, doc.name, false)}
+                      >
+                        <Trash2 className="size-3.5" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <div className="size-8 rounded-lg bg-muted flex items-center justify-center">
                   <FileText className="size-4 text-muted-foreground" />
                 </div>
@@ -3627,7 +3643,7 @@ function DocumentsTab() {
                     {doc.ext}
                   </span>
                   <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold w-fit', DOC_BADGE_CLS)}>
-                    {doc.source}
+                    {(doc.docType ?? '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || doc.source}
                   </span>
                 </div>
                 <div className="flex items-center justify-between mt-auto">
@@ -3655,8 +3671,14 @@ function DocumentsTab() {
           {quoteDocs.map((doc) => (
             <div
               key={doc.id}
-              className="relative rounded-xl border border-border p-3 flex flex-col gap-2 group cursor-pointer hover:bg-muted/20 transition-colors"
+              className="relative rounded-xl border border-border p-3 flex flex-col gap-2 cursor-pointer hover:bg-muted/20 transition-colors"
             >
+              {/* Download button */}
+              <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
+                <Button size="icon" variant="ghost" className="size-6 rounded-md">
+                  <Download className="size-3 text-muted-foreground" />
+                </Button>
+              </div>
               <div className="size-8 rounded-lg bg-muted flex items-center justify-center">
                 <FileText className="size-4 text-muted-foreground" />
               </div>
