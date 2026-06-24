@@ -950,17 +950,6 @@ function PlansPanel({
   return (
     <div className="flex flex-col h-full overflow-y-auto">
 
-      {/* ── Panel A: Header ───────────────────────────────────────────────── */}
-      <div className="shrink-0 flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/40 bg-background">
-        <h3 className="text-sm font-semibold text-foreground">Plans</h3>
-        {isFrozen && (
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted rounded-md px-2.5 py-1 border border-border/50">
-            <Lock className="size-3 shrink-0" />
-            <span>Frozen — create a new version to author plans</span>
-          </div>
-        )}
-      </div>
-
       <div className="flex flex-col gap-5 px-5 py-4">
 
         {/* ── Panel B: Census Exposure ──────────────────────────────────────── */}
@@ -1091,6 +1080,12 @@ function PlansPanel({
             <div className="flex items-center gap-2">
               {filteredPlans.length > 0 && (
                 <span className="text-xs text-muted-foreground tabular-nums">{filteredPlans.length} plan{filteredPlans.length !== 1 ? 's' : ''}</span>
+              )}
+              {isFrozen && (
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted rounded-md px-2.5 py-1 border border-border/50">
+                  <Lock className="size-3 shrink-0" />
+                  <span>Frozen</span>
+                </div>
               )}
               {!isFrozen && (
                 <>
