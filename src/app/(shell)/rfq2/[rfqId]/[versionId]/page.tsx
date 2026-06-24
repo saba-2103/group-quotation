@@ -950,7 +950,7 @@ function PlansPanel({
   return (
     <div className="flex flex-col h-full overflow-y-auto">
 
-      <div className="flex flex-col gap-5 px-5 py-4">
+      <div className="flex flex-col gap-5 px-5 py-5">
 
         {/* ── Panel B: Census Exposure ──────────────────────────────────────── */}
         <div style={{ order: 2 }}>
