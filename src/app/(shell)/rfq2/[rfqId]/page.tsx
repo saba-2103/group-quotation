@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
   EllipsisVertical,
@@ -4442,10 +4442,20 @@ function AuditLogTab() {
 function Rfq2DetailInner() {
   const { bundle } = useRfqBundle();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [showAllVersions, setShowAllVersions] = useState(false);
   const setLabel = useBreadcrumbStore((s) => s.setLabel);
-  const [middleTab, setMiddleTab] = useState<'cockpit' | 'versions' | 'key-data' | 'mph' | 'mph-categorization' | 'subsidiaries' | 'claims' | 'headcount' | 'census' | 'documents' | 'audit'>('cockpit');
+
+  type MiddleTab = 'cockpit' | 'versions' | 'key-data' | 'mph' | 'mph-categorization' | 'subsidiaries' | 'claims' | 'headcount' | 'census' | 'documents' | 'audit';
+  const VALID_TABS = new Set<string>(['cockpit', 'versions', 'key-data', 'mph-categorization', 'subsidiaries', 'claims', 'headcount', 'census', 'documents']);
+  const tabParam = searchParams.get('tab') ?? '';
+  const middleTab: MiddleTab = VALID_TABS.has(tabParam) ? (tabParam as MiddleTab) : 'cockpit';
+  const setMiddleTab = (tab: MiddleTab) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   if (!bundle) return null;
 
@@ -5001,7 +5011,9 @@ export default function Rfq2DetailPage() {
 
   return (
     <RfqBundleProvider rfqId={rfqId}>
-      <Rfq2DetailInner />
+      <Suspense fallback={null}>
+        <Rfq2DetailInner />
+      </Suspense>
     </RfqBundleProvider>
   );
 }
