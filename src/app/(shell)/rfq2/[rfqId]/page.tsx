@@ -68,6 +68,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { uploadStore } from '@/lib/upload-store';
 import { RfqBundleProvider, useRfqBundle } from '@/context/RfqBundleContext';
 import { useBreadcrumbStore } from '@/stores/breadcrumbStore';
 import {
@@ -3493,38 +3494,32 @@ interface UploadedDoc {
   uploadedAt: string;
 }
 
-const DOC_SOURCE_CLS: Record<string, string> = {
-  Generated:  'bg-violet-50 text-violet-700 border-violet-200',
-  Uploaded:   'bg-slate-100 text-slate-600 border-slate-200',
-  Census:     'bg-blue-50 text-blue-700 border-blue-200',
-  Claims:     'bg-amber-50 text-amber-700 border-amber-200',
-  'Quote Letter': 'bg-teal-50 text-teal-700 border-teal-200',
-};
+const DOC_BADGE_CLS = 'bg-muted/40 text-muted-foreground border-border/60';
 
 function DocumentsTab() {
   const { bundle } = useRfqBundle();
   if (!bundle) return null;
 
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([]);
   const [hiddenBundleIds, setHiddenBundleIds] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; isBundleDoc: boolean } | null>(null);
 
+  // Drain any docs submitted from the upload page
+  useEffect(() => {
+    const pending = uploadStore.drain();
+    if (pending.length) setUploadedDocs((prev) => [...prev, ...pending]);
+  }, []);
+
   const handleUploadClick = () => inputRef.current?.click();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const picked = Array.from(e.target.files ?? []);
-    if (!picked.length) return;
-    const entries: UploadedDoc[] = picked.map((f) => ({
-      id: `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      name: f.name,
-      size: f.size,
-      ext: f.name.split('.').pop()?.toUpperCase() ?? '—',
-      source: 'Uploaded',
-      uploadedAt: new Date().toISOString(),
-    }));
-    setUploadedDocs((prev) => [...prev, ...entries]);
+    const f = e.target.files?.[0];
+    if (!f) return;
+    uploadStore.setFile(f);
     e.target.value = '';
+    router.push(`/rfq2/${bundle.rfqId}/documents/upload`);
   };
 
   const confirmDelete = (id: string, name: string, isBundleDoc: boolean) =>
@@ -3543,34 +3538,30 @@ function DocumentsTab() {
   const bundleDocs = (bundle.documents ?? []).filter((d) => !hiddenBundleIds.has(d.documentId));
 
   const srcLabel = (src: string) =>
-    src === 'engine' ? 'Generated' : 'Uploaded';
+    src === 'engine' ? 'Generated' : src;
 
-  const totalCount = bundleDocs.length + uploadedDocs.length;
+  // Static quote-level documents (census upload, generated packs, etc.)
+  const QUOTE_DOCS = [
+    { id: 'qd-census',      name: 'Census_upload_v3.xlsx',    ext: 'XLSX', source: 'Census',       date: '12 Jun 2026', size: '48 KB'  },
+    { id: 'qd-quoteletter', name: 'Quote_Letter_v1.pdf',      ext: 'PDF',  source: 'Quote Letter', date: '14 Jun 2026', size: '220 KB' },
+    { id: 'qd-claims',      name: 'Claims_Summary_2024.pdf',  ext: 'PDF',  source: 'Claims',       date: '10 Jun 2026', size: '185 KB' },
+    { id: 'qd-quotepack',   name: 'Quote_Pack_Draft.pdf',     ext: 'PDF',  source: 'Generated',    date: '15 Jun 2026', size: '340 KB' },
+  ];
+
+  const quoteDocs = [
+    ...QUOTE_DOCS,
+    ...bundleDocs.map((d) => ({
+      id: d.documentId,
+      name: d.name,
+      ext: d.name.split('.').pop()?.toUpperCase() ?? '—',
+      source: srcLabel(d.source),
+      date: new Date(d.uploadedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      size: '—',
+    })),
+  ];
 
   return (
-    <div className="flex flex-col gap-4">
-
-      {/* Title row */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-foreground">Documents</h3>
-          {totalCount > 0 && (
-            <span className="text-[11px] text-muted-foreground bg-muted rounded-full px-2 py-0.5 font-medium tabular-nums">
-              {totalCount}
-            </span>
-          )}
-        </div>
-        <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={handleUploadClick}>
-          <Upload className="size-3.5" /> Upload
-        </Button>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-        />
-      </div>
+    <div className="flex flex-col gap-6">
 
       {/* Delete confirmation */}
       {deleteTarget && (
@@ -3592,111 +3583,100 @@ function DocumentsTab() {
         </div>
       )}
 
-      {/* Table — always shown */}
-      <div className="rounded-xl border border-border overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border bg-muted/30">
-              <th className="text-left px-3 py-2 text-[11px] font-medium text-muted-foreground">File Name</th>
-              <th className="text-left px-3 py-2 text-[11px] font-medium text-muted-foreground">Type</th>
-              <th className="text-left px-3 py-2 text-[11px] font-medium text-muted-foreground">Source</th>
-              <th className="text-right px-3 py-2 text-[11px] font-medium text-muted-foreground">Size</th>
-              <th className="text-left px-3 py-2 text-[11px] font-medium text-muted-foreground">Uploaded</th>
-              <th className="w-10 px-3 py-2" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/40">
-            {totalCount === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center text-xs text-muted-foreground py-12">
-                  No documents yet
-                </td>
-              </tr>
+      {/* ── Section 1: Uploaded Documents ── */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground">Uploaded Documents</h3>
+            {uploadedDocs.length > 0 && (
+              <span className="text-[11px] text-muted-foreground bg-muted rounded-full px-2 py-0.5 font-medium tabular-nums">
+                {uploadedDocs.length}
+              </span>
             )}
-              {bundleDocs.map((doc) => {
-                const sl = srcLabel(doc.source);
-                const ext = doc.name.split('.').pop()?.toUpperCase() ?? '—';
-                return (
-                  <tr key={doc.documentId} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-3 py-2.5 text-xs font-medium text-foreground max-w-[220px] truncate">
-                      {doc.name}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold bg-muted/40 text-muted-foreground border-border/60">
-                        {ext}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span className={cn(
-                        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
-                        DOC_SOURCE_CLS[sl] ?? 'bg-muted/40 text-muted-foreground border-border/60'
-                      )}>
-                        {sl}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground tabular-nums text-right">
-                      —
-                    </td>
-                    <td className="px-3 py-2.5 text-xs text-muted-foreground">
-                      {new Date(doc.uploadedAt).toLocaleString('en-GB', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                      })}
-                    </td>
-                    <td className="px-3 py-2.5 text-right">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="size-6 text-muted-foreground hover:text-destructive"
-                        onClick={() => confirmDelete(doc.documentId, doc.name, true)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {uploadedDocs.map((doc) => (
-                <tr key={doc.id} className="hover:bg-muted/20 transition-colors">
-                  <td className="px-3 py-2.5 text-xs font-medium text-foreground max-w-[220px] truncate">
-                    {doc.name}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold bg-muted/40 text-muted-foreground border-border/60">
-                      {doc.ext}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className={cn(
-                      'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold',
-                      DOC_SOURCE_CLS[doc.source] ?? 'bg-muted/40 text-muted-foreground border-border/60'
-                    )}>
-                      {doc.source}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-xs text-muted-foreground tabular-nums text-right">
-                    {fmtBytes(doc.size)}
-                  </td>
-                  <td className="px-3 py-2.5 text-xs text-muted-foreground">
-                    {new Date(doc.uploadedAt).toLocaleString('en-GB', {
-                      day: '2-digit', month: 'short', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit',
-                    })}
-                  </td>
-                  <td className="px-3 py-2.5 text-right">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-6 text-muted-foreground hover:text-destructive"
-                      onClick={() => confirmDelete(doc.id, doc.name, false)}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          </div>
+          <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={handleUploadClick}>
+            <Upload className="size-3.5" /> Upload
+          </Button>
+          <input ref={inputRef} type="file" className="hidden" onChange={handleFileChange} />
         </div>
+
+        {uploadedDocs.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed border-border py-8 flex flex-col items-center gap-2">
+            <Upload className="size-5 text-muted-foreground/40" />
+            <p className="text-xs text-muted-foreground">No documents uploaded yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-5 gap-3">
+            {uploadedDocs.map((doc) => (
+              <div
+                key={doc.id}
+                className="relative rounded-xl border border-border p-3 flex flex-col gap-2 group cursor-pointer hover:bg-muted/20 transition-colors"
+              >
+                <button
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity size-5 rounded-md hover:bg-destructive/10 flex items-center justify-center"
+                  onClick={() => confirmDelete(doc.id, doc.name, false)}
+                >
+                  <Trash2 className="size-3 text-muted-foreground hover:text-destructive" />
+                </button>
+                <div className="size-8 rounded-lg bg-muted flex items-center justify-center">
+                  <FileText className="size-4 text-muted-foreground" />
+                </div>
+                <p className="text-xs font-medium text-foreground leading-snug line-clamp-2 pr-4">{doc.name}</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold w-fit', DOC_BADGE_CLS)}>
+                    {doc.ext}
+                  </span>
+                  <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold w-fit', DOC_BADGE_CLS)}>
+                    {doc.source}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between mt-auto">
+                  <span className="text-[11px] text-muted-foreground">
+                    {new Date(doc.uploadedAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">{fmtBytes(doc.size)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Section 2: Documents from quote ── */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground">Documents from quote</h3>
+          <span className="text-[11px] text-muted-foreground bg-muted rounded-full px-2 py-0.5 font-medium tabular-nums">
+            {quoteDocs.length}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-5 gap-3">
+          {quoteDocs.map((doc) => (
+            <div
+              key={doc.id}
+              className="relative rounded-xl border border-border p-3 flex flex-col gap-2 group cursor-pointer hover:bg-muted/20 transition-colors"
+            >
+              <div className="size-8 rounded-lg bg-muted flex items-center justify-center">
+                <FileText className="size-4 text-muted-foreground" />
+              </div>
+              <p className="text-xs font-medium text-foreground leading-snug line-clamp-2">{doc.name}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold', DOC_BADGE_CLS)}>
+                  {doc.ext}
+                </span>
+                <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold', DOC_BADGE_CLS)}>
+                  {doc.source}
+                </span>
+              </div>
+              <div className="flex items-center justify-between mt-auto">
+                <span className="text-[11px] text-muted-foreground">{doc.date}</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">{doc.size}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
     </div>
   );

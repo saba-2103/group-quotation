@@ -884,7 +884,6 @@ function PlansPanel({
   const { bundle, updateBundle } = useRfqBundle();
   const router = useRouter();
   const [lobFilter, setLobFilter] = useState<'ALL' | 'GTL'>('ALL');
-  const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
   const [templateExpanded, setTemplateExpanded] = useState(plans.length === 0);
 
   const filteredPlans =
@@ -974,101 +973,92 @@ function PlansPanel({
               </p>
             </div>
           ) : (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              {/* Headline KPI strip */}
-              <div className="grid grid-cols-4 border-b border-border/40">
+            <div className="flex flex-col gap-3">
+              {/* 4 metric cards */}
+              <div className="grid grid-cols-4 gap-3">
                 {[
-                  { label: 'Total Lives',  value: totalCensusLives ? totalCensusLives.toLocaleString('en-IN') : '—', amber: false },
-                  { label: 'Grades',       value: String(gradeRows.length), amber: false },
-                  { label: 'Allocated',    value: `${gradeRows.length - unallocatedCount}/${gradeRows.length}`, amber: false },
-                  { label: 'Unallocated',  value: String(unallocatedCount), amber: unallocatedCount > 0 },
-                ].map((kpi, idx) => (
-                  <div
-                    key={kpi.label}
-                    className={cn('px-3 py-2.5 text-center', idx < 3 && 'border-r border-border/40')}
-                  >
-                    <p className="text-[10px] text-muted-foreground leading-none mb-1">{kpi.label}</p>
-                    <p className={cn('text-sm font-semibold tabular-nums', kpi.amber && 'text-amber-600')}>
+                  { label: 'Total Lives', value: totalCensusLives ? totalCensusLives.toLocaleString('en-IN') : '—', amber: false },
+                  { label: 'Grades',      value: String(gradeRows.length), amber: false },
+                  { label: 'Allocated',   value: `${gradeRows.length - unallocatedCount}/${gradeRows.length}`, amber: false },
+                  { label: 'Unallocated', value: String(unallocatedCount), amber: unallocatedCount > 0 },
+                ].map((kpi) => (
+                  <div key={kpi.label} className="rounded-xl border border-border bg-card px-4 py-3.5 text-center">
+                    <p className={cn('text-2xl font-black tabular-nums leading-none', kpi.amber ? 'text-amber-600' : kpi.value === '—' ? 'text-muted-foreground/40' : 'text-foreground')}>
                       {kpi.value}
                     </p>
+                    <p className="text-[10px] font-semibold text-muted-foreground mt-2 uppercase tracking-widest">{kpi.label}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Column headers */}
-              <div
-                className="grid px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/30 bg-muted/10"
-                style={{ gridTemplateColumns: '90px 56px 56px 96px 96px 1fr' }}
-              >
-                <span>Grade</span>
-                <span className="text-right">Lives</span>
-                <span className="text-right">Deps.</span>
-                <span className="text-right">Avg Salary</span>
-                <span className="text-right">Avg SI</span>
-                <span className="pl-3">Allocated to</span>
-              </div>
-
-              {/* Grade rows */}
-              {gradeRows.map((row, i) => {
-                const isUnalloc = row.allocatedTo === 'UNALLOCATED';
-                return (
-                  <div
-                    key={row.grade}
-                    className={cn(
-                      'grid items-center px-4 py-2.5 text-xs',
-                      i !== gradeRows.length - 1 && 'border-b border-border/30',
-                      isUnalloc && 'bg-amber-50/40',
-                    )}
-                    style={{ gridTemplateColumns: '90px 56px 56px 96px 96px 1fr' }}
-                  >
-                    <span className="font-medium">{row.grade}</span>
-                    <span className="text-right tabular-nums text-muted-foreground">
-                      {row.lives || '—'}
-                    </span>
-                    <span className="text-right tabular-nums text-muted-foreground">—</span>
-                    <span className="text-right tabular-nums text-muted-foreground text-[11px]">
-                      {row.avgSalary ? fmtINR(row.avgSalary) : '—'}
-                    </span>
-                    <span className="text-right tabular-nums text-muted-foreground text-[11px]">
-                      {row.avgSI ? fmtINR(row.avgSI) : '—'}
-                    </span>
-                    <div className="pl-3 flex items-center gap-2">
-                      {plans.length === 0 ? (
-                        <span className="text-[10px] text-muted-foreground/70 italic">
-                          Create a plan to allocate
-                        </span>
-                      ) : isFrozen ? (
-                        <span className="text-xs">
-                          {isUnalloc ? (
-                            <span className="text-amber-600 italic">Unallocated</span>
-                          ) : (
-                            plans.find((p) => p.planId === row.allocatedTo)?.name ?? row.allocatedTo
-                          )}
-                        </span>
-                      ) : (
-                        <select
-                          value={row.allocatedTo}
-                          onChange={(e) => handleGradeAlloc(row.grade, e.target.value)}
-                          className="text-[11px] border border-border rounded px-1.5 py-0.5 bg-background focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
-                          disabled={isFrozen}
-                        >
-                          <option value="UNALLOCATED">— Unallocated —</option>
-                          {plans.map((p) => (
-                            <option key={p.planId} value={p.planId}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      {isUnalloc && plans.length > 0 && !isFrozen && (
-                        <span className="text-[10px] text-amber-600 font-medium">
-                          Needs allocation
-                        </span>
-                      )}
-                    </div>
+              {/* Grade breakdown table */}
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="grid grid-cols-[104px_80px_88px_88px_160px] gap-3 px-5 py-2.5 border-b border-border/50 bg-muted/20">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Grade</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Lives</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Avg Salary</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Avg SI</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Allocated to</p>
+                </div>
+                <div className="px-5 pt-3 pb-4">
+                  <div className="flex flex-col gap-1.5">
+                    {gradeRows.map((row) => {
+                      const maxLives = Math.max(...gradeRows.map((r) => r.lives), 1);
+                      const pct = totalCensusLives > 0 ? parseFloat(((row.lives / totalCensusLives) * 100).toFixed(1)) : 0;
+                      const barW = Math.round((row.lives / maxLives) * 100);
+                      const isUnalloc = row.allocatedTo === 'UNALLOCATED';
+                      const allocName = plans.find((p) => p.planId === row.allocatedTo)?.name;
+                      return (
+                        <div key={row.grade} className={cn('rounded-lg border bg-muted/10 px-3 py-2.5', isUnalloc && plans.length > 0 ? 'border-amber-200' : 'border-border/40')}>
+                          <div className="grid grid-cols-[104px_80px_88px_88px_160px] gap-3 items-center">
+                            <span className="font-mono font-bold text-sm">{row.grade || '—'}</span>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-xs font-medium tabular-nums">{row.lives.toLocaleString()}</span>
+                                <span className="text-[10px] text-muted-foreground">{pct}%</span>
+                              </div>
+                              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                <div className="h-full rounded-full bg-foreground/25 transition-all" style={{ width: `${barW}%` }} />
+                              </div>
+                            </div>
+                            <p className="text-xs font-medium text-foreground">{row.avgSalary ? fmtINR(row.avgSalary) : '—'}</p>
+                            <p className="text-xs font-medium text-foreground">{row.avgSI ? fmtINR(row.avgSI) : '—'}</p>
+                            <div>
+                              {plans.length === 0 ? (
+                                <span className="text-[10px] text-muted-foreground/70 italic">No plans yet</span>
+                              ) : isFrozen ? (
+                                <span className={cn('text-xs', isUnalloc ? 'text-amber-600 italic' : 'text-foreground')}>
+                                  {isUnalloc ? 'Unallocated' : allocName ?? row.allocatedTo}
+                                </span>
+                              ) : (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className={cn('h-7 text-xs w-full justify-between gap-1.5 font-normal', isUnalloc ? 'border-amber-300 text-amber-600' : '')}>
+                                      <span className="truncate">{isUnalloc ? '— Unallocated —' : allocName ?? row.allocatedTo}</span>
+                                      <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuItem className="text-xs text-muted-foreground italic" onClick={() => handleGradeAlloc(row.grade, 'UNALLOCATED')}>
+                                      — Unallocated —
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    {plans.map((p) => (
+                                      <DropdownMenuItem key={p.planId} className="text-xs" onClick={() => handleGradeAlloc(row.grade, p.planId)}>
+                                        {p.name}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1089,16 +1079,6 @@ function PlansPanel({
               )}
               {!isFrozen && (
                 <>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs gap-1.5"
-                    disabled={plans.length === 0}
-                    title={plans.length === 0 ? 'Add at least one plan to run pricing' : 'Run actuarial pricing bridge over this version'}
-                  >
-                    <Calculator className="size-3" />
-                    Price with actuary
-                  </Button>
                   <div className="flex items-center">
                     <Button
                       size="sm"
@@ -1136,168 +1116,103 @@ function PlansPanel({
             </div>
           </div>
 
-          {filteredPlans.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-card px-4 py-6 text-center">
-              <Layers className="size-5 text-muted-foreground/40 mx-auto mb-2" />
-              <p className="text-xs font-medium text-muted-foreground">
-                No plans on this version yet
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              {/* Column headers */}
-              <div
-                className="grid px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border/40 bg-muted/10"
-                style={{
-                  gridTemplateColumns:
-                    '28px minmax(120px,1fr) 100px 130px 70px 80px 80px 48px 88px 76px 52px',
-                }}
-              >
-                <span />
-                <span>Plan</span>
-                <span>Subsidiary</span>
-                <span>Routing Status</span>
-                <span>Product</span>
-                <span>Cover</span>
-                <span>SA Basis</span>
-                <span className="text-right">Lives</span>
-                <span className="text-right">Est. Premium</span>
-                <span>Complete</span>
-                <span />
-              </div>
+          {/* Column header */}
+          <div className="flex flex-col gap-2">
+            {filteredPlans.map((plan) => {
+              const verdict = deriveRoutingVerdict(plan, mphAppetite);
+              const routeMeta = ROUTING_META[verdict];
+              const livesForPlan = gradeRows
+                .filter((g) => g.allocatedTo === plan.planId)
+                .reduce((s, g) => s + g.lives, 0);
+              const planPrice = priceRun?.byPlan?.[plan.planId];
+              const subName =
+                plan.subsidiaryScope && plan.subsidiaryScope !== 'WHOLE_GROUP'
+                  ? (subsidiaries.find((s) => s.subsidiaryId === plan.subsidiaryScope)?.name ?? plan.subsidiaryScope)
+                  : 'Whole group';
+              const completenessColor =
+                plan.completeness >= 80 ? 'bg-green-500' : plan.completeness >= 40 ? 'bg-amber-400' : 'bg-red-400';
 
-              {filteredPlans.map((plan, i) => {
-                const verdict = deriveRoutingVerdict(plan, mphAppetite);
-                const routeMeta = ROUTING_META[verdict];
-                const livesForPlan = gradeRows
-                  .filter((g) => g.allocatedTo === plan.planId)
-                  .reduce((s, g) => s + g.lives, 0);
-                const planPrice = priceRun?.byPlan?.[plan.planId];
-                const subName =
-                  plan.subsidiaryScope && plan.subsidiaryScope !== 'WHOLE_GROUP'
-                    ? (subsidiaries.find((s) => s.subsidiaryId === plan.subsidiaryScope)?.name ??
-                      plan.subsidiaryScope)
-                    : 'Whole group';
-                const isHovered = hoveredPlan === plan.planId;
-
-                return (
-                  <div
-                    key={plan.planId}
-                    className={cn(
-                      'grid items-center px-4 py-2.5 text-xs transition-colors',
-                      i !== filteredPlans.length - 1 && 'border-b border-border/30',
-                      isHovered && 'bg-muted/30',
-                    )}
-                    style={{
-                      gridTemplateColumns:
-                        '28px minmax(120px,1fr) 100px 130px 70px 80px 80px 48px 88px 76px 52px',
-                    }}
-                    onMouseEnter={() => setHoveredPlan(plan.planId)}
-                    onMouseLeave={() => setHoveredPlan(null)}
-                  >
-                    <Layers className="size-3.5 text-muted-foreground/40" />
-
-                    {/* Plan identity */}
-                    <div className="min-w-0 pr-2">
-                      {plan.planNumber && (
-                        <p className="text-[10px] font-mono text-muted-foreground/70 leading-none mb-0.5">
-                          {plan.planNumber}
-                        </p>
-                      )}
-                      <p className="font-medium truncate leading-tight">{plan.name}</p>
+              return (
+                <div
+                  key={plan.planId}
+                  className="rounded-xl border border-border bg-card overflow-hidden hover:border-primary/30 transition-colors flex flex-col cursor-pointer"
+                  onClick={() => router.push(`/rfq2/${rfqId}/plans/${plan.planId}`)}
+                >
+                  <div className="grid grid-cols-[1fr_76px_72px_104px] items-stretch">
+                    {/* Identity */}
+                    <div className="px-5 py-3.5 border-r border-border/40 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {plan.planNumber && (
+                          <span className="text-[10px] font-mono text-muted-foreground/50">{plan.planNumber}</span>
+                        )}
+                        <span className={cn('text-[9px] font-semibold rounded-full px-2 py-0.5 border', routeMeta.cls)}>
+                          {routeMeta.label}
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-foreground leading-tight truncate">{plan.name}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                        {subName}{plan.productCode ? ` · ${plan.productCode}` : ''}
+                      </p>
                     </div>
 
-                    <span className="text-[10px] text-muted-foreground truncate">{subName}</span>
-
-                    {/* Routing status chip */}
-                    <span
-                      className={cn(
-                        'text-[10px] font-medium rounded-full px-2 py-0.5 border w-fit',
-                        routeMeta.cls,
-                      )}
-                    >
-                      {routeMeta.label}
-                    </span>
-
-                    <span className="text-[10px] font-mono text-muted-foreground truncate">
-                      {plan.productCode ?? '—'}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">{plan.coverPattern}</span>
-                    <span className="text-[10px] text-muted-foreground truncate">
-                      {plan.sumAssuredBasis.replace(/_/g, ' ')}
-                    </span>
-
-                    <span className="text-right tabular-nums text-[11px]">
-                      {livesForPlan || '—'}
-                    </span>
-
-                    <span className="text-right tabular-nums text-[11px] text-muted-foreground">
-                      {planPrice ? fmtINR(planPrice.premium) : '—'}
-                    </span>
-
-                    {/* Completeness bar */}
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={cn(
-                            'h-full rounded-full',
-                            plan.completeness >= 80
-                              ? 'bg-green-500'
-                              : plan.completeness >= 40
-                              ? 'bg-amber-400'
-                              : 'bg-red-400',
-                          )}
-                          style={{ width: `${plan.completeness}%` }}
-                        />
-                      </div>
-                      <span
-                        className={cn(
-                          'text-[10px] tabular-nums font-medium shrink-0 w-7 text-right',
-                          plan.completeness >= 80
-                            ? 'text-green-600'
-                            : plan.completeness >= 40
-                            ? 'text-amber-600'
-                            : 'text-red-500',
-                        )}
-                      >
-                        {plan.completeness}%
+                    {/* Badges — cover + SA basis stacked */}
+                    <div className="px-3 py-3.5 border-r border-border/40 flex flex-col justify-center gap-1.5">
+                      <span className="text-[9px] font-medium bg-muted border border-border/50 rounded px-1.5 py-0.5 text-muted-foreground text-center leading-tight">
+                        {plan.coverPattern}
+                      </span>
+                      <span className="text-[9px] font-medium bg-muted border border-border/50 rounded px-1.5 py-0.5 text-muted-foreground text-center leading-tight">
+                        {plan.sumAssuredBasis.replace(/_/g, ' ')}
                       </span>
                     </div>
 
-                    {/* Row actions (hover-revealed) */}
-                    <div
-                      className={cn(
-                        'flex items-center gap-0.5 justify-end transition-opacity',
-                        isHovered ? 'opacity-100' : 'opacity-0',
-                      )}
-                    >
-                      <button
-                        type="button"
-                        title={isFrozen ? 'Version is frozen' : 'Edit in wizard'}
-                        disabled={isFrozen}
-                        onClick={() =>
-                          router.push(
-                            `/rfq2/${rfqId}/plans/new?versionId=${versionId}&planId=${plan.planId}`,
-                          )
-                        }
-                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        <Pencil className="size-3" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Open plan detail"
-                        onClick={() => router.push(`/rfq2/${rfqId}/plans/${plan.planId}`)}
-                        className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                      >
-                        <ChevronRight className="size-3" />
-                      </button>
+                    {/* Lives */}
+                    <div className="px-4 py-3.5 border-r border-border/40 flex flex-col justify-center gap-1">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Lives</p>
+                      <p className={cn('text-base font-black tabular-nums leading-none', livesForPlan ? 'text-foreground' : 'text-muted-foreground/25')}>
+                        {livesForPlan ? livesForPlan.toLocaleString() : '—'}
+                      </p>
                     </div>
+
+                    {/* Est. Premium */}
+                    <div className="px-4 py-3.5 flex flex-col justify-center gap-1">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Est. Premium</p>
+                      <p className={cn('text-base font-black tabular-nums leading-none', planPrice ? 'text-foreground' : 'text-muted-foreground/25')}>
+                        {planPrice ? fmtINR(planPrice.premium) : '—'}
+                      </p>
+                    </div>
+
+                    {/* Actions */}
                   </div>
-                );
-              })}
-            </div>
-          )}
+
+                  {/* Bottom action row */}
+                  <div className="flex items-center gap-1 px-3 py-2 border-t border-border/40 bg-muted/20">
+                    <button
+                      type="button"
+                      title="Duplicate plan"
+                      onClick={(e) => { e.stopPropagation(); router.push(`/rfq2/${rfqId}/plans/new?versionId=${versionId}&cloneFrom=${plan.planId}`); }}
+                      className="p-1.5 rounded hover:bg-background text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Copy className="size-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      title={isFrozen ? 'Version is frozen' : 'Edit plan'}
+                      disabled={isFrozen}
+                      onClick={(e) => { e.stopPropagation(); router.push(`/rfq2/${rfqId}/plans/new?versionId=${versionId}&planId=${plan.planId}`); }}
+                      className="p-1.5 rounded hover:bg-background text-muted-foreground hover:text-foreground transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Completeness — 2px bottom bar */}
+                  <div className="h-0.5 bg-muted/60">
+                    <div className={cn('h-full transition-all', completenessColor)} style={{ width: `${plan.completeness}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -1994,7 +1909,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
   const setLabel = useBreadcrumbStore((s) => s.setLabel);
   const [sortAsc, setSortAsc] = useState(false);
   const [versionTab, setVersionTab] = useState<
-    'cockpit' | 'plans' | 'uw' | 'pricing' | 'negotiation' | 'documents'
+    'cockpit' | 'plans' | 'uw' | 'pricing' | 'negotiation'
   >('cockpit');
   const versionsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -2413,63 +2328,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
     );
   }
 
-  // ── Documents tab ───────────────────────────────────────────────────────
-
-  function DocumentsTabContent() {
-    const allDocs = versionDocs.length > 0 ? versionDocs : documents;
-    const label = versionDocs.length > 0 ? 'Version documents' : 'All deal documents';
-
-    if (allDocs.length === 0) {
-      return (
-        <div className="flex flex-col items-center gap-2 py-16 text-center px-5">
-          <FileText className="size-8 text-muted-foreground/30" />
-          <p className="text-sm text-muted-foreground">No documents attached.</p>
-        </div>
-      );
-    }
-
-    const DOC_STATUS_CLS: Record<string, string> = {
-      DRAFT:    'bg-slate-100 border-slate-200 text-slate-600',
-      PENDING:  'bg-amber-50 border-amber-200 text-amber-700',
-      SIGNED:   'bg-emerald-50 border-emerald-200 text-emerald-700',
-      FINAL:    'bg-emerald-50 border-emerald-200 text-emerald-700',
-      UPLOADED: 'bg-sky-50 border-sky-200 text-sky-700',
-    };
-
-    return (
-      <div className="p-4 flex flex-col gap-3 overflow-auto">
-        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
-        {allDocs.map((doc) => (
-          <div key={doc.documentId} className="rounded-xl border border-border bg-card px-4 py-3">
-            <div className="flex items-center gap-3">
-              <div className="size-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                <FileText className="size-4 text-slate-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-foreground leading-tight truncate">{doc.name}</p>
-                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                  <span className="inline-flex items-center rounded bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] text-slate-600">
-                    {doc.type.replace(/_/g, ' ')}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                    {doc.source === 'UPLOAD'
-                      ? <><Upload className="size-2.5" /> Uploaded</>
-                      : <><Cpu className="size-2.5" /> Generated</>}
-                  </span>
-                </div>
-              </div>
-              <div className="shrink-0 text-right flex flex-col gap-1 items-end">
-                <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold', DOC_STATUS_CLS[doc.status] ?? 'bg-muted text-muted-foreground')}>
-                  {doc.status}
-                </span>
-                <p className="text-[10px] text-muted-foreground">{formatDate(doc.uploadedAt)}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
+  // ── (Documents tab removed) ────────────────────────────────────────────
 
   // ── Cockpit tab content ──────────────────────────────────────────────────
   // ── Cockpit tab content ──────────────────────────────────────────────────
@@ -2804,7 +2663,6 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
     { key: 'uw' as const,           label: 'UW Eval',     icon: ShieldCheck },
     { key: 'pricing' as const,      label: 'Pricing',     icon: BarChart3 },
     { key: 'negotiation' as const,  label: 'Negotiation', icon: Scale },
-    { key: 'documents' as const,    label: 'Documents',   icon: FileText },
   ];
 
   return (
@@ -3053,7 +2911,7 @@ function VersionDetailInner({ versionId }: { versionId: string }) {
             {versionTab === 'uw'           && <UwTab />}
             {versionTab === 'pricing'      && <PricingTab />}
             {versionTab === 'negotiation'  && <NegotiationTabContent />}
-            {versionTab === 'documents'    && <DocumentsTabContent />}
+
           </div>
         </div>
       </div>
