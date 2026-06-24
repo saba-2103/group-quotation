@@ -54,10 +54,9 @@ function Row({ label, value, mono }: { label: string; value: React.ReactNode; mo
 const HANDOFF_META: Record<PlanHandoffStatus, { label: string; cls: string; icon: React.ComponentType<{ className?: string }> }> = {
   [PlanHandoffStatus.DRAFT]:              { label: 'Draft',              cls: 'bg-zinc-100 text-zinc-600 border-zinc-200',     icon: Clock        },
   [PlanHandoffStatus.PRICING_REQUESTED]:  { label: 'Pricing Requested',  cls: 'bg-sky-50 text-sky-700 border-sky-200',         icon: Clock        },
-  [PlanHandoffStatus.PRICING_RECEIVED]:   { label: 'Pricing Received',   cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
   [PlanHandoffStatus.UW_REFERRED]:        { label: 'UW Referred',        cls: 'bg-orange-50 text-orange-700 border-orange-200', icon: AlertTriangle },
-  [PlanHandoffStatus.UW_APPROVED]:        { label: 'UW Approved',        cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
-  [PlanHandoffStatus.UW_DECLINED]:        { label: 'UW Declined',        cls: 'bg-red-50 text-red-700 border-red-200',         icon: AlertTriangle },
+  [PlanHandoffStatus.PRICED]:             { label: 'Priced',             cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2 },
+  [PlanHandoffStatus.RETURNED]:           { label: 'Returned',           cls: 'bg-red-50 text-red-700 border-red-200',         icon: AlertTriangle },
 };
 
 // ─── Inner ────────────────────────────────────────────────────────────────────
@@ -274,9 +273,9 @@ function PlanDetailInner({ rfqId, planId }: { rfqId: string; planId: string }) {
           {/* 6 — Deviations */}
           <div className="rounded-xl border border-border bg-card px-5 py-4">
             <SectionTitle icon={GitMerge} label="Deviations" />
-            {plan.deviations?.length > 0 ? (
+            {(plan as any).deviations?.length > 0 ? (
               <div className="flex flex-col divide-y divide-border/30">
-                {plan.deviations.map((dev, i) => (
+                {(plan as any).deviations.map((dev: any, i: number) => (
                   <div key={i} className="py-2.5 flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-0.5">

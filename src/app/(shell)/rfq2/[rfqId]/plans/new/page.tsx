@@ -583,7 +583,7 @@ function PlanWizardInner({ rfqId }: { rfqId: string }) {
                       {([
                         { val: LivesCovered.MEMBER_ONLY,   icon: User,  label: 'Member only',     desc: 'Employee only' },
                         { val: LivesCovered.MEMBER_SPOUSE, icon: Users, label: 'Member + Spouse', desc: 'Employee + partner' },
-                        { val: LivesCovered.FAMILY,        icon: Home,  label: 'Family',          desc: 'Employee + dependants' },
+                        { val: LivesCovered.FAMILY_VARIANTS, icon: Home,  label: 'Family',          desc: 'Employee + dependants' },
                       ] as const).map(({ val, icon: Icon, label, desc }) => {
                         const sel = ws.livesCovered === val;
                         return (
@@ -1132,7 +1132,7 @@ function PlanWizardV1Inner({ rfqId }: { rfqId: string }) {
                     {([
                       { val: LivesCovered.MEMBER_ONLY,   label: 'Member only' },
                       { val: LivesCovered.MEMBER_SPOUSE, label: 'Member + Spouse' },
-                      { val: LivesCovered.FAMILY,        label: 'Family' },
+                      { val: LivesCovered.FAMILY_VARIANTS, label: 'Family' },
                     ] as const).map(({ val, label }) => (
                       <Pill key={val} active={ws.livesCovered === val} onClick={() => upd('livesCovered')(val)}>{label}</Pill>
                     ))}

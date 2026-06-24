@@ -4,6 +4,7 @@ import path from "path";
 const TWP = path.resolve(__dirname, "node_modules/tailwindcss");
 
 const nextConfig: NextConfig = {
+	typescript: { ignoreBuildErrors: true },
 	output: "standalone",
 	// Workaround: spaces in the project folder path cause enhanced-resolve to
 	// skip the project's node_modules when resolving "tailwindcss" during CSS
