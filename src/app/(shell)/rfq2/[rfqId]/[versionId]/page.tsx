@@ -953,63 +953,10 @@ function PlansPanel({
       {/* ── Panel A: Header ───────────────────────────────────────────────── */}
       <div className="shrink-0 flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/40 bg-background">
         <h3 className="text-sm font-semibold text-foreground">Plans</h3>
-        {isFrozen ? (
+        {isFrozen && (
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted rounded-md px-2.5 py-1 border border-border/50">
             <Lock className="size-3 shrink-0" />
             <span>Frozen — create a new version to author plans</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs gap-1.5"
-              disabled={plans.length === 0}
-              title={
-                plans.length === 0
-                  ? 'Add at least one plan to run pricing'
-                  : 'Run actuarial pricing bridge over this version'
-              }
-            >
-              <Calculator className="size-3" />
-              Price with actuary
-            </Button>
-            <div className="flex items-center">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="h-7 text-xs gap-1.5 rounded-r-none border-r border-border/40 pr-2.5"
-                onClick={() => router.push(`/rfq2/${rfqId}/plans/new?versionId=${versionId}`)}
-              >
-                <Plus className="size-3" />
-                Add plan
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="h-7 w-6 rounded-l-none px-0"
-                  >
-                    <ChevronDown className="size-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel className="text-xs text-muted-foreground font-medium">Start from a template</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {PLAN_TEMPLATES.map((t) => (
-                    <DropdownMenuItem
-                      key={t.id}
-                      className="flex flex-col items-start gap-0.5 py-2.5 cursor-pointer"
-                      onClick={() => router.push(`/rfq2/${rfqId}/plans/new?versionId=${versionId}&template=${t.id}`)}
-                    >
-                      <span className="text-xs font-semibold text-foreground">{t.name}</span>
-                      <span className="text-[11px] text-muted-foreground leading-snug">{t.description}</span>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </div>
         )}
       </div>
@@ -1141,9 +1088,57 @@ function PlansPanel({
         <div style={{ order: 1 }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-foreground">Plans</h3>
-            {filteredPlans.length > 0 && (
-              <span className="text-xs text-muted-foreground tabular-nums">{filteredPlans.length} plan{filteredPlans.length !== 1 ? 's' : ''}</span>
-            )}
+            <div className="flex items-center gap-2">
+              {filteredPlans.length > 0 && (
+                <span className="text-xs text-muted-foreground tabular-nums">{filteredPlans.length} plan{filteredPlans.length !== 1 ? 's' : ''}</span>
+              )}
+              {!isFrozen && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs gap-1.5"
+                    disabled={plans.length === 0}
+                    title={plans.length === 0 ? 'Add at least one plan to run pricing' : 'Run actuarial pricing bridge over this version'}
+                  >
+                    <Calculator className="size-3" />
+                    Price with actuary
+                  </Button>
+                  <div className="flex items-center">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-7 text-xs gap-1.5 rounded-r-none border-r border-border/40 pr-2.5"
+                      onClick={() => router.push(`/rfq2/${rfqId}/plans/new?versionId=${versionId}`)}
+                    >
+                      <Plus className="size-3" />
+                      Add plan
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="secondary" className="h-7 w-6 rounded-l-none px-0">
+                          <ChevronDown className="size-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-64">
+                        <DropdownMenuLabel className="text-xs text-muted-foreground font-medium">Start from a template</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {PLAN_TEMPLATES.map((t) => (
+                          <DropdownMenuItem
+                            key={t.id}
+                            className="flex flex-col items-start gap-0.5 py-2.5 cursor-pointer"
+                            onClick={() => router.push(`/rfq2/${rfqId}/plans/new?versionId=${versionId}&template=${t.id}`)}
+                          >
+                            <span className="text-xs font-semibold text-foreground">{t.name}</span>
+                            <span className="text-[11px] text-muted-foreground leading-snug">{t.description}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {filteredPlans.length === 0 ? (
@@ -1152,18 +1147,6 @@ function PlansPanel({
               <p className="text-xs font-medium text-muted-foreground">
                 No plans on this version yet
               </p>
-              {!isFrozen && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="mt-2 h-7 text-xs text-primary"
-                  onClick={() =>
-                    router.push(`/rfq2/${rfqId}/plans/new?versionId=${versionId}`)
-                  }
-                >
-                  Add plan →
-                </Button>
-              )}
             </div>
           ) : (
             <div className="rounded-xl border border-border bg-card overflow-hidden">
